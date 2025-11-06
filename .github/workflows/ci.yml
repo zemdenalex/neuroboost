@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [ develop ]
+  pull_request:
+    branches: [ develop ]
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v4
+        with:
+          go-version: '1.22'
+      - name: Build
+        run: |
+          cd neuroboost-api-go
+          go build -o bin/api cmd/api/main.go
+      - name: Test
+        run: |
+          cd neuroboost-api-go
+          go test ./...
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '22'
+      - name: Install pnpm
+        run: npm i -g pnpm@9
+      - name: Build
+        run: |
+          cd neuroboost-web
+          pnpm install
+          pnpm build
