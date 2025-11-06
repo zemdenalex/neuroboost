@@ -1,0 +1,1 @@
+import KanbanColumn from './KanbanColumn'; export default function KanbanBoard(){return <div className='grid grid-cols-3 gap-2'><KanbanColumn title='To Do'/><KanbanColumn title='In Progress'/><KanbanColumn title='Done'/></div>}

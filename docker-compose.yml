@@ -1,0 +1,39 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: neuroboost
+      POSTGRES_PASSWORD: neuroboost
+      POSTGRES_DB: neuroboost
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+  api:
+    build: ./neuroboost-api-go
+    environment:
+      DATABASE_URL: postgres://neuroboost:neuroboost@db:5432/neuroboost?sslmode=disable
+      JWT_SECRET: "dev-secret"
+    expose:
+      - "8080"
+    depends_on:
+      - db
+
+  web:
+    build: ./neuroboost-web
+    expose:
+      - "80"
+
+  nginx:
+    image: nginx:stable-alpine
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "8080:80"
+    depends_on:
+      - api
+      - web
+
+volumes:
+  db-data:

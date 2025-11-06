@@ -1,0 +1,25 @@
+# neuroboost-web/Dockerfile
+
+FROM node:22-alpine AS builder
+WORKDIR /app
+RUN npm i -g pnpm@9
+
+COPY package.json ./
+# COPY pnpm-lock.yaml ./   # if you have one
+
+RUN /bin/sh -lc 'if [ -f pnpm-lock.yaml ]; then pnpm install --frozen-lockfile; else pnpm install; fi'
+
+# ↓ add this line
+COPY index.html ./
+
+COPY tsconfig.json vite.config.ts tailwind.config.js postcss.config.js ./
+COPY .env.example ./
+COPY public ./public
+COPY src ./src
+RUN pnpm build
+
+FROM nginx:stable-alpine
+RUN rm -rf /usr/share/nginx/html/*
+COPY --from=builder /app/dist /usr/share/nginx/html
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
