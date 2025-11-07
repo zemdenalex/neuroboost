@@ -10,12 +10,12 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-neuroboost}
       TZ: UTC
     ports:
-      - "127.0.0.1:5432:5432"  # Only localhost access
+      - "127.0.0.1:5432:5432" # localhost only
     volumes:
       - db-data:/var/lib/postgresql/data
       - ./neuroboost-api-go/migrations:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-neuroboost}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-neuroboost} -d ${POSTGRES_DB:-neuroboost}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -33,8 +33,6 @@ services:
       API_PORT: 8080
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
       TELEGRAM_NOTIFICATION_BOT_TOKEN: ${TELEGRAM_NOTIFICATION_BOT_TOKEN}
-    expose:
-      - "8080"
     depends_on:
       db:
         condition: service_healthy
@@ -44,6 +42,8 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    ports:
+      - "127.0.0.1:8080:8080" # expose to host for Nginx
     restart: unless-stopped
 
   web:
@@ -53,8 +53,6 @@ services:
       args:
         VITE_API_URL: ${FRONTEND_URL}/api
     container_name: neuroboost-web
-    expose:
-      - "80"
     depends_on:
       - api
     healthcheck:
@@ -62,24 +60,8 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-    restart: unless-stopped
-
-  nginx:
-    image: nginx:stable-alpine
-    container_name: neuroboost-nginx
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./logs/nginx:/var/log/nginx
     ports:
-      - "8080:80"
-    depends_on:
-      - api
-      - web
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      - "127.0.0.1:5173:80" # host Nginx will proxy to this
     restart: unless-stopped
 
 volumes:
