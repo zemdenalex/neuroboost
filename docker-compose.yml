@@ -45,7 +45,6 @@ services:
     ports:
       - "127.0.0.1:8080:8080" # expose to host for Nginx
     restart: unless-stopped
-    
   web:
     build:
       context: ./neuroboost-web
