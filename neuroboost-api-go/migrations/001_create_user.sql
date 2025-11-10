@@ -1,10 +1,15 @@
--- users & auth
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-CREATE EXTENSION IF NOT EXISTS "pgcrypto";
-CREATE TABLE IF NOT EXISTS "user" (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  tg_id text UNIQUE,
-  email text,
-  created_at timestamptz DEFAULT now()
+-- 001_create_user.sql
+CREATE TABLE IF NOT EXISTS users (
+  id SERIAL PRIMARY KEY,
+  telegram_id BIGINT UNIQUE NOT NULL,
+  username VARCHAR(255),
+  first_name VARCHAR(255),
+  last_name VARCHAR(255),
+  photo_url TEXT,
+  timezone VARCHAR(50) DEFAULT 'Europe/Moscow',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
-CREATE INDEX IF NOT EXISTS user_tg_id_idx ON "user"(tg_id);
+
+CREATE INDEX idx_users_telegram_id ON users(telegram_id);
+CREATE INDEX idx_users_username ON users(username);
