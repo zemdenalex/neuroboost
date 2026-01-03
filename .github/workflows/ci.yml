@@ -43,22 +43,22 @@ jobs:
 
       - name: Run migrations
         run: |
-          cd neuroboost-api-go
+          cd api-go
           migrate -path migrations -database "postgres://test:test@localhost:5432/neuroboost_test?sslmode=disable" up
         
       - name: Build API
         run: |
-          cd neuroboost-api-go
+          cd api-go
           go build -o bin/api ./cmd/api
 
       - name: Build healthcheck
         run: |
-          cd neuroboost-api-go
+          cd api-go
           go build -o bin/healthcheck ./cmd/healthcheck
 
       - name: Run tests
         run: |
-          cd neuroboost-api-go
+          cd api-go
           go test -v ./...
         env:
           DATABASE_URL: postgres://test:test@localhost:5432/neuroboost_test?sslmode=disable
@@ -79,17 +79,17 @@ jobs:
 
       - name: Install dependencies
         run: |
-          cd neuroboost-web
+          cd web
           pnpm install
 
       - name: Type check
         run: |
-          cd neuroboost-web
+          cd web
           pnpm typecheck || true  # Don't fail on type errors for now
 
       - name: Build
         run: |
-          cd neuroboost-web
+          cd web
           pnpm build
 
   docker:
