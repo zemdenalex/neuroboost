@@ -20,7 +20,7 @@ services:
 
   api:
     build:
-      context: ./neuroboost-api-go
+      context: ./api-go
       dockerfile: Dockerfile
     container_name: neuroboost-api
     environment:
@@ -46,7 +46,7 @@ services:
 
   web:
     build:
-      context: ./neuroboost-web
+      context: ./web
       dockerfile: Dockerfile
       args:
         VITE_API_URL: ${FRONTEND_URL:-https://neuroboost.website}/api
