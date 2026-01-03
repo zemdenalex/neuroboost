@@ -41,6 +41,14 @@ jobs:
           curl -L https://github.com/golang-migrate/migrate/releases/download/v4.17.0/migrate.linux-amd64.tar.gz | tar xvz
           sudo mv migrate /usr/local/bin/migrate
 
+      - name: Wait for PostgreSQL
+        run: |
+          for i in {1..30}; do
+            pg_isready -h localhost -p 5432 -U test && break
+            echo "Waiting for PostgreSQL... ($i/30)"
+            sleep 1
+          done
+
       - name: Run migrations
         run: |
           cd api-go
@@ -62,7 +70,7 @@ jobs:
           go test -v ./...
         env:
           DATABASE_URL: postgres://test:test@localhost:5432/neuroboost_test?sslmode=disable
-          JWT_SECRET: test-secret
+          JWT_SECRET: test-secret-minimum-32-characters-long
 
   frontend:
     runs-on: ubuntu-latest
@@ -100,15 +108,63 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Create test .env file
+        run: |
+          cat > .env << EOF
+          POSTGRES_USER=neuroboost
+          POSTGRES_PASSWORD=ci-test-password-12345
+          POSTGRES_DB=neuroboost
+          JWT_SECRET=ci-test-jwt-secret-minimum-32-chars
+          TELEGRAM_BOT_TOKEN=fake:token
+          TELEGRAM_NOTIFICATION_BOT_TOKEN=fake:token
+          FRONTEND_URL=http://localhost
+          NODE_ENV=test
+          EOF
+
       - name: Build Docker images
         run: |
-          docker compose build --no-cache
+          docker compose build
 
-      - name: Test Docker health
+      - name: Start database
         run: |
           docker compose up -d db
-          sleep 10
+          echo "Waiting for database to be healthy..."
+          for i in {1..60}; do
+            if docker compose exec -T db pg_isready -U neuroboost -d neuroboost 2>/dev/null; then
+              echo "Database is ready!"
+              break
+            fi
+            echo "Waiting for PostgreSQL... ($i/60)"
+            sleep 2
+          done
+
+      - name: Start API
+        run: |
           docker compose up -d api
-          sleep 15
-          curl -f http://localhost:8080/api/health || exit 1
-          docker compose down
+          echo "Waiting for API to be healthy..."
+          sleep 10
+          for i in {1..30}; do
+            if curl -sf http://localhost:8080/api/health > /dev/null 2>&1; then
+              echo "API is healthy!"
+              break
+            fi
+            echo "Waiting for API... ($i/30)"
+            sleep 2
+          done
+
+      - name: Test API health
+        run: |
+          curl -f http://localhost:8080/api/health || (docker compose logs api && exit 1)
+
+      - name: Show logs on failure
+        if: failure()
+        run: |
+          echo "=== DB Logs ==="
+          docker compose logs db
+          echo "=== API Logs ==="
+          docker compose logs api
+
+      - name: Cleanup
+        if: always()
+        run: |
+          docker compose down -v
