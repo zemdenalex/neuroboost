@@ -34,18 +34,19 @@ func NewHandler(db *database.DB, cfg *config.Config) *Handler {
 
 // User represents a user in the database
 type User struct {
-	ID           string     `json:"id"`
-	Email        *string    `json:"email,omitempty"`
-	TgID         *int64     `json:"tg_id,omitempty"`
-	TgUsername   *string    `json:"tg_username,omitempty"`
-	TgFirstName  *string    `json:"tg_first_name,omitempty"`
-	TgLastName   *string    `json:"tg_last_name,omitempty"`
-	TgPhotoURL   *string    `json:"tg_photo_url,omitempty"`
-	DisplayName  *string    `json:"display_name,omitempty"`
-	Timezone     string     `json:"timezone"`
-	Locale       string     `json:"locale"`
-	CreatedAt    time.Time  `json:"created_at"`
-	LastLoginAt  *time.Time `json:"last_login_at,omitempty"`
+	ID          string     `json:"id"`
+	Email       *string    `json:"email,omitempty"`
+	TgID        *int64     `json:"tg_id,omitempty"`
+	TgUsername  *string    `json:"tg_username,omitempty"`
+	TgFirstName *string    `json:"tg_first_name,omitempty"`
+	TgLastName  *string    `json:"tg_last_name,omitempty"`
+	TgPhotoURL  *string    `json:"tg_photo_url,omitempty"`
+	DisplayName *string    `json:"display_name,omitempty"`
+	Timezone    string     `json:"timezone"`
+	Locale      string     `json:"locale"`
+	IsAdmin     bool       `json:"is_admin"`
+	CreatedAt   time.Time  `json:"created_at"`
+	LastLoginAt *time.Time `json:"last_login_at,omitempty"`
 }
 
 // AuthResponse is returned after successful authentication
@@ -348,15 +349,16 @@ func (h *Handler) findUserByTgID(ctx context.Context, tgID int64) (*User, error)
 	var email, tgUsername, tgFirstName, tgLastName, tgPhotoURL, displayName *string
 	var tgIDPtr *int64
 	var lastLoginAt *time.Time
+	var isAdmin *bool
 
 	err := h.db.Pool.QueryRow(ctx, `
 		SELECT id, email, tg_id, tg_username, tg_first_name, tg_last_name, tg_photo_url, 
 		       display_name, COALESCE(timezone, 'Europe/Moscow'), COALESCE(locale, 'ru'), 
-		       created_at, last_login_at
+		       COALESCE(is_admin, FALSE), created_at, last_login_at
 		FROM "user" WHERE tg_id = $1
 	`, tgID).Scan(
 		&user.ID, &email, &tgIDPtr, &tgUsername, &tgFirstName, &tgLastName, &tgPhotoURL,
-		&displayName, &user.Timezone, &user.Locale, &user.CreatedAt, &lastLoginAt,
+		&displayName, &user.Timezone, &user.Locale, &isAdmin, &user.CreatedAt, &lastLoginAt,
 	)
 
 	if err != nil {
@@ -371,6 +373,9 @@ func (h *Handler) findUserByTgID(ctx context.Context, tgID int64) (*User, error)
 	user.TgPhotoURL = tgPhotoURL
 	user.DisplayName = displayName
 	user.LastLoginAt = lastLoginAt
+	if isAdmin != nil {
+		user.IsAdmin = *isAdmin
+	}
 
 	return &user, nil
 }
@@ -380,15 +385,16 @@ func (h *Handler) findUserByEmail(ctx context.Context, email string) (*User, err
 	var emailPtr, tgUsername, tgFirstName, tgLastName, tgPhotoURL, displayName *string
 	var tgIDPtr *int64
 	var lastLoginAt *time.Time
+	var isAdmin *bool
 
 	err := h.db.Pool.QueryRow(ctx, `
 		SELECT id, email, tg_id, tg_username, tg_first_name, tg_last_name, tg_photo_url,
 		       display_name, COALESCE(timezone, 'Europe/Moscow'), COALESCE(locale, 'ru'),
-		       created_at, last_login_at
+		       COALESCE(is_admin, FALSE), created_at, last_login_at
 		FROM "user" WHERE LOWER(email) = LOWER($1)
 	`, email).Scan(
 		&user.ID, &emailPtr, &tgIDPtr, &tgUsername, &tgFirstName, &tgLastName, &tgPhotoURL,
-		&displayName, &user.Timezone, &user.Locale, &user.CreatedAt, &lastLoginAt,
+		&displayName, &user.Timezone, &user.Locale, &isAdmin, &user.CreatedAt, &lastLoginAt,
 	)
 
 	if err != nil {
@@ -403,6 +409,9 @@ func (h *Handler) findUserByEmail(ctx context.Context, email string) (*User, err
 	user.TgPhotoURL = tgPhotoURL
 	user.DisplayName = displayName
 	user.LastLoginAt = lastLoginAt
+	if isAdmin != nil {
+		user.IsAdmin = *isAdmin
+	}
 
 	return &user, nil
 }
@@ -412,15 +421,16 @@ func (h *Handler) findUserWithPasswordByEmail(ctx context.Context, email string)
 	var emailPtr, tgUsername, tgFirstName, tgLastName, tgPhotoURL, displayName, passwordHash *string
 	var tgIDPtr *int64
 	var lastLoginAt *time.Time
+	var isAdmin *bool
 
 	err := h.db.Pool.QueryRow(ctx, `
 		SELECT id, email, password_hash, tg_id, tg_username, tg_first_name, tg_last_name, tg_photo_url,
 		       display_name, COALESCE(timezone, 'Europe/Moscow'), COALESCE(locale, 'ru'),
-		       created_at, last_login_at
+		       COALESCE(is_admin, FALSE), created_at, last_login_at
 		FROM "user" WHERE LOWER(email) = LOWER($1)
 	`, email).Scan(
 		&user.ID, &emailPtr, &passwordHash, &tgIDPtr, &tgUsername, &tgFirstName, &tgLastName, &tgPhotoURL,
-		&displayName, &user.Timezone, &user.Locale, &user.CreatedAt, &lastLoginAt,
+		&displayName, &user.Timezone, &user.Locale, &isAdmin, &user.CreatedAt, &lastLoginAt,
 	)
 
 	if err != nil {
@@ -435,6 +445,9 @@ func (h *Handler) findUserWithPasswordByEmail(ctx context.Context, email string)
 	user.TgPhotoURL = tgPhotoURL
 	user.DisplayName = displayName
 	user.LastLoginAt = lastLoginAt
+	if isAdmin != nil {
+		user.IsAdmin = *isAdmin
+	}
 
 	var hash string
 	if passwordHash != nil {
@@ -449,15 +462,16 @@ func (h *Handler) findUserByID(ctx context.Context, id string) (*User, error) {
 	var email, tgUsername, tgFirstName, tgLastName, tgPhotoURL, displayName *string
 	var tgIDPtr *int64
 	var lastLoginAt *time.Time
+	var isAdmin *bool
 
 	err := h.db.Pool.QueryRow(ctx, `
 		SELECT id, email, tg_id, tg_username, tg_first_name, tg_last_name, tg_photo_url,
 		       display_name, COALESCE(timezone, 'Europe/Moscow'), COALESCE(locale, 'ru'),
-		       created_at, last_login_at
+		       COALESCE(is_admin, FALSE), created_at, last_login_at
 		FROM "user" WHERE id = $1
 	`, id).Scan(
 		&user.ID, &email, &tgIDPtr, &tgUsername, &tgFirstName, &tgLastName, &tgPhotoURL,
-		&displayName, &user.Timezone, &user.Locale, &user.CreatedAt, &lastLoginAt,
+		&displayName, &user.Timezone, &user.Locale, &isAdmin, &user.CreatedAt, &lastLoginAt,
 	)
 
 	if err != nil {
@@ -472,6 +486,9 @@ func (h *Handler) findUserByID(ctx context.Context, id string) (*User, error) {
 	user.TgPhotoURL = tgPhotoURL
 	user.DisplayName = displayName
 	user.LastLoginAt = lastLoginAt
+	if isAdmin != nil {
+		user.IsAdmin = *isAdmin
+	}
 
 	return &user, nil
 }
@@ -484,10 +501,10 @@ func (h *Handler) createUserFromTelegram(ctx context.Context, req TelegramLoginR
 		INSERT INTO "user" (tg_id, tg_username, tg_first_name, tg_last_name, tg_photo_url, tg_auth_date, display_name, last_login_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
 		RETURNING id, tg_id, tg_username, tg_first_name, tg_last_name, tg_photo_url, display_name,
-		          COALESCE(timezone, 'Europe/Moscow'), COALESCE(locale, 'ru'), created_at
+		          COALESCE(timezone, 'Europe/Moscow'), COALESCE(locale, 'ru'), COALESCE(is_admin, FALSE), created_at
 	`, req.ID, nullString(req.Username), req.FirstName, nullString(req.LastName), nullString(req.PhotoURL), authTime, req.FirstName).Scan(
 		&user.ID, &user.TgID, &user.TgUsername, &user.TgFirstName, &user.TgLastName, &user.TgPhotoURL,
-		&user.DisplayName, &user.Timezone, &user.Locale, &user.CreatedAt,
+		&user.DisplayName, &user.Timezone, &user.Locale, &user.IsAdmin, &user.CreatedAt,
 	)
 
 	if err != nil {
@@ -507,9 +524,9 @@ func (h *Handler) createUserWithEmail(ctx context.Context, email, passwordHash, 
 	err := h.db.Pool.QueryRow(ctx, `
 		INSERT INTO "user" (email, password_hash, display_name, last_login_at)
 		VALUES ($1, $2, $3, NOW())
-		RETURNING id, email, display_name, COALESCE(timezone, 'Europe/Moscow'), COALESCE(locale, 'ru'), created_at
+		RETURNING id, email, display_name, COALESCE(timezone, 'Europe/Moscow'), COALESCE(locale, 'ru'), COALESCE(is_admin, FALSE), created_at
 	`, email, passwordHash, displayName).Scan(
-		&user.ID, &user.Email, &user.DisplayName, &user.Timezone, &user.Locale, &user.CreatedAt,
+		&user.ID, &user.Email, &user.DisplayName, &user.Timezone, &user.Locale, &user.IsAdmin, &user.CreatedAt,
 	)
 
 	if err != nil {

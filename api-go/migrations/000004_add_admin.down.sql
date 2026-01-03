@@ -1,0 +1,2 @@
+DROP INDEX IF EXISTS idx_user_admin;
+ALTER TABLE "user" DROP COLUMN IF EXISTS is_admin;

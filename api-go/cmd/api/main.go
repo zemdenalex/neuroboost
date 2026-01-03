@@ -15,6 +15,7 @@ import (
 
 	a "neuroboost/api-go/internal/auth"
 	e "neuroboost/api-go/internal/events"
+	f "neuroboost/api-go/internal/feedback"
 	n "neuroboost/api-go/internal/needs"
 	o "neuroboost/api-go/internal/opportunities"
 	p "neuroboost/api-go/internal/patterns"
@@ -57,12 +58,20 @@ func main() {
 	r.Post("/api/auth/login", authHandler.Login)
 	r.Post("/api/auth/logout", authHandler.Logout)
 
+	// Feedback - create is public (with optional auth)
+	feedbackHandler := f.NewHandler(db)
+	r.Post("/api/feedback", feedbackHandler.Create)
+
 	// Protected routes (JWT required)
 	r.Group(func(r chi.Router) {
 		r.Use(middleware.JWTMiddleware(cfg.JWTSecret))
 
 		// Auth - get current user
 		r.Get("/api/auth/me", authHandler.Me)
+
+		// Feedback - list and update require auth (admin check inside handlers)
+		r.Get("/api/feedback", feedbackHandler.List)
+		r.Patch("/api/feedback/{id}", feedbackHandler.Update)
 
 		// Events
 		r.Get("/api/events", e.ListHandler)
