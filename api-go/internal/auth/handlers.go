@@ -1,197 +1,546 @@
 package auth
 
 import (
-	"database/sql"
+	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
-	"errors"
+	"fmt"
 	"net/http"
-	"os"
+	"sort"
 	"strconv"
+	"strings"
 	"time"
+
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/jackc/pgx/v5"
+	"golang.org/x/crypto/bcrypt"
+
+	"neuroboost/api-go/internal/config"
+	"neuroboost/api-go/internal/database"
+	"neuroboost/api-go/internal/middleware"
+	"neuroboost/api-go/internal/util"
 )
 
-var (
-	dbGlobal   *sql.DB
-	botToken   string
-	secureProd bool
-)
-
-// Init wires package-level dependencies (simple & avoids import cycles).
-func Init(db *sql.DB) {
-	dbGlobal = db
-	botToken = os.Getenv("TELEGRAM_BOT_TOKEN")
-	env := os.Getenv("APP_ENV")
-	secureProd = env == "production"
+type Handler struct {
+	db  *database.DB
+	cfg *config.Config
 }
 
-// ---------- Utilities ----------
-
-type jsonError struct {
-	Error string `json:"error"`
+func NewHandler(db *database.DB, cfg *config.Config) *Handler {
+	return &Handler{db: db, cfg: cfg}
 }
 
-func writeJSON(w http.ResponseWriter, status int, v any) {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(v)
+// User represents a user in the database
+type User struct {
+	ID           string     `json:"id"`
+	Email        *string    `json:"email,omitempty"`
+	TgID         *int64     `json:"tg_id,omitempty"`
+	TgUsername   *string    `json:"tg_username,omitempty"`
+	TgFirstName  *string    `json:"tg_first_name,omitempty"`
+	TgLastName   *string    `json:"tg_last_name,omitempty"`
+	TgPhotoURL   *string    `json:"tg_photo_url,omitempty"`
+	DisplayName  *string    `json:"display_name,omitempty"`
+	Timezone     string     `json:"timezone"`
+	Locale       string     `json:"locale"`
+	CreatedAt    time.Time  `json:"created_at"`
+	LastLoginAt  *time.Time `json:"last_login_at,omitempty"`
 }
 
-func writeError(w http.ResponseWriter, status int, msg string) {
-	writeJSON(w, status, jsonError{Error: msg})
+// AuthResponse is returned after successful authentication
+type AuthResponse struct {
+	Token     string `json:"token"`
+	ExpiresAt int64  `json:"expires_at"`
+	User      User   `json:"user"`
 }
 
-func setAuthCookie(w http.ResponseWriter, token string) {
-	c := &http.Cookie{
-		Name:     "token",
-		Value:    token,
-		Path:     "/",
-		HttpOnly: true,
-		Secure:   secureProd,
-		SameSite: http.SameSiteLaxMode,
-		MaxAge:   int((30 * 24 * time.Hour).Seconds()),
-		// Expires is optional when MaxAge is set; add for some clients:
-		Expires: time.Now().Add(30 * 24 * time.Hour),
-	}
-	http.SetCookie(w, c)
+// TelegramLoginRequest represents the Telegram Login Widget data
+type TelegramLoginRequest struct {
+	ID        int64  `json:"id"`
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name,omitempty"`
+	Username  string `json:"username,omitempty"`
+	PhotoURL  string `json:"photo_url,omitempty"`
+	AuthDate  int64  `json:"auth_date"`
+	Hash      string `json:"hash"`
 }
 
-func clearAuthCookie(w http.ResponseWriter) {
-	c := &http.Cookie{
-		Name:     "token",
-		Value:    "",
-		Path:     "/",
-		HttpOnly: true,
-		Secure:   secureProd,
-		SameSite: http.SameSiteLaxMode,
-		MaxAge:   -1,
-		Expires:  time.Unix(0, 0),
-	}
-	http.SetCookie(w, c)
+// RegisterRequest for email/password registration
+type RegisterRequest struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+	Name     string `json:"name,omitempty"`
 }
 
-// ---------- Handlers ----------
+// LoginRequest for email/password login
+type LoginRequest struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
 
-// POST /api/auth/login
-// Body: LoginRequest JSON
-func LoginHandler(w http.ResponseWriter, r *http.Request) {
-	if dbGlobal == nil {
-		writeError(w, http.StatusInternalServerError, "auth not initialized")
-		return
-	}
-	if botToken == "" {
-		writeError(w, http.StatusInternalServerError, "telegram bot token not configured")
-		return
-	}
-
-	var req LoginRequest
+// TelegramLogin handles Telegram Login Widget authentication
+func (h *Handler) TelegramLogin(w http.ResponseWriter, r *http.Request) {
+	var req TelegramLoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid JSON")
+		util.RespondError(w, http.StatusBadRequest, "INVALID_REQUEST", "Invalid request body")
 		return
 	}
 
-	// Build authData map<string,string> exactly as received
-	authData := map[string]string{
-		"id":         strconv.FormatInt(req.ID, 10),
-		"first_name": req.FirstName,
-		"last_name":  req.LastName,
-		"username":   req.Username,
-		"photo_url":  req.PhotoURL,
-		"auth_date":  strconv.FormatInt(req.AuthDate, 10),
-		"hash":       req.Hash,
-	}
-
-	ok, err := VerifyTelegramAuth(authData, botToken)
-	if err != nil || !ok {
-		writeError(w, http.StatusUnauthorized, "telegram auth verification failed")
+	// Verify Telegram hash
+	if !h.verifyTelegramAuth(req) {
+		util.RespondError(w, http.StatusUnauthorized, "INVALID_HASH", "Telegram authentication failed")
 		return
 	}
 
-	// Upsert user by telegram_id
-	u, err := GetUserByTelegramID(dbGlobal, req.ID)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			u, err = CreateUser(dbGlobal, req.ID, req.Username, req.FirstName, req.LastName, req.PhotoURL)
-			if err != nil {
-				writeError(w, http.StatusInternalServerError, "failed to create user")
-				return
-			}
-		} else {
-			writeError(w, http.StatusInternalServerError, "user lookup error")
+	// Check auth_date is not too old (allow 24 hours)
+	if time.Now().Unix()-req.AuthDate > 86400 {
+		util.RespondError(w, http.StatusUnauthorized, "AUTH_EXPIRED", "Authentication data expired")
+		return
+	}
+
+	ctx := r.Context()
+
+	// Try to find existing user by tg_id
+	user, err := h.findUserByTgID(ctx, req.ID)
+	if err != nil && err != pgx.ErrNoRows {
+		util.RespondError(w, http.StatusInternalServerError, "DB_ERROR", "Database error")
+		return
+	}
+
+	if user == nil {
+		// Create new user
+		user, err = h.createUserFromTelegram(ctx, req)
+		if err != nil {
+			util.RespondError(w, http.StatusInternalServerError, "CREATE_USER_ERROR", "Failed to create user")
 			return
 		}
 	} else {
-		_ = UpdateUser(dbGlobal, u.ID, map[string]interface{}{
-			"username":   req.Username,
-			"first_name": req.FirstName,
-			"last_name":  req.LastName,
-			"photo_url":  req.PhotoURL,
-			"last_login": time.Now(),
-		})
-		// refresh from DB is optional; existing u is fine for JWT
+		// Update existing user's Telegram info
+		err = h.updateTelegramInfo(ctx, user.ID, req)
+		if err != nil {
+			// Non-fatal, continue with login
+		}
 	}
 
-	token, err := GenerateToken(u.ID, u.TelegramID, req.Username)
+	// Update last login
+	h.updateLastLogin(ctx, user.ID)
+
+	// Generate JWT
+	token, expiresAt, err := h.generateJWT(user)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "failed to generate token")
+		util.RespondError(w, http.StatusInternalServerError, "TOKEN_ERROR", "Failed to generate token")
 		return
 	}
-	setAuthCookie(w, token)
 
-	resp := map[string]any{
-		"user": map[string]any{
-			"id":          u.ID,
-			"telegram_id": u.TelegramID,
-			"username":    req.Username,
-			"first_name":  req.FirstName,
-			"last_name":   req.LastName,
-			"photo_url":   req.PhotoURL,
-			"timezone":    u.Timezone,
-		},
-		"token": token, // provided for convenience; cookie is authoritative
-	}
-	writeJSON(w, http.StatusOK, resp)
-}
-
-// POST /api/auth/logout
-func LogoutHandler(w http.ResponseWriter, r *http.Request) {
-	clearAuthCookie(w)
-	writeJSON(w, http.StatusOK, map[string]bool{"success": true})
-}
-
-// GET /api/auth/me
-func MeHandler(w http.ResponseWriter, r *http.Request) {
-	u, ok := UserFromContext(r.Context())
-	if !ok || u == nil {
-		writeError(w, http.StatusUnauthorized, "unauthorized")
-		return
-	}
-	writeJSON(w, http.StatusOK, map[string]any{
-		"user": map[string]any{
-			"id":          u.ID,
-			"telegram_id": u.TelegramID,
-			"username":    u.Username,
-			"first_name":  u.FirstName,
-			"last_name":   u.LastName,
-			"photo_url":   u.PhotoURL,
-			"timezone":    u.Timezone,
-		},
+	util.RespondJSON(w, http.StatusOK, AuthResponse{
+		Token:     token,
+		ExpiresAt: expiresAt,
+		User:      *user,
 	})
 }
 
-// POST /api/auth/refresh
-func RefreshHandler(w http.ResponseWriter, r *http.Request) {
-	c, err := r.Cookie("token")
-	if err != nil || c.Value == "" {
-		writeError(w, http.StatusUnauthorized, "missing token")
+// Register handles email/password registration
+func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
+	var req RegisterRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		util.RespondError(w, http.StatusBadRequest, "INVALID_REQUEST", "Invalid request body")
 		return
 	}
-	newToken, err := RefreshToken(c.Value)
+
+	// Validate email
+	if req.Email == "" || !strings.Contains(req.Email, "@") {
+		util.RespondError(w, http.StatusBadRequest, "INVALID_EMAIL", "Valid email is required")
+		return
+	}
+
+	// Validate password
+	if len(req.Password) < 8 {
+		util.RespondError(w, http.StatusBadRequest, "WEAK_PASSWORD", "Password must be at least 8 characters")
+		return
+	}
+
+	ctx := r.Context()
+
+	// Check if email already exists
+	existing, _ := h.findUserByEmail(ctx, req.Email)
+	if existing != nil {
+		util.RespondError(w, http.StatusConflict, "EMAIL_EXISTS", "Email already registered")
+		return
+	}
+
+	// Hash password
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, "invalid or expired token")
+		util.RespondError(w, http.StatusInternalServerError, "HASH_ERROR", "Failed to process password")
 		return
 	}
-	if newToken != c.Value {
-		setAuthCookie(w, newToken)
+
+	// Create user
+	user, err := h.createUserWithEmail(ctx, req.Email, string(hashedPassword), req.Name)
+	if err != nil {
+		util.RespondError(w, http.StatusInternalServerError, "CREATE_USER_ERROR", "Failed to create user")
+		return
 	}
-	writeJSON(w, http.StatusOK, map[string]string{"token": newToken})
+
+	// Generate JWT
+	token, expiresAt, err := h.generateJWT(user)
+	if err != nil {
+		util.RespondError(w, http.StatusInternalServerError, "TOKEN_ERROR", "Failed to generate token")
+		return
+	}
+
+	util.RespondJSON(w, http.StatusCreated, AuthResponse{
+		Token:     token,
+		ExpiresAt: expiresAt,
+		User:      *user,
+	})
+}
+
+// Login handles email/password login
+func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
+	var req LoginRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		util.RespondError(w, http.StatusBadRequest, "INVALID_REQUEST", "Invalid request body")
+		return
+	}
+
+	ctx := r.Context()
+
+	// Find user by email
+	user, passwordHash, err := h.findUserWithPasswordByEmail(ctx, req.Email)
+	if err != nil || user == nil {
+		util.RespondError(w, http.StatusUnauthorized, "INVALID_CREDENTIALS", "Invalid email or password")
+		return
+	}
+
+	// Verify password
+	if passwordHash == "" || bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(req.Password)) != nil {
+		util.RespondError(w, http.StatusUnauthorized, "INVALID_CREDENTIALS", "Invalid email or password")
+		return
+	}
+
+	// Update last login
+	h.updateLastLogin(ctx, user.ID)
+
+	// Generate JWT
+	token, expiresAt, err := h.generateJWT(user)
+	if err != nil {
+		util.RespondError(w, http.StatusInternalServerError, "TOKEN_ERROR", "Failed to generate token")
+		return
+	}
+
+	util.RespondJSON(w, http.StatusOK, AuthResponse{
+		Token:     token,
+		ExpiresAt: expiresAt,
+		User:      *user,
+	})
+}
+
+// Me returns the current authenticated user
+func (h *Handler) Me(w http.ResponseWriter, r *http.Request) {
+	userID := middleware.UserIDFromContext(r.Context())
+	if userID == "" {
+		util.RespondError(w, http.StatusUnauthorized, "NOT_AUTHENTICATED", "Not authenticated")
+		return
+	}
+
+	user, err := h.findUserByID(r.Context(), userID)
+	if err != nil || user == nil {
+		util.RespondError(w, http.StatusNotFound, "USER_NOT_FOUND", "User not found")
+		return
+	}
+
+	util.RespondJSON(w, http.StatusOK, user)
+}
+
+// Logout handles logout (client-side token removal)
+func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
+	// For now, logout is handled client-side by removing the token
+	// In the future, we could implement token blacklisting
+	util.RespondJSON(w, http.StatusOK, map[string]string{"message": "Logged out successfully"})
+}
+
+// Helper methods
+
+func (h *Handler) verifyTelegramAuth(req TelegramLoginRequest) bool {
+	if h.cfg.TelegramBotToken == "" {
+		return false
+	}
+
+	// Create data-check-string
+	data := map[string]string{
+		"id":         strconv.FormatInt(req.ID, 10),
+		"first_name": req.FirstName,
+		"auth_date":  strconv.FormatInt(req.AuthDate, 10),
+	}
+	if req.LastName != "" {
+		data["last_name"] = req.LastName
+	}
+	if req.Username != "" {
+		data["username"] = req.Username
+	}
+	if req.PhotoURL != "" {
+		data["photo_url"] = req.PhotoURL
+	}
+
+	// Sort keys and create check string
+	keys := make([]string, 0, len(data))
+	for k := range data {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	var parts []string
+	for _, k := range keys {
+		parts = append(parts, fmt.Sprintf("%s=%s", k, data[k]))
+	}
+	dataCheckString := strings.Join(parts, "\n")
+
+	// Create secret key (SHA256 of bot token)
+	secretKey := sha256.Sum256([]byte(h.cfg.TelegramBotToken))
+
+	// Calculate HMAC-SHA256
+	mac := hmac.New(sha256.New, secretKey[:])
+	mac.Write([]byte(dataCheckString))
+	calculatedHash := hex.EncodeToString(mac.Sum(nil))
+
+	return calculatedHash == req.Hash
+}
+
+func (h *Handler) generateJWT(user *User) (string, int64, error) {
+	expiresAt := time.Now().Add(30 * 24 * time.Hour) // 30 days
+
+	var tgID int64
+	if user.TgID != nil {
+		tgID = *user.TgID
+	}
+
+	var email string
+	if user.Email != nil {
+		email = *user.Email
+	}
+
+	claims := &middleware.Claims{
+		UserID: user.ID,
+		Email:  email,
+		TgID:   tgID,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(expiresAt),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			Subject:   user.ID,
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := token.SignedString([]byte(h.cfg.JWTSecret))
+	if err != nil {
+		return "", 0, err
+	}
+
+	return tokenString, expiresAt.Unix(), nil
+}
+
+// Database methods
+
+func (h *Handler) findUserByTgID(ctx context.Context, tgID int64) (*User, error) {
+	var user User
+	var email, tgUsername, tgFirstName, tgLastName, tgPhotoURL, displayName *string
+	var tgIDPtr *int64
+	var lastLoginAt *time.Time
+
+	err := h.db.Pool.QueryRow(ctx, `
+		SELECT id, email, tg_id, tg_username, tg_first_name, tg_last_name, tg_photo_url, 
+		       display_name, COALESCE(timezone, 'Europe/Moscow'), COALESCE(locale, 'ru'), 
+		       created_at, last_login_at
+		FROM "user" WHERE tg_id = $1
+	`, tgID).Scan(
+		&user.ID, &email, &tgIDPtr, &tgUsername, &tgFirstName, &tgLastName, &tgPhotoURL,
+		&displayName, &user.Timezone, &user.Locale, &user.CreatedAt, &lastLoginAt,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	user.Email = email
+	user.TgID = tgIDPtr
+	user.TgUsername = tgUsername
+	user.TgFirstName = tgFirstName
+	user.TgLastName = tgLastName
+	user.TgPhotoURL = tgPhotoURL
+	user.DisplayName = displayName
+	user.LastLoginAt = lastLoginAt
+
+	return &user, nil
+}
+
+func (h *Handler) findUserByEmail(ctx context.Context, email string) (*User, error) {
+	var user User
+	var emailPtr, tgUsername, tgFirstName, tgLastName, tgPhotoURL, displayName *string
+	var tgIDPtr *int64
+	var lastLoginAt *time.Time
+
+	err := h.db.Pool.QueryRow(ctx, `
+		SELECT id, email, tg_id, tg_username, tg_first_name, tg_last_name, tg_photo_url,
+		       display_name, COALESCE(timezone, 'Europe/Moscow'), COALESCE(locale, 'ru'),
+		       created_at, last_login_at
+		FROM "user" WHERE LOWER(email) = LOWER($1)
+	`, email).Scan(
+		&user.ID, &emailPtr, &tgIDPtr, &tgUsername, &tgFirstName, &tgLastName, &tgPhotoURL,
+		&displayName, &user.Timezone, &user.Locale, &user.CreatedAt, &lastLoginAt,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	user.Email = emailPtr
+	user.TgID = tgIDPtr
+	user.TgUsername = tgUsername
+	user.TgFirstName = tgFirstName
+	user.TgLastName = tgLastName
+	user.TgPhotoURL = tgPhotoURL
+	user.DisplayName = displayName
+	user.LastLoginAt = lastLoginAt
+
+	return &user, nil
+}
+
+func (h *Handler) findUserWithPasswordByEmail(ctx context.Context, email string) (*User, string, error) {
+	var user User
+	var emailPtr, tgUsername, tgFirstName, tgLastName, tgPhotoURL, displayName, passwordHash *string
+	var tgIDPtr *int64
+	var lastLoginAt *time.Time
+
+	err := h.db.Pool.QueryRow(ctx, `
+		SELECT id, email, password_hash, tg_id, tg_username, tg_first_name, tg_last_name, tg_photo_url,
+		       display_name, COALESCE(timezone, 'Europe/Moscow'), COALESCE(locale, 'ru'),
+		       created_at, last_login_at
+		FROM "user" WHERE LOWER(email) = LOWER($1)
+	`, email).Scan(
+		&user.ID, &emailPtr, &passwordHash, &tgIDPtr, &tgUsername, &tgFirstName, &tgLastName, &tgPhotoURL,
+		&displayName, &user.Timezone, &user.Locale, &user.CreatedAt, &lastLoginAt,
+	)
+
+	if err != nil {
+		return nil, "", err
+	}
+
+	user.Email = emailPtr
+	user.TgID = tgIDPtr
+	user.TgUsername = tgUsername
+	user.TgFirstName = tgFirstName
+	user.TgLastName = tgLastName
+	user.TgPhotoURL = tgPhotoURL
+	user.DisplayName = displayName
+	user.LastLoginAt = lastLoginAt
+
+	var hash string
+	if passwordHash != nil {
+		hash = *passwordHash
+	}
+
+	return &user, hash, nil
+}
+
+func (h *Handler) findUserByID(ctx context.Context, id string) (*User, error) {
+	var user User
+	var email, tgUsername, tgFirstName, tgLastName, tgPhotoURL, displayName *string
+	var tgIDPtr *int64
+	var lastLoginAt *time.Time
+
+	err := h.db.Pool.QueryRow(ctx, `
+		SELECT id, email, tg_id, tg_username, tg_first_name, tg_last_name, tg_photo_url,
+		       display_name, COALESCE(timezone, 'Europe/Moscow'), COALESCE(locale, 'ru'),
+		       created_at, last_login_at
+		FROM "user" WHERE id = $1
+	`, id).Scan(
+		&user.ID, &email, &tgIDPtr, &tgUsername, &tgFirstName, &tgLastName, &tgPhotoURL,
+		&displayName, &user.Timezone, &user.Locale, &user.CreatedAt, &lastLoginAt,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	user.Email = email
+	user.TgID = tgIDPtr
+	user.TgUsername = tgUsername
+	user.TgFirstName = tgFirstName
+	user.TgLastName = tgLastName
+	user.TgPhotoURL = tgPhotoURL
+	user.DisplayName = displayName
+	user.LastLoginAt = lastLoginAt
+
+	return &user, nil
+}
+
+func (h *Handler) createUserFromTelegram(ctx context.Context, req TelegramLoginRequest) (*User, error) {
+	var user User
+	authTime := time.Unix(req.AuthDate, 0)
+
+	err := h.db.Pool.QueryRow(ctx, `
+		INSERT INTO "user" (tg_id, tg_username, tg_first_name, tg_last_name, tg_photo_url, tg_auth_date, display_name, last_login_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+		RETURNING id, tg_id, tg_username, tg_first_name, tg_last_name, tg_photo_url, display_name,
+		          COALESCE(timezone, 'Europe/Moscow'), COALESCE(locale, 'ru'), created_at
+	`, req.ID, nullString(req.Username), req.FirstName, nullString(req.LastName), nullString(req.PhotoURL), authTime, req.FirstName).Scan(
+		&user.ID, &user.TgID, &user.TgUsername, &user.TgFirstName, &user.TgLastName, &user.TgPhotoURL,
+		&user.DisplayName, &user.Timezone, &user.Locale, &user.CreatedAt,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &user, nil
+}
+
+func (h *Handler) createUserWithEmail(ctx context.Context, email, passwordHash, name string) (*User, error) {
+	var user User
+	displayName := name
+	if displayName == "" {
+		displayName = strings.Split(email, "@")[0]
+	}
+
+	err := h.db.Pool.QueryRow(ctx, `
+		INSERT INTO "user" (email, password_hash, display_name, last_login_at)
+		VALUES ($1, $2, $3, NOW())
+		RETURNING id, email, display_name, COALESCE(timezone, 'Europe/Moscow'), COALESCE(locale, 'ru'), created_at
+	`, email, passwordHash, displayName).Scan(
+		&user.ID, &user.Email, &user.DisplayName, &user.Timezone, &user.Locale, &user.CreatedAt,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &user, nil
+}
+
+func (h *Handler) updateTelegramInfo(ctx context.Context, userID string, req TelegramLoginRequest) error {
+	authTime := time.Unix(req.AuthDate, 0)
+	_, err := h.db.Pool.Exec(ctx, `
+		UPDATE "user" SET
+			tg_username = $2,
+			tg_first_name = $3,
+			tg_last_name = $4,
+			tg_photo_url = $5,
+			tg_auth_date = $6,
+			updated_at = NOW()
+		WHERE id = $1
+	`, userID, nullString(req.Username), req.FirstName, nullString(req.LastName), nullString(req.PhotoURL), authTime)
+	return err
+}
+
+func (h *Handler) updateLastLogin(ctx context.Context, userID string) {
+	h.db.Pool.Exec(ctx, `UPDATE "user" SET last_login_at = NOW() WHERE id = $1`, userID)
+}
+
+func nullString(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
 }

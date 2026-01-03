@@ -1,39 +1,71 @@
 services:
   db:
-    image: postgres:16
+    image: postgres:16-alpine
+    container_name: neuroboost-db
     environment:
-      POSTGRES_USER: neuroboost
-      POSTGRES_PASSWORD: neuroboost
-      POSTGRES_DB: neuroboost
+      POSTGRES_USER: ${POSTGRES_USER:-neuroboost}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-neuroboost}
+      TZ: UTC
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-neuroboost} -d ${POSTGRES_DB:-neuroboost}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
 
   api:
-    build: ./neuroboost-api-go
+    build:
+      context: ./neuroboost-api-go
+      dockerfile: Dockerfile
+    container_name: neuroboost-api
     environment:
-      DATABASE_URL: postgres://neuroboost:neuroboost@db:5432/neuroboost?sslmode=disable
-      JWT_SECRET: "dev-secret"
-    expose:
-      - "8080"
+      DATABASE_URL: postgres://${POSTGRES_USER:-neuroboost}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-neuroboost}?sslmode=disable
+      JWT_SECRET: ${JWT_SECRET}
+      NODE_ENV: ${NODE_ENV:-production}
+      API_PORT: 8080
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      TELEGRAM_NOTIFICATION_BOT_TOKEN: ${TELEGRAM_NOTIFICATION_BOT_TOKEN}
+      FRONTEND_URL: ${FRONTEND_URL:-https://neuroboost.website}
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["/srv/healthcheck"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    ports:
+      - "127.0.0.1:8080:8080"
+    restart: unless-stopped
 
   web:
-    build: ./neuroboost-web
-    expose:
-      - "80"
-
-  nginx:
-    image: nginx:stable-alpine
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-    ports:
-      - "8080:80"
+    build:
+      context: ./neuroboost-web
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${FRONTEND_URL:-https://neuroboost.website}/api
+    container_name: neuroboost-web
     depends_on:
       - api
-      - web
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/", "||", "exit", "1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    ports:
+      - "127.0.0.1:5173:80"
+    restart: unless-stopped
 
 volumes:
   db-data:
+    name: neuroboost_db_data
+
+networks:
+  default:
+    name: neuroboost_network
