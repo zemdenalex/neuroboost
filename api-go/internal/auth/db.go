@@ -22,7 +22,7 @@ LIMIT 1;`
 
 	var u User
 	err := db.QueryRowContext(ctx, q, telegramID).Scan(
-		&u.ID, &u.TelegramID, &u.Username, &u.FirstName, &u.LastName, &u.PhotoURL, &u.Timezone, &u.CreatedAt, &u.UpdatedAt,
+		&u.ID, &u.TgID, &u.TgUsername, &u.TgFirstName, &u.TgLastName, &u.TgPhotoURL, &u.Timezone, &u.CreatedAt, &u.LastLoginAt,
 	)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -45,7 +45,7 @@ LIMIT 1;`
 
 	var u User
 	err := db.QueryRowContext(ctx, q, userID).Scan(
-		&u.ID, &u.TelegramID, &u.Username, &u.FirstName, &u.LastName, &u.PhotoURL, &u.Timezone, &u.CreatedAt, &u.UpdatedAt,
+		&u.ID, &u.TgID, &u.TgUsername, &u.TgFirstName, &u.TgLastName, &u.TgPhotoURL, &u.Timezone, &u.CreatedAt, &u.LastLoginAt,
 	)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -67,7 +67,7 @@ RETURNING id, telegram_id, username, first_name, last_name, photo_url, timezone,
 
 	var u User
 	err := db.QueryRowContext(ctx, q, telegramID, username, firstName, lastName, photoURL).Scan(
-		&u.ID, &u.TelegramID, &u.Username, &u.FirstName, &u.LastName, &u.PhotoURL, &u.Timezone, &u.CreatedAt, &u.UpdatedAt,
+		&u.ID, &u.TgID, &u.TgUsername, &u.TgFirstName, &u.TgLastName, &u.TgPhotoURL, &u.Timezone, &u.CreatedAt, &u.LastLoginAt,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("create user: %w", err)
