@@ -1,16 +1,53 @@
 package status
 
 import (
-    "encoding/json"
-    "net/http"
+	"context"
+	"encoding/json"
+	"net/http"
+	"time"
+
+	"neuroboost/api-go/internal/database"
 )
 
-func HealthHandler(w http.ResponseWriter, r *http.Request) {
-    w.Header().Set("Content-Type", "application/json")
-    w.WriteHeader(http.StatusOK)
-    _ = json.NewEncoder(w).Encode(map[string]any{
-        "status":  "ok",
-        "service": "neuroboost-api",
-        "version": "0.4.0-skeleton",
-    })
+type Handler struct {
+	db *database.DB
+}
+
+func NewHandler(db *database.DB) *Handler {
+	return &Handler{db: db}
+}
+
+type HealthResponse struct {
+	Status   string `json:"status"`
+	Service  string `json:"service"`
+	Version  string `json:"version"`
+	Database string `json:"database"`
+}
+
+func (h *Handler) HealthHandler(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+	defer cancel()
+
+	dbStatus := "connected"
+	if err := h.db.Ping(ctx); err != nil {
+		dbStatus = "disconnected"
+	}
+
+	status := "ok"
+	if dbStatus != "connected" {
+		status = "degraded"
+	}
+
+	resp := HealthResponse{
+		Status:   status,
+		Service:  "neuroboost-api",
+		Version:  "0.4.0",
+		Database: dbStatus,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if status != "ok" {
+		w.WriteHeader(http.StatusServiceUnavailable)
+	}
+	json.NewEncoder(w).Encode(resp)
 }

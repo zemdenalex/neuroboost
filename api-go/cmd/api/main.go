@@ -1,87 +1,125 @@
 package main
 
 import (
-    "net/http"
-    "github.com/go-chi/chi/v5"
-    "github.com/go-chi/cors"
-    "neuroboost/api-go/internal/middleware"
-    "neuroboost/api-go/internal/status"
-    a "neuroboost/api-go/internal/auth"
-    e "neuroboost/api-go/internal/events"
-    t "neuroboost/api-go/internal/tasks"
-    o "neuroboost/api-go/internal/opportunities"
-    n "neuroboost/api-go/internal/needs"
-    rfl "neuroboost/api-go/internal/reflections"
-    p "neuroboost/api-go/internal/patterns"
-    pl "neuroboost/api-go/internal/planning"
+	"log"
+	"net/http"
+	"os"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/cors"
+
+	"neuroboost/api-go/internal/config"
+	"neuroboost/api-go/internal/database"
+	"neuroboost/api-go/internal/middleware"
+	"neuroboost/api-go/internal/status"
+
+	a "neuroboost/api-go/internal/auth"
+	e "neuroboost/api-go/internal/events"
+	n "neuroboost/api-go/internal/needs"
+	o "neuroboost/api-go/internal/opportunities"
+	p "neuroboost/api-go/internal/patterns"
+	pl "neuroboost/api-go/internal/planning"
+	rfl "neuroboost/api-go/internal/reflections"
+	t "neuroboost/api-go/internal/tasks"
 )
 
 func main() {
-    r := chi.NewRouter()
-    r.Use(cors.Handler(cors.Options{
-        AllowedOrigins:   []string{"*"},
-        AllowedMethods:   []string{"GET", "POST", "PATCH", "DELETE", "OPTIONS"},
-        AllowedHeaders:   []string{"*"},
-        AllowCredentials: true,
-        MaxAge:           300,
-    }))
+	// Load config
+	cfg := config.Load()
 
-    // Health (works)
-    r.Get("/api/health", status.HealthHandler)
+	// Initialize database
+	db, err := database.New(cfg.DatabaseURL)
+	if err != nil {
+		log.Fatalf("Failed to connect to database: %v", err)
+	}
+	defer db.Close()
 
-    // Auth (no JWT)
-    r.Post("/api/auth/telegram", a.LoginHandler)
-    r.Get("/api/auth/me", a.MeHandler)
-    r.Post("/api/auth/logout", a.LogoutHandler)
+	// Initialize router
+	r := chi.NewRouter()
 
-    // Protected (JWT stub)
-    r.Group(func(r chi.Router) {
-        r.Use(middleware.JWTMiddleware)
+	// Middleware
+	r.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   []string{cfg.FrontendURL, "http://localhost:5173"},
+		AllowedMethods:   []string{"GET", "POST", "PATCH", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type"},
+		AllowCredentials: true,
+		MaxAge:           300,
+	}))
 
-        // Events
-        r.Get("/api/events", e.ListHandler)
-        r.Post("/api/events", e.CreateHandler)
-        r.Get("/api/events/{id}", e.GetHandler)
-        r.Patch("/api/events/{id}", e.UpdateHandler)
-        r.Delete("/api/events/{id}", e.DeleteHandler)
-        r.Patch("/api/events/{id}/move", e.MoveHandler)
-        r.Patch("/api/events/{id}/resize", e.ResizeHandler)
-        r.Post("/api/events/{id}/exceptions", e.AddExceptionHandler)
+	// Health check (no auth required)
+	statusHandler := status.NewHandler(db)
+	r.Get("/api/health", statusHandler.HealthHandler)
 
-        // Tasks
-        r.Get("/api/tasks", t.ListHandler)
-        r.Post("/api/tasks", t.CreateHandler)
-        r.Get("/api/tasks/{id}", t.GetHandler)
-        r.Patch("/api/tasks/{id}", t.UpdateHandler)
-        r.Delete("/api/tasks/{id}", t.DeleteHandler)
-        r.Post("/api/tasks/{id}/schedule", t.ScheduleHandler)
+	// Auth routes (no JWT required)
+	authHandler := a.NewHandler(db, cfg)
+	r.Post("/api/auth/telegram", authHandler.TelegramLogin)
+	r.Post("/api/auth/register", authHandler.Register)
+	r.Post("/api/auth/login", authHandler.Login)
+	r.Post("/api/auth/logout", authHandler.Logout)
 
-        // Opportunities
-        r.Get("/api/opportunities", o.ListHandler)
-        r.Post("/api/opportunities", o.CreateHandler)
-        r.Patch("/api/opportunities/{id}", o.UpdateHandler)
-        r.Delete("/api/opportunities/{id}", o.DeleteHandler)
+	// Protected routes (JWT required)
+	r.Group(func(r chi.Router) {
+		r.Use(middleware.JWTMiddleware(cfg.JWTSecret))
 
-        // Needs
-        r.Get("/api/needs", n.ListHandler)
-        r.Post("/api/needs", n.CreateHandler)
-        r.Patch("/api/needs/{id}", n.UpdateHandler)
-        r.Delete("/api/needs/{id}", n.DeleteHandler)
+		// Auth - get current user
+		r.Get("/api/auth/me", authHandler.Me)
 
-        // Reflections
-        r.Get("/api/reflections", rfl.ListHandler)
-        r.Post("/api/reflections", rfl.CreateHandler)
-        r.Patch("/api/reflections/{id}", rfl.UpdateHandler)
+		// Events
+		r.Get("/api/events", e.ListHandler)
+		r.Post("/api/events", e.CreateHandler)
+		r.Get("/api/events/{id}", e.GetHandler)
+		r.Patch("/api/events/{id}", e.UpdateHandler)
+		r.Delete("/api/events/{id}", e.DeleteHandler)
+		r.Patch("/api/events/{id}/move", e.MoveHandler)
+		r.Patch("/api/events/{id}/resize", e.ResizeHandler)
+		r.Post("/api/events/{id}/exceptions", e.AddExceptionHandler)
 
-        // Patterns
-        r.Get("/api/patterns/metrics", p.GetMetricsHandler)
-        r.Get("/api/patterns/alert-status", p.GetAlertStatusHandler)
+		// Tasks
+		r.Get("/api/tasks", t.ListHandler)
+		r.Post("/api/tasks", t.CreateHandler)
+		r.Get("/api/tasks/{id}", t.GetHandler)
+		r.Patch("/api/tasks/{id}", t.UpdateHandler)
+		r.Delete("/api/tasks/{id}", t.DeleteHandler)
+		r.Post("/api/tasks/{id}/schedule", t.ScheduleHandler)
 
-        // Planning graph
-        r.Get("/api/planning/graph", pl.GetGraphHandler)
-        r.Post("/api/planning/nodes", pl.CreateNodeHandler)
-        r.Post("/api/planning/edges", pl.CreateEdgeHandler)
-    })
+		// Opportunities
+		r.Get("/api/opportunities", o.ListHandler)
+		r.Post("/api/opportunities", o.CreateHandler)
+		r.Patch("/api/opportunities/{id}", o.UpdateHandler)
+		r.Delete("/api/opportunities/{id}", o.DeleteHandler)
 
-    http.ListenAndServe(":8080", r)
+		// Needs
+		r.Get("/api/needs", n.ListHandler)
+		r.Post("/api/needs", n.CreateHandler)
+		r.Patch("/api/needs/{id}", n.UpdateHandler)
+		r.Delete("/api/needs/{id}", n.DeleteHandler)
+
+		// Reflections
+		r.Get("/api/reflections", rfl.ListHandler)
+		r.Post("/api/reflections", rfl.CreateHandler)
+		r.Patch("/api/reflections/{id}", rfl.UpdateHandler)
+
+		// Patterns
+		r.Get("/api/patterns/metrics", p.GetMetricsHandler)
+		r.Get("/api/patterns/alert-status", p.GetAlertStatusHandler)
+
+		// Planning graph
+		r.Get("/api/planning/graph", pl.GetGraphHandler)
+		r.Post("/api/planning/nodes", pl.CreateNodeHandler)
+		r.Post("/api/planning/edges", pl.CreateEdgeHandler)
+	})
+
+	// Start server
+	port := os.Getenv("API_PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+	log.Printf("Starting NeuroBoost API on port %s", port)
+	log.Printf("Database connected: %s", cfg.DatabaseURL[:30]+"...")
+	log.Printf("Frontend URL: %s", cfg.FrontendURL)
+
+	if err := http.ListenAndServe(":"+port, r); err != nil {
+		log.Fatalf("Server failed: %v", err)
+	}
 }

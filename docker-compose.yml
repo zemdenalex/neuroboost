@@ -8,10 +8,9 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-neuroboost}
       TZ: UTC
     ports:
-      - "127.0.0.1:5432:5432" # localhost only
+      - "127.0.0.1:5432:5432"
     volumes:
       - db-data:/var/lib/postgresql/data
-      - ./neuroboost-api-go/migrations:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-neuroboost} -d ${POSTGRES_DB:-neuroboost}"]
       interval: 10s
@@ -31,36 +30,37 @@ services:
       API_PORT: 8080
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
       TELEGRAM_NOTIFICATION_BOT_TOKEN: ${TELEGRAM_NOTIFICATION_BOT_TOKEN}
+      FRONTEND_URL: ${FRONTEND_URL:-https://neuroboost.website}
     depends_on:
       db:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "timeout 1 cat < /dev/null > /dev/tcp/localhost/8080 || exit 1"]
+      test: ["/srv/healthcheck"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
     ports:
-      - "127.0.0.1:8080:8080" # expose to host for Nginx
+      - "127.0.0.1:8080:8080"
     restart: unless-stopped
+
   web:
     build:
       context: ./neuroboost-web
       dockerfile: Dockerfile
       args:
-        VITE_API_URL: ${FRONTEND_URL}/api
+        VITE_API_URL: ${FRONTEND_URL:-https://neuroboost.website}/api
     container_name: neuroboost-web
     depends_on:
       - api
     healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost/ || exit 1"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/", "||", "exit", "1"]
       interval: 30s
       timeout: 10s
       retries: 3
     ports:
       - "127.0.0.1:5173:80"
     restart: unless-stopped
-
 
 volumes:
   db-data:
