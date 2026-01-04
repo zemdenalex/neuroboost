@@ -1,14 +1,31 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuthContext } from '../../contexts/AuthContext'
 import { LogIn, UserPlus, AlertCircle, Loader2 } from 'lucide-react'
 
 type AuthMode = 'login' | 'register'
 
+declare global {
+  interface Window {
+    onTelegramAuth: (user: TelegramUser) => void
+  }
+}
+
+interface TelegramUser {
+  id: number
+  first_name: string
+  last_name?: string
+  username?: string
+  photo_url?: string
+  auth_date: number
+  hash: string
+}
+
 export function Login() {
   const navigate = useNavigate()
   const location = useLocation()
   const { loginWithEmail, register, loginWithTelegram, loading, error, clearError } = useAuthContext()
+  const telegramContainerRef = useRef<HTMLDivElement>(null)
 
   const [mode, setMode] = useState<AuthMode>('login')
   const [email, setEmail] = useState('')
@@ -18,12 +35,49 @@ export function Login() {
 
   const from = (location.state as any)?.from?.pathname || '/calendar'
 
+  // Load Telegram widget
+  useEffect(() => {
+    const handleTelegramAuth = (user: TelegramUser) => {
+      loginWithTelegram({
+        id: user.id,
+        first_name: user.first_name,
+        last_name: user.last_name,
+        username: user.username,
+        photo_url: user.photo_url,
+        auth_date: user.auth_date,
+        hash: user.hash,
+      })
+        .then(() => navigate(from, { replace: true }))
+        .catch(() => {})
+    }
+
+    // Expose callback globally
+    window.onTelegramAuth = handleTelegramAuth
+
+    // Load Telegram script
+    const container = telegramContainerRef.current
+    if (container && !container.querySelector('iframe')) {
+      const script = document.createElement('script')
+      script.src = 'https://telegram.org/js/telegram-widget.js?22'
+      script.setAttribute('data-telegram-login', 'NeuroBoost_assistant_bot')
+      script.setAttribute('data-size', 'large')
+      script.setAttribute('data-radius', '8')
+      script.setAttribute('data-onauth', 'onTelegramAuth(user)')
+      script.setAttribute('data-request-access', 'write')
+      script.async = true
+      container.appendChild(script)
+    }
+
+    return () => {
+      delete (window as any).onTelegramAuth
+    }
+  }, [loginWithTelegram, navigate, from])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLocalError(null)
     clearError()
 
-    // Validation
     if (!email || !password) {
       setLocalError('Email and password are required')
       return
@@ -44,25 +98,6 @@ export function Login() {
     } catch {
       // Error is handled by AuthContext
     }
-  }
-
-  const handleTelegramAuth = (user: any) => {
-    loginWithTelegram({
-      id: user.id,
-      first_name: user.first_name,
-      last_name: user.last_name,
-      username: user.username,
-      photo_url: user.photo_url,
-      auth_date: user.auth_date,
-      hash: user.hash,
-    })
-      .then(() => navigate(from, { replace: true }))
-      .catch(() => {})
-  }
-
-  // Expose for Telegram widget callback
-  if (typeof window !== 'undefined') {
-    (window as any).onTelegramAuth = handleTelegramAuth
   }
 
   const toggleMode = () => {
@@ -152,14 +187,15 @@ export function Login() {
           </form>
 
           {/* Toggle mode */}
-          <div className="mt-4 text-center">
-            <button
-              onClick={toggleMode}
-              className="text-sm text-zinc-400 hover:text-white transition-colors"
-            >
-              {mode === 'login' ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
-            </button>
-          </div>
+          <button
+            onClick={toggleMode}
+            className="w-full mt-4 text-sm text-zinc-400 hover:text-white transition-colors"
+          >
+            {mode === 'login' ? "Don't have an account? " : 'Already have an account? '}
+            <span className="text-blue-400 hover:text-blue-300 underline">
+              {mode === 'login' ? 'Sign up' : 'Sign in'}
+            </span>
+          </button>
 
           {/* Divider */}
           <div className="my-6 flex items-center gap-4">
@@ -170,22 +206,7 @@ export function Login() {
 
           {/* Telegram Login */}
           <div className="flex justify-center">
-            <div
-              id="telegram-login-container"
-              dangerouslySetInnerHTML={{
-                __html: `
-                  <script
-                    async
-                    src="https://telegram.org/js/telegram-widget.js?22"
-                    data-telegram-login="NeuroBoost_assistant_bot"
-                    data-size="large"
-                    data-radius="8"
-                    data-onauth="onTelegramAuth(user)"
-                    data-request-access="write"
-                  ></script>
-                `,
-              }}
-            />
+            <div ref={telegramContainerRef} id="telegram-login-container" />
           </div>
         </div>
 
