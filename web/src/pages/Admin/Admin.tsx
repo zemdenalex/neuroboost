@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuthContext, useRequireAdmin } from '../../contexts/AuthContext'
-import { getFeedbackList, updateFeedbackStatus, type Feedback } from '../../api/feedback'
+import { listFeedback, updateFeedback, type Feedback } from '../../api/feedback'
 import {
   Shield,
   Users,
@@ -35,7 +35,7 @@ export function Admin() {
   const loadFeedback = async () => {
     setFeedbackLoading(true)
     try {
-      const data = await getFeedbackList()
+      const data = await listFeedback()
       setFeedback(data)
     } catch (err) {
       console.error('Failed to load feedback:', err)
@@ -46,7 +46,7 @@ export function Admin() {
 
   const handleStatusChange = async (id: string, status: Feedback['status']) => {
     try {
-      await updateFeedbackStatus(id, status)
+      await updateFeedback(id, { status })
       setFeedback((prev) => prev.map((f) => (f.id === id ? { ...f, status } : f)))
     } catch (err) {
       console.error('Failed to update status:', err)
