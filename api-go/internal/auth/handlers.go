@@ -207,6 +207,104 @@ func (h *Handler) Me(w http.ResponseWriter, r *http.Request) {
 	util.RespondJSON(w, http.StatusOK, user)
 }
 
+// UpdateMe updates the current user's profile and settings
+func (h *Handler) UpdateMe(w http.ResponseWriter, r *http.Request) {
+	userID := middleware.UserIDFromContext(r.Context())
+	if userID == "" {
+		util.RespondError(w, http.StatusUnauthorized, "NOT_AUTHENTICATED", "Not authenticated")
+		return
+	}
+
+	var req UpdateUserRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		util.RespondError(w, http.StatusBadRequest, "INVALID_REQUEST", "Invalid request body")
+		return
+	}
+
+	ctx := r.Context()
+
+	// Build update query dynamically based on provided fields
+	updates := []string{}
+	args := []interface{}{}
+	argNum := 1
+
+	if req.DisplayName != nil {
+		updates = append(updates, fmt.Sprintf("display_name = $%d", argNum))
+		args = append(args, *req.DisplayName)
+		argNum++
+	}
+
+	if req.Timezone != nil {
+		// Validate timezone
+		validTimezones := map[string]bool{
+			"Europe/Moscow":       true,
+			"Europe/London":       true,
+			"America/New_York":    true,
+			"America/Los_Angeles": true,
+			"Asia/Tokyo":          true,
+			"UTC":                 true,
+		}
+		if !validTimezones[*req.Timezone] {
+			util.RespondError(w, http.StatusBadRequest, "INVALID_TIMEZONE", "Invalid timezone")
+			return
+		}
+		updates = append(updates, fmt.Sprintf("timezone = $%d", argNum))
+		args = append(args, *req.Timezone)
+		argNum++
+	}
+
+	if req.Locale != nil {
+		validLocales := map[string]bool{"ru": true, "en": true}
+		if !validLocales[*req.Locale] {
+			util.RespondError(w, http.StatusBadRequest, "INVALID_LOCALE", "Invalid locale")
+			return
+		}
+		updates = append(updates, fmt.Sprintf("locale = $%d", argNum))
+		args = append(args, *req.Locale)
+		argNum++
+	}
+
+	if req.Settings != nil {
+		settingsJSON, err := json.Marshal(req.Settings)
+		if err != nil {
+			util.RespondError(w, http.StatusBadRequest, "INVALID_SETTINGS", "Invalid settings format")
+			return
+		}
+		updates = append(updates, fmt.Sprintf("settings = $%d", argNum))
+		args = append(args, settingsJSON)
+		argNum++
+	}
+
+	if len(updates) == 0 {
+		util.RespondError(w, http.StatusBadRequest, "NO_UPDATES", "No fields to update")
+		return
+	}
+
+	// Add updated_at and user_id
+	updates = append(updates, "updated_at = NOW()")
+	args = append(args, userID)
+
+	query := fmt.Sprintf(`
+		UPDATE "user" SET %s
+		WHERE id = $%d
+	`, strings.Join(updates, ", "), argNum)
+
+	_, err := h.db.Pool.Exec(ctx, query, args...)
+	if err != nil {
+		util.RespondError(w, http.StatusInternalServerError, "UPDATE_ERROR", "Failed to update user")
+		return
+	}
+
+	// Return updated user
+	user, err := h.findUserByID(ctx, userID)
+	if err != nil {
+		util.RespondError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to fetch updated user")
+		return
+	}
+
+	util.RespondJSON(w, http.StatusOK, user)
+}
+
 // Logout handles logout (client-side token removal)
 func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 	// For now, logout is handled client-side by removing the token
@@ -302,15 +400,16 @@ func (h *Handler) findUserByTgID(ctx context.Context, tgID int64) (*User, error)
 	var tgIDPtr *int64
 	var lastLoginAt *time.Time
 	var isAdmin *bool
+	var settingsJSON []byte
 
 	err := h.db.Pool.QueryRow(ctx, `
 		SELECT id, email, tg_id, tg_username, tg_first_name, tg_last_name, tg_photo_url, 
 		       display_name, COALESCE(timezone, 'Europe/Moscow'), COALESCE(locale, 'ru'), 
-		       COALESCE(is_admin, FALSE), created_at, last_login_at
+		       COALESCE(is_admin, FALSE), created_at, last_login_at, COALESCE(settings, '{}')
 		FROM "user" WHERE tg_id = $1
 	`, tgID).Scan(
 		&user.ID, &email, &tgIDPtr, &tgUsername, &tgFirstName, &tgLastName, &tgPhotoURL,
-		&displayName, &user.Timezone, &user.Locale, &isAdmin, &user.CreatedAt, &lastLoginAt,
+		&displayName, &user.Timezone, &user.Locale, &isAdmin, &user.CreatedAt, &lastLoginAt, &settingsJSON,
 	)
 
 	if err != nil {
@@ -328,6 +427,11 @@ func (h *Handler) findUserByTgID(ctx context.Context, tgID int64) (*User, error)
 	if isAdmin != nil {
 		user.IsAdmin = *isAdmin
 	}
+	
+	// Parse settings JSON
+	if len(settingsJSON) > 0 {
+		json.Unmarshal(settingsJSON, &user.Settings)
+	}
 
 	return &user, nil
 }
@@ -338,15 +442,16 @@ func (h *Handler) findUserByEmail(ctx context.Context, email string) (*User, err
 	var tgIDPtr *int64
 	var lastLoginAt *time.Time
 	var isAdmin *bool
+	var settingsJSON []byte
 
 	err := h.db.Pool.QueryRow(ctx, `
 		SELECT id, email, tg_id, tg_username, tg_first_name, tg_last_name, tg_photo_url,
 		       display_name, COALESCE(timezone, 'Europe/Moscow'), COALESCE(locale, 'ru'),
-		       COALESCE(is_admin, FALSE), created_at, last_login_at
+		       COALESCE(is_admin, FALSE), created_at, last_login_at, COALESCE(settings, '{}')
 		FROM "user" WHERE LOWER(email) = LOWER($1)
 	`, email).Scan(
 		&user.ID, &emailPtr, &tgIDPtr, &tgUsername, &tgFirstName, &tgLastName, &tgPhotoURL,
-		&displayName, &user.Timezone, &user.Locale, &isAdmin, &user.CreatedAt, &lastLoginAt,
+		&displayName, &user.Timezone, &user.Locale, &isAdmin, &user.CreatedAt, &lastLoginAt, &settingsJSON,
 	)
 
 	if err != nil {
@@ -364,6 +469,10 @@ func (h *Handler) findUserByEmail(ctx context.Context, email string) (*User, err
 	if isAdmin != nil {
 		user.IsAdmin = *isAdmin
 	}
+	
+	if len(settingsJSON) > 0 {
+		json.Unmarshal(settingsJSON, &user.Settings)
+	}
 
 	return &user, nil
 }
@@ -374,15 +483,16 @@ func (h *Handler) findUserWithPasswordByEmail(ctx context.Context, email string)
 	var tgIDPtr *int64
 	var lastLoginAt *time.Time
 	var isAdmin *bool
+	var settingsJSON []byte
 
 	err := h.db.Pool.QueryRow(ctx, `
 		SELECT id, email, password_hash, tg_id, tg_username, tg_first_name, tg_last_name, tg_photo_url,
 		       display_name, COALESCE(timezone, 'Europe/Moscow'), COALESCE(locale, 'ru'),
-		       COALESCE(is_admin, FALSE), created_at, last_login_at
+		       COALESCE(is_admin, FALSE), created_at, last_login_at, COALESCE(settings, '{}')
 		FROM "user" WHERE LOWER(email) = LOWER($1)
 	`, email).Scan(
 		&user.ID, &emailPtr, &passwordHash, &tgIDPtr, &tgUsername, &tgFirstName, &tgLastName, &tgPhotoURL,
-		&displayName, &user.Timezone, &user.Locale, &isAdmin, &user.CreatedAt, &lastLoginAt,
+		&displayName, &user.Timezone, &user.Locale, &isAdmin, &user.CreatedAt, &lastLoginAt, &settingsJSON,
 	)
 
 	if err != nil {
@@ -400,6 +510,10 @@ func (h *Handler) findUserWithPasswordByEmail(ctx context.Context, email string)
 	if isAdmin != nil {
 		user.IsAdmin = *isAdmin
 	}
+	
+	if len(settingsJSON) > 0 {
+		json.Unmarshal(settingsJSON, &user.Settings)
+	}
 
 	var hash string
 	if passwordHash != nil {
@@ -415,15 +529,16 @@ func (h *Handler) findUserByID(ctx context.Context, id string) (*User, error) {
 	var tgIDPtr *int64
 	var lastLoginAt *time.Time
 	var isAdmin *bool
+	var settingsJSON []byte
 
 	err := h.db.Pool.QueryRow(ctx, `
 		SELECT id, email, tg_id, tg_username, tg_first_name, tg_last_name, tg_photo_url,
 		       display_name, COALESCE(timezone, 'Europe/Moscow'), COALESCE(locale, 'ru'),
-		       COALESCE(is_admin, FALSE), created_at, last_login_at
+		       COALESCE(is_admin, FALSE), created_at, last_login_at, COALESCE(settings, '{}')
 		FROM "user" WHERE id = $1
 	`, id).Scan(
 		&user.ID, &email, &tgIDPtr, &tgUsername, &tgFirstName, &tgLastName, &tgPhotoURL,
-		&displayName, &user.Timezone, &user.Locale, &isAdmin, &user.CreatedAt, &lastLoginAt,
+		&displayName, &user.Timezone, &user.Locale, &isAdmin, &user.CreatedAt, &lastLoginAt, &settingsJSON,
 	)
 
 	if err != nil {
@@ -441,6 +556,10 @@ func (h *Handler) findUserByID(ctx context.Context, id string) (*User, error) {
 	if isAdmin != nil {
 		user.IsAdmin = *isAdmin
 	}
+	
+	if len(settingsJSON) > 0 {
+		json.Unmarshal(settingsJSON, &user.Settings)
+	}
 
 	return &user, nil
 }
@@ -450,8 +569,8 @@ func (h *Handler) createUserFromTelegram(ctx context.Context, req TelegramLoginR
 	authTime := time.Unix(req.AuthDate, 0)
 
 	err := h.db.Pool.QueryRow(ctx, `
-		INSERT INTO "user" (tg_id, tg_username, tg_first_name, tg_last_name, tg_photo_url, tg_auth_date, display_name, last_login_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+		INSERT INTO "user" (tg_id, tg_username, tg_first_name, tg_last_name, tg_photo_url, tg_auth_date, display_name, last_login_at, settings)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), '{}')
 		RETURNING id, tg_id, tg_username, tg_first_name, tg_last_name, tg_photo_url, display_name,
 		          COALESCE(timezone, 'Europe/Moscow'), COALESCE(locale, 'ru'), COALESCE(is_admin, FALSE), created_at
 	`, req.ID, nullString(req.Username), req.FirstName, nullString(req.LastName), nullString(req.PhotoURL), authTime, req.FirstName).Scan(
@@ -463,6 +582,7 @@ func (h *Handler) createUserFromTelegram(ctx context.Context, req TelegramLoginR
 		return nil, err
 	}
 
+	user.Settings = make(map[string]interface{})
 	return &user, nil
 }
 
@@ -474,8 +594,8 @@ func (h *Handler) createUserWithEmail(ctx context.Context, email, passwordHash, 
 	}
 
 	err := h.db.Pool.QueryRow(ctx, `
-		INSERT INTO "user" (email, password_hash, display_name, last_login_at)
-		VALUES ($1, $2, $3, NOW())
+		INSERT INTO "user" (email, password_hash, display_name, last_login_at, settings)
+		VALUES ($1, $2, $3, NOW(), '{}')
 		RETURNING id, email, display_name, COALESCE(timezone, 'Europe/Moscow'), COALESCE(locale, 'ru'), COALESCE(is_admin, FALSE), created_at
 	`, email, passwordHash, displayName).Scan(
 		&user.ID, &user.Email, &user.DisplayName, &user.Timezone, &user.Locale, &user.IsAdmin, &user.CreatedAt,
@@ -485,6 +605,7 @@ func (h *Handler) createUserWithEmail(ctx context.Context, email, passwordHash, 
 		return nil, err
 	}
 
+	user.Settings = make(map[string]interface{})
 	return &user, nil
 }
 

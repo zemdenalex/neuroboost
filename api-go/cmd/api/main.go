@@ -35,6 +35,10 @@ func main() {
 	}
 	defer db.Close()
 
+	// Initialize package-level DB connections
+	e.InitDB(db)
+	t.InitDB(db)
+
 	// Initialize router
 	r := chi.NewRouter()
 
@@ -66,8 +70,9 @@ func main() {
 	r.Group(func(r chi.Router) {
 		r.Use(middleware.JWTMiddleware(cfg.JWTSecret))
 
-		// Auth - get current user
+		// Auth - get and update current user
 		r.Get("/api/auth/me", authHandler.Me)
+		r.Patch("/api/auth/me", authHandler.UpdateMe)
 
 		// Feedback - list and update require auth (admin check inside handlers)
 		r.Get("/api/feedback", feedbackHandler.List)

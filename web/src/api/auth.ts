@@ -1,6 +1,5 @@
-import { api, setStoredToken, clearStoredToken } from './client'
+import { api } from './client'
 
-// Types
 export interface User {
   id: string
   email?: string
@@ -12,9 +11,21 @@ export interface User {
   display_name?: string
   timezone: string
   locale: string
-  is_admin?: boolean
+  is_admin: boolean
+  settings: UserSettings
   created_at: string
   last_login_at?: string
+}
+
+export interface UserSettings {
+  header_variant?: 'horizontal' | 'vertical'
+  ui_scale?: number
+  work_days?: string[]
+  work_start?: string
+  work_end?: string
+  features?: Record<string, boolean>
+  quiet_hours_start?: string
+  quiet_hours_end?: string
 }
 
 export interface AuthResponse {
@@ -23,7 +34,7 @@ export interface AuthResponse {
   user: User
 }
 
-export interface TelegramAuthData {
+export interface TelegramUser {
   id: number
   first_name: string
   last_name?: string
@@ -33,40 +44,44 @@ export interface TelegramAuthData {
   hash: string
 }
 
-// Auth API calls
-
-export async function loginWithTelegram(data: TelegramAuthData): Promise<AuthResponse> {
-  const response = await api.post<AuthResponse>('/auth/telegram', data, false)
-  if (response.token) {
-    setStoredToken(response.token, response.expires_at)
-  }
-  return response
+export interface RegisterRequest {
+  email: string
+  password: string
+  name?: string
 }
 
-export async function register(email: string, password: string, name?: string): Promise<AuthResponse> {
-  const response = await api.post<AuthResponse>('/auth/register', { email, password, name }, false)
-  if (response.token) {
-    setStoredToken(response.token, response.expires_at)
-  }
-  return response
+export interface LoginRequest {
+  email: string
+  password: string
 }
 
-export async function loginWithEmail(email: string, password: string): Promise<AuthResponse> {
-  const response = await api.post<AuthResponse>('/auth/login', { email, password }, false)
-  if (response.token) {
-    setStoredToken(response.token, response.expires_at)
-  }
-  return response
+export interface UpdateUserRequest {
+  display_name?: string
+  timezone?: string
+  locale?: string
+  settings?: UserSettings
+}
+
+export async function telegramLogin(telegramUser: TelegramUser): Promise<AuthResponse> {
+  return api.post<AuthResponse>('/auth/telegram', telegramUser)
+}
+
+export async function register(data: RegisterRequest): Promise<AuthResponse> {
+  return api.post<AuthResponse>('/auth/register', data)
+}
+
+export async function login(data: LoginRequest): Promise<AuthResponse> {
+  return api.post<AuthResponse>('/auth/login', data)
+}
+
+export async function logout(): Promise<void> {
+  return api.post('/auth/logout', {})
 }
 
 export async function getMe(): Promise<User> {
   return api.get<User>('/auth/me')
 }
 
-export async function logout(): Promise<void> {
-  try {
-    await api.post('/auth/logout', {})
-  } finally {
-    clearStoredToken()
-  }
+export async function updateMe(data: UpdateUserRequest): Promise<User> {
+  return api.patch<User>('/auth/me', data)
 }

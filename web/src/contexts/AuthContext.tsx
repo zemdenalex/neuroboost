@@ -1,141 +1,165 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
-import {
-  User,
-  TelegramAuthData,
-  loginWithTelegram,
-  loginWithEmail,
-  register,
-  getMe,
-  logout as apiLogout,
-} from '../api/auth'
-import { getStoredToken, isTokenExpired, getTokenDaysRemaining, clearStoredToken } from '../api/client'
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react'
+import { User, UserSettings, getMe, logout as apiLogout, updateMe } from '../api/auth'
+import { api } from '../api/client'
 
-interface AuthContextValue {
+interface AuthContextType {
   user: User | null
-  loading: boolean
-  error: string | null
+  isLoading: boolean
   isAuthenticated: boolean
-  tokenDaysRemaining: number
-  
-  // Auth methods
-  loginWithTelegram: (data: TelegramAuthData) => Promise<void>
-  loginWithEmail: (email: string, password: string) => Promise<void>
-  register: (email: string, password: string, name?: string) => Promise<void>
+  login: (token: string, user: User) => void
   logout: () => Promise<void>
-  clearError: () => void
+  refreshUser: () => Promise<void>
+  updateSettings: (settings: Partial<UserSettings>) => Promise<void>
+  updateProfile: (data: { display_name?: string; timezone?: string; locale?: string }) => Promise<void>
 }
 
-const AuthContext = createContext<AuthContextValue | undefined>(undefined)
+const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
 
-  // Check for existing session on mount
+  // Load user on mount if token exists
   useEffect(() => {
-    const checkAuth = async () => {
-      const token = getStoredToken()
-      if (token && !isTokenExpired()) {
+    const loadUser = async () => {
+      const token = localStorage.getItem('neuroboost-token')
+      if (token) {
+        api.setToken(token)
         try {
           const userData = await getMe()
           setUser(userData)
+          // Apply settings from DB to localStorage for components that read from there
+          if (userData.settings) {
+            applySettingsToLocalStorage(userData.settings)
+          }
         } catch {
-          clearStoredToken()
+          // Token invalid, clear it
+          localStorage.removeItem('neuroboost-token')
+          api.setToken(null)
         }
       }
-      setLoading(false)
+      setIsLoading(false)
     }
-    checkAuth()
+    loadUser()
   }, [])
 
-  const handleLoginWithTelegram = useCallback(async (data: TelegramAuthData) => {
-    setLoading(true)
-    setError(null)
-    try {
-      const response = await loginWithTelegram(data)
-      setUser(response.user)
-    } catch (err: any) {
-      setError(err.message || 'Telegram login failed')
-      throw err
-    } finally {
-      setLoading(false)
+  const login = useCallback((token: string, userData: User) => {
+    localStorage.setItem('neuroboost-token', token)
+    api.setToken(token)
+    setUser(userData)
+    // Apply settings from DB
+    if (userData.settings) {
+      applySettingsToLocalStorage(userData.settings)
     }
   }, [])
 
-  const handleLoginWithEmail = useCallback(async (email: string, password: string) => {
-    setLoading(true)
-    setError(null)
-    try {
-      const response = await loginWithEmail(email, password)
-      setUser(response.user)
-    } catch (err: any) {
-      setError(err.message || 'Login failed')
-      throw err
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  const handleRegister = useCallback(async (email: string, password: string, name?: string) => {
-    setLoading(true)
-    setError(null)
-    try {
-      const response = await register(email, password, name)
-      setUser(response.user)
-    } catch (err: any) {
-      setError(err.message || 'Registration failed')
-      throw err
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  const handleLogout = useCallback(async () => {
+  const logout = useCallback(async () => {
     try {
       await apiLogout()
-    } finally {
-      setUser(null)
+    } catch {
+      // Ignore errors during logout
+    }
+    localStorage.removeItem('neuroboost-token')
+    api.setToken(null)
+    setUser(null)
+  }, [])
+
+  const refreshUser = useCallback(async () => {
+    try {
+      const userData = await getMe()
+      setUser(userData)
+      if (userData.settings) {
+        applySettingsToLocalStorage(userData.settings)
+      }
+    } catch {
+      // User fetch failed
     }
   }, [])
 
-  const clearError = useCallback(() => {
-    setError(null)
-  }, [])
+  const updateSettings = useCallback(async (settings: Partial<UserSettings>) => {
+    if (!user) return
+    
+    // Merge with existing settings
+    const newSettings = { ...user.settings, ...settings }
+    
+    try {
+      const updatedUser = await updateMe({ settings: newSettings })
+      setUser(updatedUser)
+      applySettingsToLocalStorage(updatedUser.settings)
+      
+      // Dispatch custom event for components that listen
+      if (settings.header_variant) {
+        window.dispatchEvent(new CustomEvent('neuroboost-layout-change', { 
+          detail: settings.header_variant 
+        }))
+      }
+      if (settings.ui_scale) {
+        window.dispatchEvent(new CustomEvent('neuroboost-scale-change', { 
+          detail: settings.ui_scale 
+        }))
+      }
+    } catch (error) {
+      console.error('Failed to update settings:', error)
+      throw error
+    }
+  }, [user])
 
-  const value: AuthContextValue = {
-    user,
-    loading,
-    error,
-    isAuthenticated: !!user,
-    tokenDaysRemaining: getTokenDaysRemaining(),
-    loginWithTelegram: handleLoginWithTelegram,
-    loginWithEmail: handleLoginWithEmail,
-    register: handleRegister,
-    logout: handleLogout,
-    clearError,
-  }
+  const updateProfile = useCallback(async (data: { display_name?: string; timezone?: string; locale?: string }) => {
+    if (!user) return
+    
+    try {
+      const updatedUser = await updateMe(data)
+      setUser(updatedUser)
+    } catch (error) {
+      console.error('Failed to update profile:', error)
+      throw error
+    }
+  }, [user])
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        isLoading,
+        isAuthenticated: !!user,
+        login,
+        logout,
+        refreshUser,
+        updateSettings,
+        updateProfile,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  )
 }
 
 export function useAuthContext() {
-  const ctx = useContext(AuthContext)
-  if (!ctx) {
-    throw new Error('useAuthContext must be used within AuthProvider')
+  const context = useContext(AuthContext)
+  if (context === undefined) {
+    throw new Error('useAuthContext must be used within an AuthProvider')
   }
-  return ctx
+  return context
 }
 
-// Convenience hook for protected routes
-export function useRequireAuth() {
-  const { isAuthenticated, loading } = useAuthContext()
-  return { isAuthenticated, loading }
-}
-
-// Convenience hook for admin-only features
-export function useRequireAdmin() {
-  const { user, isAuthenticated, loading } = useAuthContext()
-  const isAdmin = user?.is_admin ?? false
-  return { isAdmin, isAuthenticated, loading }
+// Helper to sync DB settings to localStorage for components that read from there
+function applySettingsToLocalStorage(settings: UserSettings) {
+  if (settings.header_variant) {
+    localStorage.setItem('neuroboost-header-variant', settings.header_variant)
+  }
+  if (settings.ui_scale) {
+    localStorage.setItem('neuroboost-ui-scale', String(settings.ui_scale))
+  }
+  if (settings.work_days) {
+    localStorage.setItem('neuroboost-work-days', JSON.stringify(settings.work_days))
+  }
+  if (settings.work_start) {
+    localStorage.setItem('neuroboost-work-start', settings.work_start)
+  }
+  if (settings.work_end) {
+    localStorage.setItem('neuroboost-work-end', settings.work_end)
+  }
+  if (settings.features) {
+    localStorage.setItem('neuroboost-features', JSON.stringify(settings.features))
+  }
 }

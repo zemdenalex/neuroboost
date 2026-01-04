@@ -3,30 +3,44 @@ import { useNavigate } from 'react-router-dom'
 import { useAuthContext } from '../../contexts/AuthContext'
 import { Layout } from '../../components/Layout'
 import {
-  User,
   Clock,
   Globe,
-  ToggleLeft,
+  Sliders,
   Database,
   LogOut,
   AlertTriangle,
   Save,
   Loader2,
   Check,
+  LayoutGrid,
+  Maximize,
 } from 'lucide-react'
 
 type HeaderVariant = 'horizontal' | 'vertical'
 
+const TIMEZONES = [
+  { value: 'Europe/Moscow', label: 'Europe/Moscow (MSK)', offset: '+3' },
+  { value: 'Europe/London', label: 'Europe/London (GMT)', offset: '+0' },
+  { value: 'Europe/Berlin', label: 'Europe/Berlin (CET)', offset: '+1' },
+  { value: 'America/New_York', label: 'America/New_York (EST)', offset: '-5' },
+  { value: 'America/Los_Angeles', label: 'America/Los_Angeles (PST)', offset: '-8' },
+  { value: 'Asia/Tokyo', label: 'Asia/Tokyo (JST)', offset: '+9' },
+  { value: 'Asia/Shanghai', label: 'Asia/Shanghai (CST)', offset: '+8' },
+  { value: 'UTC', label: 'UTC', offset: '+0' },
+]
+
 export default function Settings() {
   const navigate = useNavigate()
-  const { user, logout } = useAuthContext()
+  const { user, logout, updateSettings, updateProfile } = useAuthContext()
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [showConfirmLogout, setShowConfirmLogout] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  // Settings state
+  // Settings state - initialize from user settings or defaults
   const [headerStyle, setHeaderStyle] = useState<HeaderVariant>('horizontal')
-  const [timezone, setTimezone] = useState(user?.timezone || 'Europe/Moscow')
+  const [uiScale, setUIScale] = useState(100)
+  const [timezone, setTimezone] = useState('Europe/Moscow')
   const [workDays, setWorkDays] = useState(['Mon', 'Tue', 'Wed', 'Thu', 'Fri'])
   const [workStart, setWorkStart] = useState('09:00')
   const [workEnd, setWorkEnd] = useState('17:00')
@@ -43,35 +57,50 @@ export default function Settings() {
     tools: true,
   })
 
-  // Load saved settings on mount
+  // Load settings from user on mount
   useEffect(() => {
-    const savedHeader = localStorage.getItem('neuroboost-header-variant') as HeaderVariant
-    if (savedHeader === 'horizontal' || savedHeader === 'vertical') {
-      setHeaderStyle(savedHeader)
+    if (user) {
+      setTimezone(user.timezone || 'Europe/Moscow')
+      
+      if (user.settings) {
+        if (user.settings.header_variant) {
+          setHeaderStyle(user.settings.header_variant)
+        }
+        if (user.settings.ui_scale) {
+          setUIScale(user.settings.ui_scale)
+        }
+        if (user.settings.work_days) {
+          setWorkDays(user.settings.work_days)
+        }
+        if (user.settings.work_start) {
+          setWorkStart(user.settings.work_start)
+        }
+        if (user.settings.work_end) {
+          setWorkEnd(user.settings.work_end)
+        }
+        if (user.settings.features) {
+          setFeatures(prev => ({ ...prev, ...user.settings.features }))
+        }
+      }
     }
+  }, [user])
 
-    const savedTimezone = localStorage.getItem('neuroboost-timezone')
-    if (savedTimezone) setTimezone(savedTimezone)
-
-    const savedWorkDays = localStorage.getItem('neuroboost-work-days')
-    if (savedWorkDays) setWorkDays(JSON.parse(savedWorkDays))
-
-    const savedWorkStart = localStorage.getItem('neuroboost-work-start')
-    if (savedWorkStart) setWorkStart(savedWorkStart)
-
-    const savedWorkEnd = localStorage.getItem('neuroboost-work-end')
-    if (savedWorkEnd) setWorkEnd(savedWorkEnd)
-
-    const savedFeatures = localStorage.getItem('neuroboost-features')
-    if (savedFeatures) setFeatures(JSON.parse(savedFeatures))
-  }, [])
+  // Apply UI scale to document
+  useEffect(() => {
+    document.documentElement.style.fontSize = `${uiScale}%`
+    return () => {
+      document.documentElement.style.fontSize = '100%'
+    }
+  }, [uiScale])
 
   // Apply header style immediately when changed
-  const handleHeaderStyleChange = (style: HeaderVariant) => {
+  const handleHeaderStyleChange = async (style: HeaderVariant) => {
     setHeaderStyle(style)
-    localStorage.setItem('neuroboost-header-variant', style)
-    // Dispatch custom event for same-tab updates
-    window.dispatchEvent(new CustomEvent('neuroboost-layout-change', { detail: style }))
+    try {
+      await updateSettings({ header_variant: style })
+    } catch {
+      setError('Failed to save layout preference')
+    }
   }
 
   const handleLogout = async () => {
@@ -81,28 +110,34 @@ export default function Settings() {
 
   const handleSave = async () => {
     setSaving(true)
+    setError(null)
     
-    // Save all settings to localStorage
-    localStorage.setItem('neuroboost-header-variant', headerStyle)
-    localStorage.setItem('neuroboost-timezone', timezone)
-    localStorage.setItem('neuroboost-work-days', JSON.stringify(workDays))
-    localStorage.setItem('neuroboost-work-start', workStart)
-    localStorage.setItem('neuroboost-work-end', workEnd)
-    localStorage.setItem('neuroboost-features', JSON.stringify(features))
-
-    // TODO: Save to API when backend supports it
-    await new Promise((r) => setTimeout(r, 300))
-    
-    setSaving(false)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
+    try {
+      // Save profile data (timezone)
+      await updateProfile({ timezone })
+      
+      // Save settings
+      await updateSettings({
+        header_variant: headerStyle,
+        ui_scale: uiScale,
+        work_days: workDays,
+        work_start: workStart,
+        work_end: workEnd,
+        features,
+      })
+      
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+    } catch {
+      setError('Failed to save settings')
+    } finally {
+      setSaving(false)
+    }
   }
 
   const toggleFeature = (key: keyof typeof features) => {
-    setFeatures((prev) => ({ ...prev, [key]: !prev[key] }))
+    setFeatures(prev => ({ ...prev, [key]: !prev[key] }))
   }
-
-  const displayName = user?.display_name || user?.email?.split('@')[0] || 'User'
 
   return (
     <Layout>
@@ -125,66 +160,16 @@ export default function Settings() {
           </button>
         </div>
 
-        {/* Account Section */}
+        {error && (
+          <div className="p-3 bg-red-900/30 border border-red-800 rounded-lg text-red-400 text-sm">
+            {error}
+          </div>
+        )}
+
+        {/* Layout Style */}
         <section className="bg-zinc-900 border border-zinc-800 rounded-lg p-5">
           <div className="flex items-center gap-2 mb-4">
-            <User className="w-5 h-5 text-zinc-400" />
-            <h2 className="text-lg font-mono font-semibold text-white">Account</h2>
-          </div>
-
-          <div className="space-y-4">
-            {/* User info display */}
-            <div className="flex items-center gap-4 p-3 bg-zinc-800/50 rounded-lg">
-              {user?.tg_photo_url ? (
-                <img src={user.tg_photo_url} alt={displayName} className="w-12 h-12 rounded-full" />
-              ) : (
-                <div className="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center text-lg font-mono text-white">
-                  {displayName.slice(0, 2).toUpperCase()}
-                </div>
-              )}
-              <div>
-                <p className="text-white font-mono">{displayName}</p>
-                <p className="text-sm text-zinc-500">{user?.email}</p>
-                {user?.tg_username && <p className="text-sm text-zinc-500">@{user.tg_username}</p>}
-              </div>
-            </div>
-
-            {/* Logout */}
-            <div className="pt-2 border-t border-zinc-800">
-              {showConfirmLogout ? (
-                <div className="flex items-center gap-3 p-3 bg-red-900/20 border border-red-800 rounded-lg">
-                  <AlertTriangle className="w-5 h-5 text-red-400" />
-                  <span className="flex-1 text-sm text-red-400">Are you sure you want to sign out?</span>
-                  <button
-                    onClick={handleLogout}
-                    className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-sm font-mono rounded transition-colors"
-                  >
-                    Yes, sign out
-                  </button>
-                  <button
-                    onClick={() => setShowConfirmLogout(false)}
-                    className="px-3 py-1 bg-zinc-700 hover:bg-zinc-600 text-white text-sm font-mono rounded transition-colors"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              ) : (
-                <button
-                  onClick={() => setShowConfirmLogout(true)}
-                  className="flex items-center gap-2 px-3 py-2 text-red-400 hover:bg-zinc-800 rounded-lg transition-colors"
-                >
-                  <LogOut className="w-4 h-4" />
-                  Sign out
-                </button>
-              )}
-            </div>
-          </div>
-        </section>
-
-        {/* Header Style */}
-        <section className="bg-zinc-900 border border-zinc-800 rounded-lg p-5">
-          <div className="flex items-center gap-2 mb-4">
-            <ToggleLeft className="w-5 h-5 text-zinc-400" />
+            <LayoutGrid className="w-5 h-5 text-zinc-400" />
             <h2 className="text-lg font-mono font-semibold text-white">Layout</h2>
           </div>
 
@@ -211,6 +196,39 @@ export default function Settings() {
             </button>
           </div>
           <p className="text-xs text-zinc-500 mt-2">Layout changes apply immediately</p>
+        </section>
+
+        {/* UI Scale */}
+        <section className="bg-zinc-900 border border-zinc-800 rounded-lg p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <Maximize className="w-5 h-5 text-zinc-400" />
+            <h2 className="text-lg font-mono font-semibold text-white">Interface Size</h2>
+          </div>
+
+          <div className="space-y-4">
+            <div className="flex items-center gap-4">
+              <span className="text-sm text-zinc-400 w-8">80%</span>
+              <input
+                type="range"
+                min="80"
+                max="150"
+                step="5"
+                value={uiScale}
+                onChange={(e) => setUIScale(Number(e.target.value))}
+                className="flex-1 h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-600"
+              />
+              <span className="text-sm text-zinc-400 w-10">150%</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-zinc-400">Current: <strong className="text-white">{uiScale}%</strong></span>
+              <button
+                onClick={() => setUIScale(100)}
+                className="text-xs text-blue-400 hover:text-blue-300"
+              >
+                Reset to 100%
+              </button>
+            </div>
+          </div>
         </section>
 
         {/* Work Hours */}
@@ -278,42 +296,53 @@ export default function Settings() {
 
           <div>
             <label className="block text-sm text-zinc-400 mb-1">Timezone</label>
-            <select
-              value={timezone}
-              onChange={(e) => setTimezone(e.target.value)}
-              className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white font-mono focus:outline-none focus:border-blue-500"
-            >
-              <option value="Europe/Moscow">Europe/Moscow (MSK)</option>
-              <option value="Europe/London">Europe/London (GMT)</option>
-              <option value="America/New_York">America/New_York (EST)</option>
-              <option value="America/Los_Angeles">America/Los_Angeles (PST)</option>
-              <option value="Asia/Tokyo">Asia/Tokyo (JST)</option>
-              <option value="UTC">UTC</option>
-            </select>
+            <div className="relative">
+              <select
+                value={timezone}
+                onChange={(e) => setTimezone(e.target.value)}
+                className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white font-mono focus:outline-none focus:border-blue-500 appearance-none pr-10"
+              >
+                {TIMEZONES.map((tz) => (
+                  <option key={tz.value} value={tz.value}>
+                    {tz.label}
+                  </option>
+                ))}
+              </select>
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-400">
+                ▼
+              </div>
+            </div>
           </div>
         </section>
 
         {/* Feature Toggles */}
         <section className="bg-zinc-900 border border-zinc-800 rounded-lg p-5">
           <div className="flex items-center gap-2 mb-4">
-            <ToggleLeft className="w-5 h-5 text-zinc-400" />
+            <Sliders className="w-5 h-5 text-zinc-400" />
             <h2 className="text-lg font-mono font-semibold text-white">Feature Toggles</h2>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             {Object.entries(features).map(([key, enabled]) => (
-              <label
+              <button
                 key={key}
-                className="flex items-center gap-3 p-3 bg-zinc-800/50 rounded-lg cursor-pointer hover:bg-zinc-800 transition-colors"
+                onClick={() => toggleFeature(key as keyof typeof features)}
+                className="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg hover:bg-zinc-800 transition-colors"
               >
-                <input
-                  type="checkbox"
-                  checked={enabled}
-                  onChange={() => toggleFeature(key as keyof typeof features)}
-                  className="w-4 h-4 accent-blue-600"
-                />
                 <span className="text-sm text-zinc-300 capitalize">{key} View</span>
-              </label>
+                {/* Custom toggle switch */}
+                <div
+                  className={`relative w-10 h-5 rounded-full transition-colors ${
+                    enabled ? 'bg-blue-600' : 'bg-zinc-600'
+                  }`}
+                >
+                  <div
+                    className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${
+                      enabled ? 'translate-x-5' : 'translate-x-0.5'
+                    }`}
+                  />
+                </div>
+              </button>
             ))}
           </div>
         </section>
@@ -336,6 +365,41 @@ export default function Settings() {
               Clear All Data
             </button>
           </div>
+        </section>
+
+        {/* Sign Out */}
+        <section className="bg-zinc-900 border border-zinc-800 rounded-lg p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <LogOut className="w-5 h-5 text-zinc-400" />
+            <h2 className="text-lg font-mono font-semibold text-white">Session</h2>
+          </div>
+
+          {showConfirmLogout ? (
+            <div className="flex items-center gap-3 p-3 bg-red-900/20 border border-red-800 rounded-lg">
+              <AlertTriangle className="w-5 h-5 text-red-400 shrink-0" />
+              <span className="flex-1 text-sm text-red-400">Are you sure you want to sign out?</span>
+              <button
+                onClick={handleLogout}
+                className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-sm font-mono rounded transition-colors"
+              >
+                Yes, sign out
+              </button>
+              <button
+                onClick={() => setShowConfirmLogout(false)}
+                className="px-3 py-1 bg-zinc-700 hover:bg-zinc-600 text-white text-sm font-mono rounded transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowConfirmLogout(true)}
+              className="flex items-center gap-2 px-3 py-2 text-red-400 hover:bg-zinc-800 rounded-lg transition-colors"
+            >
+              <LogOut className="w-4 h-4" />
+              Sign out
+            </button>
+          )}
         </section>
       </div>
     </Layout>
