@@ -17,6 +17,8 @@ COPY src ./src
 RUN pnpm build
 
 FROM nginx:stable-alpine
+# Add wget for healthcheck
+RUN apk add --no-cache wget
 RUN rm -rf /usr/share/nginx/html/*
 COPY --from=builder /app/dist /usr/share/nginx/html
 # Custom nginx config for SPA routing

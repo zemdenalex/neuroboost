@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthContext } from '../../contexts/AuthContext'
 import { Layout } from '../../components/Layout'
@@ -12,16 +12,20 @@ import {
   AlertTriangle,
   Save,
   Loader2,
+  Check,
 } from 'lucide-react'
+
+type HeaderVariant = 'horizontal' | 'vertical'
 
 export default function Settings() {
   const navigate = useNavigate()
   const { user, logout } = useAuthContext()
   const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
   const [showConfirmLogout, setShowConfirmLogout] = useState(false)
 
-  // Settings state (these would be loaded from API/localStorage)
-  const [headerStyle, setHeaderStyle] = useState<'horizontal' | 'vertical'>('horizontal')
+  // Settings state
+  const [headerStyle, setHeaderStyle] = useState<HeaderVariant>('horizontal')
   const [timezone, setTimezone] = useState(user?.timezone || 'Europe/Moscow')
   const [workDays, setWorkDays] = useState(['Mon', 'Tue', 'Wed', 'Thu', 'Fri'])
   const [workStart, setWorkStart] = useState('09:00')
@@ -39,6 +43,37 @@ export default function Settings() {
     tools: true,
   })
 
+  // Load saved settings on mount
+  useEffect(() => {
+    const savedHeader = localStorage.getItem('neuroboost-header-variant') as HeaderVariant
+    if (savedHeader === 'horizontal' || savedHeader === 'vertical') {
+      setHeaderStyle(savedHeader)
+    }
+
+    const savedTimezone = localStorage.getItem('neuroboost-timezone')
+    if (savedTimezone) setTimezone(savedTimezone)
+
+    const savedWorkDays = localStorage.getItem('neuroboost-work-days')
+    if (savedWorkDays) setWorkDays(JSON.parse(savedWorkDays))
+
+    const savedWorkStart = localStorage.getItem('neuroboost-work-start')
+    if (savedWorkStart) setWorkStart(savedWorkStart)
+
+    const savedWorkEnd = localStorage.getItem('neuroboost-work-end')
+    if (savedWorkEnd) setWorkEnd(savedWorkEnd)
+
+    const savedFeatures = localStorage.getItem('neuroboost-features')
+    if (savedFeatures) setFeatures(JSON.parse(savedFeatures))
+  }, [])
+
+  // Apply header style immediately when changed
+  const handleHeaderStyleChange = (style: HeaderVariant) => {
+    setHeaderStyle(style)
+    localStorage.setItem('neuroboost-header-variant', style)
+    // Dispatch custom event for same-tab updates
+    window.dispatchEvent(new CustomEvent('neuroboost-layout-change', { detail: style }))
+  }
+
   const handleLogout = async () => {
     await logout()
     navigate('/login')
@@ -46,9 +81,21 @@ export default function Settings() {
 
   const handleSave = async () => {
     setSaving(true)
-    // TODO: Implement save to API
-    await new Promise((r) => setTimeout(r, 500))
+    
+    // Save all settings to localStorage
+    localStorage.setItem('neuroboost-header-variant', headerStyle)
+    localStorage.setItem('neuroboost-timezone', timezone)
+    localStorage.setItem('neuroboost-work-days', JSON.stringify(workDays))
+    localStorage.setItem('neuroboost-work-start', workStart)
+    localStorage.setItem('neuroboost-work-end', workEnd)
+    localStorage.setItem('neuroboost-features', JSON.stringify(features))
+
+    // TODO: Save to API when backend supports it
+    await new Promise((r) => setTimeout(r, 300))
+    
     setSaving(false)
+    setSaved(true)
+    setTimeout(() => setSaved(false), 2000)
   }
 
   const toggleFeature = (key: keyof typeof features) => {
@@ -67,8 +114,14 @@ export default function Settings() {
             disabled={saving}
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 text-white font-mono text-sm rounded-lg transition-colors"
           >
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            Save Changes
+            {saving ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : saved ? (
+              <Check className="w-4 h-4" />
+            ) : (
+              <Save className="w-4 h-4" />
+            )}
+            {saved ? 'Saved!' : 'Save Changes'}
           </button>
         </div>
 
@@ -137,7 +190,7 @@ export default function Settings() {
 
           <div className="flex gap-3">
             <button
-              onClick={() => setHeaderStyle('horizontal')}
+              onClick={() => handleHeaderStyleChange('horizontal')}
               className={`flex-1 p-3 rounded-lg border text-sm font-mono transition-colors ${
                 headerStyle === 'horizontal'
                   ? 'bg-blue-600/20 border-blue-500 text-blue-400'
@@ -147,7 +200,7 @@ export default function Settings() {
               Horizontal Top Bar
             </button>
             <button
-              onClick={() => setHeaderStyle('vertical')}
+              onClick={() => handleHeaderStyleChange('vertical')}
               className={`flex-1 p-3 rounded-lg border text-sm font-mono transition-colors ${
                 headerStyle === 'vertical'
                   ? 'bg-blue-600/20 border-blue-500 text-blue-400'
@@ -157,6 +210,7 @@ export default function Settings() {
               Vertical Sidebar
             </button>
           </div>
+          <p className="text-xs text-zinc-500 mt-2">Layout changes apply immediately</p>
         </section>
 
         {/* Work Hours */}

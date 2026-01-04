@@ -4,24 +4,31 @@ import Header from './Header'
 type HeaderVariant = 'horizontal' | 'vertical'
 
 export function Layout({ children }: { children: React.ReactNode }) {
-  const [variant, setVariant] = useState<HeaderVariant>('horizontal')
-
-  useEffect(() => {
+  const [variant, setVariant] = useState<HeaderVariant>(() => {
     const saved = localStorage.getItem('neuroboost-header-variant') as HeaderVariant
-    if (saved === 'horizontal' || saved === 'vertical') {
-      setVariant(saved)
-    }
-  }, [])
+    return saved === 'vertical' ? 'vertical' : 'horizontal'
+  })
 
-  // Listen for changes
   useEffect(() => {
+    // Listen for changes from Settings page (same tab)
+    const handleLayoutChange = (e: CustomEvent<HeaderVariant>) => {
+      setVariant(e.detail)
+    }
+
+    // Listen for changes from other tabs
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'neuroboost-header-variant' && e.newValue) {
         setVariant(e.newValue as HeaderVariant)
       }
     }
+
+    window.addEventListener('neuroboost-layout-change', handleLayoutChange as EventListener)
     window.addEventListener('storage', handleStorageChange)
-    return () => window.removeEventListener('storage', handleStorageChange)
+    
+    return () => {
+      window.removeEventListener('neuroboost-layout-change', handleLayoutChange as EventListener)
+      window.removeEventListener('storage', handleStorageChange)
+    }
   }, [])
 
   return (
