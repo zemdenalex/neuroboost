@@ -1,69 +1,181 @@
-import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react'
-import { User, UserSettings, getMe, logout as apiLogout, updateMe } from '../api/auth'
-import { api } from '../api/client'
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import {
+  User,
+  UserSettings,
+  TelegramUser,
+  login as emailLogin,
+  register as registerUser,
+  telegramLogin,
+  getMe,
+  logout as apiLogout,
+  updateMe,
+} from '../api/auth'
+import {
+  getStoredToken,
+  isTokenExpired,
+  getTokenDaysRemaining,
+  setStoredToken,
+  clearStoredToken,
+} from '../api/client'
 
-interface AuthContextType {
+/**
+ * AuthContextValue defines the shape of the authentication context.  In addition
+ * to the current user and loading state, it exposes a handful of
+ * convenience methods for logging in via email or Telegram, registering
+ * new users, refreshing profile data, updating settings, and logging
+ * out.  The error field can be populated by failed authentication
+ * attempts so that UI components can display meaningful feedback.
+ */
+export interface AuthContextValue {
   user: User | null
-  isLoading: boolean
+  loading: boolean
+  error: string | null
   isAuthenticated: boolean
-  login: (token: string, user: User) => void
+  tokenDaysRemaining: number
+  loginWithEmail: (email: string, password: string) => Promise<void>
+  register: (email: string, password: string, name?: string) => Promise<void>
+  loginWithTelegram: (data: TelegramUser) => Promise<void>
   logout: () => Promise<void>
+  clearError: () => void
   refreshUser: () => Promise<void>
   updateSettings: (settings: Partial<UserSettings>) => Promise<void>
   updateProfile: (data: { display_name?: string; timezone?: string; locale?: string }) => Promise<void>
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined)
+const AuthContext = createContext<AuthContextValue | undefined>(undefined)
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+/**
+ * AuthProvider wraps the React component tree and manages authentication
+ * state.  On mount it checks for an existing session token in localStorage
+ * and, if valid, fetches the current user profile.  It also exposes
+ * methods to perform email/Telegram login, registration, logout, and
+ * profile updates.  Errors during authentication are captured in
+ * state for easy consumption by UI consumers.
+ */
+export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  // Load user on mount if token exists
+  // On mount, attempt to restore session from localStorage
   useEffect(() => {
-    const loadUser = async () => {
-      const token = localStorage.getItem('neuroboost-token')
-      if (token) {
-        api.setToken(token)
+    const checkAuth = async () => {
+      const token = getStoredToken()
+      if (token && !isTokenExpired()) {
         try {
           const userData = await getMe()
           setUser(userData)
-          // Apply settings from DB to localStorage for components that read from there
           if (userData.settings) {
             applySettingsToLocalStorage(userData.settings)
           }
         } catch {
-          // Token invalid, clear it
-          localStorage.removeItem('neuroboost-token')
-          api.setToken(null)
+          // If fetching the user fails, clear the stored token to avoid
+          // repeatedly attempting with a stale credential.
+          clearStoredToken()
         }
+      } else {
+        // Token missing or expired
+        clearStoredToken()
       }
-      setIsLoading(false)
+      setLoading(false)
     }
-    loadUser()
+    checkAuth()
   }, [])
 
-  const login = useCallback((token: string, userData: User) => {
-    localStorage.setItem('neuroboost-token', token)
-    api.setToken(token)
-    setUser(userData)
-    // Apply settings from DB
-    if (userData.settings) {
-      applySettingsToLocalStorage(userData.settings)
-    }
-  }, [])
+  /**
+   * Perform email/password login.  On success, persist the returned
+   * token to localStorage and update the current user.  On failure, set
+   * an error message and rethrow so callers can handle rejection.
+   */
+  const handleLoginWithEmail = useCallback(
+    async (email: string, password: string) => {
+      setLoading(true)
+      setError(null)
+      try {
+        const response = await emailLogin({ email, password })
+        setStoredToken(response.token, response.expires_at)
+        setUser(response.user)
+        if (response.user.settings) {
+          applySettingsToLocalStorage(response.user.settings)
+        }
+      } catch (err: any) {
+        setError(err?.message || 'Login failed')
+        throw err
+      } finally {
+        setLoading(false)
+      }
+    },
+    []
+  )
 
-  const logout = useCallback(async () => {
+  /**
+   * Register a new user.  On success, persist the token and current
+   * user.  Behaviour mirrors that of handleLoginWithEmail.
+   */
+  const handleRegister = useCallback(
+    async (email: string, password: string, name?: string) => {
+      setLoading(true)
+      setError(null)
+      try {
+        const response = await registerUser({ email, password, name })
+        setStoredToken(response.token, response.expires_at)
+        setUser(response.user)
+        if (response.user.settings) {
+          applySettingsToLocalStorage(response.user.settings)
+        }
+      } catch (err: any) {
+        setError(err?.message || 'Registration failed')
+        throw err
+      } finally {
+        setLoading(false)
+      }
+    },
+    []
+  )
+
+  /**
+   * Perform Telegram login using the provided auth data.  On success,
+   * persist the token and current user.
+   */
+  const handleLoginWithTelegram = useCallback(
+    async (data: TelegramUser) => {
+      setLoading(true)
+      setError(null)
+      try {
+        const response = await telegramLogin(data)
+        setStoredToken(response.token, response.expires_at)
+        setUser(response.user)
+        if (response.user.settings) {
+          applySettingsToLocalStorage(response.user.settings)
+        }
+      } catch (err: any) {
+        setError(err?.message || 'Telegram login failed')
+        throw err
+      } finally {
+        setLoading(false)
+      }
+    },
+    []
+  )
+
+  /**
+   * Clear the current session and log the user out.  Always clears the
+   * local token even if the API call fails.
+   */
+  const handleLogout = useCallback(async () => {
     try {
       await apiLogout()
-    } catch {
-      // Ignore errors during logout
+    } finally {
+      clearStoredToken()
+      setUser(null)
     }
-    localStorage.removeItem('neuroboost-token')
-    api.setToken(null)
-    setUser(null)
   }, [])
 
+  /**
+   * Refresh the current user's data from the server.  Useful when
+   * navigating between protected routes or after updating profile
+   * information.
+   */
   const refreshUser = useCallback(async () => {
     try {
       const userData = await getMe()
@@ -72,77 +184,127 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         applySettingsToLocalStorage(userData.settings)
       }
     } catch {
-      // User fetch failed
+      // Ignore refresh errors – these can be handled by callers
     }
   }, [])
 
-  const updateSettings = useCallback(async (settings: Partial<UserSettings>) => {
-    if (!user) return
-    
-    // Merge with existing settings
-    const newSettings = { ...user.settings, ...settings }
-    
-    try {
-      const updatedUser = await updateMe({ settings: newSettings })
-      setUser(updatedUser)
-      applySettingsToLocalStorage(updatedUser.settings)
-      
-      // Dispatch custom event for components that listen
-      if (settings.header_variant) {
-        window.dispatchEvent(new CustomEvent('neuroboost-layout-change', { 
-          detail: settings.header_variant 
-        }))
+  /**
+   * Update user settings.  Merges incoming changes with existing
+   * settings, persists them to the server, updates the local user
+   * state, and syncs relevant settings to localStorage for UI
+   * consumers.
+   */
+  const updateSettings = useCallback(
+    async (settings: Partial<UserSettings>) => {
+      if (!user) return
+      const newSettings = { ...user.settings, ...settings }
+      try {
+        const updatedUser = await updateMe({ settings: newSettings })
+        setUser(updatedUser)
+        applySettingsToLocalStorage(updatedUser.settings)
+        // Dispatch custom events for components that listen for layout or scale changes
+        if (settings.header_variant) {
+          window.dispatchEvent(
+            new CustomEvent('neuroboost-layout-change', { detail: settings.header_variant })
+          )
+        }
+        if (settings.ui_scale) {
+          window.dispatchEvent(
+            new CustomEvent('neuroboost-scale-change', { detail: settings.ui_scale })
+          )
+        }
+      } catch (err) {
+        console.error('Failed to update settings:', err)
+        throw err
       }
-      if (settings.ui_scale) {
-        window.dispatchEvent(new CustomEvent('neuroboost-scale-change', { 
-          detail: settings.ui_scale 
-        }))
-      }
-    } catch (error) {
-      console.error('Failed to update settings:', error)
-      throw error
-    }
-  }, [user])
-
-  const updateProfile = useCallback(async (data: { display_name?: string; timezone?: string; locale?: string }) => {
-    if (!user) return
-    
-    try {
-      const updatedUser = await updateMe(data)
-      setUser(updatedUser)
-    } catch (error) {
-      console.error('Failed to update profile:', error)
-      throw error
-    }
-  }, [user])
-
-  return (
-    <AuthContext.Provider
-      value={{
-        user,
-        isLoading,
-        isAuthenticated: !!user,
-        login,
-        logout,
-        refreshUser,
-        updateSettings,
-        updateProfile,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
+    },
+    [user]
   )
+
+  /**
+   * Update user profile fields (display name, timezone, locale).  Does
+   * not modify settings.
+   */
+  const updateProfile = useCallback(
+    async (data: { display_name?: string; timezone?: string; locale?: string }) => {
+      if (!user) return
+      try {
+        const updatedUser = await updateMe(data)
+        setUser(updatedUser)
+      } catch (err) {
+        console.error('Failed to update profile:', err)
+        throw err
+      }
+    },
+    [user]
+  )
+
+  /**
+   * Reset the current error state.
+   */
+  const clearError = useCallback(() => {
+    setError(null)
+  }, [])
+
+  const value: AuthContextValue = {
+    user,
+    loading,
+    error,
+    isAuthenticated: !!user,
+    tokenDaysRemaining: getTokenDaysRemaining(),
+    loginWithEmail: handleLoginWithEmail,
+    register: handleRegister,
+    loginWithTelegram: handleLoginWithTelegram,
+    logout: handleLogout,
+    clearError,
+    refreshUser,
+    updateSettings,
+    updateProfile,
+  }
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
+/**
+ * Hook to access the authentication context.  Throws an error if
+ * called outside of an AuthProvider.
+ */
 export function useAuthContext() {
-  const context = useContext(AuthContext)
-  if (context === undefined) {
+  const ctx = useContext(AuthContext)
+  if (!ctx) {
     throw new Error('useAuthContext must be used within an AuthProvider')
   }
-  return context
+  return ctx
 }
 
-// Helper to sync DB settings to localStorage for components that read from there
+/**
+ * Convenience hook for checking authentication state inside route
+ * guards.  Returns the current authentication status and loading
+ * state.
+ */
+export function useRequireAuth() {
+  const { isAuthenticated, loading } = useAuthContext()
+  return { isAuthenticated, loading }
+}
+
+/**
+ * Convenience hook for admin-only features.  Returns whether the
+ * current user is an admin, along with authentication and loading
+ * state.
+ */
+export function useRequireAdmin() {
+  const { user, isAuthenticated, loading } = useAuthContext()
+  const isAdmin = user?.is_admin ?? false
+  return { isAdmin, isAuthenticated, loading }
+}
+
+/**
+ * Sync relevant settings to localStorage so that non-React
+ * components (e.g. Tailwind classes applied directly to the DOM)
+ * can read user preferences.  This helper mirrors the logic used in
+ * older versions of the app and is invoked whenever the user
+ * settings are updated or loaded.
+ */
 function applySettingsToLocalStorage(settings: UserSettings) {
   if (settings.header_variant) {
     localStorage.setItem('neuroboost-header-variant', settings.header_variant)
