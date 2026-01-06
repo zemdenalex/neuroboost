@@ -5,7 +5,7 @@ import { EventEditor } from '../../components/Calendar/EventEditor';
 import {
   getEvents,
   getTasks,
-  updateEvent,
+  moveEvent,
   deleteEvent,
   scheduleTask,
   updateTask,
@@ -81,7 +81,7 @@ export function Calendar({ timezone = 'Europe/Moscow' }: CalendarProps) {
 
   const handleMoveOrResize = useCallback(async (data: { id: string; startsAt: string; endsAt: string }) => {
     try {
-      await updateEvent(data.id, { startsAt: data.startsAt, endsAt: data.endsAt });
+      await moveEvent(data.id, data.startsAt, data.endsAt);
       await loadEvents();
     } catch (error) {
       console.error('Failed to move/resize event:', error);

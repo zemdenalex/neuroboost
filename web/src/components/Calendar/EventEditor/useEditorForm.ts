@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { createEvent, updateEvent, saveReflection } from '../../../api';
 import { 
   utcToLocalDateTime, 
   localDateTimeToUtc, 
@@ -142,14 +143,23 @@ export function useEditorForm(
 
     try {
       if (isEditing && draft) {
-        await fetch(`/api/events/${draft.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        await updateEvent(draft.id, body);
+
         if (showReflection) {
-          const reflectionBody: ReflectionBody = { focusPct: reflection.focusPct, goalPct: reflection.goalPct, mood: reflection.mood, note: reflection.note.trim() || undefined, wasCompleted: true, wasOnTime: true };
-          await fetch(`/api/events/${draft.id}/reflection`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(reflectionBody) });
+          const reflectionBody: ReflectionBody = {
+            focusPct: reflection.focusPct,
+            goalPct: reflection.goalPct,
+            mood: reflection.mood,
+            note: reflection.note.trim() || undefined,
+            wasCompleted: true,
+            wasOnTime: true,
+          };
+          await saveReflection(draft.id, reflectionBody);
         }
+
         onPatched();
       } else {
-        await fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        await createEvent(body);
         onCreated();
       }
     } catch (error) {

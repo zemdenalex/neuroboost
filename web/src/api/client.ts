@@ -183,8 +183,9 @@ export async function createEvent(body: CreateEventBody): Promise<NbEvent> {
     color: body.color,
     reminders: body.reminders,
   };
-  const response = await api.post<{ event: ApiEvent }>('/events', apiBody);
-  return toNbEvent(response.event);
+  const response = await api.post<{ event: ApiEvent } | ApiEvent>('/events', apiBody);
+  const event = (response as any).event ?? response;
+  return toNbEvent(event as ApiEvent);
 }
 
 export async function updateEvent(id: string, updates: Partial<CreateEventBody>): Promise<NbEvent> {
@@ -198,8 +199,9 @@ export async function updateEvent(id: string, updates: Partial<CreateEventBody>)
   if (updates.tags !== undefined) apiBody.tags = updates.tags;
   if (updates.color !== undefined) apiBody.color = updates.color;
 
-  const response = await api.patch<{ event: ApiEvent }>(`/events/${id}`, apiBody);
-  return toNbEvent(response.event);
+  const response = await api.patch<{ event: ApiEvent } | ApiEvent>(`/events/${id}`, apiBody);
+  const event = (response as any).event ?? response;
+  return toNbEvent(event as ApiEvent);
 }
 
 export async function deleteEvent(id: string): Promise<void> {
@@ -207,11 +209,12 @@ export async function deleteEvent(id: string): Promise<void> {
 }
 
 export async function moveEvent(id: string, startsAt: string, endsAt: string): Promise<NbEvent> {
-  const response = await api.patch<{ event: ApiEvent }>(`/events/${id}/move`, {
+  const response = await api.patch<{ event: ApiEvent } | ApiEvent>(`/events/${id}/move`, {
     starts_at: startsAt,
     ends_at: endsAt,
   });
-  return toNbEvent(response.event);
+  const event = (response as any).event ?? response;
+  return toNbEvent(event as ApiEvent);
 }
 
 // ============ REFLECTIONS API ============
@@ -285,12 +288,13 @@ export async function scheduleTask(
   duration?: number,
   keepTaskOpen?: boolean
 ): Promise<NbEvent> {
-  const response = await api.post<{ event: ApiEvent }>(`/tasks/${taskId}/schedule`, {
+  const response = await api.post<{ event: ApiEvent } | ApiEvent>(`/tasks/${taskId}/schedule`, {
     starts_at: startsAt,
     duration,
     keep_task_open: keepTaskOpen,
   });
-  return toNbEvent(response.event);
+  const event = (response as any).event ?? response;
+  return toNbEvent(event as ApiEvent);
 }
 
 // ============ HEALTH API ============
