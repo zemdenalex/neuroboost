@@ -12,7 +12,7 @@ export interface User {
   timezone: string
   locale: string
   is_admin: boolean
-  settings: UserSettings
+  settings?: UserSettings
   created_at: string
   last_login_at?: string
 }

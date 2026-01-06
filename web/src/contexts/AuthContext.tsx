@@ -197,7 +197,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const updateSettings = useCallback(
     async (settings: Partial<UserSettings>) => {
       if (!user) return
-      const newSettings = { ...user.settings, ...settings }
+      // Fall back to an empty object if user.settings is null/undefined
+      const prevSettings = user.settings ?? {}
+      const newSettings = { ...prevSettings, ...settings }
       try {
         const updatedUser = await updateMe({ settings: newSettings })
         setUser(updatedUser)
