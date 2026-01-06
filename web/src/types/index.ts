@@ -19,6 +19,27 @@ export interface Task {
   completedAt?: string;
 }
 
+// Reflection types (embedded in events)
+export interface ApiReflection {
+  id: string;
+  focus_pct: number;
+  goal_pct: number;
+  mood: number;
+  note?: string;
+  was_completed?: boolean;
+  was_on_time?: boolean;
+}
+
+export interface Reflection {
+  id: string;
+  focusPct: number;
+  goalPct: number;
+  mood: number;
+  note?: string;
+  wasCompleted?: boolean;
+  wasOnTime?: boolean;
+}
+
 // Event types (matching backend API)
 export interface ApiEvent {
   id: string;
@@ -37,6 +58,7 @@ export interface ApiEvent {
   is_work_event?: boolean;
   created_at?: string;
   updated_at?: string;
+  reflections?: ApiReflection[];
 }
 
 // Frontend event type (camelCase for convenience)
@@ -57,6 +79,7 @@ export interface NbEvent {
   isWorkEvent?: boolean;
   createdAt?: string;
   updatedAt?: string;
+  reflections?: Reflection[];
 }
 
 // Convert API response to frontend format
@@ -78,13 +101,22 @@ export function toNbEvent(api: ApiEvent): NbEvent {
     isWorkEvent: api.is_work_event,
     createdAt: api.created_at,
     updatedAt: api.updated_at,
+    reflections: api.reflections?.map(r => ({
+      id: r.id,
+      focusPct: r.focus_pct,
+      goalPct: r.goal_pct,
+      mood: r.mood,
+      note: r.note,
+      wasCompleted: r.was_completed,
+      wasOnTime: r.was_on_time,
+    })),
   };
 }
 
 // Convert frontend format to API request
 export function toApiEvent(event: Partial<NbEvent>): Partial<ApiEvent> {
   const result: Partial<ApiEvent> = {};
-  
+
   if (event.title !== undefined) result.title = event.title;
   if (event.description !== undefined) result.description = event.description;
   if (event.startsAt !== undefined) result.starts_at = event.startsAt;
@@ -97,22 +129,8 @@ export function toApiEvent(event: Partial<NbEvent>): Partial<ApiEvent> {
   if (event.tags !== undefined) result.tags = event.tags;
   if (event.taskId !== undefined) result.task_id = event.taskId;
   if (event.isWorkEvent !== undefined) result.is_work_event = event.isWorkEvent;
-  
-  return result;
-}
 
-// Reflection types
-export interface Reflection {
-  id: string;
-  eventId: string;
-  focusPct: number;
-  goalPct: number;
-  mood: number;
-  energy?: number;
-  notes?: string;
-  wasCompleted?: boolean;
-  wasOnTime?: boolean;
-  createdAt: string;
+  return result;
 }
 
 // Priority system

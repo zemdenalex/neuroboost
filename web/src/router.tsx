@@ -13,7 +13,7 @@ import Reflections from './pages/Reflections'
 import Tools from './pages/Tools'
 import Settings from './pages/Settings'
 import Admin from './pages/Admin'
-import Profile from 'pages/Profile'
+import Profile from './pages/Profile'
 
 // Protected route wrapper
 function ProtectedRoute({ children }: { children?: React.ReactNode }) {

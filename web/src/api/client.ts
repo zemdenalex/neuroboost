@@ -1,24 +1,52 @@
-import type { NbEvent, Task, ApiEvent } from '../types';
+import type { NbEvent, ApiEvent } from '../types';
 
-const API_BASE = import.meta.env?.VITE_API_URL?.replace(/\/$/, '') || '/api';
+const API_BASE = (import.meta.env?.VITE_API_URL ?? '/api').replace(/\/$/, '');
 
-// Token management
-let authToken: string | null = null;
+// Token storage keys
+const TOKEN_KEY = 'nb_token';
+const TOKEN_EXPIRY_KEY = 'nb_token_expiry';
 
-export function setAuthToken(token: string | null) {
-  authToken = token;
+// Token management functions
+export function getStoredToken(): string | null {
+  return localStorage.getItem(TOKEN_KEY);
+}
+
+export function setStoredToken(token: string, expiresAt?: number): void {
+  localStorage.setItem(TOKEN_KEY, token);
+  if (expiresAt) {
+    localStorage.setItem(TOKEN_EXPIRY_KEY, String(expiresAt));
+  }
+}
+
+export function clearStoredToken(): void {
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(TOKEN_EXPIRY_KEY);
+}
+
+export function isTokenExpired(): boolean {
+  const expiry = localStorage.getItem(TOKEN_EXPIRY_KEY);
+  if (!expiry) return false;
+  return Date.now() > Number(expiry) * 1000;
+}
+
+export function getTokenDaysRemaining(): number {
+  const expiry = localStorage.getItem(TOKEN_EXPIRY_KEY);
+  if (!expiry) return 0;
+  const remaining = Number(expiry) * 1000 - Date.now();
+  return Math.max(0, Math.floor(remaining / (24 * 60 * 60 * 1000)));
+}
+
+// Legacy aliases for backward compatibility
+export function setAuthToken(token: string | null): void {
   if (token) {
-    localStorage.setItem('nb_token', token);
+    setStoredToken(token);
   } else {
-    localStorage.removeItem('nb_token');
+    clearStoredToken();
   }
 }
 
 export function getAuthToken(): string | null {
-  if (!authToken) {
-    authToken = localStorage.getItem('nb_token');
-  }
-  return authToken;
+  return getStoredToken();
 }
 
 // Base request function with auth
@@ -26,14 +54,14 @@ async function request<T>(
   method: string,
   path: string,
   body?: unknown,
-  options?: { skipAuth?: boolean }
+  requireAuth = true
 ): Promise<T> {
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
   };
-  
-  const token = getAuthToken();
-  if (token && !options?.skipAuth) {
+
+  const token = getStoredToken();
+  if (token && requireAuth) {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
@@ -44,7 +72,7 @@ async function request<T>(
   });
 
   if (response.status === 401) {
-    setAuthToken(null);
+    clearStoredToken();
     window.location.href = '/login';
     throw new Error('Unauthorized');
   }
@@ -61,22 +89,45 @@ async function request<T>(
   return response.json();
 }
 
+// API object for use by other modules
+export const api = {
+  get<T>(path: string, requireAuth = true): Promise<T> {
+    return request<T>('GET', path, undefined, requireAuth);
+  },
+
+  post<T>(path: string, body?: unknown, requireAuth = true): Promise<T> {
+    return request<T>('POST', path, body, requireAuth);
+  },
+
+  patch<T>(path: string, body?: unknown, requireAuth = true): Promise<T> {
+    return request<T>('PATCH', path, body, requireAuth);
+  },
+
+  put<T>(path: string, body?: unknown, requireAuth = true): Promise<T> {
+    return request<T>('PUT', path, body, requireAuth);
+  },
+
+  delete<T = void>(path: string, requireAuth = true): Promise<T> {
+    return request<T>('DELETE', path, undefined, requireAuth);
+  },
+};
+
 // Convert API event (snake_case) to frontend event (camelCase)
-function toNbEvent(api: ApiEvent): NbEvent {
+function toNbEvent(apiEvent: ApiEvent): NbEvent {
   return {
-    id: api.id,
-    title: api.title,
-    startsAt: api.starts_at,
-    endsAt: api.ends_at,
-    allDay: api.all_day ?? false,
-    description: api.description,
-    location: api.location,
-    color: api.color,
-    tags: api.tags ?? [],
-    timezone: api.timezone ?? 'Europe/Moscow',
-    rrule: api.rrule,
-    taskId: api.task_id,
-    reflections: api.reflections?.map(r => ({
+    id: apiEvent.id,
+    title: apiEvent.title,
+    startsAt: apiEvent.starts_at,
+    endsAt: apiEvent.ends_at,
+    allDay: apiEvent.all_day ?? false,
+    description: apiEvent.description,
+    location: apiEvent.location,
+    color: apiEvent.color,
+    tags: apiEvent.tags ?? [],
+    timezone: apiEvent.timezone ?? 'Europe/Moscow',
+    rrule: apiEvent.rrule,
+    taskId: apiEvent.task_id,
+    reflections: apiEvent.reflections?.map(r => ({
       id: r.id,
       focusPct: r.focus_pct,
       goalPct: r.goal_pct,
@@ -88,42 +139,11 @@ function toNbEvent(api: ApiEvent): NbEvent {
   };
 }
 
-// ============ AUTH API ============
-
-export interface LoginResponse {
-  token: string;
-  user: {
-    id: string;
-    email?: string;
-    tgId?: number;
-    tgUsername?: string;
-    timezone: string;
-  };
-}
-
-export async function loginWithTelegram(telegramData: unknown): Promise<LoginResponse> {
-  return request<LoginResponse>('POST', '/auth/telegram', telegramData, { skipAuth: true });
-}
-
-export async function loginWithEmail(email: string, password: string): Promise<LoginResponse> {
-  return request<LoginResponse>('POST', '/auth/login', { email, password }, { skipAuth: true });
-}
-
-export async function getCurrentUser(): Promise<LoginResponse['user']> {
-  const response = await request<{ user: LoginResponse['user'] }>('GET', '/auth/me');
-  return response.user;
-}
-
-export async function logout(): Promise<void> {
-  await request<void>('POST', '/auth/logout');
-  setAuthToken(null);
-}
-
 // ============ EVENTS API ============
 
 export async function getEvents(startISO: string, endISO: string): Promise<NbEvent[]> {
   const params = new URLSearchParams({ start: startISO, end: endISO });
-  const response = await request<{ events: ApiEvent[] } | ApiEvent[]>('GET', `/events?${params}`);
+  const response = await api.get<{ events: ApiEvent[] } | ApiEvent[]>(`/events?${params}`);
   const events = Array.isArray(response) ? response : response.events || [];
   return events.map(toNbEvent);
 }
@@ -152,7 +172,7 @@ export async function createEvent(body: CreateEventBody): Promise<NbEvent> {
     color: body.color,
     reminders: body.reminders,
   };
-  const response = await request<{ event: ApiEvent }>('POST', '/events', apiBody);
+  const response = await api.post<{ event: ApiEvent }>('/events', apiBody);
   return toNbEvent(response.event);
 }
 
@@ -166,17 +186,17 @@ export async function updateEvent(id: string, updates: Partial<CreateEventBody>)
   if (updates.location !== undefined) apiBody.location = updates.location;
   if (updates.tags !== undefined) apiBody.tags = updates.tags;
   if (updates.color !== undefined) apiBody.color = updates.color;
-  
-  const response = await request<{ event: ApiEvent }>('PATCH', `/events/${id}`, apiBody);
+
+  const response = await api.patch<{ event: ApiEvent }>(`/events/${id}`, apiBody);
   return toNbEvent(response.event);
 }
 
 export async function deleteEvent(id: string): Promise<void> {
-  await request<void>('DELETE', `/events/${id}`);
+  await api.delete(`/events/${id}`);
 }
 
 export async function moveEvent(id: string, startsAt: string, endsAt: string): Promise<NbEvent> {
-  const response = await request<{ event: ApiEvent }>('PATCH', `/events/${id}/move`, {
+  const response = await api.patch<{ event: ApiEvent }>(`/events/${id}/move`, {
     starts_at: startsAt,
     ends_at: endsAt,
   });
@@ -195,7 +215,7 @@ export interface ReflectionBody {
 }
 
 export async function saveReflection(eventId: string, reflection: ReflectionBody): Promise<void> {
-  await request<void>('POST', `/events/${eventId}/reflection`, {
+  await api.post(`/events/${eventId}/reflection`, {
     focus_pct: reflection.focusPct,
     goal_pct: reflection.goalPct,
     mood: reflection.mood,
@@ -207,13 +227,13 @@ export async function saveReflection(eventId: string, reflection: ReflectionBody
 
 // ============ TASKS API ============
 
-export async function getTasks(status?: string, priority?: number): Promise<Task[]> {
+export async function getTasks(status?: string, priority?: number): Promise<import('../types').Task[]> {
   const params = new URLSearchParams();
   if (status) params.append('status', status);
   if (priority !== undefined) params.append('priority', String(priority));
-  
-  const response = await request<{ tasks: Task[] }>('GET', `/tasks?${params}`);
-  return response.tasks || [];
+
+  const response = await api.get<{ tasks: import('../types').Task[] } | import('../types').Task[]>(`/tasks?${params}`);
+  return Array.isArray(response) ? response : response.tasks || [];
 }
 
 export async function createTask(body: {
@@ -223,8 +243,8 @@ export async function createTask(body: {
   tags?: string[];
   dueDate?: string;
   estimatedMinutes?: number;
-}): Promise<Task> {
-  const response = await request<{ task: Task }>('POST', '/tasks', {
+}): Promise<import('../types').Task> {
+  const response = await api.post<{ task: import('../types').Task }>('/tasks', {
     title: body.title,
     description: body.description,
     priority: body.priority,
@@ -239,13 +259,13 @@ export async function updateTask(id: string, updates: {
   title?: string;
   status?: string;
   priority?: number;
-}): Promise<Task> {
-  const response = await request<{ task: Task }>('PATCH', `/tasks/${id}`, updates);
+}): Promise<import('../types').Task> {
+  const response = await api.patch<{ task: import('../types').Task }>(`/tasks/${id}`, updates);
   return response.task;
 }
 
 export async function deleteTask(id: string): Promise<void> {
-  await request<void>('DELETE', `/tasks/${id}`);
+  await api.delete(`/tasks/${id}`);
 }
 
 export async function scheduleTask(
@@ -254,7 +274,7 @@ export async function scheduleTask(
   duration?: number,
   keepTaskOpen?: boolean
 ): Promise<NbEvent> {
-  const response = await request<{ event: ApiEvent }>('POST', `/tasks/${taskId}/schedule`, {
+  const response = await api.post<{ event: ApiEvent }>(`/tasks/${taskId}/schedule`, {
     starts_at: startsAt,
     duration,
     keep_task_open: keepTaskOpen,
@@ -262,27 +282,8 @@ export async function scheduleTask(
   return toNbEvent(response.event);
 }
 
-// ============ SETTINGS API ============
-
-export interface UserSettings {
-  timezone: string;
-  workingHoursStart: number;
-  workingHoursEnd: number;
-  workingDays: number[];
-}
-
-export async function getUserSettings(): Promise<UserSettings> {
-  const response = await request<{ settings: UserSettings }>('GET', '/settings');
-  return response.settings;
-}
-
-export async function updateUserSettings(updates: Partial<UserSettings>): Promise<UserSettings> {
-  const response = await request<{ settings: UserSettings }>('PATCH', '/settings', updates);
-  return response.settings;
-}
-
 // ============ HEALTH API ============
 
 export async function checkHealth(): Promise<{ ok: boolean; db?: string }> {
-  return request<{ ok: boolean; db?: string }>('GET', '/health', undefined, { skipAuth: true });
+  return api.get<{ ok: boolean; db?: string }>('/health', false);
 }

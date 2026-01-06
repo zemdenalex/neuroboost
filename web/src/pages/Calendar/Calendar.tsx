@@ -2,11 +2,10 @@ import { useState, useEffect, useCallback } from 'react';
 import { WeekGrid } from '../../components/Calendar/WeekGrid';
 import { TaskSidebar } from '../../components/TaskSidebar';
 import { EventEditor } from '../../components/Calendar/EventEditor';
-import { 
-  getEvents, 
-  getTasks, 
-  createEvent, 
-  updateEvent, 
+import {
+  getEvents,
+  getTasks,
+  updateEvent,
   deleteEvent,
   scheduleTask,
   updateTask,
@@ -21,10 +20,11 @@ export function Calendar({ timezone = 'Europe/Moscow' }: CalendarProps) {
   const [events, setEvents] = useState<NbEvent[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
-  const [weekOffset, setWeekOffset] = useState(0);
+  const [currentWeekOffset, setCurrentWeekOffset] = useState(0);
   const [editorOpen, setEditorOpen] = useState(false);
   const [editorRange, setEditorRange] = useState<{ start: Date; end: Date } | null>(null);
   const [editorDraft, setEditorDraft] = useState<NbEvent | null>(null);
+  const [taskSidebarOpen, setTaskSidebarOpen] = useState(true);
 
   // Calculate week range
   const getWeekRange = useCallback((offset: number) => {
@@ -32,23 +32,23 @@ export function Calendar({ timezone = 'Europe/Moscow' }: CalendarProps) {
     const monday = new Date(now);
     monday.setDate(now.getDate() - now.getDay() + 1 + offset * 7);
     monday.setHours(0, 0, 0, 0);
-    
+
     const sunday = new Date(monday);
     sunday.setDate(monday.getDate() + 7);
-    
+
     return { start: monday, end: sunday };
   }, []);
 
   // Load events for current week
   const loadEvents = useCallback(async () => {
-    const { start, end } = getWeekRange(weekOffset);
+    const { start, end } = getWeekRange(currentWeekOffset);
     try {
       const data = await getEvents(start.toISOString(), end.toISOString());
       setEvents(data);
     } catch (error) {
       console.error('Failed to load events:', error);
     }
-  }, [weekOffset, getWeekRange]);
+  }, [currentWeekOffset, getWeekRange]);
 
   // Load tasks
   const loadTasks = useCallback(async () => {
@@ -99,18 +99,18 @@ export function Calendar({ timezone = 'Europe/Moscow' }: CalendarProps) {
     }
   }, [loadEvents]);
 
-  const handleTaskDrop = useCallback(async (task: Task, startTime: string) => {
+  const handleTaskDrop = useCallback(async (task: { id: string; estimatedMinutes?: number }, startTime: Date) => {
     try {
-      await scheduleTask(task.id, startTime, task.estimatedMinutes);
+      await scheduleTask(task.id, startTime.toISOString(), task.estimatedMinutes);
       await Promise.all([loadEvents(), loadTasks()]);
     } catch (error) {
       console.error('Failed to schedule task:', error);
     }
   }, [loadEvents, loadTasks]);
 
-  const handleTaskStatusChange = useCallback(async (taskId: string, status: string) => {
+  const handleTaskUpdate = useCallback(async (taskId: string, updates: Partial<Task>) => {
     try {
-      await updateTask(taskId, { status });
+      await updateTask(taskId, updates);
       await loadTasks();
     } catch (error) {
       console.error('Failed to update task:', error);
@@ -118,7 +118,7 @@ export function Calendar({ timezone = 'Europe/Moscow' }: CalendarProps) {
   }, [loadTasks]);
 
   const handleWeekChange = useCallback((offset: number) => {
-    setWeekOffset(prev => prev + offset);
+    setCurrentWeekOffset(offset);
   }, []);
 
   const handleEditorClose = useCallback(() => {
@@ -154,29 +154,33 @@ export function Calendar({ timezone = 'Europe/Moscow' }: CalendarProps) {
       <div className="flex-1 flex flex-col min-w-0">
         <WeekGrid
           events={events}
-          weekOffset={weekOffset}
+          currentWeekOffset={currentWeekOffset}
           timezone={timezone}
           onCreate={handleCreate}
           onSelect={handleSelect}
           onMoveOrResize={handleMoveOrResize}
           onDelete={handleDelete}
+          onTaskDrop={handleTaskDrop}
           onWeekChange={handleWeekChange}
         />
       </div>
 
       {/* Task sidebar - hidden on mobile */}
-      <div className="hidden lg:block w-80 border-l border-zinc-800">
+      <div className="hidden lg:block">
         <TaskSidebar
+          isOpen={taskSidebarOpen}
           tasks={tasks}
-          onTaskDrop={handleTaskDrop}
-          onStatusChange={handleTaskStatusChange}
-          onRefresh={loadTasks}
+          onToggle={() => setTaskSidebarOpen(!taskSidebarOpen)}
+          onSelectTask={(task) => console.log('Selected task:', task.id)}
+          onEditTask={(task) => console.log('Edit task:', task.id)}
+          onUpdateTask={handleTaskUpdate}
+          onCreateTask={() => console.log('Create task')}
         />
       </div>
 
       {/* Event editor modal */}
       {editorOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
           onClick={handleEditorClose}
         >
@@ -194,3 +198,5 @@ export function Calendar({ timezone = 'Europe/Moscow' }: CalendarProps) {
     </div>
   );
 }
+
+export default Calendar;

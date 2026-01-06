@@ -1,1 +1,1 @@
-export { default } from './TaskSidebar'
+export { TaskSidebar as default } from './TaskSidebar';

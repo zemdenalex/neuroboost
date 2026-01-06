@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { Task } from '../../../types';
+import type { Task } from '../../types';
 import { TaskItem } from './TaskItem';
 
 interface PriorityGroupProps {
@@ -31,14 +31,14 @@ export function PriorityGroup({
   onDragStart,
 }: PriorityGroupProps) {
   const [collapsed, setCollapsed] = useState(false);
-  
+
   const info = PRIORITY_INFO[priority] || PRIORITY_INFO[3];
   const todoCount = tasks.filter(t => t.status !== 'DONE').length;
-  
+
   if (tasks.length === 0) return null;
-  
+
   return (
-    <div 
+    <div
       data-task-priority={priority}
       className="border-b border-zinc-700"
     >
@@ -56,12 +56,12 @@ export function PriorityGroup({
             {todoCount}/{tasks.length}
           </span>
         </div>
-        
+
         {priority === 1 && todoCount > 0 && (
           <span className="animate-pulse text-red-400 text-xs">!</span>
         )}
       </button>
-      
+
       {/* Tasks list */}
       {!collapsed && (
         <div className="bg-zinc-900">
