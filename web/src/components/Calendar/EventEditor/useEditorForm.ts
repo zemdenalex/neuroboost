@@ -1,0 +1,183 @@
+import { useState, useEffect, useCallback } from 'react';
+import { 
+  utcToLocalDateTime, 
+  localDateTimeToUtc, 
+  validateDateRange,
+  getAdjustedEndDate,
+  createInitialValidation 
+} from './editor.utils';
+import type { 
+  EditorProps, 
+  TimeValidation, 
+  ReflectionState,
+  CreateEventBody,
+  ReflectionBody,
+} from './editor.types';
+import type { NbEvent } from '../../../types';
+
+export interface EditorFormState {
+  title: string; description: string; location: string; tags: string; isAllDay: boolean;
+  color: string; reminderMinutes: number; startTimeInput: string; endTimeInput: string;
+  startDateLocal: string; endDateLocal: string; validation: TimeValidation;
+  showAdvanced: boolean; showReflection: boolean; isDeleting: boolean; reflection: ReflectionState;
+}
+
+export interface EditorFormActions {
+  setTitle: (v: string) => void; setDescription: (v: string) => void; setLocation: (v: string) => void;
+  setTags: (v: string) => void; setIsAllDay: (v: boolean) => void; setColor: (v: string) => void;
+  setReminderMinutes: (v: number) => void; setStartDateLocal: (v: string) => void;
+  setEndDateLocal: (v: string) => void; setShowAdvanced: (v: boolean) => void;
+  setShowReflection: (v: boolean) => void;
+  handleTimeChange: (value: string, parsed: string | null, isStart: boolean) => void;
+  handleReflectionChange: (update: Partial<ReflectionState>) => void;
+  handleSave: () => Promise<void>; handleDelete: () => Promise<void>;
+}
+
+export function useEditorForm(
+  draft: NbEvent | null,
+  range: { start: Date; end: Date } | null,
+  timezone: string,
+  onCreated: () => void,
+  onPatched: () => void,
+  onDelete: (id: string) => Promise<void>
+): { state: EditorFormState; actions: EditorFormActions; isEditing: boolean; hasReflection: boolean; canSave: boolean } {
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [location, setLocation] = useState('');
+  const [tags, setTags] = useState('');
+  const [isAllDay, setIsAllDay] = useState(false);
+  const [color, setColor] = useState('');
+  const [reminderMinutes, setReminderMinutes] = useState(5);
+  const [startTimeInput, setStartTimeInput] = useState('');
+  const [endTimeInput, setEndTimeInput] = useState('');
+  const [startDateLocal, setStartDateLocal] = useState('');
+  const [endDateLocal, setEndDateLocal] = useState('');
+  const [validation, setValidation] = useState<TimeValidation>(createInitialValidation('', ''));
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showReflection, setShowReflection] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [reflection, setReflection] = useState<ReflectionState>({ focusPct: 75, goalPct: 75, mood: 7, note: '' });
+
+  const isEditing = !!draft;
+  const hasReflection = !!(draft?.reflections && draft.reflections.length > 0);
+
+  // Initialize from draft or range
+  useEffect(() => {
+    if (draft) {
+      setTitle(draft.title);
+      setDescription(draft.description || '');
+      setLocation(draft.location || '');
+      setTags(draft.tags?.join(', ') || '');
+      setIsAllDay(!!draft.allDay);
+      setColor(draft.color || '');
+      
+      const start = utcToLocalDateTime(new Date(draft.startsAt), timezone);
+      const end = utcToLocalDateTime(new Date(draft.endsAt), timezone);
+      setStartTimeInput(start.time);
+      setEndTimeInput(end.time);
+      setStartDateLocal(start.date);
+      setEndDateLocal(end.date);
+      setValidation(createInitialValidation(start.time, end.time));
+      
+      if (hasReflection && draft.reflections?.[0]) {
+        const r = draft.reflections[0];
+        setReflection({ focusPct: r.focusPct, goalPct: r.goalPct, mood: r.mood, note: r.note || '' });
+      }
+    } else if (range) {
+      const start = utcToLocalDateTime(range.start, timezone);
+      const end = utcToLocalDateTime(range.end, timezone);
+      setStartTimeInput(start.time);
+      setEndTimeInput(end.time);
+      setStartDateLocal(start.date);
+      setEndDateLocal(end.date);
+      setValidation(createInitialValidation(start.time, end.time));
+      setIsAllDay(range.end.getTime() - range.start.getTime() >= 24 * 60 * 60 * 1000);
+    }
+  }, [draft, range, timezone, hasReflection]);
+
+  // Validate date range
+  useEffect(() => {
+    if (isAllDay) {
+      setValidation(prev => ({ ...prev, dateRangeValid: true, dateRangeError: '' }));
+      return;
+    }
+    if (validation.start && validation.end && validation.startParsed && validation.endParsed) {
+      const result = validateDateRange(startDateLocal, endDateLocal, validation.startParsed, validation.endParsed, timezone);
+      setValidation(prev => ({ ...prev, dateRangeValid: result.valid, dateRangeError: result.error }));
+    }
+  }, [startDateLocal, endDateLocal, validation.startParsed, validation.endParsed, isAllDay, timezone]);
+
+  const handleTimeChange = useCallback((value: string, parsed: string | null, isStart: boolean) => {
+    if (isStart) setStartTimeInput(value);
+    else setEndTimeInput(value);
+    setValidation(prev => ({
+      ...prev,
+      [isStart ? 'start' : 'end']: parsed !== null,
+      [isStart ? 'startParsed' : 'endParsed']: parsed || '',
+    }));
+  }, []);
+
+  const handleReflectionChange = useCallback((update: Partial<ReflectionState>) => {
+    setReflection(prev => ({ ...prev, ...update }));
+  }, []);
+
+  const handleSave = useCallback(async () => {
+    if (!title.trim() || !validation.dateRangeValid) return;
+    
+    const tagsArray = tags.split(',').map(t => t.trim()).filter(Boolean);
+    const reminders = reminderMinutes > 0 ? [{ minutesBefore: reminderMinutes, channel: 'TELEGRAM' as const }] : [];
+    const adjustedEndDate = getAdjustedEndDate(startDateLocal, endDateLocal, validation.startParsed, validation.endParsed);
+    
+    const body: CreateEventBody = {
+      title: title.trim(),
+      startsAt: localDateTimeToUtc(startDateLocal, validation.startParsed, timezone).toISOString(),
+      endsAt: localDateTimeToUtc(adjustedEndDate, validation.endParsed, timezone).toISOString(),
+      allDay: isAllDay,
+      description: description.trim() || undefined,
+      location: location.trim() || undefined,
+      tags: tagsArray.length ? tagsArray : undefined,
+      color: color.trim() || undefined,
+      reminders: reminders.length ? reminders : undefined,
+    };
+
+    try {
+      if (isEditing && draft) {
+        await fetch(`/api/events/${draft.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        if (showReflection) {
+          const reflectionBody: ReflectionBody = { focusPct: reflection.focusPct, goalPct: reflection.goalPct, mood: reflection.mood, note: reflection.note.trim() || undefined, wasCompleted: true, wasOnTime: true };
+          await fetch(`/api/events/${draft.id}/reflection`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(reflectionBody) });
+        }
+        onPatched();
+      } else {
+        await fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        onCreated();
+      }
+    } catch (error) {
+      console.error('Failed to save event:', error);
+      alert('Failed to save event: ' + (error instanceof Error ? error.message : 'Unknown error'));
+    }
+  }, [title, validation, tags, reminderMinutes, startDateLocal, endDateLocal, timezone, isAllDay, description, location, color, isEditing, draft, showReflection, reflection, onPatched, onCreated]);
+
+  const handleDelete = useCallback(async () => {
+    if (!draft || !confirm(`Delete "${draft.title}"?`)) return;
+    setIsDeleting(true);
+    try {
+      await onDelete(draft.id);
+    } catch (error) {
+      console.error('Failed to delete:', error);
+      alert('Failed to delete event');
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [draft, onDelete]);
+
+  const canSave = !!(title.trim() && (isAllDay || (validation.start && validation.end && validation.dateRangeValid)));
+
+  return {
+    state: { title, description, location, tags, isAllDay, color, reminderMinutes, startTimeInput, endTimeInput, startDateLocal, endDateLocal, validation, showAdvanced, showReflection, isDeleting, reflection },
+    actions: { setTitle, setDescription, setLocation, setTags, setIsAllDay, setColor, setReminderMinutes, setStartDateLocal, setEndDateLocal, setShowAdvanced, setShowReflection, handleTimeChange, handleReflectionChange, handleSave, handleDelete },
+    isEditing,
+    hasReflection,
+    canSave,
+  };
+}

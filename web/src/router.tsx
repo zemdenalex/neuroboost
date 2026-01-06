@@ -13,6 +13,7 @@ import Reflections from './pages/Reflections'
 import Tools from './pages/Tools'
 import Settings from './pages/Settings'
 import Admin from './pages/Admin'
+import Profile from 'pages/Profile'
 
 // Protected route wrapper
 function ProtectedRoute({ children }: { children?: React.ReactNode }) {
@@ -46,7 +47,7 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   }
 
   if (isAuthenticated) {
-    return <Navigate to="/calendar" replace />
+    return <Navigate to="/home" replace />
   }
 
   return <>{children}</>
@@ -85,7 +86,7 @@ export const router = createBrowserRouter([
         children: [
           {
             path: '/',
-            element: <Navigate to="/calendar" replace />,
+            element: <Navigate to="/home" replace />,
           },
           {
             path: '/home',
@@ -115,6 +116,10 @@ export const router = createBrowserRouter([
             path: '/settings',
             element: <Settings />,
           },
+          {
+            path: '/profile',
+            element: <Profile />,
+          },
         ],
       },
     ],
@@ -134,6 +139,6 @@ export const router = createBrowserRouter([
   // Catch all
   {
     path: '*',
-    element: <Navigate to="/calendar" replace />,
+    element: <Navigate to="/home" replace />,
   },
 ])
