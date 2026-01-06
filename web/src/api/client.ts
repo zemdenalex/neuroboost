@@ -77,16 +77,27 @@ async function request<T>(
     throw new Error('Unauthorized');
   }
 
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Request failed' }));
-    throw new Error(error.error || error.message || 'Request failed');
-  }
-
   if (response.status === 204) {
     return {} as T;
   }
 
-  return response.json();
+  const payload: any = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    const msg =
+      payload?.error?.message ??
+      payload?.message ??
+      (typeof payload?.error === 'string' ? payload.error : null) ??
+      'Request failed';
+
+    throw new Error(typeof msg === 'string' ? msg : JSON.stringify(msg));
+  }
+
+  if (payload && typeof payload === 'object' && 'data' in payload) {
+    return payload.data as T;
+  }
+
+  return payload as T;
 }
 
 // API object for use by other modules
