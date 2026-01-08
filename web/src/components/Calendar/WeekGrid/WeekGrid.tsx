@@ -75,7 +75,17 @@ export function WeekGrid({
   }, []);
   
   // Drag handling
-  const { drag, dragMeta, startCreate, startMove, cancelDrag, startAutoScroll, stopAutoScroll } = useWeekGridDrag({
+  const {
+    drag,
+    dragMeta,
+    startCreate,
+    startMove,
+    startResizeStart,
+    startResizeEnd,
+    cancelDrag,
+    startAutoScroll,
+    stopAutoScroll,
+  } = useWeekGridDrag({
     mondayUtc0, visibleDays, timezone, scrollRef, containerRef, callbacks: { onCreate, onMoveOrResize },
   });
   
@@ -83,10 +93,28 @@ export function WeekGrid({
   const { handleKeyDown } = useKeyboardNav({ events, selectedId, setSelectedId, onSelect, onDelete, onMoveOrResize, cancelDrag });
   
   // Event handlers
-  const handleDragStart = useCallback((day: DayInfo, startMin: number, eventId?: string, event?: ProcessedEvent) => {
-    if (eventId && event) startMove(day, event);
-    else startCreate(day, startMin);
-  }, [startCreate, startMove]);
+    const handleDragStart = useCallback(
+    (
+      day: DayInfo,
+      startMin: number,
+      action: 'create' | 'move' | 'resize-start' | 'resize-end',
+      eventId?: string,
+      event?: ProcessedEvent
+    ) => {
+      if (action === 'create') {
+        startCreate(day, startMin);
+        return;
+      }
+
+      if (!eventId || !event) return;
+
+      if (action === 'move') startMove(day, event);
+      if (action === 'resize-start') startResizeStart(day, event);
+      if (action === 'resize-end') startResizeEnd(day, event);
+    },
+    [startCreate, startMove, startResizeStart, startResizeEnd]
+  );
+
   
   const handleAllDayDragStart = useCallback((dayUtc0: number, eventId?: string) => {
     const day = days.find(d => d.dayUtc0 === dayUtc0);

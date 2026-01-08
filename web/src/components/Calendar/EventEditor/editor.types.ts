@@ -2,7 +2,7 @@ import type { NbEvent } from '../../../types';
 
 export interface EditorProps {
   /** Time range for new event creation (null when editing) */
-  range: { start: Date; end: Date } | null;
+  range: { start: Date; end: Date; allDay?: boolean } | null;
   /** Existing event to edit (null when creating) */
   draft: NbEvent | null;
   /** User's timezone (e.g., 'Europe/Moscow') */

@@ -22,7 +22,13 @@ interface DayColumnProps {
   touchStart: TouchStart | null;
   onSelect: (event: NbEvent) => void;
   onSelectId: (id: string) => void;
-  onDragStart: (day: DayInfo, startMin: number, eventId?: string, event?: ProcessedEvent) => void;
+  onDragStart: (
+    day: DayInfo,
+    startMin: number,
+    action: 'create' | 'move' | 'resize-start' | 'resize-end',
+    eventId?: string,
+    event?: ProcessedEvent
+  ) => void;
   onTouchStart: (info: TouchStart) => void;
   onTouchEnd: (day: DayInfo, startMin: number) => void;
   startAutoScroll: (direction: 'up' | 'down') => void;
@@ -64,7 +70,7 @@ export function DayColumn({
     const yLocal = (ev.clientY - rect.top) + 
       ((scrollContainer.current?.scrollTop ?? 0) - (dragMeta.current?.scrollStart ?? 0));
     const startMin = clampMins(snapMin(topToMins(yLocal)));
-    onDragStart(day, startMin);
+    onDragStart(day, startMin, 'create'); 
   };
 
   const handleEventMouseDown = (ev: React.MouseEvent, event: ProcessedEvent) => {
@@ -95,10 +101,10 @@ export function DayColumn({
     if ((isTopHandle || isBottomHandle) && !isMultiDaySegment) {
       ev.preventDefault();
       ev.stopPropagation();
-      onDragStart(day, startMin, event.id, event);
+      onDragStart(day, startMin, 'resize-start', event.id, event);
     } else if (!isTopHandle && !isBottomHandle) {
       // Move
-      onDragStart(day, startMin, event.id, event);
+      onDragStart(day, startMin, 'resize-end', event.id, event);
     }
     ev.stopPropagation();
   };

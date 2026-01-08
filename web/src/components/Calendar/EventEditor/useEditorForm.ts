@@ -92,7 +92,9 @@ export function useEditorForm(
       setStartDateLocal(start.date);
       setEndDateLocal(end.date);
       setValidation(createInitialValidation(start.time, end.time));
-      setIsAllDay(range.end.getTime() - range.start.getTime() >= 24 * 60 * 60 * 1000);
+      const rangeAllDay = !!(range as any).allDay;
+      const looksAllDay = start.time === '00:00' && end.time === '00:00' && range.end.getTime() > range.start.getTime();
+      setIsAllDay(rangeAllDay || looksAllDay);
     }
   }, [draft, range, timezone, hasReflection]);
 

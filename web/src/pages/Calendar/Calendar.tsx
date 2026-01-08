@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { WeekGrid } from '../../components/Calendar/WeekGrid';
 import { TaskSidebar } from '../../components/TaskSidebar';
 import { EventEditor } from '../../components/Calendar/EventEditor';
+import { createTask } from '../../api';
 import {
   getEvents,
   getTasks,
@@ -22,7 +23,7 @@ export function Calendar({ timezone = 'Europe/Moscow' }: CalendarProps) {
   const [loading, setLoading] = useState(true);
   const [currentWeekOffset, setCurrentWeekOffset] = useState(0);
   const [editorOpen, setEditorOpen] = useState(false);
-  const [editorRange, setEditorRange] = useState<{ start: Date; end: Date } | null>(null);
+  const [editorRange, setEditorRange] = useState<{ start: Date; end: Date; allDay?: boolean } | null>(null);
   const [editorDraft, setEditorDraft] = useState<NbEvent | null>(null);
   const [taskSidebarOpen, setTaskSidebarOpen] = useState(true);
 
@@ -68,7 +69,7 @@ export function Calendar({ timezone = 'Europe/Moscow' }: CalendarProps) {
 
   // Event handlers
   const handleCreate = useCallback((data: { startsAt: string; endsAt: string; allDay: boolean }) => {
-    setEditorRange({ start: new Date(data.startsAt), end: new Date(data.endsAt) });
+    setEditorRange({ start: new Date(data.startsAt), end: new Date(data.endsAt), allDay: data.allDay });
     setEditorDraft(null);
     setEditorOpen(true);
   }, []);
@@ -150,6 +151,24 @@ export function Calendar({ timezone = 'Europe/Moscow' }: CalendarProps) {
 
   return (
     <div className="flex h-screen bg-black text-white font-mono">
+      {/* Task sidebar - hidden on mobile */}
+      <div className="hidden lg:block">
+        <TaskSidebar
+          isOpen={taskSidebarOpen}
+          tasks={tasks}
+          onToggle={() => setTaskSidebarOpen(!taskSidebarOpen)}
+          onSelectTask={(task) => console.log('Selected task:', task.id)}
+          onEditTask={(task) => console.log('Edit task:', task.id)}
+          onUpdateTask={handleTaskUpdate}
+          onCreateTask={async () => {
+            const title = window.prompt('Task title?');
+            if (!title) return;
+            await createTask({ title, priority: 2 });
+            await loadTasks();
+          }}
+        />
+      </div>
+
       {/* Main calendar area */}
       <div className="flex-1 flex flex-col min-w-0">
         <WeekGrid
@@ -162,19 +181,6 @@ export function Calendar({ timezone = 'Europe/Moscow' }: CalendarProps) {
           onDelete={handleDelete}
           onTaskDrop={handleTaskDrop}
           onWeekChange={handleWeekChange}
-        />
-      </div>
-
-      {/* Task sidebar - hidden on mobile */}
-      <div className="hidden lg:block">
-        <TaskSidebar
-          isOpen={taskSidebarOpen}
-          tasks={tasks}
-          onToggle={() => setTaskSidebarOpen(!taskSidebarOpen)}
-          onSelectTask={(task) => console.log('Selected task:', task.id)}
-          onEditTask={(task) => console.log('Edit task:', task.id)}
-          onUpdateTask={handleTaskUpdate}
-          onCreateTask={() => console.log('Create task')}
         />
       </div>
 

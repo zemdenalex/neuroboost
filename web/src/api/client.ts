@@ -209,12 +209,8 @@ export async function deleteEvent(id: string): Promise<void> {
 }
 
 export async function moveEvent(id: string, startsAt: string, endsAt: string): Promise<NbEvent> {
-  const response = await api.patch<{ event: ApiEvent } | ApiEvent>(`/events/${id}/move`, {
-    starts_at: startsAt,
-    ends_at: endsAt,
-  });
-  const event = (response as any).event ?? response;
-  return toNbEvent(event as ApiEvent);
+  // Backend supports PATCH /events/:id, not /events/:id/move
+  return updateEvent(id, { startsAt, endsAt });
 }
 
 // ============ REFLECTIONS API ============
@@ -282,20 +278,19 @@ export async function deleteTask(id: string): Promise<void> {
   await api.delete(`/tasks/${id}`);
 }
 
-export async function scheduleTask(
-  taskId: string,
-  startsAt: string,
-  duration?: number,
-  keepTaskOpen?: boolean
-): Promise<NbEvent> {
-  const response = await api.post<{ event: ApiEvent } | ApiEvent>(`/tasks/${taskId}/schedule`, {
+export async function scheduleTask(taskId: string, startsAt: string, durationMinutes = 60): Promise<NbEvent> {
+  const startMs = Date.parse(startsAt);
+  const mins = Number.isFinite(durationMinutes) ? Math.max(15, durationMinutes) : 60;
+  const endsAt = new Date(startMs + mins * 60_000).toISOString();
+
+  const response = await api.post<ApiEvent>(`/tasks/${taskId}/schedule`, {
     starts_at: startsAt,
-    duration,
-    keep_task_open: keepTaskOpen,
+    ends_at: endsAt,
   });
-  const event = (response as any).event ?? response;
-  return toNbEvent(event as ApiEvent);
+
+  return normalizeEvent(response);
 }
+
 
 // ============ HEALTH API ============
 

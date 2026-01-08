@@ -23,6 +23,7 @@ const navItems = [
   { path: '/reflections', label: 'Reflections', icon: BookOpen },
   { path: '/tools', label: 'Tools', icon: Wrench },
   { path: '/settings', label: 'Settings', icon: Settings },
+  { path: '/profile', label: 'Profile', icon: User },
 ]
 
 export default function HorizontalHeader() {
@@ -115,12 +116,21 @@ export default function HorizontalHeader() {
 
               {/* Menu items */}
               <Link
-                to="/settings"
+                to="/profile"
                 onClick={() => setIsDropdownOpen(false)}
                 className="flex items-center gap-2 px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-800 transition-colors"
               >
                 <User className="w-4 h-4" />
-                Profile & Settings
+                Profile
+              </Link>
+
+              <Link
+                to="/settings"
+                onClick={() => setIsDropdownOpen(false)}
+                className="flex items-center gap-2 px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-800 transition-colors"
+              >
+                <Settings className="w-4 h-4" />
+                Settings
               </Link>
 
               {user?.is_admin && (

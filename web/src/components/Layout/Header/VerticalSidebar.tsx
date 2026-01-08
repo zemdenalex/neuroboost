@@ -10,6 +10,7 @@ import {
   LogOut,
   Shield,
   Home,
+  User,
 } from 'lucide-react'
 
 const navItems = [
@@ -20,6 +21,7 @@ const navItems = [
   { path: '/reflections', label: 'Reflections', icon: BookOpen },
   { path: '/tools', label: 'Tools', icon: Wrench },
   { path: '/settings', label: 'Settings', icon: Settings },
+  { path: '/profile', label: 'Profile', icon: User },
 ]
 
 export default function VerticalSidebar() {

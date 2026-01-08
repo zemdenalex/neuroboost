@@ -78,7 +78,7 @@ export function TaskSidebar({
     return (
       <button
         onClick={onToggle}
-        className="fixed right-0 top-1/2 -translate-y-1/2 bg-zinc-800 border border-zinc-700 rounded-l px-2 py-4 hover:bg-zinc-700 transition-colors z-40"
+        className="fixed left-0 top-1/2 -translate-y-1/2 bg-zinc-800 border border-zinc-700 rounded-r px-2 py-4 hover:bg-zinc-700 transition-colors z-40"
         title="Open tasks"
       >
         <span className="writing-mode-vertical text-xs font-mono">
@@ -89,7 +89,7 @@ export function TaskSidebar({
   }
 
   return (
-    <div className="w-72 h-full flex flex-col bg-zinc-900 border-l border-zinc-700 font-mono">
+    <div className="w-72 h-full flex flex-col bg-zinc-900 border-r border-zinc-700 font-mono">
       {/* Header */}
       <div className="p-3 border-b border-zinc-700 flex items-center justify-between">
         <h2 className="font-semibold text-sm">Tasks ({todoCount})</h2>
