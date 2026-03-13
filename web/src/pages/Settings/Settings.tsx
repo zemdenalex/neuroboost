@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthContext } from '../../contexts/AuthContext'
-import { Layout } from '../../components/Layout'
 import {
   Clock,
   Globe,
@@ -78,8 +77,9 @@ export default function Settings() {
         if (user.settings.work_end) {
           setWorkEnd(user.settings.work_end)
         }
-        if (user.settings.features) {
-          setFeatures(prev => ({ ...prev, ...user.settings.features }))
+        const userFeatures = user.settings.features
+        if (userFeatures) {
+          setFeatures(prev => ({ ...prev, ...userFeatures }))
         }
       }
     }
@@ -113,19 +113,19 @@ export default function Settings() {
     setError(null)
     
     try {
-      // Save profile data (timezone)
-      await updateProfile({ timezone })
-      
-      // Save settings
-      await updateSettings({
-        header_variant: headerStyle,
-        ui_scale: uiScale,
-        work_days: workDays,
-        work_start: workStart,
-        work_end: workEnd,
-        features,
-      })
-      
+      // Save profile and settings in parallel
+      await Promise.all([
+        updateProfile({ timezone }),
+        updateSettings({
+          header_variant: headerStyle,
+          ui_scale: uiScale,
+          work_days: workDays,
+          work_start: workStart,
+          work_end: workEnd,
+          features,
+        }),
+      ])
+
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
     } catch {
@@ -140,8 +140,7 @@ export default function Settings() {
   }
 
   return (
-    <Layout>
-      <div className="max-w-3xl mx-auto p-6 space-y-8">
+    <div className="max-w-3xl mx-auto p-6 space-y-8">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-mono font-bold text-white">Settings</h1>
           <button
@@ -401,7 +400,6 @@ export default function Settings() {
             </button>
           )}
         </section>
-      </div>
-    </Layout>
+    </div>
   )
 }

@@ -84,33 +84,3 @@ export async function moveEvent(id: string, data: MoveEventRequest): Promise<Eve
 export async function resizeEvent(id: string, data: ResizeEventRequest): Promise<Event> {
   return api.patch<Event>(`/events/${id}/resize`, data)
 }
-
-// Convert API event to internal NbEvent format
-export function toNbEvent(event: Event): NbEvent {
-  return {
-    id: event.id,
-    title: event.title,
-    description: event.description,
-    startUtc: event.starts_at,
-    endUtc: event.ends_at,
-    allDay: event.all_day,
-    rrule: event.rrule,
-    color: event.color,
-    tags: event.tags,
-    taskId: event.task_id,
-  }
-}
-
-// Internal event format used by WeekGrid
-export interface NbEvent {
-  id: string
-  title: string
-  description?: string
-  startUtc: string
-  endUtc: string
-  allDay: boolean
-  rrule?: string
-  color?: string
-  tags: string[]
-  taskId?: string
-}

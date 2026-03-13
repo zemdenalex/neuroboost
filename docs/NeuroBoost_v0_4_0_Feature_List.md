@@ -2,7 +2,7 @@
 
 > Priority: 🔴 Critical | 🟠 High | 🟡 Medium | 🟢 Low | ⚪ Future
 > Status: ✅ Done | 🔧 In Progress | 📋 Planned | 💭 Idea
-> Last Updated: January 3, 2026
+> Last Updated: March 13, 2026
 
 ---
 
@@ -18,7 +18,7 @@
 | Database migrations (golang-migrate) | 🔴 | ✅ | 000001, 000002 |
 | Health check endpoint | 🔴 | ✅ | /api/health with DB check |
 | fail2ban + SSH hardening | 🔴 | ✅ | 4 IPs banned |
-| CI: Build & test | 🟠 | 📋 | GitHub Actions |
+| CI: Build & test | 🟠 | ✅ | GitHub Actions (.github/workflows/ci.yml) |
 | CI: Auto-deploy on merge | 🟠 | 📋 | |
 | CI: Database backups | 🟠 | 📋 | Daily cron |
 | Error logging | 🟠 | 📋 | Structured JSON logs |
@@ -300,7 +300,25 @@
 | v0.4.0.0 | Dec 24, 2025 | Initial skeleton |
 | v0.4.0.1 | Dec 25, 2025 | Server deployment |
 | v0.4.0.2 | Jan 3, 2026 | Auth system foundation |
+| v0.4.0.3 | Mar 13, 2026 | Claude Code setup (skills, rules, subagent, permissions) |
 
 ---
 
-*Last updated: January 3, 2026*
+## Claude Code Setup (March 2026)
+
+| Component | Files | Purpose |
+|-----------|-------|---------|
+| CLAUDE.md | `CLAUDE.md` | Project context, rules, gotchas (~80 lines) |
+| Skills | `.claude/skills/deploy/` | `/deploy` — production deployment workflow |
+| Skills | `.claude/skills/add-endpoint/` | `/add-endpoint` — new API endpoint workflow |
+| Skills | `.claude/skills/add-page/` | `/add-page` — new frontend page workflow |
+| Skills | `.claude/skills/add-migration/` | `/add-migration` — database migration workflow |
+| Subagent | `.claude/agents/nb-code-reviewer.md` | Security + quality code review |
+| Rules | `.claude/rules/go-backend.md` | Go conventions (loads for `api-go/**`) |
+| Rules | `.claude/rules/react-frontend.md` | React conventions (loads for `web/**`) |
+| Hooks | Inherited from root `E:\Projects\.claude\` | Block .env edits, auto-format on save |
+| Permissions | `.claude/settings.local.json` | 15 pre-approved commands |
+
+---
+
+*Last updated: March 13, 2026*

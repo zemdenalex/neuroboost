@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Layout } from '../../components/Layout'
 import {
   Plus,
   Loader2,
@@ -158,8 +157,7 @@ export default function Tasks() {
   }), [tasks])
 
   return (
-    <Layout>
-      <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full">
         {/* Header */}
         <div className="px-6 py-4 border-b border-zinc-800 bg-zinc-900">
           <div className="flex items-center justify-between mb-4">
@@ -481,7 +479,6 @@ export default function Tasks() {
             </div>
           </div>
         )}
-      </div>
-    </Layout>
+    </div>
   )
 }

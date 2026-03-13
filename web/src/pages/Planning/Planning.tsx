@@ -1,34 +1,43 @@
 import { useState } from 'react'
-import Layout from '../../components/Layout'
-import DreamsView from '../../components/DreamsView'
-import GoalsView from '../../components/GoalsView'
-import ProjectsView from '../../components/ProjectsView'
-import OpportunitiesView from '../../components/OpportunitiesView'
-import NeedsView from '../../components/NeedsView'
-import GraphView from '../../components/GraphView'
-import TimelineView from '../../components/TimelineView'
-export default function Planning(){
-  const [activeView, setActiveView] = useState<'dreams'|'goals'|'projects'|'opportunities'|'needs'|'graph'|'timeline'>('dreams')
+
+type PlanningView = 'dreams' | 'goals' | 'projects' | 'opportunities' | 'needs' | 'graph' | 'timeline'
+
+const VIEWS: { key: PlanningView; label: string }[] = [
+  { key: 'dreams', label: 'Dreams' },
+  { key: 'goals', label: 'Goals' },
+  { key: 'projects', label: 'Projects' },
+  { key: 'opportunities', label: 'Opportunities' },
+  { key: 'needs', label: 'Needs' },
+  { key: 'graph', label: 'Graph' },
+  { key: 'timeline', label: 'Timeline' },
+]
+
+export default function Planning() {
+  const [activeView, setActiveView] = useState<PlanningView>('dreams')
+
   return (
-    <Layout>
-      <div className="flex gap-2 p-4 border-b border-zinc-700">
-        <button onClick={()=>setActiveView('dreams')}>Dreams</button>
-        <button onClick={()=>setActiveView('goals')}>Goals</button>
-        <button onClick={()=>setActiveView('projects')}>Projects</button>
-        <button onClick={()=>setActiveView('opportunities')}>Opportunities</button>
-        <button onClick={()=>setActiveView('needs')}>Needs</button>
-        <button onClick={()=>setActiveView('graph')}>Graph</button>
-        <button onClick={()=>setActiveView('timeline')}>Timeline</button>
+    <div className="flex flex-col h-full">
+      <div className="flex gap-2 p-4 border-b border-zinc-700 overflow-x-auto">
+        {VIEWS.map(({ key, label }) => (
+          <button
+            key={key}
+            onClick={() => setActiveView(key)}
+            className={`px-3 py-1.5 rounded-lg text-sm font-mono whitespace-nowrap transition-colors ${
+              activeView === key
+                ? 'bg-blue-600 text-white'
+                : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
       </div>
-      <div className="p-4">
-        {activeView==='dreams' && <DreamsView/>}
-        {activeView==='goals' && <GoalsView/>}
-        {activeView==='projects' && <ProjectsView/>}
-        {activeView==='opportunities' && <OpportunitiesView/>}
-        {activeView==='needs' && <NeedsView/>}
-        {activeView==='graph' && <GraphView/>}
-        {activeView==='timeline' && <TimelineView/>}
+      <div className="flex-1 flex items-center justify-center p-8">
+        <div className="text-center">
+          <p className="text-zinc-400 font-mono text-lg capitalize">{activeView} View</p>
+          <p className="text-zinc-600 text-sm mt-2">Coming soon</p>
+        </div>
       </div>
-    </Layout>
+    </div>
   )
 }

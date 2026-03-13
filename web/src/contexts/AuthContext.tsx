@@ -203,7 +203,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const updatedUser = await updateMe({ settings: newSettings })
         setUser(updatedUser)
-        applySettingsToLocalStorage(updatedUser.settings)
+        if (updatedUser.settings) {
+          applySettingsToLocalStorage(updatedUser.settings)
+        }
         // Dispatch custom events for components that listen for layout or scale changes
         if (settings.header_variant) {
           window.dispatchEvent(

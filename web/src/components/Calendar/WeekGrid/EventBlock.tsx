@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import type { ProcessedEvent, NbEvent } from './weekgrid.types';
 import { formatTimeFromUtc } from './weekgrid.utils';
 
@@ -11,7 +12,7 @@ interface EventBlockProps {
   onMouseDown: (e: React.MouseEvent) => void;
 }
 
-export function EventBlock({
+export const EventBlock = memo(function EventBlock({
   event,
   selected,
   timezone,
@@ -112,4 +113,4 @@ export function EventBlock({
       </div>
     </div>
   );
-}
+});

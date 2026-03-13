@@ -1,4 +1,3 @@
-import Layout from '../../components/Layout'
 export default function Home(){
   return (
     <div className="h-full overflow-y-auto bg-black text-zinc-100 font-mono">

@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { useAuthContext } from '../../contexts/AuthContext'
-import { Layout } from '../../components/Layout'
 import {
   User,
   Mail,
@@ -70,8 +69,7 @@ export default function Profile() {
   const levelProgress = ((stats.xp - xpForCurrentLevel) / (xpForNextLevel - xpForCurrentLevel)) * 100
 
   return (
-    <Layout>
-      <div className="max-w-4xl mx-auto p-6 space-y-8">
+    <div className="max-w-4xl mx-auto p-6 space-y-8">
         {/* Profile Header */}
         <div className="bg-gradient-to-r from-zinc-900 via-zinc-900 to-blue-900/20 border border-zinc-800 rounded-lg p-6">
           <div className="flex items-start gap-6">
@@ -266,8 +264,7 @@ export default function Profile() {
             <p className="text-sm">Activity heatmap coming soon...</p>
           </div>
         </div>
-      </div>
-    </Layout>
+    </div>
   )
 }
 

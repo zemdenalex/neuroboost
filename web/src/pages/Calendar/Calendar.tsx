@@ -138,6 +138,25 @@ export function Calendar({ timezone = 'Europe/Moscow' }: CalendarProps) {
     handleEditorClose();
   }, [loadEvents, handleEditorClose]);
 
+  const handleToggleSidebar = useCallback(() => {
+    setTaskSidebarOpen(prev => !prev);
+  }, []);
+
+  const handleSelectTask = useCallback((task: Task) => {
+    console.log('Selected task:', task.id);
+  }, []);
+
+  const handleEditTask = useCallback((task: Task) => {
+    console.log('Edit task:', task.id);
+  }, []);
+
+  const handleCreateTask = useCallback(async () => {
+    const title = window.prompt('Task title?');
+    if (!title) return;
+    await createTask({ title, priority: 2 });
+    await loadTasks();
+  }, [loadTasks]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-black text-zinc-400">
@@ -156,16 +175,11 @@ export function Calendar({ timezone = 'Europe/Moscow' }: CalendarProps) {
         <TaskSidebar
           isOpen={taskSidebarOpen}
           tasks={tasks}
-          onToggle={() => setTaskSidebarOpen(!taskSidebarOpen)}
-          onSelectTask={(task) => console.log('Selected task:', task.id)}
-          onEditTask={(task) => console.log('Edit task:', task.id)}
+          onToggle={handleToggleSidebar}
+          onSelectTask={handleSelectTask}
+          onEditTask={handleEditTask}
           onUpdateTask={handleTaskUpdate}
-          onCreateTask={async () => {
-            const title = window.prompt('Task title?');
-            if (!title) return;
-            await createTask({ title, priority: 2 });
-            await loadTasks();
-          }}
+          onCreateTask={handleCreateTask}
         />
       </div>
 
