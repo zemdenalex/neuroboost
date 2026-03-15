@@ -44,9 +44,10 @@ export {
   CONTEXT_ICONS,
 } from './tasks';
 
-// Auth & feedback
+// Auth, feedback & admin
 export * from './auth';
 export * from './feedback';
+export * from './admin';
 
 // ============================================================
 // camelCase wrappers for Calendar & EventEditor consumers

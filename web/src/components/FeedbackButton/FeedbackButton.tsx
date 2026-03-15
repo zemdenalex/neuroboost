@@ -1,8 +1,6 @@
 import { useState } from 'react'
-import { MessageSquarePlus, Bug, Lightbulb, X, Send, Loader2, CheckCircle } from 'lucide-react'
-import { createFeedback, CreateFeedbackRequest } from '../../api/feedback'
-
-type FeedbackType = 'bug' | 'feature' | 'other'
+import { MessageSquarePlus, Bug, Lightbulb, Palette, Sparkles, X, Send, Loader2, CheckCircle } from 'lucide-react'
+import { createFeedback, type FeedbackType } from '../../api/feedback'
 
 interface FeedbackButtonProps {
   position?: 'bottom-right' | 'bottom-left'
@@ -44,16 +42,19 @@ export function FeedbackButton({ position = 'bottom-right' }: FeedbackButtonProp
         setDescription('')
         setType('bug')
       }, 2000)
-    } catch (err: any) {
-      setError(err.message || 'Failed to submit feedback')
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to submit feedback')
     } finally {
       setLoading(false)
     }
   }
 
-  const typeConfig = {
+  const typeConfig: Record<FeedbackType, { icon: typeof Bug; label: string; color: string }> = {
     bug: { icon: Bug, label: 'Bug Report', color: 'text-red-400' },
-    feature: { icon: Lightbulb, label: 'Feature Request', color: 'text-yellow-400' },
+    feature: { icon: Lightbulb, label: 'Feature', color: 'text-yellow-400' },
+    design: { icon: Palette, label: 'Design', color: 'text-purple-400' },
+    idea: { icon: Sparkles, label: 'Idea', color: 'text-emerald-400' },
+    improvement: { icon: Lightbulb, label: 'Improve', color: 'text-orange-400' },
     other: { icon: MessageSquarePlus, label: 'Other', color: 'text-blue-400' },
   }
 
@@ -94,7 +95,7 @@ export function FeedbackButton({ position = 'bottom-right' }: FeedbackButtonProp
                 {/* Type Selection */}
                 <div>
                   <label className="block text-sm text-zinc-400 mb-2">Type</label>
-                  <div className="flex gap-2">
+                  <div className="grid grid-cols-3 gap-2">
                     {(Object.keys(typeConfig) as FeedbackType[]).map((t) => {
                       const config = typeConfig[t]
                       const Icon = config.icon
@@ -104,7 +105,7 @@ export function FeedbackButton({ position = 'bottom-right' }: FeedbackButtonProp
                           key={t}
                           type="button"
                           onClick={() => setType(t)}
-                          className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg border transition-colors ${
+                          className={`flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg border transition-colors ${
                             isSelected
                               ? 'bg-zinc-800 border-zinc-600'
                               : 'bg-zinc-900 border-zinc-800 hover:border-zinc-700'

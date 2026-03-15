@@ -1,15 +1,17 @@
 package main
 
 import (
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
 
+	"neuroboost/api-go/internal/admin"
 	"neuroboost/api-go/internal/config"
 	"neuroboost/api-go/internal/database"
+	"neuroboost/api-go/internal/logger"
 	"neuroboost/api-go/internal/middleware"
 	"neuroboost/api-go/internal/status"
 
@@ -28,10 +30,19 @@ func main() {
 	// Load config
 	cfg := config.Load()
 
+	// Initialize structured logger
+	logLevel := os.Getenv("LOG_LEVEL")
+	if logLevel == "" {
+		logLevel = "info"
+	}
+	logger.Init(logLevel)
+	log := logger.Get()
+
 	// Initialize database
 	db, err := database.New(cfg.DatabaseURL)
 	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
+		log.Error("Failed to connect to database", slog.String("error", err.Error()))
+		os.Exit(1)
 	}
 	defer db.Close()
 
@@ -42,7 +53,8 @@ func main() {
 	// Initialize router
 	r := chi.NewRouter()
 
-	// Middleware
+	// Middleware — request logging first, then CORS
+	r.Use(middleware.RequestLogger(log))
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{cfg.FrontendURL, "http://localhost:5173"},
 		AllowedMethods:   []string{"GET", "POST", "PATCH", "DELETE", "OPTIONS"},
@@ -74,9 +86,15 @@ func main() {
 		r.Get("/api/auth/me", authHandler.Me)
 		r.Patch("/api/auth/me", authHandler.UpdateMe)
 
-		// Feedback - list and update require auth (admin check inside handlers)
+		// Feedback - list, update, and import require auth (admin check inside handlers)
 		r.Get("/api/feedback", feedbackHandler.List)
 		r.Patch("/api/feedback/{id}", feedbackHandler.Update)
+		r.Post("/api/feedback/import", feedbackHandler.Import)
+
+		// Admin endpoints (admin check inside handlers)
+		adminHandler := admin.NewHandler(db)
+		r.Get("/api/admin/health", adminHandler.Health)
+		r.Get("/api/admin/logs", adminHandler.Logs)
 
 		// Events
 		r.Get("/api/events", e.ListHandler)
@@ -129,11 +147,14 @@ func main() {
 		port = "8080"
 	}
 
-	log.Printf("Starting NeuroBoost API on port %s", port)
-	log.Printf("Database connected: %s", cfg.DatabaseURL[:30]+"...")
-	log.Printf("Frontend URL: %s", cfg.FrontendURL)
+	log.Info("Starting NeuroBoost API",
+		slog.String("port", port),
+		slog.String("frontend_url", cfg.FrontendURL),
+		slog.String("log_level", logLevel),
+	)
 
 	if err := http.ListenAndServe(":"+port, r); err != nil {
-		log.Fatalf("Server failed: %v", err)
+		log.Error("Server failed", slog.String("error", err.Error()))
+		os.Exit(1)
 	}
 }
