@@ -49,6 +49,7 @@ func main() {
 	// Initialize package-level DB connections
 	e.InitDB(db)
 	t.InitDB(db)
+	rfl.InitDB(db)
 
 	// Initialize router
 	r := chi.NewRouter()
@@ -105,6 +106,7 @@ func main() {
 		r.Patch("/api/events/{id}/move", e.MoveHandler)
 		r.Patch("/api/events/{id}/resize", e.ResizeHandler)
 		r.Post("/api/events/{id}/exceptions", e.AddExceptionHandler)
+		r.Post("/api/events/{id}/reflection", rfl.CreateForEventHandler)
 
 		// Tasks
 		r.Get("/api/tasks", t.ListHandler)

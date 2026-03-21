@@ -67,7 +67,25 @@ func ListHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	util.RespondJSON(w, http.StatusOK, events)
+	// Expand recurring events
+	var expanded []Event
+	for _, ev := range events {
+		if ev.Rrule != nil && *ev.Rrule != "" {
+			_, err := parseRRule(*ev.Rrule)
+			if err != nil {
+				// Invalid rrule — include parent event as-is
+				expanded = append(expanded, ev)
+				continue
+			}
+			exceptions := fetchExceptions(r.Context(), userID, ev.ID)
+			instances := expandRecurrence(ev, startTime, endTime, exceptions)
+			expanded = append(expanded, instances...)
+		} else {
+			expanded = append(expanded, ev)
+		}
+	}
+
+	util.RespondJSON(w, http.StatusOK, expanded)
 }
 
 // CreateHandler creates a new event
@@ -107,7 +125,7 @@ func CreateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if endsAt.Before(startsAt) {
+	if endsAt.Before(startsAt) || endsAt.Equal(startsAt) {
 		util.RespondError(w, http.StatusBadRequest, "INVALID_RANGE", "End time must be after start time")
 		return
 	}
@@ -276,6 +294,11 @@ func MoveHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if endsAt.Before(startsAt) || endsAt.Equal(startsAt) {
+		util.RespondError(w, http.StatusBadRequest, "INVALID_RANGE", "End time must be after start time")
+		return
+	}
+
 	event, err := moveEvent(r.Context(), userID, eventID, startsAt, endsAt)
 	if err != nil {
 		if err == pgx.ErrNoRows {
@@ -317,6 +340,26 @@ func ResizeHandler(w http.ResponseWriter, r *http.Request) {
 	endsAt, err := time.Parse(time.RFC3339, req.EndsAt)
 	if err != nil {
 		util.RespondError(w, http.StatusBadRequest, "INVALID_END", "Invalid end date format")
+		return
+	}
+
+	// Query the event's current start time to validate the new end time
+	var startsAt time.Time
+	err = db.Pool.QueryRow(r.Context(),
+		`SELECT starts_at FROM event WHERE id = $1 AND user_id = $2`,
+		eventID, userID,
+	).Scan(&startsAt)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			util.RespondError(w, http.StatusNotFound, "NOT_FOUND", "Event not found")
+			return
+		}
+		util.RespondError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to fetch event")
+		return
+	}
+
+	if endsAt.Before(startsAt) || endsAt.Equal(startsAt) {
+		util.RespondError(w, http.StatusBadRequest, "INVALID_RANGE", "End time must be after start time")
 		return
 	}
 
@@ -377,13 +420,15 @@ func AddExceptionHandler(w http.ResponseWriter, r *http.Request) {
 
 func listEvents(ctx context.Context, userID string, start, end time.Time) ([]Event, error) {
 	rows, err := db.Pool.Query(ctx, `
-		SELECT id, user_id, title, description, starts_at, ends_at, all_day, rrule, 
-		       COALESCE(timezone, 'Europe/Moscow'), location, color, COALESCE(tags, '{}'), 
+		SELECT id, user_id, title, description, starts_at, ends_at, all_day, rrule,
+		       COALESCE(timezone, 'Europe/Moscow'), location, color, COALESCE(tags, '{}'),
 		       task_id, COALESCE(is_work_event, true), created_at, updated_at
 		FROM event
-		WHERE user_id = $1 
-		  AND starts_at < $3 
-		  AND ends_at > $2
+		WHERE user_id = $1
+		  AND (
+		    (starts_at < $3 AND ends_at > $2)
+		    OR (rrule IS NOT NULL AND rrule != '' AND starts_at < $3)
+		  )
 		ORDER BY starts_at ASC
 	`, userID, start, end)
 	if err != nil {

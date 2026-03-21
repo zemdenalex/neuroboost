@@ -1,7 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
+import { ListTodo } from 'lucide-react';
 import { WeekGrid } from '../../components/Calendar/WeekGrid';
 import { TaskSidebar } from '../../components/TaskSidebar';
+import { MobileTaskPanel } from '../../components/TaskSidebar/MobileTaskPanel';
 import { EventEditor } from '../../components/Calendar/EventEditor';
+import { useAuthContext } from '../../contexts/AuthContext';
 import { createTask } from '../../api';
 import {
   getEvents,
@@ -13,11 +16,9 @@ import {
 } from '../../api';
 import type { NbEvent, Task } from '../../types';
 
-interface CalendarProps {
-  timezone?: string;
-}
-
-export function Calendar({ timezone = 'Europe/Moscow' }: CalendarProps) {
+export function Calendar() {
+  const { user } = useAuthContext();
+  const timezone = user?.timezone || 'Europe/Moscow';
   const [events, setEvents] = useState<NbEvent[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
@@ -26,6 +27,7 @@ export function Calendar({ timezone = 'Europe/Moscow' }: CalendarProps) {
   const [editorRange, setEditorRange] = useState<{ start: Date; end: Date; allDay?: boolean } | null>(null);
   const [editorDraft, setEditorDraft] = useState<NbEvent | null>(null);
   const [taskSidebarOpen, setTaskSidebarOpen] = useState(true);
+  const [mobileTasksOpen, setMobileTasksOpen] = useState(false);
 
   // Calculate week range
   const getWeekRange = useCallback((offset: number) => {
@@ -197,6 +199,27 @@ export function Calendar({ timezone = 'Europe/Moscow' }: CalendarProps) {
           onWeekChange={handleWeekChange}
         />
       </div>
+
+      {/* Mobile task toggle */}
+      <button
+        onClick={() => setMobileTasksOpen(true)}
+        className="lg:hidden fixed bottom-20 right-4 z-30 w-12 h-12 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded-full flex items-center justify-center shadow-lg"
+        aria-label="Open tasks"
+      >
+        <ListTodo className="w-5 h-5 text-zinc-300" />
+      </button>
+
+      {/* Mobile task panel */}
+      <MobileTaskPanel
+        isOpen={mobileTasksOpen}
+        onClose={() => setMobileTasksOpen(false)}
+        tasks={tasks}
+        onToggle={handleToggleSidebar}
+        onSelectTask={handleSelectTask}
+        onEditTask={handleEditTask}
+        onUpdateTask={handleTaskUpdate}
+        onCreateTask={handleCreateTask}
+      />
 
       {/* Event editor modal */}
       {editorOpen && (

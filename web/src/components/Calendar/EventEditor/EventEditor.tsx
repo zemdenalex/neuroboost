@@ -1,6 +1,7 @@
 import { DateTimeFields } from './DateTimeFields';
 import { BasicFields } from './BasicFields';
 import { AdvancedFields } from './AdvancedFields';
+import { RepeatFields } from './RepeatFields';
 import { ReflectionFields } from './ReflectionFields';
 import { useEditorForm } from './useEditorForm';
 import type { EditorProps } from './editor.types';
@@ -69,16 +70,28 @@ export function EventEditor({
           onDescriptionCtrlEnter={actions.handleSave}
         />
 
-        {/* Advanced fields (all-day, reminder, color) */}
+        {/* Advanced fields (all-day, reminder, color, repeat) */}
         {state.showAdvanced && (
-          <AdvancedFields
-            isAllDay={state.isAllDay}
-            reminderMinutes={state.reminderMinutes}
-            color={state.color}
-            onAllDayChange={actions.setIsAllDay}
-            onReminderChange={actions.setReminderMinutes}
-            onColorChange={actions.setColor}
-          />
+          <>
+            <AdvancedFields
+              isAllDay={state.isAllDay}
+              reminderMinutes={state.reminderMinutes}
+              color={state.color}
+              onAllDayChange={actions.setIsAllDay}
+              onReminderChange={actions.setReminderMinutes}
+              onColorChange={actions.setColor}
+            />
+            <RepeatFields
+              repeatType={state.repeatType}
+              repeatEndType={state.repeatEndType}
+              repeatCount={state.repeatCount}
+              repeatUntil={state.repeatUntil}
+              onRepeatTypeChange={actions.setRepeatType}
+              onRepeatEndTypeChange={actions.setRepeatEndType}
+              onRepeatCountChange={actions.setRepeatCount}
+              onRepeatUntilChange={actions.setRepeatUntil}
+            />
+          </>
         )}
 
         {/* Reflection section (only when editing) */}

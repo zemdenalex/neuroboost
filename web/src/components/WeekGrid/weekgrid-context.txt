@@ -1,1 +1,0 @@
-Context: WeekGrid requirements and behaviors.

@@ -61,7 +61,7 @@ export default function HorizontalHeader() {
         </Link>
 
         {/* Navigation */}
-        <nav className="flex items-center gap-1">
+        <nav className="hidden md:flex items-center gap-1">
           {navItems.map(({ path, label, icon: Icon }) => {
             const isActive = location.pathname === path
             return (

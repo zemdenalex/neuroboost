@@ -17,9 +17,10 @@ type Event struct {
 	Color       *string    `json:"color,omitempty"`
 	Tags        []string   `json:"tags"`
 	TaskID      *string    `json:"task_id,omitempty"`
-	IsWorkEvent bool       `json:"is_work_event"`
-	CreatedAt   time.Time  `json:"created_at"`
-	UpdatedAt   time.Time  `json:"updated_at"`
+	IsWorkEvent      bool       `json:"is_work_event"`
+	RecurringEventID *string    `json:"recurring_event_id,omitempty"`
+	CreatedAt        time.Time  `json:"created_at"`
+	UpdatedAt        time.Time  `json:"updated_at"`
 }
 
 // CreateEventRequest represents the request to create an event

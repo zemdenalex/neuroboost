@@ -217,6 +217,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             new CustomEvent('neuroboost-scale-change', { detail: settings.ui_scale })
           )
         }
+        if (settings.mobile_nav) {
+          window.dispatchEvent(
+            new CustomEvent('neuroboost-mobile-nav-change', { detail: settings.mobile_nav })
+          )
+        }
       } catch (err) {
         console.error('Failed to update settings:', err)
         throw err
@@ -327,5 +332,8 @@ function applySettingsToLocalStorage(settings: UserSettings) {
   }
   if (settings.features) {
     localStorage.setItem('neuroboost-features', JSON.stringify(settings.features))
+  }
+  if (settings.mobile_nav) {
+    localStorage.setItem('neuroboost-mobile-nav', settings.mobile_nav)
   }
 }

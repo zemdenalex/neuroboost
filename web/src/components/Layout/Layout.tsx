@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import Header from './Header'
+import { MobileNavigation } from './MobileNav'
 
 type HeaderVariant = 'horizontal' | 'vertical'
 
@@ -24,7 +25,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
     window.addEventListener('neuroboost-layout-change', handleLayoutChange as EventListener)
     window.addEventListener('storage', handleStorageChange)
-    
+
     return () => {
       window.removeEventListener('neuroboost-layout-change', handleLayoutChange as EventListener)
       window.removeEventListener('storage', handleStorageChange)
@@ -37,12 +38,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <main
         className={
           variant === 'horizontal'
-            ? 'pt-14' // Top padding for horizontal header
+            ? 'pt-14 pb-16 md:pb-0' // Top padding for horizontal header, bottom padding for mobile nav
             : 'pl-56' // Left padding for vertical sidebar
         }
       >
         {children}
       </main>
+      <MobileNavigation />
     </div>
   )
 }

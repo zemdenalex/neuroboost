@@ -22,18 +22,18 @@ export interface Task {
 // Reflection types (embedded in events)
 export interface ApiReflection {
   id: string;
-  focus_pct: number;
-  goal_pct: number;
+  focus: number;
+  energy: number;
   mood: number;
-  note?: string;
+  notes?: string;
   was_completed?: boolean;
   was_on_time?: boolean;
 }
 
 export interface Reflection {
   id: string;
-  focusPct: number;
-  goalPct: number;
+  focus: number;
+  energy: number;
   mood: number;
   note?: string;
   wasCompleted?: boolean;
@@ -56,6 +56,7 @@ export interface ApiEvent {
   tags?: string[];
   task_id?: string | null;
   is_work_event?: boolean;
+  recurring_event_id?: string;
   created_at?: string;
   updated_at?: string;
   reflections?: ApiReflection[];
@@ -77,6 +78,7 @@ export interface NbEvent {
   tags?: string[];
   taskId?: string | null;
   isWorkEvent?: boolean;
+  recurringEventId?: string;
   createdAt?: string;
   updatedAt?: string;
   reflections?: Reflection[];
@@ -99,14 +101,15 @@ export function toNbEvent(api: ApiEvent): NbEvent {
     tags: api.tags || [],
     taskId: api.task_id,
     isWorkEvent: api.is_work_event,
+    recurringEventId: api.recurring_event_id,
     createdAt: api.created_at,
     updatedAt: api.updated_at,
     reflections: api.reflections?.map(r => ({
       id: r.id,
-      focusPct: r.focus_pct,
-      goalPct: r.goal_pct,
+      focus: r.focus,
+      energy: r.energy,
       mood: r.mood,
-      note: r.note,
+      note: r.notes,
       wasCompleted: r.was_completed,
       wasOnTime: r.was_on_time,
     })),
@@ -129,6 +132,7 @@ export function toApiEvent(event: Partial<NbEvent>): Partial<ApiEvent> {
   if (event.tags !== undefined) result.tags = event.tags;
   if (event.taskId !== undefined) result.task_id = event.taskId;
   if (event.isWorkEvent !== undefined) result.is_work_event = event.isWorkEvent;
+  if (event.recurringEventId !== undefined) result.recurring_event_id = event.recurringEventId;
 
   return result;
 }

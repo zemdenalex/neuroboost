@@ -19,6 +19,7 @@ export interface User {
 
 export interface UserSettings {
   header_variant?: 'horizontal' | 'vertical'
+  mobile_nav?: 'bottom_tabs' | 'hamburger' | 'fab'
   ui_scale?: number
   work_days?: string[]
   work_start?: string

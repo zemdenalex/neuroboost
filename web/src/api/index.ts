@@ -75,6 +75,8 @@ export interface CreateEventBody {
   location?: string;
   tags?: string[];
   color?: string;
+  timezone?: string;
+  rrule?: string;
   reminders?: Array<{ minutesBefore: number; channel: 'TELEGRAM' | 'WEB' }>;
 }
 
@@ -89,6 +91,8 @@ export async function createEvent(body: CreateEventBody): Promise<NbEvent> {
     location: body.location,
     tags: body.tags,
     color: body.color,
+    timezone: body.timezone,
+    rrule: body.rrule,
     reminders: body.reminders,
   };
   const response = await api.post<{ event: ApiEvent } | ApiEvent>('/events', apiBody);
@@ -109,6 +113,8 @@ export async function updateEvent(id: string, updates: Partial<CreateEventBody>)
   if (updates.location !== undefined) apiBody.location = updates.location;
   if (updates.tags !== undefined) apiBody.tags = updates.tags;
   if (updates.color !== undefined) apiBody.color = updates.color;
+  if (updates.timezone !== undefined) apiBody.timezone = updates.timezone;
+  if (updates.rrule !== undefined) apiBody.rrule = updates.rrule;
 
   const response = await api.patch<{ event: ApiEvent } | ApiEvent>(`/events/${id}`, apiBody);
   const event = 'event' in (response as Record<string, unknown>)
@@ -128,8 +134,8 @@ export async function moveEvent(id: string, startsAt: string, endsAt: string): P
 }
 
 export interface ReflectionBody {
-  focusPct: number;
-  goalPct: number;
+  focus: number;
+  energy: number;
   mood: number;
   note?: string;
   wasCompleted?: boolean;
@@ -139,10 +145,10 @@ export interface ReflectionBody {
 /** Save reflection with camelCase body */
 export async function saveReflection(eventId: string, reflection: ReflectionBody): Promise<void> {
   await api.post(`/events/${eventId}/reflection`, {
-    focus_pct: reflection.focusPct,
-    goal_pct: reflection.goalPct,
+    focus: reflection.focus,
+    energy: reflection.energy,
     mood: reflection.mood,
-    note: reflection.note,
+    notes: reflection.note,
     was_completed: reflection.wasCompleted,
     was_on_time: reflection.wasOnTime,
   });

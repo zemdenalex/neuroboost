@@ -16,11 +16,15 @@ import type {
 } from './editor.types';
 import type { NbEvent } from '../../../types';
 
+export type RepeatType = 'none' | 'daily' | 'weekly' | 'monthly';
+export type RepeatEndType = 'never' | 'count' | 'date';
+
 export interface EditorFormState {
   title: string; description: string; location: string; tags: string; isAllDay: boolean;
   color: string; reminderMinutes: number; startTimeInput: string; endTimeInput: string;
   startDateLocal: string; endDateLocal: string; validation: TimeValidation;
   showAdvanced: boolean; showReflection: boolean; isDeleting: boolean; reflection: ReflectionState;
+  repeatType: RepeatType; repeatEndType: RepeatEndType; repeatCount: number; repeatUntil: string;
 }
 
 export interface EditorFormActions {
@@ -32,6 +36,8 @@ export interface EditorFormActions {
   handleTimeChange: (value: string, parsed: string | null, isStart: boolean) => void;
   handleReflectionChange: (update: Partial<ReflectionState>) => void;
   handleSave: () => Promise<void>; handleDelete: () => Promise<void>;
+  setRepeatType: (v: RepeatType) => void; setRepeatEndType: (v: RepeatEndType) => void;
+  setRepeatCount: (v: number) => void; setRepeatUntil: (v: string) => void;
 }
 
 export function useEditorForm(
@@ -57,7 +63,11 @@ export function useEditorForm(
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [showReflection, setShowReflection] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [reflection, setReflection] = useState<ReflectionState>({ focusPct: 75, goalPct: 75, mood: 7, note: '' });
+  const [reflection, setReflection] = useState<ReflectionState>({ focus: 7, energy: 7, mood: 7, note: '' });
+  const [repeatType, setRepeatType] = useState<RepeatType>('none');
+  const [repeatEndType, setRepeatEndType] = useState<RepeatEndType>('never');
+  const [repeatCount, setRepeatCount] = useState(10);
+  const [repeatUntil, setRepeatUntil] = useState('');
 
   const isEditing = !!draft;
   const hasReflection = !!(draft?.reflections && draft.reflections.length > 0);
@@ -82,7 +92,36 @@ export function useEditorForm(
       
       if (hasReflection && draft.reflections?.[0]) {
         const r = draft.reflections[0];
-        setReflection({ focusPct: r.focusPct, goalPct: r.goalPct, mood: r.mood, note: r.note || '' });
+        setReflection({ focus: r.focus, energy: r.energy, mood: r.mood, note: r.note || '' });
+      }
+
+      // Parse RRULE if present
+      if (draft.rrule) {
+        const parts = draft.rrule.split(';');
+        for (const part of parts) {
+          const [key, val] = part.split('=');
+          if (!key || !val) continue;
+          switch (key.toUpperCase()) {
+            case 'FREQ': {
+              const freq = val.toLowerCase();
+              if (freq === 'daily' || freq === 'weekly' || freq === 'monthly') {
+                setRepeatType(freq);
+              }
+              break;
+            }
+            case 'COUNT':
+              setRepeatEndType('count');
+              setRepeatCount(parseInt(val, 10) || 10);
+              break;
+            case 'UNTIL':
+              setRepeatEndType('date');
+              setRepeatUntil(val);
+              break;
+          }
+        }
+      } else {
+        setRepeatType('none');
+        setRepeatEndType('never');
       }
     } else if (range) {
       const start = utcToLocalDateTime(range.start, timezone);
@@ -140,8 +179,17 @@ export function useEditorForm(
       location: location.trim() || undefined,
       tags: tagsArray.length ? tagsArray : undefined,
       color: color.trim() || undefined,
+      timezone,
       reminders: reminders.length ? reminders : undefined,
     };
+
+    // Build RRULE string from repeat fields
+    if (repeatType !== 'none') {
+      let rrule = `FREQ=${repeatType.toUpperCase()}`;
+      if (repeatEndType === 'count') rrule += `;COUNT=${repeatCount}`;
+      if (repeatEndType === 'date' && repeatUntil) rrule += `;UNTIL=${repeatUntil}`;
+      body.rrule = rrule;
+    }
 
     try {
       if (isEditing && draft) {
@@ -149,8 +197,8 @@ export function useEditorForm(
 
         if (showReflection) {
           const reflectionBody: ReflectionBody = {
-            focusPct: reflection.focusPct,
-            goalPct: reflection.goalPct,
+            focus: reflection.focus,
+            energy: reflection.energy,
             mood: reflection.mood,
             note: reflection.note.trim() || undefined,
             wasCompleted: true,
@@ -168,7 +216,7 @@ export function useEditorForm(
       console.error('Failed to save event:', error);
       alert('Failed to save event: ' + (error instanceof Error ? error.message : 'Unknown error'));
     }
-  }, [title, validation, tags, reminderMinutes, startDateLocal, endDateLocal, timezone, isAllDay, description, location, color, isEditing, draft, showReflection, reflection, onPatched, onCreated]);
+  }, [title, validation, tags, reminderMinutes, startDateLocal, endDateLocal, timezone, isAllDay, description, location, color, isEditing, draft, showReflection, reflection, repeatType, repeatEndType, repeatCount, repeatUntil, onPatched, onCreated]);
 
   const handleDelete = useCallback(async () => {
     if (!draft || !confirm(`Delete "${draft.title}"?`)) return;
@@ -186,8 +234,8 @@ export function useEditorForm(
   const canSave = !!(title.trim() && (isAllDay || (validation.start && validation.end && validation.dateRangeValid)));
 
   return {
-    state: { title, description, location, tags, isAllDay, color, reminderMinutes, startTimeInput, endTimeInput, startDateLocal, endDateLocal, validation, showAdvanced, showReflection, isDeleting, reflection },
-    actions: { setTitle, setDescription, setLocation, setTags, setIsAllDay, setColor, setReminderMinutes, setStartDateLocal, setEndDateLocal, setShowAdvanced, setShowReflection, handleTimeChange, handleReflectionChange, handleSave, handleDelete },
+    state: { title, description, location, tags, isAllDay, color, reminderMinutes, startTimeInput, endTimeInput, startDateLocal, endDateLocal, validation, showAdvanced, showReflection, isDeleting, reflection, repeatType, repeatEndType, repeatCount, repeatUntil },
+    actions: { setTitle, setDescription, setLocation, setTags, setIsAllDay, setColor, setReminderMinutes, setStartDateLocal, setEndDateLocal, setShowAdvanced, setShowReflection, handleTimeChange, handleReflectionChange, handleSave, handleDelete, setRepeatType, setRepeatEndType, setRepeatCount, setRepeatUntil },
     isEditing,
     hasReflection,
     canSave,

@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom'
+
 export default function Home(){
   return (
     <div className="h-full overflow-y-auto bg-black text-zinc-100 font-mono">
@@ -7,8 +9,8 @@ export default function Home(){
         <h2 className="text-xl mt-2">The Organizer for Non-Organizers</h2>
         <p className="text-zinc-400 mt-4 max-w-xl text-center">Built for neurodivergent minds...</p>
         <div className="mt-6 flex gap-3">
-          <a className="px-4 py-2 bg-zinc-800 rounded border border-zinc-700" href="#/calendar">Get Started</a>
-          <a className="px-4 py-2 bg-zinc-800 rounded border border-zinc-700" href="#/login">Sign In</a>
+          <Link className="px-4 py-2 bg-zinc-800 rounded border border-zinc-700" to="/calendar">Get Started</Link>
+          <Link className="px-4 py-2 bg-zinc-800 rounded border border-zinc-700" to="/login">Sign In</Link>
         </div>
       </section>
 

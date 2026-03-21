@@ -13,9 +13,11 @@ import {
   Check,
   LayoutGrid,
   Maximize,
+  Smartphone,
 } from 'lucide-react'
 
 type HeaderVariant = 'horizontal' | 'vertical'
+type MobileNavType = 'bottom_tabs' | 'hamburger' | 'fab'
 
 const TIMEZONES = [
   { value: 'Europe/Moscow', label: 'Europe/Moscow (MSK)', offset: '+3' },
@@ -38,6 +40,7 @@ export default function Settings() {
 
   // Settings state - initialize from user settings or defaults
   const [headerStyle, setHeaderStyle] = useState<HeaderVariant>('horizontal')
+  const [mobileNav, setMobileNav] = useState<MobileNavType>('bottom_tabs')
   const [uiScale, setUIScale] = useState(100)
   const [timezone, setTimezone] = useState('Europe/Moscow')
   const [workDays, setWorkDays] = useState(['Mon', 'Tue', 'Wed', 'Thu', 'Fri'])
@@ -64,6 +67,9 @@ export default function Settings() {
       if (user.settings) {
         if (user.settings.header_variant) {
           setHeaderStyle(user.settings.header_variant)
+        }
+        if (user.settings.mobile_nav) {
+          setMobileNav(user.settings.mobile_nav)
         }
         if (user.settings.ui_scale) {
           setUIScale(user.settings.ui_scale)
@@ -103,6 +109,15 @@ export default function Settings() {
     }
   }
 
+  const handleMobileNavChange = async (nav: MobileNavType) => {
+    setMobileNav(nav)
+    try {
+      await updateSettings({ mobile_nav: nav })
+    } catch {
+      setError('Failed to save mobile navigation preference')
+    }
+  }
+
   const handleLogout = async () => {
     await logout()
     navigate('/login')
@@ -118,6 +133,7 @@ export default function Settings() {
         updateProfile({ timezone }),
         updateSettings({
           header_variant: headerStyle,
+          mobile_nav: mobileNav,
           ui_scale: uiScale,
           work_days: workDays,
           work_start: workStart,
@@ -195,6 +211,69 @@ export default function Settings() {
             </button>
           </div>
           <p className="text-xs text-zinc-500 mt-2">Layout changes apply immediately</p>
+        </section>
+
+        {/* Mobile Navigation */}
+        <section className="bg-zinc-900 border border-zinc-800 rounded-lg p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <Smartphone className="w-5 h-5 text-zinc-400" />
+            <h2 className="text-lg font-mono font-semibold text-white">Mobile Navigation</h2>
+          </div>
+
+          <div className="flex flex-col gap-3">
+            <button
+              onClick={() => handleMobileNavChange('bottom_tabs')}
+              className={`flex items-start gap-3 p-3 rounded-lg border text-left transition-colors ${
+                mobileNav === 'bottom_tabs'
+                  ? 'bg-blue-600/20 border-blue-500'
+                  : 'bg-zinc-800 border-zinc-700 hover:border-zinc-600'
+              }`}
+            >
+              <div className="flex-1">
+                <p className={`text-sm font-mono ${mobileNav === 'bottom_tabs' ? 'text-blue-400' : 'text-zinc-300'}`}>
+                  Bottom Tabs
+                </p>
+                <p className="text-xs text-zinc-500 mt-0.5">
+                  Fixed tab bar at the bottom with quick access to main sections
+                </p>
+              </div>
+            </button>
+            <button
+              onClick={() => handleMobileNavChange('hamburger')}
+              className={`flex items-start gap-3 p-3 rounded-lg border text-left transition-colors ${
+                mobileNav === 'hamburger'
+                  ? 'bg-blue-600/20 border-blue-500'
+                  : 'bg-zinc-800 border-zinc-700 hover:border-zinc-600'
+              }`}
+            >
+              <div className="flex-1">
+                <p className={`text-sm font-mono ${mobileNav === 'hamburger' ? 'text-blue-400' : 'text-zinc-300'}`}>
+                  Hamburger Menu
+                </p>
+                <p className="text-xs text-zinc-500 mt-0.5">
+                  Slide-out drawer from the left with swipe gestures
+                </p>
+              </div>
+            </button>
+            <button
+              onClick={() => handleMobileNavChange('fab')}
+              className={`flex items-start gap-3 p-3 rounded-lg border text-left transition-colors ${
+                mobileNav === 'fab'
+                  ? 'bg-blue-600/20 border-blue-500'
+                  : 'bg-zinc-800 border-zinc-700 hover:border-zinc-600'
+              }`}
+            >
+              <div className="flex-1">
+                <p className={`text-sm font-mono ${mobileNav === 'fab' ? 'text-blue-400' : 'text-zinc-300'}`}>
+                  Floating Button
+                </p>
+                <p className="text-xs text-zinc-500 mt-0.5">
+                  Floating action button with a pull-up navigation sheet
+                </p>
+              </div>
+            </button>
+          </div>
+          <p className="text-xs text-zinc-500 mt-2">Visible only on mobile screens (below 768px)</p>
         </section>
 
         {/* UI Scale */}

@@ -21,22 +21,22 @@ export function ReflectionFields({
       
       <div className="grid grid-cols-3 gap-3">
         <SliderField
-          label="Focus %"
-          value={reflection.focusPct}
-          min={0}
-          max={100}
-          step={5}
-          displayValue={`${reflection.focusPct}%`}
-          onChange={(v) => onReflectionChange({ focusPct: v })}
+          label="Focus"
+          value={reflection.focus}
+          min={1}
+          max={10}
+          step={1}
+          displayValue={`${reflection.focus}/10`}
+          onChange={(v) => onReflectionChange({ focus: v })}
         />
         <SliderField
-          label="Goal %"
-          value={reflection.goalPct}
-          min={0}
-          max={100}
-          step={5}
-          displayValue={`${reflection.goalPct}%`}
-          onChange={(v) => onReflectionChange({ goalPct: v })}
+          label="Energy"
+          value={reflection.energy}
+          min={1}
+          max={10}
+          step={1}
+          displayValue={`${reflection.energy}/10`}
+          onChange={(v) => onReflectionChange({ energy: v })}
         />
         <SliderField
           label="Mood"

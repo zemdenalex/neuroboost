@@ -41,16 +41,16 @@ export interface EditorState {
 }
 
 export interface ReflectionState {
-  focusPct: number;
-  goalPct: number;
+  focus: number;
+  energy: number;
   mood: number;
   note: string;
 }
 
 export interface Reflection {
   id?: string;
-  focusPct: number;
-  goalPct: number;
+  focus: number;
+  energy: number;
   mood: number;
   note?: string;
   wasCompleted?: boolean;
@@ -58,8 +58,8 @@ export interface Reflection {
 }
 
 export interface ReflectionBody {
-  focusPct: number;
-  goalPct: number;
+  focus: number;
+  energy: number;
   mood: number;
   note?: string;
   wasCompleted?: boolean;
@@ -75,6 +75,8 @@ export interface CreateEventBody {
   location?: string;
   tags?: string[];
   color?: string;
+  timezone?: string;
+  rrule?: string;
   reminders?: Array<{ minutesBefore: number; channel: 'TELEGRAM' | 'WEB' }>;
 }
 
@@ -89,8 +91,8 @@ export const REMINDER_OPTIONS = [
 ] as const;
 
 export const DEFAULT_REFLECTION: ReflectionState = {
-  focusPct: 75,
-  goalPct: 75,
+  focus: 7,
+  energy: 7,
   mood: 7,
   note: '',
 };
