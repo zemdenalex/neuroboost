@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { DateTimeFields } from './DateTimeFields';
 import { BasicFields } from './BasicFields';
 import { AdvancedFields } from './AdvancedFields';
@@ -15,6 +16,8 @@ export function EventEditor({
   onPatched, 
   onDelete 
 }: EditorProps) {
+  const { t } = useTranslation('calendar');
+  const { t: tc } = useTranslation('common');
   const { state, actions, isEditing, hasReflection, canSave } = useEditorForm(
     draft, range, timezone, onCreated, onPatched, onDelete
   );
@@ -27,7 +30,7 @@ export function EventEditor({
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-semibold text-white">
-          {isEditing ? 'Edit Event' : 'New Event'}
+          {isEditing ? t('editEvent') : t('newEvent')}
         </h3>
         <button 
           onClick={onClose} 
@@ -101,7 +104,7 @@ export function EventEditor({
               onClick={() => actions.setShowReflection(!state.showReflection)}
               className="text-sm text-zinc-400 hover:text-zinc-200 mb-2"
             >
-              {hasReflection ? '✓ ' : ''}Reflection {state.showReflection ? '−' : '+'}
+              {hasReflection ? '✓ ' : ''}{t('reflection')} {state.showReflection ? '−' : '+'}
             </button>
             
             {state.showReflection && (
@@ -122,7 +125,7 @@ export function EventEditor({
             onClick={() => actions.setShowAdvanced(!state.showAdvanced)}
             className="text-sm text-zinc-400 hover:text-zinc-200"
           >
-            {state.showAdvanced ? 'Simple' : 'Advanced'} {state.showAdvanced ? '−' : '+'}
+            {state.showAdvanced ? t('simple') : t('advanced')} {state.showAdvanced ? '−' : '+'}
           </button>
           
           {isEditing && (
@@ -131,7 +134,7 @@ export function EventEditor({
               disabled={state.isDeleting}
               className="text-sm text-red-400 hover:text-red-300 disabled:text-red-600"
             >
-              {state.isDeleting ? 'Deleting...' : 'Delete'}
+              {state.isDeleting ? t('deleting') : t('delete')}
             </button>
           )}
         </div>
@@ -141,14 +144,14 @@ export function EventEditor({
             onClick={onClose}
             className="px-4 py-2 text-zinc-400 hover:text-zinc-200 text-sm"
           >
-            Cancel
+            {tc('action.cancel')}
           </button>
           <button
             onClick={actions.handleSave}
             disabled={!canSave}
             className="px-4 py-2 bg-zinc-700 hover:bg-zinc-600 disabled:bg-zinc-800 disabled:text-zinc-500 text-white rounded text-sm"
           >
-            {isEditing ? (state.showReflection ? 'Save & Reflect' : 'Save') : 'Create'}
+            {isEditing ? (state.showReflection ? t('saveReflect') : t('save')) : t('create')}
           </button>
         </div>
       </div>

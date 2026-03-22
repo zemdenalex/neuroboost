@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ListTodo } from 'lucide-react';
 import { WeekGrid } from '../../components/Calendar/WeekGrid';
 import { TaskSidebar } from '../../components/TaskSidebar';
@@ -17,6 +18,7 @@ import {
 import type { NbEvent, Task } from '../../types';
 
 export function Calendar() {
+  const { t } = useTranslation('calendar');
   const { user } = useAuthContext();
   const timezone = user?.timezone || 'Europe/Moscow';
   const [events, setEvents] = useState<NbEvent[]>([]);
@@ -153,7 +155,7 @@ export function Calendar() {
   }, []);
 
   const handleCreateTask = useCallback(async () => {
-    const title = window.prompt('Task title?');
+    const title = window.prompt(t('taskTitlePrompt'));
     if (!title) return;
     await createTask({ title, priority: 2 });
     await loadTasks();
@@ -164,7 +166,7 @@ export function Calendar() {
       <div className="flex items-center justify-center h-screen bg-black text-zinc-400">
         <div className="text-center">
           <div className="animate-spin w-8 h-8 border-2 border-zinc-600 border-t-blue-500 rounded-full mx-auto mb-4" />
-          Loading...
+          {t('loading')}
         </div>
       </div>
     );
@@ -204,7 +206,7 @@ export function Calendar() {
       <button
         onClick={() => setMobileTasksOpen(true)}
         className="lg:hidden fixed bottom-20 right-4 z-30 w-12 h-12 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded-full flex items-center justify-center shadow-lg"
-        aria-label="Open tasks"
+        aria-label={t('openTasks')}
       >
         <ListTodo className="w-5 h-5 text-zinc-300" />
       </button>

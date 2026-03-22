@@ -1,0 +1,19 @@
+{
+  "title": "NeuroBoost",
+  "subtitle": "The Organizer for Non-Organizers",
+  "tagline": "Built for neurodivergent minds...",
+  "getStarted": "Get Started",
+  "signIn": "Sign In",
+  "problemTitle": "Traditional planners don't work for everyone",
+  "problem": "The Problem",
+  "approach": "Our Approach",
+  "howItWorks": "How NeuroBoost Works",
+  "features.timeBlocking": "Time-Blocking First",
+  "features.reminders": "Pushy Reminders",
+  "features.planVsActual": "Plan vs Actual",
+  "features.smartLearning": "Smart Learning",
+  "philosophy": "Our Philosophy",
+  "philosophyText": "Most productivity tools are designed by organized people...",
+  "cta": "Ready to try a different approach?",
+  "footer": "© {{year}} NeuroBoost"
+}

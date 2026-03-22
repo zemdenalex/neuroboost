@@ -1,4 +1,5 @@
 import { useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface BasicFieldsProps {
   title: string;
@@ -29,6 +30,7 @@ export function BasicFields({
   onDescriptionCtrlEnter,
   autoFocusTitle = true,
 }: BasicFieldsProps) {
+  const { t } = useTranslation('calendar');
   const titleRef = useRef<HTMLInputElement>(null);
   const descriptionRef = useRef<HTMLTextAreaElement>(null);
 
@@ -59,7 +61,7 @@ export function BasicFields({
         <input
           ref={titleRef}
           type="text"
-          placeholder="Event title..."
+          placeholder={t('basic.titlePlaceholder')}
           value={title}
           onChange={(e) => onTitleChange(e.target.value)}
           onKeyDown={handleTitleKeyDown}
@@ -73,7 +75,7 @@ export function BasicFields({
           <div>
             <textarea
               ref={descriptionRef}
-              placeholder="Description (optional)..."
+              placeholder={t('basic.descriptionPlaceholder')}
               value={description}
               onChange={(e) => onDescriptionChange(e.target.value)}
               onKeyDown={handleDescriptionKeyDown}
@@ -81,14 +83,14 @@ export function BasicFields({
               className="w-full px-3 py-2 bg-zinc-800 border border-zinc-600 rounded text-white placeholder-zinc-400 focus:outline-none focus:border-zinc-400 resize-none font-mono"
             />
             <div className="text-xs text-zinc-500 mt-1">
-              Ctrl+Enter to save
+              {t('ctrlEnterToSave')}
             </div>
           </div>
 
           <div>
             <input
               type="text"
-              placeholder="Location (optional)..."
+              placeholder={t('basic.locationPlaceholder')}
               value={location}
               onChange={(e) => onLocationChange(e.target.value)}
               className="w-full px-3 py-2 bg-zinc-800 border border-zinc-600 rounded text-white placeholder-zinc-400 focus:outline-none focus:border-zinc-400 font-mono"
@@ -98,7 +100,7 @@ export function BasicFields({
           <div>
             <input
               type="text"
-              placeholder="Tags (comma separated)..."
+              placeholder={t('basic.tagsPlaceholder')}
               value={tags}
               onChange={(e) => onTagsChange(e.target.value)}
               className="w-full px-3 py-2 bg-zinc-800 border border-zinc-600 rounded text-white placeholder-zinc-400 focus:outline-none focus:border-zinc-400 font-mono"

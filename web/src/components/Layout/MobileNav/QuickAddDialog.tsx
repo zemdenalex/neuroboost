@@ -1,5 +1,6 @@
 import { useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { Calendar, CheckSquare } from 'lucide-react'
 
 interface QuickAddDialogProps {
@@ -9,6 +10,7 @@ interface QuickAddDialogProps {
 }
 
 export function QuickAddDialog({ open, onClose, anchorRef }: QuickAddDialogProps) {
+  const { t } = useTranslation('common')
   const dialogRef = useRef<HTMLDivElement>(null)
   const navigate = useNavigate()
 
@@ -34,8 +36,8 @@ export function QuickAddDialog({ open, onClose, anchorRef }: QuickAddDialogProps
   if (!open) return null
 
   const items = [
-    { label: 'New Event', icon: Calendar, path: '/calendar' },
-    { label: 'New Task', icon: CheckSquare, path: '/tasks' },
+    { label: t('quickAction.newEvent'), icon: Calendar, path: '/calendar' },
+    { label: t('quickAction.newTask'), icon: CheckSquare, path: '/tasks' },
   ]
 
   return (

@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   Plus,
   Loader2,
@@ -27,6 +28,8 @@ import {
 } from '../../api/tasks'
 
 export default function Tasks() {
+  const { t } = useTranslation('tasks')
+  const { t: tc } = useTranslation('common')
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
   const [showEditor, setShowEditor] = useState(false)
@@ -137,7 +140,7 @@ export default function Tasks() {
   const handleDeleteTask = async () => {
     if (!editingTask?.id) return
     
-    if (confirm(`Delete "${editingTask.title}"?`)) {
+    if (confirm(t('confirmDelete', { title: editingTask.title }))) {
       try {
         await deleteTask(editingTask.id)
         setTasks(prev => prev.filter(t => t.id !== editingTask.id))
@@ -161,7 +164,7 @@ export default function Tasks() {
         {/* Header */}
         <div className="px-6 py-4 border-b border-zinc-800 bg-zinc-900">
           <div className="flex items-center justify-between mb-4">
-            <h1 className="text-xl font-mono font-semibold text-white">Tasks</h1>
+            <h1 className="text-xl font-mono font-semibold text-white">{t('title')}</h1>
             <button
               onClick={() => {
                 setEditingTask({ title: '', priority: 3, contexts: [], tags: [] })
@@ -170,24 +173,24 @@ export default function Tasks() {
               className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-mono rounded-lg transition-colors"
             >
               <Plus className="w-4 h-4" />
-              New Task
+              {t('newTask')}
             </button>
           </div>
 
           {/* Stats */}
           <div className="flex items-center gap-6 text-sm">
             <span className="text-zinc-400">
-              Total: <strong className="text-white">{stats.total}</strong>
+              {t('stat.total')} <strong className="text-white">{stats.total}</strong>
             </span>
             <span className="text-zinc-400">
-              Done: <strong className="text-green-400">{stats.done}</strong>
+              {t('stat.done')} <strong className="text-green-400">{stats.done}</strong>
             </span>
             <span className="text-zinc-400">
-              To Do: <strong className="text-blue-400">{stats.todo}</strong>
+              {t('stat.todo')} <strong className="text-blue-400">{stats.todo}</strong>
             </span>
             {stats.overdue > 0 && (
               <span className="text-zinc-400">
-                Overdue: <strong className="text-red-400">{stats.overdue}</strong>
+                {t('stat.overdue')} <strong className="text-red-400">{stats.overdue}</strong>
               </span>
             )}
           </div>
@@ -200,7 +203,7 @@ export default function Tasks() {
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search tasks..."
+                placeholder={t('searchPlaceholder')}
                 className="w-full pl-10 pr-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white font-mono text-sm focus:outline-none focus:border-blue-500"
               />
             </div>
@@ -212,11 +215,11 @@ export default function Tasks() {
                 onChange={(e) => setFilterStatus(e.target.value as TaskStatus | 'ALL')}
                 className="px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white font-mono text-sm focus:outline-none focus:border-blue-500"
               >
-                <option value="ALL">All Status</option>
-                <option value="TODO">To Do</option>
-                <option value="IN_PROGRESS">In Progress</option>
-                <option value="SCHEDULED">Scheduled</option>
-                <option value="DONE">Done</option>
+                <option value="ALL">{t('filter.allStatus')}</option>
+                <option value="TODO">{t('filter.todo')}</option>
+                <option value="IN_PROGRESS">{t('filter.inProgress')}</option>
+                <option value="SCHEDULED">{t('filter.scheduled')}</option>
+                <option value="DONE">{t('filter.done')}</option>
               </select>
             </div>
           </div>
@@ -230,7 +233,7 @@ export default function Tasks() {
             </div>
           ) : filteredTasks.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-zinc-500">No tasks found</p>
+              <p className="text-zinc-500">{t('noTasks')}</p>
               <button
                 onClick={() => {
                   setEditingTask({ title: '', priority: 3, contexts: [], tags: [] })
@@ -238,7 +241,7 @@ export default function Tasks() {
                 }}
                 className="mt-4 text-blue-400 hover:text-blue-300"
               >
-                Create your first task
+                {t('createFirst')}
               </button>
             </div>
           ) : (
@@ -260,7 +263,7 @@ export default function Tasks() {
                       )}
                       <div className={`w-3 h-3 rounded-full ${PRIORITY_COLORS[priority]}`} />
                       <span className="font-mono font-medium text-white">
-                        {PRIORITY_LABELS[priority]}
+                        {t(`priority.${priority}`)}
                       </span>
                       <span className="text-sm text-zinc-500">({priorityTasks.length})</span>
                     </div>
@@ -337,7 +340,7 @@ export default function Tasks() {
                             </button>
                             <button
                               onClick={async () => {
-                                if (confirm(`Delete "${task.title}"?`)) {
+                                if (confirm(t('confirmDelete', { title: task.title }))) {
                                   await deleteTask(task.id)
                                   setTasks(prev => prev.filter(t => t.id !== task.id))
                                 }
@@ -361,27 +364,27 @@ export default function Tasks() {
           <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
             <div className="bg-zinc-900 border border-zinc-700 rounded-lg w-full max-w-lg p-6 space-y-4 max-h-[90vh] overflow-y-auto">
               <h2 className="text-lg font-mono font-semibold text-white">
-                {editingTask.id ? 'Edit Task' : 'New Task'}
+                {editingTask.id ? t('editTask') : t('newTask')}
               </h2>
 
               <div>
-                <label className="block text-sm text-zinc-400 mb-1">Title</label>
+                <label className="block text-sm text-zinc-400 mb-1">{t('form.title')}</label>
                 <input
                   type="text"
                   value={editingTask.title || ''}
                   onChange={(e) => setEditingTask(prev => ({ ...prev!, title: e.target.value }))}
-                  placeholder="Task title"
+                  placeholder={t('form.titlePlaceholder')}
                   className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white font-mono focus:outline-none focus:border-blue-500"
                   autoFocus
                 />
               </div>
 
               <div>
-                <label className="block text-sm text-zinc-400 mb-1">Description</label>
+                <label className="block text-sm text-zinc-400 mb-1">{t('form.description')}</label>
                 <textarea
                   value={editingTask.description || ''}
                   onChange={(e) => setEditingTask(prev => ({ ...prev!, description: e.target.value }))}
-                  placeholder="Optional description"
+                  placeholder={t('form.descriptionPlaceholder')}
                   rows={3}
                   className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white font-mono focus:outline-none focus:border-blue-500 resize-none"
                 />
@@ -389,19 +392,19 @@ export default function Tasks() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm text-zinc-400 mb-1">Priority</label>
+                  <label className="block text-sm text-zinc-400 mb-1">{t('form.priority')}</label>
                   <select
                     value={editingTask.priority ?? 3}
                     onChange={(e) => setEditingTask(prev => ({ ...prev!, priority: Number(e.target.value) }))}
                     className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white font-mono focus:outline-none focus:border-blue-500"
                   >
-                    {Object.entries(PRIORITY_LABELS).map(([value, label]) => (
-                      <option key={value} value={value}>{label}</option>
+                    {Object.keys(PRIORITY_LABELS).map((value) => (
+                      <option key={value} value={value}>{t(`priority.${value}`)}</option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm text-zinc-400 mb-1">Due Date</label>
+                  <label className="block text-sm text-zinc-400 mb-1">{t('form.dueDate')}</label>
                   <input
                     type="datetime-local"
                     value={editingTask.due_date ? new Date(editingTask.due_date).toISOString().slice(0, 16) : ''}
@@ -412,18 +415,18 @@ export default function Tasks() {
               </div>
 
               <div>
-                <label className="block text-sm text-zinc-400 mb-1">Estimated Time (minutes)</label>
+                <label className="block text-sm text-zinc-400 mb-1">{t('form.estimatedTime')}</label>
                 <input
                   type="number"
                   value={editingTask.estimated_minutes || ''}
                   onChange={(e) => setEditingTask(prev => ({ ...prev!, estimated_minutes: Number(e.target.value) || undefined }))}
-                  placeholder="e.g. 30"
+                  placeholder={t('form.estimatedPlaceholder')}
                   className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white font-mono focus:outline-none focus:border-blue-500"
                 />
               </div>
 
               <div>
-                <label className="block text-sm text-zinc-400 mb-2">Contexts</label>
+                <label className="block text-sm text-zinc-400 mb-2">{t('form.contexts')}</label>
                 <div className="flex flex-wrap gap-2">
                   {Object.entries(CONTEXT_ICONS).map(([ctx, icon]) => (
                     <button
@@ -454,7 +457,7 @@ export default function Tasks() {
                     onClick={handleDeleteTask}
                     className="px-4 py-2 text-red-400 hover:bg-red-900/30 rounded-lg transition-colors"
                   >
-                    Delete
+                    {tc('action.delete')}
                   </button>
                 )}
                 <div className="flex gap-2 ml-auto">
@@ -465,14 +468,14 @@ export default function Tasks() {
                     }}
                     className="px-4 py-2 text-zinc-400 hover:bg-zinc-800 rounded-lg transition-colors"
                   >
-                    Cancel
+                    {tc('action.cancel')}
                   </button>
                   <button
                     onClick={handleSaveTask}
                     disabled={!editingTask.title}
                     className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-zinc-700 disabled:text-zinc-500 text-white rounded-lg transition-colors"
                   >
-                    Save
+                    {tc('action.save')}
                   </button>
                 </div>
               </div>

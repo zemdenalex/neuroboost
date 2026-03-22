@@ -1,4 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
 import { TaskSidebar } from './TaskSidebar';
 import type { Task } from '../../types';
@@ -24,6 +25,7 @@ export function MobileTaskPanel({
   onUpdateTask,
   onCreateTask,
 }: MobileTaskPanelProps) {
+  const { t } = useTranslation('tasks');
   const panelRef = useRef<HTMLDivElement>(null);
   const touchStartX = useRef<number | null>(null);
   const touchCurrentX = useRef<number>(0);
@@ -117,7 +119,7 @@ export function MobileTaskPanel({
       >
         {/* Header */}
         <div className="flex items-center justify-between p-3 border-b border-zinc-800">
-          <h2 className="text-sm font-semibold text-zinc-200">Tasks</h2>
+          <h2 className="text-sm font-semibold text-zinc-200">{t('title')}</h2>
           <button
             onClick={onClose}
             className="p-1.5 rounded hover:bg-zinc-800 transition-colors"

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { TimeInput } from './TimeInput';
 import type { TimeValidation } from './editor.types';
 
@@ -30,12 +31,14 @@ export function DateTimeFields({
   onStartTimeEnter,
   onEndTimeEnter,
 }: DateTimeFieldsProps) {
-  const isCrossMidnight = 
-    validation.start && 
-    validation.end && 
-    validation.startParsed && 
+  const { t } = useTranslation('calendar');
+
+  const isCrossMidnight =
+    validation.start &&
+    validation.end &&
+    validation.startParsed &&
     validation.endParsed &&
-    startDate === endDate && 
+    startDate === endDate &&
     validation.endParsed < validation.startParsed &&
     validation.dateRangeValid;
 
@@ -44,7 +47,7 @@ export function DateTimeFields({
       {/* Date inputs */}
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="block text-xs text-zinc-400 mb-1">Start Date</label>
+          <label className="block text-xs text-zinc-400 mb-1">{t('dateTime.startDate')}</label>
           <input
             type="date"
             value={startDate}
@@ -53,7 +56,7 @@ export function DateTimeFields({
           />
         </div>
         <div>
-          <label className="block text-xs text-zinc-400 mb-1">End Date</label>
+          <label className="block text-xs text-zinc-400 mb-1">{t('dateTime.endDate')}</label>
           <input
             type="date"
             value={endDate}
@@ -62,36 +65,38 @@ export function DateTimeFields({
           />
         </div>
       </div>
-      
+
       {/* Time inputs */}
       <div className="grid grid-cols-2 gap-2">
         <TimeInput
           value={startTime}
           onChange={onStartTimeChange}
           onEnter={onStartTimeEnter}
-          label="Start Time"
+          label={t('dateTime.startTime')}
+          placeholder={t('dateTime.timePlaceholder')}
           timezone={timezone}
         />
         <TimeInput
           value={endTime}
           onChange={onEndTimeChange}
           onEnter={onEndTimeEnter}
-          label="End Time"
+          label={t('dateTime.endTime')}
+          placeholder={t('dateTime.timePlaceholder')}
           timezone={timezone}
         />
       </div>
-      
+
       {/* Validation error */}
       {!validation.dateRangeValid && validation.dateRangeError && (
         <div className="text-xs text-red-400 bg-red-900/20 px-2 py-1 rounded">
           {validation.dateRangeError}
         </div>
       )}
-      
+
       {/* Cross-midnight indicator */}
       {isCrossMidnight && (
         <div className="text-xs text-purple-400 bg-purple-900/20 px-2 py-1 rounded">
-          Cross-midnight: {validation.startParsed} → {validation.endParsed} (+1 day)
+          {t('crossMidnight', { start: validation.startParsed, end: validation.endParsed })}
         </div>
       )}
     </div>

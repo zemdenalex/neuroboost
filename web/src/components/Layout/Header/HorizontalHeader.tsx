@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useAuthContext } from '../../../contexts/AuthContext'
 import {
   Calendar,
@@ -15,23 +16,24 @@ import {
   Home,
 } from 'lucide-react'
 
-const navItems = [
-  { path: '/home', label: 'Home', icon: Home },
-  { path: '/calendar', label: 'Calendar', icon: Calendar },
-  { path: '/tasks', label: 'Tasks', icon: CheckSquare },
-  { path: '/planning', label: 'Planning', icon: LayoutGrid },
-  { path: '/reflections', label: 'Reflections', icon: BookOpen },
-  { path: '/tools', label: 'Tools', icon: Wrench },
-  { path: '/settings', label: 'Settings', icon: Settings },
-  { path: '/profile', label: 'Profile', icon: User },
-]
-
 export default function HorizontalHeader() {
+  const { t } = useTranslation('common')
   const location = useLocation()
   const navigate = useNavigate()
   const { user, logout } = useAuthContext()
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
+
+  const navItems = [
+    { path: '/home', label: t('nav.home'), icon: Home },
+    { path: '/calendar', label: t('nav.calendar'), icon: Calendar },
+    { path: '/tasks', label: t('nav.tasks'), icon: CheckSquare },
+    { path: '/planning', label: t('nav.planning'), icon: LayoutGrid },
+    { path: '/reflections', label: t('nav.reflections'), icon: BookOpen },
+    { path: '/tools', label: t('nav.tools'), icon: Wrench },
+    { path: '/settings', label: t('nav.settings'), icon: Settings },
+    { path: '/profile', label: t('nav.profile'), icon: User },
+  ]
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -121,7 +123,7 @@ export default function HorizontalHeader() {
                 className="flex items-center gap-2 px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-800 transition-colors"
               >
                 <User className="w-4 h-4" />
-                Profile
+                {t('nav.profile')}
               </Link>
 
               <Link
@@ -130,7 +132,7 @@ export default function HorizontalHeader() {
                 className="flex items-center gap-2 px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-800 transition-colors"
               >
                 <Settings className="w-4 h-4" />
-                Settings
+                {t('nav.settings')}
               </Link>
 
               {user?.is_admin && (
@@ -140,7 +142,7 @@ export default function HorizontalHeader() {
                   className="flex items-center gap-2 px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-800 transition-colors"
                 >
                   <Shield className="w-4 h-4" />
-                  Admin Panel
+                  {t('nav.admin')}
                 </Link>
               )}
 
@@ -150,7 +152,7 @@ export default function HorizontalHeader() {
                   className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-zinc-800 transition-colors"
                 >
                   <LogOut className="w-4 h-4" />
-                  Sign out
+                  {t('action.signOut')}
                 </button>
               </div>
             </div>

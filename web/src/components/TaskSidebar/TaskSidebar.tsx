@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { Task } from '../../types';
 import { PriorityGroup } from './PriorityGroup';
 import { useDragTask } from './useDragTask';
@@ -24,10 +25,11 @@ export function TaskSidebar({
   onUpdateTask,
   onCreateTask,
 }: TaskSidebarProps) {
+  const { t } = useTranslation('tasks');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showCompleted, setShowCompleted] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  
+
   const { handleDragStart } = useDragTask();
   
   // Filter and group tasks
@@ -79,10 +81,10 @@ export function TaskSidebar({
       <button
         onClick={onToggle}
         className="fixed left-0 top-1/2 -translate-y-1/2 bg-zinc-800 border border-zinc-700 rounded-r px-2 py-4 hover:bg-zinc-700 transition-colors z-40"
-        title="Open tasks"
+        title={t('title')}
       >
         <span className="writing-mode-vertical text-xs font-mono">
-          Tasks ({todoCount})
+          {t('title')} ({todoCount})
         </span>
       </button>
     );
@@ -92,13 +94,13 @@ export function TaskSidebar({
     <div className="w-72 h-full flex flex-col bg-zinc-900 border-r border-zinc-700 font-mono">
       {/* Header */}
       <div className="p-3 border-b border-zinc-700 flex items-center justify-between">
-        <h2 className="font-semibold text-sm">Tasks ({todoCount})</h2>
+        <h2 className="font-semibold text-sm">{t('title')} ({todoCount})</h2>
         <div className="flex items-center gap-1">
           {onCreateTask && (
             <button
               onClick={onCreateTask}
               className="p-1 hover:bg-zinc-700 rounded text-xs"
-              title="Add task"
+              title={t('addTask')}
             >
               +
             </button>
@@ -106,7 +108,7 @@ export function TaskSidebar({
           <button
             onClick={onToggle}
             className="p-1 hover:bg-zinc-700 rounded text-xs"
-            title="Close sidebar"
+            title={t('closeSidebar')}
           >
             ✕
           </button>
@@ -117,7 +119,7 @@ export function TaskSidebar({
       <div className="p-2 border-b border-zinc-800 space-y-2">
         <input
           type="text"
-          placeholder="Search tasks..."
+          placeholder={t('searchPlaceholder')}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="w-full px-2 py-1 text-xs bg-zinc-800 border border-zinc-700 rounded focus:border-zinc-500 outline-none"
@@ -130,7 +132,7 @@ export function TaskSidebar({
             onChange={(e) => setShowCompleted(e.target.checked)}
             className="rounded border-zinc-600"
           />
-          Show completed
+          {t('showCompleted')}
         </label>
       </div>
       
@@ -138,11 +140,11 @@ export function TaskSidebar({
       <div className="flex-1 overflow-y-auto">
         {loading ? (
           <div className="p-4 text-center text-zinc-500 text-sm">
-            Loading tasks...
+            {t('loading', 'Loading tasks...')}
           </div>
         ) : filteredTasks.length === 0 ? (
           <div className="p-4 text-center text-zinc-500 text-sm">
-            {searchQuery ? 'No tasks match your search' : 'No tasks yet'}
+            {searchQuery ? t('noTasksMatch') : t('noTasksYet')}
           </div>
         ) : (
           // Render priority groups in order
@@ -166,7 +168,7 @@ export function TaskSidebar({
       
       {/* Footer hint */}
       <div className="p-2 border-t border-zinc-800 text-[10px] text-zinc-500 text-center">
-        Drag tasks to calendar to schedule
+        {t('dragHint')}
       </div>
     </div>
   );

@@ -1,10 +1,12 @@
 import { useState, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { Calendar, CheckSquare, PlusCircle, Settings, MoreHorizontal } from 'lucide-react'
 import { QuickAddDialog } from './QuickAddDialog'
 import { MoreMenu } from './MoreMenu'
 
 export function BottomTabBar() {
+  const { t } = useTranslation('common')
   const navigate = useNavigate()
   const location = useLocation()
   const [quickAddOpen, setQuickAddOpen] = useState(false)
@@ -13,9 +15,9 @@ export function BottomTabBar() {
   const moreRef = useRef<HTMLButtonElement>(null)
 
   const tabs = [
-    { path: '/calendar', label: 'Calendar', icon: Calendar },
-    { path: '/tasks', label: 'Tasks', icon: CheckSquare },
-  ] as const
+    { path: '/calendar', label: t('nav.calendar'), icon: Calendar },
+    { path: '/tasks', label: t('nav.tasks'), icon: CheckSquare },
+  ]
 
   return (
     <div className="fixed bottom-0 left-0 right-0 md:hidden bg-zinc-900 border-t border-zinc-800 z-50">
@@ -61,7 +63,7 @@ export function BottomTabBar() {
             <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center -mt-3">
               <PlusCircle className="w-5 h-5 text-white" />
             </div>
-            <span className="text-[10px] font-mono text-zinc-500">Add</span>
+            <span className="text-[10px] font-mono text-zinc-500">{t('action.add')}</span>
           </button>
         </div>
 
@@ -80,7 +82,7 @@ export function BottomTabBar() {
               location.pathname === '/settings' ? 'text-blue-400' : 'text-zinc-500'
             }`}
           >
-            Settings
+            {t('nav.settings')}
           </span>
         </button>
 
@@ -107,7 +109,7 @@ export function BottomTabBar() {
                 moreOpen ? 'text-blue-400' : 'text-zinc-500'
               }`}
             >
-              More
+              {t('action.more')}
             </span>
           </button>
         </div>

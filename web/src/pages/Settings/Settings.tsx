@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
+import i18n from '../../i18n'
 import { useAuthContext } from '../../contexts/AuthContext'
 import {
   Clock,
@@ -19,6 +21,11 @@ import {
 type HeaderVariant = 'horizontal' | 'vertical'
 type MobileNavType = 'bottom_tabs' | 'hamburger' | 'fab'
 
+const LANGUAGES = [
+  { value: 'en', label: 'English', flag: '\u{1F1EC}\u{1F1E7}' },
+  { value: 'ru', label: '\u0420\u0443\u0441\u0441\u043A\u0438\u0439', flag: '\u{1F1F7}\u{1F1FA}' },
+]
+
 const TIMEZONES = [
   { value: 'Europe/Moscow', label: 'Europe/Moscow (MSK)', offset: '+3' },
   { value: 'Europe/London', label: 'Europe/London (GMT)', offset: '+0' },
@@ -31,12 +38,15 @@ const TIMEZONES = [
 ]
 
 export default function Settings() {
+  const { t } = useTranslation('settings')
+  const { t: tc } = useTranslation('common')
   const navigate = useNavigate()
   const { user, logout, updateSettings, updateProfile } = useAuthContext()
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [showConfirmLogout, setShowConfirmLogout] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [language, setLanguage] = useState(i18n.language?.startsWith('ru') ? 'ru' : 'en')
 
   // Settings state - initialize from user settings or defaults
   const [headerStyle, setHeaderStyle] = useState<HeaderVariant>('horizontal')
@@ -105,7 +115,7 @@ export default function Settings() {
     try {
       await updateSettings({ header_variant: style })
     } catch {
-      setError('Failed to save layout preference')
+      setError(t('error.saveLayout'))
     }
   }
 
@@ -114,7 +124,18 @@ export default function Settings() {
     try {
       await updateSettings({ mobile_nav: nav })
     } catch {
-      setError('Failed to save mobile navigation preference')
+      setError(t('error.saveMobileNav'))
+    }
+  }
+
+  const handleLanguageChange = async (locale: string) => {
+    setLanguage(locale)
+    i18n.changeLanguage(locale)
+    localStorage.setItem('neuroboost-locale', locale)
+    try {
+      await updateProfile({ locale })
+    } catch {
+      setError(t('error.languageFailed'))
     }
   }
 
@@ -145,7 +166,7 @@ export default function Settings() {
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
     } catch {
-      setError('Failed to save settings')
+      setError(t('error.saveSettings'))
     } finally {
       setSaving(false)
     }
@@ -158,7 +179,7 @@ export default function Settings() {
   return (
     <div className="max-w-3xl mx-auto p-6 space-y-8">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-mono font-bold text-white">Settings</h1>
+          <h1 className="text-2xl font-mono font-bold text-white">{t('title')}</h1>
           <button
             onClick={handleSave}
             disabled={saving}
@@ -171,7 +192,7 @@ export default function Settings() {
             ) : (
               <Save className="w-4 h-4" />
             )}
-            {saved ? 'Saved!' : 'Save Changes'}
+            {saved ? t('saved') : t('saveChanges')}
           </button>
         </div>
 
@@ -185,7 +206,7 @@ export default function Settings() {
         <section className="bg-zinc-900 border border-zinc-800 rounded-lg p-5">
           <div className="flex items-center gap-2 mb-4">
             <LayoutGrid className="w-5 h-5 text-zinc-400" />
-            <h2 className="text-lg font-mono font-semibold text-white">Layout</h2>
+            <h2 className="text-lg font-mono font-semibold text-white">{t('layout.title')}</h2>
           </div>
 
           <div className="flex gap-3">
@@ -197,7 +218,7 @@ export default function Settings() {
                   : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:border-zinc-600'
               }`}
             >
-              Horizontal Top Bar
+              {t('layout.horizontal')}
             </button>
             <button
               onClick={() => handleHeaderStyleChange('vertical')}
@@ -207,17 +228,17 @@ export default function Settings() {
                   : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:border-zinc-600'
               }`}
             >
-              Vertical Sidebar
+              {t('layout.vertical')}
             </button>
           </div>
-          <p className="text-xs text-zinc-500 mt-2">Layout changes apply immediately</p>
+          <p className="text-xs text-zinc-500 mt-2">{t('layout.note')}</p>
         </section>
 
         {/* Mobile Navigation */}
         <section className="bg-zinc-900 border border-zinc-800 rounded-lg p-5">
           <div className="flex items-center gap-2 mb-4">
             <Smartphone className="w-5 h-5 text-zinc-400" />
-            <h2 className="text-lg font-mono font-semibold text-white">Mobile Navigation</h2>
+            <h2 className="text-lg font-mono font-semibold text-white">{t('mobileNav.title')}</h2>
           </div>
 
           <div className="flex flex-col gap-3">
@@ -231,10 +252,10 @@ export default function Settings() {
             >
               <div className="flex-1">
                 <p className={`text-sm font-mono ${mobileNav === 'bottom_tabs' ? 'text-blue-400' : 'text-zinc-300'}`}>
-                  Bottom Tabs
+                  {t('mobileNav.bottomTabs')}
                 </p>
                 <p className="text-xs text-zinc-500 mt-0.5">
-                  Fixed tab bar at the bottom with quick access to main sections
+                  {t('mobileNav.bottomTabsDesc')}
                 </p>
               </div>
             </button>
@@ -248,10 +269,10 @@ export default function Settings() {
             >
               <div className="flex-1">
                 <p className={`text-sm font-mono ${mobileNav === 'hamburger' ? 'text-blue-400' : 'text-zinc-300'}`}>
-                  Hamburger Menu
+                  {t('mobileNav.hamburger')}
                 </p>
                 <p className="text-xs text-zinc-500 mt-0.5">
-                  Slide-out drawer from the left with swipe gestures
+                  {t('mobileNav.hamburgerDesc')}
                 </p>
               </div>
             </button>
@@ -265,22 +286,22 @@ export default function Settings() {
             >
               <div className="flex-1">
                 <p className={`text-sm font-mono ${mobileNav === 'fab' ? 'text-blue-400' : 'text-zinc-300'}`}>
-                  Floating Button
+                  {t('mobileNav.fab')}
                 </p>
                 <p className="text-xs text-zinc-500 mt-0.5">
-                  Floating action button with a pull-up navigation sheet
+                  {t('mobileNav.fabDesc')}
                 </p>
               </div>
             </button>
           </div>
-          <p className="text-xs text-zinc-500 mt-2">Visible only on mobile screens (below 768px)</p>
+          <p className="text-xs text-zinc-500 mt-2">{t('mobileNav.note')}</p>
         </section>
 
         {/* UI Scale */}
         <section className="bg-zinc-900 border border-zinc-800 rounded-lg p-5">
           <div className="flex items-center gap-2 mb-4">
             <Maximize className="w-5 h-5 text-zinc-400" />
-            <h2 className="text-lg font-mono font-semibold text-white">Interface Size</h2>
+            <h2 className="text-lg font-mono font-semibold text-white">{t('uiScale.title')}</h2>
           </div>
 
           <div className="space-y-4">
@@ -298,12 +319,12 @@ export default function Settings() {
               <span className="text-sm text-zinc-400 w-10">150%</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-zinc-400">Current: <strong className="text-white">{uiScale}%</strong></span>
+              <span className="text-sm text-zinc-400">{t('uiScale.current')} <strong className="text-white">{uiScale}%</strong></span>
               <button
                 onClick={() => setUIScale(100)}
                 className="text-xs text-blue-400 hover:text-blue-300"
               >
-                Reset to 100%
+                {t('uiScale.reset')}
               </button>
             </div>
           </div>
@@ -313,15 +334,15 @@ export default function Settings() {
         <section className="bg-zinc-900 border border-zinc-800 rounded-lg p-5">
           <div className="flex items-center gap-2 mb-4">
             <Clock className="w-5 h-5 text-zinc-400" />
-            <h2 className="text-lg font-mono font-semibold text-white">Work Hours</h2>
+            <h2 className="text-lg font-mono font-semibold text-white">{t('workHours.title')}</h2>
           </div>
 
           <div className="space-y-4">
             {/* Working days */}
             <div>
-              <label className="block text-sm text-zinc-400 mb-2">Working Days</label>
+              <label className="block text-sm text-zinc-400 mb-2">{t('workHours.days')}</label>
               <div className="flex gap-2">
-                {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
+                {(['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const).map((day) => (
                   <button
                     key={day}
                     onClick={() =>
@@ -335,7 +356,7 @@ export default function Settings() {
                         : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
                     }`}
                   >
-                    {day}
+                    {t(`workHours.${day}`)}
                   </button>
                 ))}
               </div>
@@ -344,7 +365,7 @@ export default function Settings() {
             {/* Time range */}
             <div className="flex gap-4">
               <div className="flex-1">
-                <label className="block text-sm text-zinc-400 mb-1">Start</label>
+                <label className="block text-sm text-zinc-400 mb-1">{t('workHours.start')}</label>
                 <input
                   type="time"
                   value={workStart}
@@ -353,7 +374,7 @@ export default function Settings() {
                 />
               </div>
               <div className="flex-1">
-                <label className="block text-sm text-zinc-400 mb-1">End</label>
+                <label className="block text-sm text-zinc-400 mb-1">{t('workHours.end')}</label>
                 <input
                   type="time"
                   value={workEnd}
@@ -369,25 +390,47 @@ export default function Settings() {
         <section className="bg-zinc-900 border border-zinc-800 rounded-lg p-5">
           <div className="flex items-center gap-2 mb-4">
             <Globe className="w-5 h-5 text-zinc-400" />
-            <h2 className="text-lg font-mono font-semibold text-white">Regional</h2>
+            <h2 className="text-lg font-mono font-semibold text-white">{t('regional.title')}</h2>
           </div>
 
-          <div>
-            <label className="block text-sm text-zinc-400 mb-1">Timezone</label>
-            <div className="relative">
-              <select
-                value={timezone}
-                onChange={(e) => setTimezone(e.target.value)}
-                className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white font-mono focus:outline-none focus:border-blue-500 appearance-none pr-10"
-              >
-                {TIMEZONES.map((tz) => (
-                  <option key={tz.value} value={tz.value}>
-                    {tz.label}
-                  </option>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm text-zinc-400 mb-1">{t('regional.timezone')}</label>
+              <div className="relative">
+                <select
+                  value={timezone}
+                  onChange={(e) => setTimezone(e.target.value)}
+                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white font-mono focus:outline-none focus:border-blue-500 appearance-none pr-10"
+                >
+                  {TIMEZONES.map((tz) => (
+                    <option key={tz.value} value={tz.value}>
+                      {tz.label}
+                    </option>
+                  ))}
+                </select>
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-400">
+                  ▼
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm text-zinc-400 mb-1">{t('regional.language')}</label>
+              <div className="flex gap-3">
+                {LANGUAGES.map((lang) => (
+                  <button
+                    key={lang.value}
+                    onClick={() => handleLanguageChange(lang.value)}
+                    className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-lg border text-sm font-mono transition-colors ${
+                      language === lang.value
+                        ? 'bg-blue-600/20 border-blue-500 text-blue-400'
+                        : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:border-zinc-600'
+                    }`}
+                  >
+                    <span className="text-lg">{lang.flag}</span>
+                    <span>{lang.label}</span>
+                  </button>
                 ))}
-              </select>
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-400">
-                ▼
               </div>
             </div>
           </div>
@@ -397,7 +440,7 @@ export default function Settings() {
         <section className="bg-zinc-900 border border-zinc-800 rounded-lg p-5">
           <div className="flex items-center gap-2 mb-4">
             <Sliders className="w-5 h-5 text-zinc-400" />
-            <h2 className="text-lg font-mono font-semibold text-white">Feature Toggles</h2>
+            <h2 className="text-lg font-mono font-semibold text-white">{t('featureToggles.title')}</h2>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -407,7 +450,7 @@ export default function Settings() {
                 onClick={() => toggleFeature(key as keyof typeof features)}
                 className="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg hover:bg-zinc-800 transition-colors"
               >
-                <span className="text-sm text-zinc-300 capitalize">{key} View</span>
+                <span className="text-sm text-zinc-300">{t(`featureToggles.${key}View`)}</span>
                 {/* Custom toggle switch */}
                 <div
                   className={`relative w-10 h-5 rounded-full transition-colors ${
@@ -429,18 +472,18 @@ export default function Settings() {
         <section className="bg-zinc-900 border border-zinc-800 rounded-lg p-5">
           <div className="flex items-center gap-2 mb-4">
             <Database className="w-5 h-5 text-zinc-400" />
-            <h2 className="text-lg font-mono font-semibold text-white">Data Management</h2>
+            <h2 className="text-lg font-mono font-semibold text-white">{t('dataManagement.title')}</h2>
           </div>
 
           <div className="flex flex-wrap gap-3">
             <button className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-mono text-sm rounded-lg transition-colors">
-              Export Data
+              {t('dataManagement.export')}
             </button>
             <button className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-mono text-sm rounded-lg transition-colors">
-              Import Data
+              {t('dataManagement.import')}
             </button>
             <button className="px-4 py-2 bg-red-900/30 hover:bg-red-900/50 text-red-400 font-mono text-sm rounded-lg transition-colors border border-red-800">
-              Clear All Data
+              {t('dataManagement.clearAll')}
             </button>
           </div>
         </section>
@@ -449,24 +492,24 @@ export default function Settings() {
         <section className="bg-zinc-900 border border-zinc-800 rounded-lg p-5">
           <div className="flex items-center gap-2 mb-4">
             <LogOut className="w-5 h-5 text-zinc-400" />
-            <h2 className="text-lg font-mono font-semibold text-white">Session</h2>
+            <h2 className="text-lg font-mono font-semibold text-white">{t('session.title')}</h2>
           </div>
 
           {showConfirmLogout ? (
             <div className="flex items-center gap-3 p-3 bg-red-900/20 border border-red-800 rounded-lg">
               <AlertTriangle className="w-5 h-5 text-red-400 shrink-0" />
-              <span className="flex-1 text-sm text-red-400">Are you sure you want to sign out?</span>
+              <span className="flex-1 text-sm text-red-400">{t('session.signOutConfirm')}</span>
               <button
                 onClick={handleLogout}
                 className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-sm font-mono rounded transition-colors"
               >
-                Yes, sign out
+                {t('session.yesSignOut')}
               </button>
               <button
                 onClick={() => setShowConfirmLogout(false)}
                 className="px-3 py-1 bg-zinc-700 hover:bg-zinc-600 text-white text-sm font-mono rounded transition-colors"
               >
-                Cancel
+                {tc('action.cancel')}
               </button>
             </div>
           ) : (
@@ -475,7 +518,7 @@ export default function Settings() {
               className="flex items-center gap-2 px-3 py-2 text-red-400 hover:bg-zinc-800 rounded-lg transition-colors"
             >
               <LogOut className="w-4 h-4" />
-              Sign out
+              {t('session.signOut')}
             </button>
           )}
         </section>

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Link, useLocation } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import {
   Home,
   Calendar,
@@ -13,23 +14,24 @@ import {
   X,
 } from 'lucide-react'
 
-const navItems = [
-  { path: '/home', label: 'Home', icon: Home },
-  { path: '/calendar', label: 'Calendar', icon: Calendar },
-  { path: '/tasks', label: 'Tasks', icon: CheckSquare },
-  { path: '/planning', label: 'Planning', icon: LayoutGrid },
-  { path: '/reflections', label: 'Reflections', icon: BookOpen },
-  { path: '/tools', label: 'Tools', icon: Wrench },
-  { path: '/settings', label: 'Settings', icon: Settings },
-  { path: '/profile', label: 'Profile', icon: User },
-]
-
 const EDGE_ZONE = 20
 const SWIPE_THRESHOLD = 60
 
 export function HamburgerDrawer() {
+  const { t } = useTranslation('common')
   const [isOpen, setIsOpen] = useState(false)
   const location = useLocation()
+
+  const navItems = [
+    { path: '/home', label: t('nav.home'), icon: Home },
+    { path: '/calendar', label: t('nav.calendar'), icon: Calendar },
+    { path: '/tasks', label: t('nav.tasks'), icon: CheckSquare },
+    { path: '/planning', label: t('nav.planning'), icon: LayoutGrid },
+    { path: '/reflections', label: t('nav.reflections'), icon: BookOpen },
+    { path: '/tools', label: t('nav.tools'), icon: Wrench },
+    { path: '/settings', label: t('nav.settings'), icon: Settings },
+    { path: '/profile', label: t('nav.profile'), icon: User },
+  ]
   const touchStartX = useRef(0)
   const touchStartY = useRef(0)
   const touchCurrentX = useRef(0)

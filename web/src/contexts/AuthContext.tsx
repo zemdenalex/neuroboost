@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import i18n from '../i18n'
 import {
   User,
   UserSettings,
@@ -67,6 +68,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(userData)
           if (userData.settings) {
             applySettingsToLocalStorage(userData.settings)
+          }
+          // Sync user's language preference to i18n
+          if (userData.locale && i18n.language !== userData.locale) {
+            i18n.changeLanguage(userData.locale)
+            localStorage.setItem('neuroboost-locale', userData.locale)
           }
         } catch {
           // If fetching the user fails, clear the stored token to avoid

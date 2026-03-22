@@ -1,5 +1,6 @@
 import { useRef, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { LayoutGrid, Wrench, BookOpen, User } from 'lucide-react'
 
 interface MoreMenuProps {
@@ -8,14 +9,15 @@ interface MoreMenuProps {
   anchorRef: React.RefObject<HTMLButtonElement | null>
 }
 
-const moreItems = [
-  { path: '/planning', label: 'Planning', icon: LayoutGrid },
-  { path: '/tools', label: 'Tools', icon: Wrench },
-  { path: '/reflections', label: 'Reflections', icon: BookOpen },
-  { path: '/profile', label: 'Profile', icon: User },
-]
-
 export function MoreMenu({ open, onClose, anchorRef }: MoreMenuProps) {
+  const { t } = useTranslation('common')
+
+  const moreItems = [
+    { path: '/planning', label: t('nav.planning'), icon: LayoutGrid },
+    { path: '/tools', label: t('nav.tools'), icon: Wrench },
+    { path: '/reflections', label: t('nav.reflections'), icon: BookOpen },
+    { path: '/profile', label: t('nav.profile'), icon: User },
+  ]
   const menuRef = useRef<HTMLDivElement>(null)
   const navigate = useNavigate()
   const location = useLocation()

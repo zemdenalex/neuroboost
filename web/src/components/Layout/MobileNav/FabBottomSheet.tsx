@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import {
   Plus,
   Calendar,
@@ -12,28 +13,29 @@ import {
   User,
 } from 'lucide-react'
 
-const quickActions = [
-  { label: 'New Event', icon: Calendar, path: '/calendar' },
-  { label: 'New Task', icon: CheckSquare, path: '/tasks' },
-]
-
-const navItems = [
-  { path: '/home', label: 'Home', icon: Home },
-  { path: '/calendar', label: 'Calendar', icon: Calendar },
-  { path: '/tasks', label: 'Tasks', icon: CheckSquare },
-  { path: '/planning', label: 'Planning', icon: LayoutGrid },
-  { path: '/reflections', label: 'Reflections', icon: BookOpen },
-  { path: '/tools', label: 'Tools', icon: Wrench },
-  { path: '/settings', label: 'Settings', icon: Settings },
-  { path: '/profile', label: 'Profile', icon: User },
-]
-
 const SWIPE_DISMISS_THRESHOLD = 80
 
 export function FabBottomSheet() {
+  const { t } = useTranslation('common')
   const [isOpen, setIsOpen] = useState(false)
   const navigate = useNavigate()
   const location = useLocation()
+
+  const quickActions = [
+    { label: t('quickAction.newEvent'), icon: Calendar, path: '/calendar' },
+    { label: t('quickAction.newTask'), icon: CheckSquare, path: '/tasks' },
+  ]
+
+  const navItems = [
+    { path: '/home', label: t('nav.home'), icon: Home },
+    { path: '/calendar', label: t('nav.calendar'), icon: Calendar },
+    { path: '/tasks', label: t('nav.tasks'), icon: CheckSquare },
+    { path: '/planning', label: t('nav.planning'), icon: LayoutGrid },
+    { path: '/reflections', label: t('nav.reflections'), icon: BookOpen },
+    { path: '/tools', label: t('nav.tools'), icon: Wrench },
+    { path: '/settings', label: t('nav.settings'), icon: Settings },
+    { path: '/profile', label: t('nav.profile'), icon: User },
+  ]
   const sheetRef = useRef<HTMLDivElement>(null)
   const dragStartY = useRef(0)
   const isDragging = useRef(false)
@@ -131,7 +133,7 @@ export function FabBottomSheet() {
         {/* Quick actions */}
         <div className="px-4 pb-3">
           <p className="text-xs font-mono text-zinc-500 uppercase tracking-wider mb-2 px-1">
-            Quick Actions
+            {t('quickAction.quickActions')}
           </p>
           <div className="flex gap-3">
             {quickActions.map(({ label, icon: Icon, path }) => (
@@ -153,7 +155,7 @@ export function FabBottomSheet() {
         {/* Navigation items */}
         <nav className="px-4 py-3 max-h-[50vh] overflow-y-auto">
           <p className="text-xs font-mono text-zinc-500 uppercase tracking-wider mb-2 px-1">
-            Navigation
+            {t('quickAction.navigation')}
           </p>
           <div className="flex flex-col gap-0.5">
             {navItems.map(({ path, label, icon: Icon }) => {

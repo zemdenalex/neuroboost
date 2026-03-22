@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useAuthContext } from '../../contexts/AuthContext'
 import { LogIn, UserPlus, AlertCircle, Loader2 } from 'lucide-react'
 
@@ -22,6 +23,7 @@ interface TelegramUser {
 }
 
 export function Login() {
+  const { t } = useTranslation('auth')
   const navigate = useNavigate()
   const location = useLocation()
   const { loginWithEmail, register, loginWithTelegram, loading, error, clearError } = useAuthContext()
@@ -79,12 +81,12 @@ export function Login() {
     clearError()
 
     if (!email || !password) {
-      setLocalError('Email and password are required')
+      setLocalError(t('emailRequired'))
       return
     }
 
     if (mode === 'register' && password.length < 8) {
-      setLocalError('Password must be at least 8 characters')
+      setLocalError(t('weakPassword'))
       return
     }
 
@@ -113,14 +115,14 @@ export function Login() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-mono font-bold text-white">NeuroBoost</h1>
-          <p className="text-zinc-400 mt-2">Calendar-first productivity</p>
+          <h1 className="text-3xl font-mono font-bold text-white">{t('title')}</h1>
+          <p className="text-zinc-400 mt-2">{t('subtitle')}</p>
         </div>
 
         {/* Auth Card */}
         <div className="bg-zinc-900 rounded-lg border border-zinc-800 p-6">
           <h2 className="text-xl font-mono text-white mb-6">
-            {mode === 'login' ? 'Welcome back' : 'Create account'}
+            {mode === 'login' ? t('welcomeBack') : t('createAccount')}
           </h2>
 
           {/* Error */}
@@ -135,37 +137,37 @@ export function Login() {
           <form onSubmit={handleSubmit} className="space-y-4">
             {mode === 'register' && (
               <div>
-                <label className="block text-sm text-zinc-400 mb-1">Name (optional)</label>
+                <label className="block text-sm text-zinc-400 mb-1">{t('nameLabel')}</label>
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white font-mono focus:outline-none focus:border-blue-500"
-                  placeholder="Your name"
+                  placeholder={t('namePlaceholder')}
                 />
               </div>
             )}
 
             <div>
-              <label className="block text-sm text-zinc-400 mb-1">Email</label>
+              <label className="block text-sm text-zinc-400 mb-1">{t('emailLabel')}</label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white font-mono focus:outline-none focus:border-blue-500"
-                placeholder="you@example.com"
+                placeholder={t('emailPlaceholder')}
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm text-zinc-400 mb-1">Password</label>
+              <label className="block text-sm text-zinc-400 mb-1">{t('passwordLabel')}</label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white font-mono focus:outline-none focus:border-blue-500"
-                placeholder={mode === 'register' ? 'Min 8 characters' : '••••••••'}
+                placeholder={mode === 'register' ? t('passwordPlaceholderCreate') : t('passwordPlaceholder')}
                 required
               />
             </div>
@@ -182,7 +184,7 @@ export function Login() {
               ) : (
                 <UserPlus className="w-4 h-4" />
               )}
-              {mode === 'login' ? 'Sign in' : 'Create account'}
+              {mode === 'login' ? t('signIn') : t('createAccountBtn')}
             </button>
           </form>
 
@@ -191,16 +193,16 @@ export function Login() {
             onClick={toggleMode}
             className="w-full mt-4 text-sm text-zinc-400 hover:text-white transition-colors"
           >
-            {mode === 'login' ? "Don't have an account? " : 'Already have an account? '}
+            {mode === 'login' ? `${t('noAccount')} ` : `${t('haveAccount')} `}
             <span className="text-blue-400 hover:text-blue-300 underline">
-              {mode === 'login' ? 'Sign up' : 'Sign in'}
+              {mode === 'login' ? t('noAccountLink') : t('haveAccountLink')}
             </span>
           </button>
 
           {/* Divider */}
           <div className="my-6 flex items-center gap-4">
             <div className="flex-1 h-px bg-zinc-800" />
-            <span className="text-xs text-zinc-500">OR</span>
+            <span className="text-xs text-zinc-500">{t('or')}</span>
             <div className="flex-1 h-px bg-zinc-800" />
           </div>
 
@@ -212,7 +214,7 @@ export function Login() {
 
         {/* Footer */}
         <p className="text-center text-xs text-zinc-500 mt-6">
-          By signing in, you agree to our Terms of Service
+          {t('terms')}
         </p>
       </div>
     </div>

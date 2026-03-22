@@ -1,4 +1,5 @@
 import { useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { parseTimeInput } from './editor.utils';
 
 interface TimeInputProps {
@@ -24,8 +25,9 @@ export function TimeInput({
   autoFocus,
   timezone,
 }: TimeInputProps) {
+  const { t } = useTranslation('calendar');
   const inputRef = useRef<HTMLInputElement>(null);
-  
+
   useEffect(() => {
     if (autoFocus) {
       inputRef.current?.focus();
@@ -81,7 +83,7 @@ export function TimeInput({
       />
       {!isValid && value && (
         <div className="text-xs text-red-400 mt-1">
-          {error || 'Invalid format (try: 1050, 10:50)'}
+          {error || t('invalidTimeFormat')}
         </div>
       )}
     </div>

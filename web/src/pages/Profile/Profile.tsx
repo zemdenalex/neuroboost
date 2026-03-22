@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useAuthContext } from '../../contexts/AuthContext'
 import {
   User,
@@ -17,6 +18,7 @@ import {
 } from 'lucide-react'
 
 export default function Profile() {
+  const { t } = useTranslation('profile')
   const { user, updateProfile } = useAuthContext()
   const [isEditingName, setIsEditingName] = useState(false)
   const [displayName, setDisplayName] = useState(user?.display_name || '')
@@ -36,12 +38,12 @@ export default function Profile() {
 
   // Mock badges
   const badges = [
-    { id: '1', name: 'Early Bird', icon: '🌅', description: 'Complete a task before 8 AM', earned: true },
-    { id: '2', name: 'Streak Starter', icon: '🔥', description: '7 day streak', earned: true },
-    { id: '3', name: 'Reflector', icon: '🪞', description: 'Complete 10 reflections', earned: true },
-    { id: '4', name: 'Task Master', icon: '✅', description: 'Complete 100 tasks', earned: false },
-    { id: '5', name: 'Week Warrior', icon: '⚔️', description: 'Complete all weekly goals', earned: false },
-    { id: '6', name: 'Night Owl', icon: '🦉', description: 'Complete a task after 10 PM', earned: false },
+    { id: '1', nameKey: 'badge.earlyBird.name', icon: '🌅', descKey: 'badge.earlyBird.description', earned: true },
+    { id: '2', nameKey: 'badge.streakStarter.name', icon: '🔥', descKey: 'badge.streakStarter.description', earned: true },
+    { id: '3', nameKey: 'badge.reflector.name', icon: '🪞', descKey: 'badge.reflector.description', earned: true },
+    { id: '4', nameKey: 'badge.taskMaster.name', icon: '✅', descKey: 'badge.taskMaster.description', earned: false },
+    { id: '5', nameKey: 'badge.weekWarrior.name', icon: '⚔️', descKey: 'badge.weekWarrior.description', earned: false },
+    { id: '6', nameKey: 'badge.nightOwl.name', icon: '🦉', descKey: 'badge.nightOwl.description', earned: false },
   ]
 
   const handleSaveName = async () => {
@@ -149,15 +151,15 @@ export default function Profile() {
                 )}
                 <span className="flex items-center gap-1">
                   <Calendar className="w-4 h-4" />
-                  Member since {memberSince}
+                  {t('memberSince', { date: memberSince })}
                 </span>
               </div>
 
               {/* XP Progress bar */}
               <div className="mt-4">
                 <div className="flex items-center justify-between text-sm mb-1">
-                  <span className="text-zinc-400">Level {stats.level}</span>
-                  <span className="text-zinc-400">{stats.xp} / {xpForNextLevel} XP</span>
+                  <span className="text-zinc-400">{t('level', { level: stats.level })}</span>
+                  <span className="text-zinc-400">{t('xp', { current: stats.xp, max: xpForNextLevel })}</span>
                 </div>
                 <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
                   <div
@@ -174,27 +176,27 @@ export default function Profile() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <StatCard
             icon={<Flame className="w-6 h-6 text-orange-400" />}
-            label="Current Streak"
-            value={`${stats.streakDays} days`}
-            subValue={`Best: ${stats.longestStreak} days`}
+            label={t('streak.current')}
+            value={t('streak.days', { count: stats.streakDays })}
+            subValue={t('streak.best', { days: stats.longestStreak })}
           />
           <StatCard
             icon={<CheckCircle className="w-6 h-6 text-green-400" />}
-            label="Tasks Completed"
+            label={t('tasksCompleted')}
             value={stats.tasksCompleted.toString()}
-            subValue="This month: 12"
+            subValue={t('tasksCompletedMonth', { count: 12 })}
           />
           <StatCard
             icon={<Clock className="w-6 h-6 text-blue-400" />}
-            label="Events Completed"
+            label={t('eventsCompleted')}
             value={stats.eventsCompleted.toString()}
-            subValue="This month: 8"
+            subValue={t('eventsCompletedMonth', { count: 8 })}
           />
           <StatCard
             icon={<Target className="w-6 h-6 text-purple-400" />}
-            label="Reflections"
+            label={t('reflections')}
             value={stats.reflectionsCount.toString()}
-            subValue="Avg focus: 78%"
+            subValue={t('reflectionsAvg', { percent: 78 })}
           />
         </div>
 
@@ -203,7 +205,7 @@ export default function Profile() {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-zinc-400" />
-              <h2 className="text-lg font-mono font-semibold text-white">Weekly Progress</h2>
+              <h2 className="text-lg font-mono font-semibold text-white">{t('weeklyProgress.title')}</h2>
             </div>
             <span className="text-2xl font-bold text-blue-400">{stats.weeklyGoalProgress}%</span>
           </div>
@@ -215,7 +217,7 @@ export default function Profile() {
           </div>
           <div className="flex justify-between mt-2 text-xs text-zinc-500">
             <span>0%</span>
-            <span>Goal: 80%</span>
+            <span>{t('weeklyProgress.goal', { percent: 80 })}</span>
             <span>100%</span>
           </div>
         </div>
@@ -224,9 +226,9 @@ export default function Profile() {
         <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-5">
           <div className="flex items-center gap-2 mb-4">
             <Award className="w-5 h-5 text-zinc-400" />
-            <h2 className="text-lg font-mono font-semibold text-white">Badges</h2>
+            <h2 className="text-lg font-mono font-semibold text-white">{t('badges.title')}</h2>
             <span className="text-sm text-zinc-500">
-              ({badges.filter(b => b.earned).length}/{badges.length})
+              {t('badges.count', { earned: badges.filter(b => b.earned).length, total: badges.length })}
             </span>
           </div>
 
@@ -244,9 +246,9 @@ export default function Profile() {
                   <span className="text-2xl">{badge.icon}</span>
                   <div>
                     <p className={`font-mono text-sm ${badge.earned ? 'text-white' : 'text-zinc-500'}`}>
-                      {badge.name}
+                      {t(badge.nameKey)}
                     </p>
-                    <p className="text-xs text-zinc-500">{badge.description}</p>
+                    <p className="text-xs text-zinc-500">{t(badge.descKey)}</p>
                   </div>
                 </div>
               </div>
@@ -258,10 +260,10 @@ export default function Profile() {
         <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-5">
           <div className="flex items-center gap-2 mb-4">
             <Calendar className="w-5 h-5 text-zinc-400" />
-            <h2 className="text-lg font-mono font-semibold text-white">Activity</h2>
+            <h2 className="text-lg font-mono font-semibold text-white">{t('activity.title')}</h2>
           </div>
           <div className="h-32 flex items-center justify-center text-zinc-500 border border-dashed border-zinc-700 rounded-lg">
-            <p className="text-sm">Activity heatmap coming soon...</p>
+            <p className="text-sm">{t('activity.placeholder')}</p>
           </div>
         </div>
     </div>
