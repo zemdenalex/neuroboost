@@ -230,17 +230,17 @@ jobs:
             git checkout develop
             git pull origin develop
 
-            # Sync production DB → dev DB
+            # Sync production DB → dev DB (both containers must be running)
             echo "Syncing production database to dev..."
-            docker-compose -f /root/neuroboost/docker-compose.yml exec -T db \
-              pg_dump -U neuroboost -c --if-exists neuroboost | \
-              docker-compose -f /root/neuroboost-dev/docker-compose.dev.yml exec -T db \
+            docker compose -f /root/neuroboost/docker-compose.yml exec -T db \
+              pg_dump -U neuroboost -c --if-exists neuroboost 2>/dev/null | \
+              docker compose -f /root/neuroboost-dev/docker-compose.dev.yml exec -T db \
               psql -U neuroboost -d neuroboost 2>/dev/null || echo "DB sync failed, continuing with existing data"
 
             # Build and restart
-            docker-compose -f docker-compose.dev.yml build --pull
-            docker-compose -f docker-compose.dev.yml down
-            docker-compose -f docker-compose.dev.yml up -d
+            docker compose -f docker-compose.dev.yml build --pull
+            docker compose -f docker-compose.dev.yml down --remove-orphans
+            docker compose -f docker-compose.dev.yml up -d
 
             # Wait for health
             sleep 15
