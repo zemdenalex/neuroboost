@@ -224,13 +224,24 @@ jobs:
           username: ${{ secrets.DEPLOY_SSH_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           script: |
+            set -e
             cd /root/neuroboost-dev
             git fetch origin develop
             git checkout develop
             git pull origin develop
+
+            # Sync production DB → dev DB
+            echo "Syncing production database to dev..."
+            docker-compose -f /root/neuroboost/docker-compose.yml exec -T db \
+              pg_dump -U neuroboost -c --if-exists neuroboost | \
+              docker-compose -f /root/neuroboost-dev/docker-compose.dev.yml exec -T db \
+              psql -U neuroboost -d neuroboost 2>/dev/null || echo "DB sync failed, continuing with existing data"
+
+            # Build and restart
             docker-compose -f docker-compose.dev.yml build --pull
             docker-compose -f docker-compose.dev.yml down
             docker-compose -f docker-compose.dev.yml up -d
+
             # Wait for health
             sleep 15
             curl -fsS http://127.0.0.1:8081/api/health || exit 1
