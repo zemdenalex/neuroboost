@@ -15,7 +15,7 @@ export function useDragTask() {
       },
     }));
 
-    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.effectAllowed = 'copy';
 
     // Create custom drag image
     const dragImage = document.createElement('div');

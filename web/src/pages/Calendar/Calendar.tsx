@@ -62,7 +62,7 @@ export function Calendar() {
   // Load tasks
   const loadTasks = useCallback(async () => {
     try {
-      const data = await getTasks('TODO');
+      const data = await getTasks();
       setTasks(data);
     } catch (error) {
       console.error('Failed to load tasks:', error);
