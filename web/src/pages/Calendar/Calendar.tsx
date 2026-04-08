@@ -28,8 +28,12 @@ export function Calendar() {
   const [editorOpen, setEditorOpen] = useState(false);
   const [editorRange, setEditorRange] = useState<{ start: Date; end: Date; allDay?: boolean } | null>(null);
   const [editorDraft, setEditorDraft] = useState<NbEvent | null>(null);
-  const [taskSidebarOpen, setTaskSidebarOpen] = useState(true);
+  const [taskSidebarOpen, setTaskSidebarOpen] = useState(() => {
+    return localStorage.getItem('nb-sidebar-open') === 'true';
+  });
   const [mobileTasksOpen, setMobileTasksOpen] = useState(false);
+  const [quickTaskOpen, setQuickTaskOpen] = useState(false);
+  const [quickTaskTitle, setQuickTaskTitle] = useState('');
 
   // Calculate week range
   const getWeekRange = useCallback((offset: number) => {
@@ -143,7 +147,11 @@ export function Calendar() {
   }, [loadEvents, handleEditorClose]);
 
   const handleToggleSidebar = useCallback(() => {
-    setTaskSidebarOpen(prev => !prev);
+    setTaskSidebarOpen(prev => {
+      const next = !prev;
+      localStorage.setItem('nb-sidebar-open', String(next));
+      return next;
+    });
   }, []);
 
   const handleSelectTask = useCallback((task: Task) => {
@@ -154,12 +162,17 @@ export function Calendar() {
     console.log('Edit task:', task.id);
   }, []);
 
-  const handleCreateTask = useCallback(async () => {
-    const title = window.prompt(t('taskTitlePrompt'));
-    if (!title) return;
-    await createTask({ title, priority: 2 });
+  const handleCreateTask = useCallback(() => {
+    setQuickTaskOpen(true);
+  }, []);
+
+  const handleQuickTaskSubmit = useCallback(async () => {
+    if (!quickTaskTitle.trim()) return;
+    await createTask({ title: quickTaskTitle.trim(), priority: 2 });
     await loadTasks();
-  }, [loadTasks]);
+    setQuickTaskTitle('');
+    setQuickTaskOpen(false);
+  }, [quickTaskTitle, loadTasks]);
 
   if (loading) {
     return (
@@ -238,6 +251,45 @@ export function Calendar() {
             onPatched={handleEditorPatched}
             onDelete={handleDelete}
           />
+        </div>
+      )}
+
+      {/* Quick task creation modal */}
+      {quickTaskOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          onClick={() => setQuickTaskOpen(false)}
+        >
+          <div
+            className="bg-zinc-900 border border-zinc-700 rounded-lg p-4 w-full max-w-sm"
+            onClick={e => e.stopPropagation()}
+          >
+            <h3 className="text-sm font-mono font-semibold text-white mb-3">{t('newTask')}</h3>
+            <input
+              autoFocus
+              type="text"
+              value={quickTaskTitle}
+              onChange={e => setQuickTaskTitle(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') handleQuickTaskSubmit(); if (e.key === 'Escape') setQuickTaskOpen(false); }}
+              placeholder={t('taskTitlePlaceholder')}
+              className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-white font-mono text-sm focus:outline-none focus:border-blue-500 mb-3"
+            />
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setQuickTaskOpen(false)}
+                className="px-3 py-1.5 text-xs font-mono text-zinc-400 hover:text-white"
+              >
+                {t('cancel')}
+              </button>
+              <button
+                onClick={handleQuickTaskSubmit}
+                disabled={!quickTaskTitle.trim()}
+                className="px-3 py-1.5 text-xs font-mono bg-blue-600 hover:bg-blue-700 disabled:bg-zinc-700 text-white rounded"
+              >
+                {t('create')}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
