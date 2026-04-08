@@ -97,7 +97,7 @@ export function FabBottomSheet() {
       {/* FAB button */}
       <button
         onClick={() => setIsOpen(true)}
-        className={`fixed bottom-6 right-6 w-14 h-14 rounded-full bg-blue-600 hover:bg-blue-500 shadow-lg flex items-center justify-center z-50 md:hidden transition-all duration-300 ${
+        className={`fixed bottom-20 right-6 w-14 h-14 rounded-full bg-blue-600 hover:bg-blue-500 shadow-lg flex items-center justify-center z-50 md:hidden transition-all duration-300 ${
           isOpen ? 'scale-0 opacity-0' : 'scale-100 opacity-100'
         }`}
         aria-label="Open navigation"
