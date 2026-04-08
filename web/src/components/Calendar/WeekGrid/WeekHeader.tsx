@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { getTimezoneOffsetMs } from './weekgrid.utils';
 import { DAY_MS } from './weekgrid.constants';
 
@@ -20,21 +21,24 @@ export function WeekHeader({
   onWeekChange,
   onQuickCreate,
 }: WeekHeaderProps) {
+  const { t, i18n } = useTranslation('calendar');
+  const dateLocale = i18n.language === 'ru' ? 'ru-RU' : 'en-US';
+
   const offset = getTimezoneOffsetMs(timezone);
   const startDate = new Date(mondayUtc0 + offset);
   const endDate = new Date(mondayUtc0 + 6 * DAY_MS + offset);
-  
+
   const weekLabel = (() => {
     if (visibleDays === 1) {
-      return startDate.toLocaleDateString('ru-RU', { 
-        weekday: 'long', 
-        month: 'long', 
-        day: 'numeric' 
+      return startDate.toLocaleDateString(dateLocale, {
+        weekday: 'long',
+        month: 'long',
+        day: 'numeric'
       });
     } else if (visibleDays === 3) {
-      return `${startDate.toLocaleDateString('ru-RU', { month: 'short', day: 'numeric' })} – ${endDate.toLocaleDateString('ru-RU', { month: 'short', day: 'numeric' })}`;
+      return `${startDate.toLocaleDateString(dateLocale, { month: 'short', day: 'numeric' })} – ${endDate.toLocaleDateString(dateLocale, { month: 'short', day: 'numeric' })}`;
     }
-    return `${startDate.toLocaleDateString('ru-RU', { month: 'short', day: 'numeric' })} – ${endDate.toLocaleDateString('ru-RU', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+    return `${startDate.toLocaleDateString(dateLocale, { month: 'short', day: 'numeric' })} – ${endDate.toLocaleDateString(dateLocale, { month: 'short', day: 'numeric', year: 'numeric' })}`;
   })();
 
   return (
@@ -68,7 +72,7 @@ export function WeekHeader({
               onClick={() => onWeekChange(0)}
               className="px-2 py-1 text-xs rounded bg-zinc-700 hover:bg-zinc-600 text-white transition-colors"
             >
-              Today
+              {t('today')}
             </button>
           )}
           {!isMobile && (
@@ -76,18 +80,14 @@ export function WeekHeader({
               onClick={onQuickCreate}
               className="px-2 py-1 text-xs rounded bg-zinc-800 border border-zinc-700 hover:bg-zinc-700 transition-colors"
             >
-              + Quick
+              + {t('quickCreate')}
             </button>
           )}
         </div>
       </div>
       
       <div className="text-xs text-zinc-400">
-        {isMobile ? (
-          "Tap: select • Long-press: create • Drag: move • Esc: cancel"
-        ) : (
-          "Drag: create • All-day: top section • Ctrl+Drag: move across days • Drag tasks from sidebar to schedule • Esc: cancel"
-        )}
+        {isMobile ? t('helpMobile') : t('helpDesktop')}
       </div>
     </div>
   );

@@ -56,5 +56,9 @@
   "dateTime.endDate": "Дата окончания",
   "dateTime.startTime": "Время начала",
   "dateTime.endTime": "Время окончания",
-  "dateTime.timePlaceholder": "напр. 1050, 10:50"
+  "dateTime.timePlaceholder": "напр. 1050, 10:50",
+  "today": "Сегодня",
+  "quickCreate": "Быстро",
+  "helpMobile": "Тап: выбрать \u2022 Долгое нажатие: создать \u2022 Перетащить: переместить \u2022 Esc: отмена",
+  "helpDesktop": "Клик: выбрать \u2022 Двойной клик: редактировать \u2022 Перетащить: создать/переместить \u2022 Esc: отмена"
 }

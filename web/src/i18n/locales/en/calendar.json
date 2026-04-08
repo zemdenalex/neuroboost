@@ -56,5 +56,9 @@
   "dateTime.endDate": "End Date",
   "dateTime.startTime": "Start Time",
   "dateTime.endTime": "End Time",
-  "dateTime.timePlaceholder": "e.g. 1050, 10:50"
+  "dateTime.timePlaceholder": "e.g. 1050, 10:50",
+  "today": "Today",
+  "quickCreate": "Quick",
+  "helpMobile": "Tap: select \u2022 Long-press: create \u2022 Drag: move \u2022 Esc: cancel",
+  "helpDesktop": "Click: select \u2022 Double-click: edit \u2022 Drag: create/move \u2022 Esc: cancel"
 }
