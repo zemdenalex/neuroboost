@@ -41,9 +41,10 @@ export const EventBlock = memo(function EventBlock({
 
   return (
     <div
-      className={`absolute rounded border cursor-move font-mono
+      className={`absolute rounded border font-mono
+        ${selected ? 'cursor-grab' : 'cursor-pointer'}
         ${selected
-          ? 'border-blue-400 ring-1 ring-blue-400 bg-blue-600/90 text-white'
+          ? 'border-blue-400 ring-2 ring-blue-400/50 bg-blue-600/90 text-white shadow-lg shadow-blue-500/20'
           : 'border-zinc-600 bg-zinc-800/95 hover:bg-zinc-700/95 text-zinc-100'
         }
         ${isMultiDaySegment ? 'border-l-4 border-l-purple-400' : ''}
@@ -66,12 +67,18 @@ export const EventBlock = memo(function EventBlock({
         isMobile ? 'Tap to edit' : 'Click to select, double-click to edit'
       }`}
     >
-      {/* Resize handles - only for single-day events */}
+      {/* Resize handles */}
       {!isMultiDaySegment && (
         <>
           <div className="absolute left-0 right-0 h-2 top-0 cursor-ns-resize bg-transparent hover:bg-blue-400/20" />
           <div className="absolute left-0 right-0 h-2 bottom-0 cursor-ns-resize bg-transparent hover:bg-blue-400/20" />
         </>
+      )}
+      {isMultiDaySegment && isFirstSegment && (
+        <div className="absolute left-0 right-0 h-2 top-0 cursor-ns-resize bg-transparent hover:bg-blue-400/20" />
+      )}
+      {isMultiDaySegment && isLastSegment && (
+        <div className="absolute left-0 right-0 h-2 bottom-0 cursor-ns-resize bg-transparent hover:bg-blue-400/20" />
       )}
 
       <div className="px-2 py-1 min-h-0 leading-tight overflow-hidden">
