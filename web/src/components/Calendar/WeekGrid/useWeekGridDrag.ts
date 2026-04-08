@@ -1,0 +1,116 @@
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { DAY_MS, ALL_DAY_HEIGHT, DAY_HEADER_HEIGHT, EDGE_THRESHOLD } from './weekgrid.constants';
+import { topToMins, snapMin, clampMins, utcToLocalMinutes } from './weekgrid.utils';
+import type { DragState, DragMeta, DayInfo, ProcessedEvent, WeekGridCallbacks } from './weekgrid.types';
+import { useAutoScroll } from './useAutoScroll';
+import { handleDragComplete } from './dragHandlers';
+
+interface UseDragProps {
+  mondayUtc0: number;
+  visibleDays: number;
+  timezone: string;
+  scrollRef: React.RefObject<HTMLDivElement>;
+  containerRef: React.RefObject<HTMLDivElement>;
+  callbacks: Pick<WeekGridCallbacks, 'onCreate' | 'onMoveOrResize'>;
+}
+
+export function useWeekGridDrag({
+  mondayUtc0, visibleDays, timezone, scrollRef, containerRef, callbacks,
+}: UseDragProps) {
+  const [drag, setDrag] = useState<DragState>(null);
+  const dragMeta = useRef<DragMeta | null>(null);
+  const { startAutoScroll, stopAutoScroll } = useAutoScroll(scrollRef);
+
+  const startCreate = useCallback((day: DayInfo, startMin: number, allDay = false) => {
+    setDrag({ kind: 'create', startDayUtc0: day.dayUtc0, endDayUtc0: day.dayUtc0, startMin, curMin: startMin, allDay });
+  }, []);
+
+  const startMove = useCallback((day: DayInfo, event: ProcessedEvent) => {
+    const startMin = utcToLocalMinutes(event.startsAt, timezone);
+    const endMin = utcToLocalMinutes(event.endsAt, timezone);
+    const isMultiDay = event.span && event.span.spanDays > 1;
+    setDrag({
+      kind: 'move', dayUtc0: day.dayUtc0, targetDayUtc0: day.dayUtc0, id: event.id,
+      offsetMin: startMin, durMin: endMin - startMin, daySpan: isMultiDay ? event.span!.spanDays : 1,
+      originalStart: startMin, originalEnd: endMin, allDay: event.allDay || false,
+      pending: true,
+    });
+  }, [timezone]);
+
+  const startResizeStart = useCallback((day: DayInfo, event: ProcessedEvent) => {
+    const startMin = utcToLocalMinutes(event.startsAt, timezone);
+    const endMin = utcToLocalMinutes(event.endsAt, timezone);
+    setDrag({ kind: 'resize-start', dayUtc0: day.dayUtc0, id: event.id, otherEndMin: endMin, curMin: startMin });
+  }, [timezone]);
+
+  const startResizeEnd = useCallback((day: DayInfo, event: ProcessedEvent) => {
+    const startMin = utcToLocalMinutes(event.startsAt, timezone);
+    const endMin = utcToLocalMinutes(event.endsAt, timezone);
+    setDrag({ kind: 'resize-end', dayUtc0: day.dayUtc0, id: event.id, otherEndMin: startMin, curMin: endMin });
+  }, [timezone]);
+
+  const cancelDrag = useCallback(() => { setDrag(null); stopAutoScroll(); }, [stopAutoScroll]);
+
+  useEffect(() => {
+    if (!drag) return;
+
+    const onMove = (ev: MouseEvent) => {
+      if (!dragMeta.current || !scrollRef.current || !containerRef.current) return;
+
+      // Drag threshold: 5px before activating move
+      if (drag && drag.kind === 'move' && drag.pending) {
+        const startX = drag.startX ?? ev.clientX;
+        const startY = drag.startY ?? ev.clientY;
+        if (drag.startX === undefined) {
+          setDrag(prev => prev && prev.kind === 'move' ? { ...prev, startX: ev.clientX, startY: ev.clientY } : prev);
+          return;
+        }
+        const dist = Math.hypot(ev.clientX - startX, ev.clientY - startY);
+        if (dist < 5) return;
+        setDrag(prev => prev && prev.kind === 'move' ? { ...prev, pending: false } : prev);
+      }
+
+      const scrollRect = scrollRef.current.getBoundingClientRect();
+      const containerRect = containerRef.current.getBoundingClientRect();
+      
+      // Auto-scroll
+      const yInScroll = ev.clientY - scrollRect.top - ALL_DAY_HEIGHT - DAY_HEADER_HEIGHT;
+      const timeGridHeight = scrollRect.height - ALL_DAY_HEIGHT - DAY_HEADER_HEIGHT;
+      if (yInScroll < EDGE_THRESHOLD && scrollRef.current.scrollTop > 0) startAutoScroll('up');
+      else if (yInScroll > timeGridHeight - EDGE_THRESHOLD) startAutoScroll('down');
+      else stopAutoScroll();
+      
+      // Target day & minutes
+      const dayWidth = containerRect.width / visibleDays;
+      const dayIndex = Math.max(0, Math.min(visibleDays - 1, Math.floor((ev.clientX - containerRect.left) / dayWidth)));
+      const targetDayUtc0 = mondayUtc0 + dayIndex * DAY_MS;
+      const yLocal = ev.clientY - dragMeta.current.colTop + (scrollRef.current.scrollTop - dragMeta.current.scrollStart);
+      const curMin = clampMins(snapMin(topToMins(yLocal)));
+      
+      setDrag(prev => {
+        if (!prev) return null;
+        if (prev.kind === 'create') {
+          const crossDay = targetDayUtc0 !== prev.startDayUtc0;
+          return { ...prev, endDayUtc0: targetDayUtc0, curMin, crossDay, isMultiDayTimed: crossDay && !prev.allDay };
+        }
+        if (prev.kind === 'move') return { ...prev, targetDayUtc0, offsetMin: curMin };
+        if (prev.kind === 'resize-start' || prev.kind === 'resize-end') return { ...prev, curMin };
+        return prev;
+      });
+    };
+
+    const onUp = () => {
+      if (drag && !(drag.kind === 'move' && drag.pending)) {
+        stopAutoScroll();
+        handleDragComplete(drag, callbacks.onCreate, callbacks.onMoveOrResize);
+      }
+      setDrag(null);
+    };
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+    return () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); stopAutoScroll(); };
+  }, [drag, mondayUtc0, visibleDays, callbacks, startAutoScroll, stopAutoScroll, scrollRef, containerRef]);
+
+  return { drag, dragMeta, startCreate, startMove, startResizeStart, startResizeEnd, cancelDrag, startAutoScroll, stopAutoScroll };
+}

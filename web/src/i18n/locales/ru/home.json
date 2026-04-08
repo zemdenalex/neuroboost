@@ -1,0 +1,19 @@
+{
+  "title": "NeuroBoost",
+  "subtitle": "Органайзер для тех, кто не умеет организовывать",
+  "tagline": "Создано для нейроотличных людей...",
+  "getStarted": "Начать",
+  "signIn": "Войти",
+  "problemTitle": "Традиционные планировщики подходят не всем",
+  "problem": "Проблема",
+  "approach": "Наш подход",
+  "howItWorks": "Как работает NeuroBoost",
+  "features.timeBlocking": "Тайм-блокинг в первую очередь",
+  "features.reminders": "Настойчивые напоминания",
+  "features.planVsActual": "План и факт",
+  "features.smartLearning": "Умное обучение",
+  "philosophy": "Наша философия",
+  "philosophyText": "Большинство инструментов продуктивности создаются организованными людьми...",
+  "cta": "Готовы попробовать другой подход?",
+  "footer": "© {{year}} NeuroBoost"
+}

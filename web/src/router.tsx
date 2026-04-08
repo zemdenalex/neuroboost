@@ -1,18 +1,29 @@
+import { lazy, Suspense } from 'react'
 import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom'
 import { useAuthContext } from './contexts/AuthContext'
 import { Layout } from './components/Layout'
 import { FeedbackButton } from './components/FeedbackButton'
 
-// Pages
-import Home from './pages/Home'
-import Login from './pages/Login'
-import Calendar from './pages/Calendar'
-import Tasks from './pages/Tasks'
-import Planning from './pages/Planning'
-import Reflections from './pages/Reflections'
-import Tools from './pages/Tools'
-import Settings from './pages/Settings'
-import Admin from './pages/Admin'
+// Lazy-loaded pages
+const Home = lazy(() => import('./pages/Home'))
+const Login = lazy(() => import('./pages/Login'))
+const Calendar = lazy(() => import('./pages/Calendar'))
+const Tasks = lazy(() => import('./pages/Tasks'))
+const Planning = lazy(() => import('./pages/Planning'))
+const Reflections = lazy(() => import('./pages/Reflections'))
+const Tools = lazy(() => import('./pages/Tools'))
+const Settings = lazy(() => import('./pages/Settings'))
+const Admin = lazy(() => import('./pages/Admin'))
+const Profile = lazy(() => import('./pages/Profile'))
+
+// Suspense fallback
+function PageLoader() {
+  return (
+    <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500" />
+    </div>
+  )
+}
 
 // Protected route wrapper
 function ProtectedRoute({ children }: { children?: React.ReactNode }) {
@@ -46,18 +57,20 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   }
 
   if (isAuthenticated) {
-    return <Navigate to="/calendar" replace />
+    return <Navigate to="/home" replace />
   }
 
   return <>{children}</>
 }
 
-// Layout with feedback button
+// Layout with feedback button and Suspense
 function AppLayout() {
   return (
     <>
       <Layout>
-        <Outlet />
+        <Suspense fallback={<PageLoader />}>
+          <Outlet />
+        </Suspense>
       </Layout>
       <FeedbackButton />
     </>
@@ -70,7 +83,9 @@ export const router = createBrowserRouter([
     path: '/login',
     element: (
       <PublicRoute>
-        <Login />
+        <Suspense fallback={<PageLoader />}>
+          <Login />
+        </Suspense>
         <FeedbackButton />
       </PublicRoute>
     ),
@@ -85,7 +100,7 @@ export const router = createBrowserRouter([
         children: [
           {
             path: '/',
-            element: <Navigate to="/calendar" replace />,
+            element: <Navigate to="/home" replace />,
           },
           {
             path: '/home',
@@ -115,6 +130,10 @@ export const router = createBrowserRouter([
             path: '/settings',
             element: <Settings />,
           },
+          {
+            path: '/profile',
+            element: <Profile />,
+          },
         ],
       },
     ],
@@ -125,7 +144,9 @@ export const router = createBrowserRouter([
     path: '/admin',
     element: (
       <ProtectedRoute>
-        <Admin />
+        <Suspense fallback={<PageLoader />}>
+          <Admin />
+        </Suspense>
         <FeedbackButton />
       </ProtectedRoute>
     ),
@@ -134,6 +155,6 @@ export const router = createBrowserRouter([
   // Catch all
   {
     path: '*',
-    element: <Navigate to="/calendar" replace />,
+    element: <Navigate to="/home" replace />,
   },
 ])

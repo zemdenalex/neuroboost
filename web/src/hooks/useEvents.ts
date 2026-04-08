@@ -1,11 +1,21 @@
-import { useEffect, useState } from 'react'
-import * as events from '../api/events'
+import { useEffect, useState, useCallback } from 'react'
+import { listEvents, type Event } from '../api/events'
+
 export function useEvents(from: string, to: string) {
-  const [data, setData] = useState<any[]>([])
+  const [data, setData] = useState<Event[]>([])
   const [loading, setLoading] = useState(false)
-  useEffect(() => {
+  const [error, setError] = useState<string | null>(null)
+
+  const load = useCallback(() => {
     setLoading(true)
-    events.list(from, to).then(() => setData([])).finally(() => setLoading(false))
+    setError(null)
+    listEvents(from, to)
+      .then(setData)
+      .catch((e: unknown) => setError(e instanceof Error ? e.message : 'Failed to load events'))
+      .finally(() => setLoading(false))
   }, [from, to])
-  return { events: data, loading }
+
+  useEffect(() => { load() }, [load])
+
+  return { events: data, loading, error, reload: load }
 }
