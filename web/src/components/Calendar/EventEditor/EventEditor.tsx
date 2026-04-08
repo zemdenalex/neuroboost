@@ -24,7 +24,7 @@ export function EventEditor({
 
   return (
     <div 
-      className="bg-zinc-900 border border-zinc-700 rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto"
+      className="bg-zinc-900 border border-zinc-700 rounded-lg p-4 sm:p-6 w-[95vw] sm:w-full max-w-md max-h-[85vh] overflow-y-auto"
       onClick={(e) => e.stopPropagation()}
     >
       {/* Header */}

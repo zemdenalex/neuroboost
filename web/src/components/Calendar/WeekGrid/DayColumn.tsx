@@ -183,7 +183,7 @@ export const DayColumn = memo(function DayColumn({
       {/* Timed events area */}
       <div
         className="relative select-none flex-1"
-        style={{ minHeight: HOUR_PX * (isMobile ? 16 : 24) }}
+        style={{ minHeight: HOUR_PX * 24 }}
         onMouseDown={handleMouseDown}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
