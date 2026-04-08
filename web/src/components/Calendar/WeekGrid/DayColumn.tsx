@@ -97,14 +97,37 @@ export function DayColumn({
     const startMin = utcToLocalMinutes(event.startsAt, timezone);
     const endMin = utcToLocalMinutes(event.endsAt, timezone);
     
-    // Only resize for single-day events
-    if ((isTopHandle || isBottomHandle) && !isMultiDaySegment) {
+    // Multi-day segments: top handle on first, bottom handle on last
+    if (isMultiDaySegment) {
+      const isFirstSegment = event.span?.isFirstSegment;
+      const isLastSegment = event.span?.isLastSegment;
+
+      if (isTopHandle && isFirstSegment) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        onDragStart(day, startMin, 'resize-start', event.id, event);
+        return;
+      } else if (isBottomHandle && isLastSegment) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        onDragStart(day, endMin, 'resize-end', event.id, event);
+        return;
+      }
+    }
+
+    // Single-day resize handles: top = resize-start, bottom = resize-end
+    if (isTopHandle && !isMultiDaySegment) {
       ev.preventDefault();
       ev.stopPropagation();
       onDragStart(day, startMin, 'resize-start', event.id, event);
-    } else if (!isTopHandle && !isBottomHandle) {
-      // Move
+    } else if (isBottomHandle && !isMultiDaySegment) {
+      ev.preventDefault();
+      ev.stopPropagation();
       onDragStart(day, startMin, 'resize-end', event.id, event);
+    } else if (!isTopHandle && !isBottomHandle) {
+      // Body drag = move
+      ev.preventDefault();
+      onDragStart(day, startMin, 'move', event.id, event);
     }
     ev.stopPropagation();
   };
