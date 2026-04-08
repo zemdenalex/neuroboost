@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { HOUR_PX, ALL_DAY_HEIGHT, DAY_HEADER_HEIGHT } from './weekgrid.constants';
 import { formatDayLabel, utcToLocalMinutes, clampMins, snapMin, topToMins } from './weekgrid.utils';
 import type { ProcessedEvent, DragState, DragMeta, NbEvent, TouchStart, DayInfo } from './weekgrid.types';
@@ -35,7 +36,7 @@ interface DayColumnProps {
   stopAutoScroll: () => void;
 }
 
-export function DayColumn({
+export const DayColumn = memo(function DayColumn({
   day,
   events,
   selectedId,
@@ -216,4 +217,4 @@ export function DayColumn({
       </div>
     </div>
   );
-}
+});

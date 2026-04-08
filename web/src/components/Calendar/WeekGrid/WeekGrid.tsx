@@ -130,6 +130,11 @@ export function WeekGrid({
     onCreate({ startsAt: start.toISOString(), endsAt: end.toISOString(), allDay: false });
   }, [onCreate]);
   
+  const handleTouchEnd = useCallback((d: DayInfo, min: number) => {
+    startCreate(d, min);
+    setTouchStart(null);
+  }, [startCreate]);
+
   const handleTaskDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     if (!onTaskDrop) return;
@@ -213,7 +218,7 @@ export function WeekGrid({
               onSelectId={setSelectedId}
               onDragStart={handleDragStart}
               onTouchStart={setTouchStart}
-              onTouchEnd={(d, min) => { startCreate(d, min); setTouchStart(null); }}
+              onTouchEnd={handleTouchEnd}
               startAutoScroll={startAutoScroll}
               stopAutoScroll={stopAutoScroll}
             />
