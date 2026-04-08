@@ -9,6 +9,8 @@ interface WeekHeaderProps {
   timezone: string;
   isMobile: boolean;
   onWeekChange?: (offset: number) => void;
+  onMobileNav?: (direction: 'prev' | 'next') => void;
+  onToday?: () => void;
   onQuickCreate: () => void;
 }
 
@@ -19,6 +21,8 @@ export function WeekHeader({
   timezone,
   isMobile,
   onWeekChange,
+  onMobileNav,
+  onToday,
   onQuickCreate,
 }: WeekHeaderProps) {
   const { t, i18n } = useTranslation('calendar');
@@ -36,7 +40,8 @@ export function WeekHeader({
         day: 'numeric'
       });
     } else if (visibleDays === 3) {
-      return `${startDate.toLocaleDateString(dateLocale, { month: 'short', day: 'numeric' })} – ${endDate.toLocaleDateString(dateLocale, { month: 'short', day: 'numeric' })}`;
+      const rangeEnd = new Date(mondayUtc0 + (visibleDays - 1) * DAY_MS + offset);
+      return `${startDate.toLocaleDateString(dateLocale, { month: 'short', day: 'numeric' })} – ${rangeEnd.toLocaleDateString(dateLocale, { month: 'short', day: 'numeric' })}`;
     }
     return `${startDate.toLocaleDateString(dateLocale, { month: 'short', day: 'numeric' })} – ${endDate.toLocaleDateString(dateLocale, { month: 'short', day: 'numeric', year: 'numeric' })}`;
   })();
@@ -45,17 +50,29 @@ export function WeekHeader({
     <div className="px-2 py-2 border-b border-zinc-700 bg-zinc-900">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
-          {onWeekChange && (
+          {(onWeekChange || onMobileNav) && (
             <>
               <button
-                onClick={() => onWeekChange(currentWeekOffset - 1)}
+                onClick={() => {
+                  if (onMobileNav) {
+                    onMobileNav('prev');
+                  } else if (onWeekChange) {
+                    onWeekChange(currentWeekOffset - 1);
+                  }
+                }}
                 className="px-2 py-1 text-xs rounded bg-zinc-800 border border-zinc-700 hover:bg-zinc-700 transition-colors"
                 title="Previous period"
               >
                 ←
               </button>
               <button
-                onClick={() => onWeekChange(currentWeekOffset + 1)}
+                onClick={() => {
+                  if (onMobileNav) {
+                    onMobileNav('next');
+                  } else if (onWeekChange) {
+                    onWeekChange(currentWeekOffset + 1);
+                  }
+                }}
                 className="px-2 py-1 text-xs rounded bg-zinc-800 border border-zinc-700 hover:bg-zinc-700 transition-colors"
                 title="Next period"
               >
@@ -67,9 +84,15 @@ export function WeekHeader({
         </div>
         
         <div className="flex items-center gap-2">
-          {currentWeekOffset !== 0 && onWeekChange && (
+          {(currentWeekOffset !== 0 || onMobileNav) && (onWeekChange || onToday) && (
             <button
-              onClick={() => onWeekChange(0)}
+              onClick={() => {
+                if (onToday) {
+                  onToday();
+                } else if (onWeekChange) {
+                  onWeekChange(0);
+                }
+              }}
               className="px-2 py-1 text-xs rounded bg-zinc-700 hover:bg-zinc-600 text-white transition-colors"
             >
               {t('today')}

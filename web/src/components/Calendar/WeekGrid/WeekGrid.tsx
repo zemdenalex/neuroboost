@@ -29,24 +29,35 @@ export function WeekGrid({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [touchStart, setTouchStart] = useState<TouchStart | null>(null);
   const [visibleDays, setVisibleDays] = useState(7);
+  const [mobileDayOffset, setMobileDayOffset] = useState(0);
   const isMobile = visibleDays < 7;
-  
+
   // Calculate Monday timestamp
   const mondayUtc0 = useMemo(
     () => getMondayUtcMs(new Date(), currentWeekOffset, timezone),
     [currentWeekOffset, timezone]
   );
-  
+
+  // Adjust start for mobile day-level navigation
+  const adjustedStart = visibleDays < 7
+    ? mondayUtc0 + mobileDayOffset * DAY_MS
+    : mondayUtc0;
+
+  // Reset mobileDayOffset when week changes
+  useEffect(() => {
+    setMobileDayOffset(0);
+  }, [currentWeekOffset]);
+
   // Generate day info
   const days = useMemo(
-    () => generateDays(mondayUtc0, visibleDays, timezone),
-    [mondayUtc0, visibleDays, timezone]
+    () => generateDays(adjustedStart, visibleDays, timezone),
+    [adjustedStart, visibleDays, timezone]
   );
-  
+
   // Process events for rendering
   const { allDayEvents, timedPerDay } = useMemo(
-    () => processEventsForWeek(events, mondayUtc0, timezone, visibleDays),
-    [events, mondayUtc0, timezone, visibleDays]
+    () => processEventsForWeek(events, adjustedStart, timezone, visibleDays),
+    [events, adjustedStart, timezone, visibleDays]
   );
   
   // Current time tracking
@@ -86,7 +97,7 @@ export function WeekGrid({
     startAutoScroll,
     stopAutoScroll,
   } = useWeekGridDrag({
-    mondayUtc0, visibleDays, timezone, scrollRef, containerRef, callbacks: { onCreate, onMoveOrResize },
+    mondayUtc0: adjustedStart, visibleDays, timezone, scrollRef, containerRef, callbacks: { onCreate, onMoveOrResize },
   });
   
   // Keyboard navigation
@@ -135,6 +146,33 @@ export function WeekGrid({
     setTouchStart(null);
   }, [startCreate]);
 
+  // Swipe navigation (mobile/tablet)
+  const swipeStartRef = useRef<number | null>(null);
+
+  const handleTouchStartSwipe = useCallback((e: React.TouchEvent) => {
+    if (visibleDays >= 7) return;
+    swipeStartRef.current = e.touches[0].clientX;
+  }, [visibleDays]);
+
+  const handleTouchEndSwipe = useCallback((e: React.TouchEvent) => {
+    if (swipeStartRef.current === null || visibleDays >= 7) return;
+    const dx = e.changedTouches[0].clientX - swipeStartRef.current;
+    if (Math.abs(dx) > 50) {
+      setMobileDayOffset(prev => prev + (dx < 0 ? visibleDays : -visibleDays));
+    }
+    swipeStartRef.current = null;
+  }, [visibleDays]);
+
+  // Mobile nav callbacks for WeekHeader
+  const handleMobileNav = useCallback((direction: 'prev' | 'next') => {
+    setMobileDayOffset(prev => prev + (direction === 'next' ? visibleDays : -visibleDays));
+  }, [visibleDays]);
+
+  const handleToday = useCallback(() => {
+    setMobileDayOffset(0);
+    onWeekChange?.(0);
+  }, [onWeekChange]);
+
   const handleTaskDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     if (!onTaskDrop) return;
@@ -156,12 +194,14 @@ export function WeekGrid({
   return (
     <div className="h-full w-full flex flex-col font-mono bg-black text-zinc-100">
       <WeekHeader
-        mondayUtc0={mondayUtc0}
+        mondayUtc0={adjustedStart}
         visibleDays={visibleDays}
         currentWeekOffset={currentWeekOffset}
         timezone={timezone}
         isMobile={isMobile}
         onWeekChange={onWeekChange}
+        onMobileNav={visibleDays < 7 ? handleMobileNav : undefined}
+        onToday={handleToday}
         onQuickCreate={handleQuickCreate}
       />
 
@@ -175,6 +215,8 @@ export function WeekGrid({
         style={{ userSelect: 'none' }}
         onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
         onDrop={handleTaskDrop}
+        onTouchStart={handleTouchStartSwipe}
+        onTouchEnd={handleTouchEndSwipe}
       >
         <div
           ref={containerRef}
@@ -190,7 +232,7 @@ export function WeekGrid({
             allDayEvents={allDayEvents}
             selectedId={selectedId}
             drag={drag}
-            mondayUtc0={mondayUtc0}
+            mondayUtc0={adjustedStart}
             visibleDays={visibleDays}
             timezone={timezone}
             onSelect={onSelect}
@@ -209,7 +251,7 @@ export function WeekGrid({
               drag={drag}
               dragMeta={dragMeta}
               scrollContainer={scrollRef}
-              mondayUtc0={mondayUtc0}
+              mondayUtc0={adjustedStart}
               visibleDays={visibleDays}
               timezone={timezone}
               isMobile={isMobile}
