@@ -66,6 +66,9 @@ export interface DragMove {
   originalStart: number;
   originalEnd: number;
   allDay: boolean;
+  pending?: boolean;
+  startX?: number;
+  startY?: number;
 }
 
 export interface DragResizeStart {

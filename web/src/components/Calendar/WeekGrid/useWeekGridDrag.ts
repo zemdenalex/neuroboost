@@ -33,6 +33,7 @@ export function useWeekGridDrag({
       kind: 'move', dayUtc0: day.dayUtc0, targetDayUtc0: day.dayUtc0, id: event.id,
       offsetMin: startMin, durMin: endMin - startMin, daySpan: isMultiDay ? event.span!.spanDays : 1,
       originalStart: startMin, originalEnd: endMin, allDay: event.allDay || false,
+      pending: true,
     });
   }, [timezone]);
 
@@ -55,6 +56,20 @@ export function useWeekGridDrag({
 
     const onMove = (ev: MouseEvent) => {
       if (!dragMeta.current || !scrollRef.current || !containerRef.current) return;
+
+      // Drag threshold: 5px before activating move
+      if (drag && drag.kind === 'move' && drag.pending) {
+        const startX = drag.startX ?? ev.clientX;
+        const startY = drag.startY ?? ev.clientY;
+        if (drag.startX === undefined) {
+          setDrag(prev => prev && prev.kind === 'move' ? { ...prev, startX: ev.clientX, startY: ev.clientY } : prev);
+          return;
+        }
+        const dist = Math.hypot(ev.clientX - startX, ev.clientY - startY);
+        if (dist < 5) return;
+        setDrag(prev => prev && prev.kind === 'move' ? { ...prev, pending: false } : prev);
+      }
+
       const scrollRect = scrollRef.current.getBoundingClientRect();
       const containerRect = containerRef.current.getBoundingClientRect();
       
@@ -85,7 +100,10 @@ export function useWeekGridDrag({
     };
 
     const onUp = () => {
-      if (drag) { stopAutoScroll(); handleDragComplete(drag, callbacks.onCreate, callbacks.onMoveOrResize); }
+      if (drag && !(drag.kind === 'move' && drag.pending)) {
+        stopAutoScroll();
+        handleDragComplete(drag, callbacks.onCreate, callbacks.onMoveOrResize);
+      }
       setDrag(null);
     };
 
