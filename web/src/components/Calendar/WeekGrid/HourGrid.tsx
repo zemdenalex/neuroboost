@@ -4,10 +4,10 @@ interface HourGridProps {
   isMobile: boolean;
 }
 
-export function HourGrid({ isMobile }: HourGridProps) {
-  const hoursCount = isMobile ? 16 : 24;
-  const labelInterval = isMobile ? 4 : 3;
-  const lineInterval = isMobile ? 2 : 3;
+export function HourGrid({ isMobile: _isMobile }: HourGridProps) {
+  const hoursCount = 24;
+  const labelInterval = 3;
+  const lineInterval = 3;
   
   return (
     <>
