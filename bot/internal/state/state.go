@@ -7,7 +7,7 @@ type UserState struct {
 	AuthToken   string
 	CurrentFlow string
 	FlowStep    string
-	FlowData    map[string]interface{}
+	FlowData    map[string]any
 }
 
 type Store struct {
@@ -31,7 +31,7 @@ func (s *Store) GetOrCreate(chatID int64) *UserState {
 	if u, ok := s.users[chatID]; ok {
 		return u
 	}
-	u := &UserState{ChatID: chatID, FlowData: make(map[string]interface{})}
+	u := &UserState{ChatID: chatID, FlowData: make(map[string]any)}
 	s.users[chatID] = u
 	return u
 }
@@ -42,6 +42,6 @@ func (s *Store) ClearFlow(chatID int64) {
 	if u, ok := s.users[chatID]; ok {
 		u.CurrentFlow = ""
 		u.FlowStep = ""
-		u.FlowData = make(map[string]interface{})
+		u.FlowData = make(map[string]any)
 	}
 }

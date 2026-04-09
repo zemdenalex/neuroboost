@@ -7,6 +7,7 @@ type Config struct {
 	APIBase       string
 	BotPort       string
 	Timezone      string
+	ProxyURL      string // SOCKS5 or HTTP proxy for Telegram API (e.g. socks5://host:1080)
 }
 
 func Load() Config {
@@ -15,6 +16,7 @@ func Load() Config {
 		APIBase:       os.Getenv("API_BASE"),
 		BotPort:       os.Getenv("BOT_PORT"),
 		Timezone:      os.Getenv("TIMEZONE"),
+		ProxyURL:      os.Getenv("TELEGRAM_PROXY"),
 	}
 	if c.APIBase == "" {
 		c.APIBase = "http://localhost:8080"

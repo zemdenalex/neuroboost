@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
 	"syscall"
@@ -22,9 +23,27 @@ func main() {
 		log.Fatal("TELEGRAM_BOT_TOKEN is required")
 	}
 
-	bot, err := tgbotapi.NewBotAPI(cfg.TelegramToken)
-	if err != nil {
-		log.Fatalf("Failed to create bot: %v", err)
+	// Create bot — with optional proxy for Telegram API
+	var bot *tgbotapi.BotAPI
+	if cfg.ProxyURL != "" {
+		proxyURL, err := url.Parse(cfg.ProxyURL)
+		if err != nil {
+			log.Fatalf("Invalid TELEGRAM_PROXY: %v", err)
+		}
+		httpClient := &http.Client{
+			Transport: &http.Transport{Proxy: http.ProxyURL(proxyURL)},
+		}
+		bot, err = tgbotapi.NewBotAPIWithClient(cfg.TelegramToken, tgbotapi.APIEndpoint, httpClient)
+		if err != nil {
+			log.Fatalf("Failed to create bot with proxy: %v", err)
+		}
+		log.Printf("Using proxy: %s", proxyURL.Host)
+	} else {
+		var err error
+		bot, err = tgbotapi.NewBotAPI(cfg.TelegramToken)
+		if err != nil {
+			log.Fatalf("Failed to create bot: %v", err)
+		}
 	}
 	log.Printf("Bot authorized as @%s", bot.Self.UserName)
 
