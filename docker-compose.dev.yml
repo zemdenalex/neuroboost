@@ -66,6 +66,22 @@ services:
       - "127.0.0.1:5174:80"
     restart: unless-stopped
 
+  bot:
+    build:
+      context: ./bot
+    container_name: neuroboost-dev-bot
+    environment:
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - API_BASE=http://api:8080
+      - BOT_PORT=3002
+      - TIMEZONE=Europe/Moscow
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:3012:3002"
+    restart: unless-stopped
+
 volumes:
   dev-db-data:
     name: neuroboost_dev_db_data
