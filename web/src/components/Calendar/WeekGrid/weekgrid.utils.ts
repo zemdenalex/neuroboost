@@ -39,11 +39,11 @@ export function formatMinutesToTime(minutes: number): string {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 }
 
-export function formatDayLabel(date: Date, isMobile: boolean): string {
+export function formatDayLabel(date: Date, isMobile: boolean, locale: string = 'en-US'): string {
   if (isMobile) {
-    return date.toLocaleDateString('ru-RU', { weekday: 'short', day: 'numeric' });
+    return date.toLocaleDateString(locale, { weekday: 'short', day: 'numeric' });
   }
-  return date.toLocaleDateString('ru-RU', { weekday: 'short', month: 'short', day: 'numeric' });
+  return date.toLocaleDateString(locale, { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
 // === EVENT PROCESSING ===

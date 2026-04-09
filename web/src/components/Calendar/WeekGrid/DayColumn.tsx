@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { HOUR_PX, ALL_DAY_HEIGHT, DAY_HEADER_HEIGHT } from './weekgrid.constants';
 import { formatDayLabel, utcToLocalMinutes, clampMins, snapMin, topToMins } from './weekgrid.utils';
 import type { ProcessedEvent, DragState, DragMeta, NbEvent, TouchStart, DayInfo } from './weekgrid.types';
@@ -58,8 +59,10 @@ export const DayColumn = memo(function DayColumn({
   startAutoScroll,
   stopAutoScroll,
 }: DayColumnProps) {
+  const { i18n } = useTranslation();
+  const dateLocale = i18n.language === 'ru' ? 'ru-RU' : 'en-US';
   const { dayUtc0, dayLocal } = day;
-  const dayLabel = formatDayLabel(dayLocal, isMobile);
+  const dayLabel = formatDayLabel(dayLocal, isMobile, dateLocale);
   const isToday = dayUtc0 === currentDayUtc0;
 
   const handleMouseDown = (ev: React.MouseEvent) => {
