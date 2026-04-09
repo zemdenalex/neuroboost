@@ -48,6 +48,19 @@ export function WeekGrid({
     setMobileDayOffset(0);
   }, [currentWeekOffset]);
 
+  // When mobileDayOffset goes beyond week boundary, advance the week and reset offset
+  useEffect(() => {
+    if (visibleDays >= 7) return; // desktop handles this via onWeekChange directly
+    const daysInWeek = 7;
+    if (mobileDayOffset >= daysInWeek) {
+      onWeekChange?.(currentWeekOffset + 1);
+      setMobileDayOffset(prev => prev - daysInWeek);
+    } else if (mobileDayOffset <= -daysInWeek) {
+      onWeekChange?.(currentWeekOffset - 1);
+      setMobileDayOffset(prev => prev + daysInWeek);
+    }
+  }, [mobileDayOffset, visibleDays, currentWeekOffset, onWeekChange]);
+
   // Generate day info
   const days = useMemo(
     () => generateDays(adjustedStart, visibleDays, timezone),
