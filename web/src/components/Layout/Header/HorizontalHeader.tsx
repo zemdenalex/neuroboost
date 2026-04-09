@@ -58,7 +58,7 @@ export default function HorizontalHeader() {
     <header className="fixed top-0 left-0 right-0 bg-zinc-900 border-b border-zinc-800 z-50">
       <div className="px-4 py-2 flex items-center justify-between">
         {/* Logo */}
-        <Link to="/calendar" className="text-lg font-mono font-bold text-white hover:text-blue-400 transition-colors">
+        <Link to="/calendar" className="text-lg font-mono font-bold text-white hover:text-blue-400 transition-colors ml-10 md:ml-0">
           NeuroBoost
         </Link>
 

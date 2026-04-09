@@ -341,7 +341,7 @@ export default function Settings() {
             {/* Working days */}
             <div>
               <label className="block text-sm text-zinc-400 mb-2">{t('workHours.days')}</label>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 {(['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const).map((day) => (
                   <button
                     key={day}

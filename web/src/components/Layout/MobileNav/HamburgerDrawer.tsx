@@ -137,7 +137,7 @@ export function HamburgerDrawer() {
       {/* Hamburger trigger button - fixed in header area on mobile */}
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed top-2.5 left-14 z-[60] md:hidden p-2 text-zinc-400 hover:text-white rounded-md hover:bg-zinc-800 transition-colors"
+        className="fixed top-2.5 left-3 z-[60] md:hidden p-2 text-zinc-400 hover:text-white rounded-md hover:bg-zinc-800 transition-colors"
         aria-label="Open navigation menu"
       >
         <Menu className="w-5 h-5" />
