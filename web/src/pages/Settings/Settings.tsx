@@ -101,12 +101,9 @@ export default function Settings() {
     }
   }, [user])
 
-  // Apply UI scale to document
+  // Apply UI scale to document (no cleanup — scale should persist when leaving page)
   useEffect(() => {
     document.documentElement.style.fontSize = `${uiScale}%`
-    return () => {
-      document.documentElement.style.fontSize = '100%'
-    }
   }, [uiScale])
 
   // Apply header style immediately when changed
