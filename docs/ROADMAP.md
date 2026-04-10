@@ -103,3 +103,13 @@ Tags are created on `main` after merging tested `develop` code.
 | S2 | UI scale applies before saving (confusing default) | v0.4.8 | Medium |
 | S3 | Export/Import non-functional | v0.4.8 | Low |
 | S4 | Feature toggles don't affect anything | v0.4.8 | Low |
+
+### Known Limitations (deferred to post-v0.4.9)
+
+| ID | Issue | Priority | Notes |
+|----|-------|----------|-------|
+| MD1 | Multi-day event move/resize broken | **High** | Drag state machine needs redesign — cursor-to-time mapping breaks across day columns. Needs dedicated sprint. |
+| MD2 | Multi-day event resize collapses event | **High** | Same root cause as MD1. |
+| MV1 | Mobile calendar views (3-day, agenda, mini-month) | Medium | Spec'd in v0.4.5 but deferred — only swipe day nav implemented. |
+| PE1 | preventDefault passive listener warnings | Low | Touch handlers need `{ passive: false }` option. Cosmetic console noise. |
+| S4 | Feature toggles don't affect anything | v0.4.8 | Low |
