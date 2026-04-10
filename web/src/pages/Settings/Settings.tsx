@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import i18n from '../../i18n'
 import { useAuthContext } from '../../contexts/AuthContext'
+import { getStoredToken } from '../../api/client'
 import {
   Clock,
   Globe,
@@ -101,12 +102,9 @@ export default function Settings() {
     }
   }, [user])
 
-  // Apply UI scale to document
+  // Apply UI scale to document (no cleanup — scale should persist when leaving page)
   useEffect(() => {
     document.documentElement.style.fontSize = `${uiScale}%`
-    return () => {
-      document.documentElement.style.fontSize = '100%'
-    }
   }, [uiScale])
 
   // Apply header style immediately when changed
@@ -174,6 +172,52 @@ export default function Settings() {
 
   const toggleFeature = (key: keyof typeof features) => {
     setFeatures(prev => ({ ...prev, [key]: !prev[key] }))
+  }
+
+  const handleExport = async () => {
+    try {
+      const response = await fetch('/api/export', {
+        headers: { Authorization: `Bearer ${getStoredToken()}` },
+      })
+      const data = await response.json()
+      const blob = new Blob([JSON.stringify(data.data, null, 2)], {
+        type: 'application/json',
+      })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `neuroboost-export-${new Date().toISOString().split('T')[0]}.json`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch {
+      setError(t('dataManagement.exportFailed'))
+    }
+  }
+
+  const handleImport = () => {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = '.json'
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0]
+      if (!file) return
+      try {
+        const text = await file.text()
+        const data = JSON.parse(text) as unknown
+        await fetch('/api/import', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${getStoredToken()}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data),
+        })
+        window.location.reload()
+      } catch {
+        setError(t('dataManagement.importFailed'))
+      }
+    }
+    input.click()
   }
 
   return (
@@ -476,10 +520,16 @@ export default function Settings() {
           </div>
 
           <div className="flex flex-wrap gap-3">
-            <button className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-mono text-sm rounded-lg transition-colors">
+            <button
+              onClick={handleExport}
+              className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-mono text-sm rounded-lg transition-colors"
+            >
               {t('dataManagement.export')}
             </button>
-            <button className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-mono text-sm rounded-lg transition-colors">
+            <button
+              onClick={handleImport}
+              className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-mono text-sm rounded-lg transition-colors"
+            >
               {t('dataManagement.import')}
             </button>
             <button className="px-4 py-2 bg-red-900/30 hover:bg-red-900/50 text-red-400 font-mono text-sm rounded-lg transition-colors border border-red-800">

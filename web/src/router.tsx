@@ -15,6 +15,8 @@ const Tools = lazy(() => import('./pages/Tools'))
 const Settings = lazy(() => import('./pages/Settings'))
 const Admin = lazy(() => import('./pages/Admin'))
 const Profile = lazy(() => import('./pages/Profile'))
+const Pomodoro = lazy(() => import('./pages/Tools/Pomodoro'))
+const Kanban = lazy(() => import('./pages/Tools/Kanban'))
 
 // Suspense fallback
 function PageLoader() {
@@ -78,7 +80,7 @@ function AppLayout() {
 }
 
 export const router = createBrowserRouter([
-  // Public routes
+  // Public routes (no auth required)
   {
     path: '/login',
     element: (
@@ -91,6 +93,23 @@ export const router = createBrowserRouter([
     ),
   },
 
+  // Home page — accessible to everyone; Home.tsx handles auth split internally
+  {
+    path: '/',
+    element: <Navigate to="/home" replace />,
+  },
+  {
+    path: '/home',
+    element: (
+      <>
+        <Suspense fallback={<PageLoader />}>
+          <Home />
+        </Suspense>
+        <FeedbackButton />
+      </>
+    ),
+  },
+
   // Protected routes with layout
   {
     element: <ProtectedRoute />,
@@ -98,14 +117,6 @@ export const router = createBrowserRouter([
       {
         element: <AppLayout />,
         children: [
-          {
-            path: '/',
-            element: <Navigate to="/home" replace />,
-          },
-          {
-            path: '/home',
-            element: <Home />,
-          },
           {
             path: '/calendar',
             element: <Calendar />,
@@ -125,6 +136,14 @@ export const router = createBrowserRouter([
           {
             path: '/tools',
             element: <Tools />,
+          },
+          {
+            path: '/tools/pomodoro',
+            element: <Pomodoro />,
+          },
+          {
+            path: '/tools/kanban',
+            element: <Kanban />,
           },
           {
             path: '/settings',

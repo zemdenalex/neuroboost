@@ -17,6 +17,7 @@ import (
 
 	a "neuroboost/api-go/internal/auth"
 	e "neuroboost/api-go/internal/events"
+	exp "neuroboost/api-go/internal/export"
 	f "neuroboost/api-go/internal/feedback"
 	n "neuroboost/api-go/internal/needs"
 	o "neuroboost/api-go/internal/opportunities"
@@ -50,6 +51,8 @@ func main() {
 	e.InitDB(db)
 	t.InitDB(db)
 	rfl.InitDB(db)
+	pl.InitDB(db)
+	exp.InitDB(db)
 
 	// Initialize router
 	r := chi.NewRouter()
@@ -137,10 +140,12 @@ func main() {
 		r.Get("/api/patterns/metrics", p.GetMetricsHandler)
 		r.Get("/api/patterns/alert-status", p.GetAlertStatusHandler)
 
-		// Planning graph
-		r.Get("/api/planning/graph", pl.GetGraphHandler)
-		r.Post("/api/planning/nodes", pl.CreateNodeHandler)
-		r.Post("/api/planning/edges", pl.CreateEdgeHandler)
+		// Planning
+		r.Get("/api/planning/week", pl.GetWeekHandler)
+
+		// Export / Import
+		r.Get("/api/export", exp.ExportHandler)
+		r.Post("/api/import", exp.ImportHandler)
 	})
 
 	// Start server
