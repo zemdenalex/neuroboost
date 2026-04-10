@@ -11,6 +11,7 @@ import enProfile from './locales/en/profile.json'
 import enFeedback from './locales/en/feedback.json'
 import enHome from './locales/en/home.json'
 import enPlanning from './locales/en/planning.json'
+import enReflections from './locales/en/reflections.json'
 
 import ruCommon from './locales/ru/common.json'
 import ruAuth from './locales/ru/auth.json'
@@ -21,8 +22,9 @@ import ruProfile from './locales/ru/profile.json'
 import ruFeedback from './locales/ru/feedback.json'
 import ruHome from './locales/ru/home.json'
 import ruPlanning from './locales/ru/planning.json'
+import ruReflections from './locales/ru/reflections.json'
 
-const ns = ['common', 'auth', 'calendar', 'tasks', 'settings', 'profile', 'feedback', 'home', 'planning'] as const
+const ns = ['common', 'auth', 'calendar', 'tasks', 'settings', 'profile', 'feedback', 'home', 'planning', 'reflections'] as const
 
 i18n
   .use(LanguageDetector)
@@ -39,6 +41,7 @@ i18n
         feedback: enFeedback,
         home: enHome,
         planning: enPlanning,
+        reflections: enReflections,
       },
       ru: {
         common: ruCommon,
@@ -50,6 +53,7 @@ i18n
         feedback: ruFeedback,
         home: ruHome,
         planning: ruPlanning,
+        reflections: ruReflections,
       },
     },
     fallbackLng: 'en',

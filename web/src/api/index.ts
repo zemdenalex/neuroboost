@@ -49,6 +49,9 @@ export * from './auth';
 export * from './feedback';
 export * from './admin';
 
+// Reflections
+export * from './reflections';
+
 // ============================================================
 // camelCase wrappers for Calendar & EventEditor consumers
 // Accept camelCase params, return NbEvent/Task (camelCase)
