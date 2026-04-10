@@ -78,7 +78,7 @@ function AppLayout() {
 }
 
 export const router = createBrowserRouter([
-  // Public routes
+  // Public routes (no auth required)
   {
     path: '/login',
     element: (
@@ -91,6 +91,23 @@ export const router = createBrowserRouter([
     ),
   },
 
+  // Home page — accessible to everyone; Home.tsx handles auth split internally
+  {
+    path: '/',
+    element: <Navigate to="/home" replace />,
+  },
+  {
+    path: '/home',
+    element: (
+      <>
+        <Suspense fallback={<PageLoader />}>
+          <Home />
+        </Suspense>
+        <FeedbackButton />
+      </>
+    ),
+  },
+
   // Protected routes with layout
   {
     element: <ProtectedRoute />,
@@ -98,14 +115,6 @@ export const router = createBrowserRouter([
       {
         element: <AppLayout />,
         children: [
-          {
-            path: '/',
-            element: <Navigate to="/home" replace />,
-          },
-          {
-            path: '/home',
-            element: <Home />,
-          },
           {
             path: '/calendar',
             element: <Calendar />,
