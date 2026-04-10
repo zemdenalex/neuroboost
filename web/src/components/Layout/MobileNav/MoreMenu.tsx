@@ -2,6 +2,7 @@ import { useRef, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { LayoutGrid, Wrench, BookOpen, User } from 'lucide-react'
+import { useFeatureFlags } from '../../../hooks/useFeatureFlags'
 
 interface MoreMenuProps {
   open: boolean
@@ -11,13 +12,14 @@ interface MoreMenuProps {
 
 export function MoreMenu({ open, onClose, anchorRef }: MoreMenuProps) {
   const { t } = useTranslation('common')
+  const flags = useFeatureFlags()
 
   const moreItems = [
-    { path: '/planning', label: t('nav.planning'), icon: LayoutGrid },
-    { path: '/tools', label: t('nav.tools'), icon: Wrench },
-    { path: '/reflections', label: t('nav.reflections'), icon: BookOpen },
-    { path: '/profile', label: t('nav.profile'), icon: User },
-  ]
+    { path: '/planning', label: t('nav.planning'), icon: LayoutGrid, enabled: true },
+    { path: '/tools', label: t('nav.tools'), icon: Wrench, enabled: flags.tools },
+    { path: '/reflections', label: t('nav.reflections'), icon: BookOpen, enabled: true },
+    { path: '/profile', label: t('nav.profile'), icon: User, enabled: true },
+  ].filter((item) => item.enabled)
   const menuRef = useRef<HTMLDivElement>(null)
   const navigate = useNavigate()
   const location = useLocation()

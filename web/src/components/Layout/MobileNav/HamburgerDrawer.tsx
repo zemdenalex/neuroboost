@@ -13,6 +13,7 @@ import {
   Menu,
   X,
 } from 'lucide-react'
+import { useFeatureFlags } from '../../../hooks/useFeatureFlags'
 
 const EDGE_ZONE = 20
 const SWIPE_THRESHOLD = 60
@@ -21,17 +22,18 @@ export function HamburgerDrawer() {
   const { t } = useTranslation('common')
   const [isOpen, setIsOpen] = useState(false)
   const location = useLocation()
+  const flags = useFeatureFlags()
 
   const navItems = [
-    { path: '/home', label: t('nav.home'), icon: Home },
-    { path: '/calendar', label: t('nav.calendar'), icon: Calendar },
-    { path: '/tasks', label: t('nav.tasks'), icon: CheckSquare },
-    { path: '/planning', label: t('nav.planning'), icon: LayoutGrid },
-    { path: '/reflections', label: t('nav.reflections'), icon: BookOpen },
-    { path: '/tools', label: t('nav.tools'), icon: Wrench },
-    { path: '/settings', label: t('nav.settings'), icon: Settings },
-    { path: '/profile', label: t('nav.profile'), icon: User },
-  ]
+    { path: '/home', label: t('nav.home'), icon: Home, enabled: true },
+    { path: '/calendar', label: t('nav.calendar'), icon: Calendar, enabled: true },
+    { path: '/tasks', label: t('nav.tasks'), icon: CheckSquare, enabled: true },
+    { path: '/planning', label: t('nav.planning'), icon: LayoutGrid, enabled: true },
+    { path: '/reflections', label: t('nav.reflections'), icon: BookOpen, enabled: true },
+    { path: '/tools', label: t('nav.tools'), icon: Wrench, enabled: flags.tools },
+    { path: '/settings', label: t('nav.settings'), icon: Settings, enabled: true },
+    { path: '/profile', label: t('nav.profile'), icon: User, enabled: true },
+  ].filter((item) => item.enabled)
   const touchStartX = useRef(0)
   const touchStartY = useRef(0)
   const touchCurrentX = useRef(0)

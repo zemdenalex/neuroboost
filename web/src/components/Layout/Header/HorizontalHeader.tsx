@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuthContext } from '../../../contexts/AuthContext'
+import { useFeatureFlags } from '../../../hooks/useFeatureFlags'
 import {
   Calendar,
   CheckSquare,
@@ -21,19 +22,20 @@ export default function HorizontalHeader() {
   const location = useLocation()
   const navigate = useNavigate()
   const { user, logout } = useAuthContext()
+  const flags = useFeatureFlags()
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   const navItems = [
-    { path: '/home', label: t('nav.home'), icon: Home },
-    { path: '/calendar', label: t('nav.calendar'), icon: Calendar },
-    { path: '/tasks', label: t('nav.tasks'), icon: CheckSquare },
-    { path: '/planning', label: t('nav.planning'), icon: LayoutGrid },
-    { path: '/reflections', label: t('nav.reflections'), icon: BookOpen },
-    { path: '/tools', label: t('nav.tools'), icon: Wrench },
-    { path: '/settings', label: t('nav.settings'), icon: Settings },
-    { path: '/profile', label: t('nav.profile'), icon: User },
-  ]
+    { path: '/home', label: t('nav.home'), icon: Home, enabled: true },
+    { path: '/calendar', label: t('nav.calendar'), icon: Calendar, enabled: true },
+    { path: '/tasks', label: t('nav.tasks'), icon: CheckSquare, enabled: true },
+    { path: '/planning', label: t('nav.planning'), icon: LayoutGrid, enabled: true },
+    { path: '/reflections', label: t('nav.reflections'), icon: BookOpen, enabled: true },
+    { path: '/tools', label: t('nav.tools'), icon: Wrench, enabled: flags.tools },
+    { path: '/settings', label: t('nav.settings'), icon: Settings, enabled: true },
+    { path: '/profile', label: t('nav.profile'), icon: User, enabled: true },
+  ].filter((item) => item.enabled)
 
   // Close dropdown on outside click
   useEffect(() => {
