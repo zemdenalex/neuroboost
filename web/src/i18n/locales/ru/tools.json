@@ -36,5 +36,16 @@
   "pomodoro.timeForBreak": "Время на перерыв",
   "pomodoro.timeToWork": "Время работать",
   "pomodoro.history": "История сессий",
-  "pomodoro.noHistory": "Сегодня сессий нет"
+  "pomodoro.noHistory": "Сегодня сессий нет",
+
+  "kanban.title": "Канбан-доска",
+  "kanban.col.inbox": "Входящие",
+  "kanban.col.todo": "К выполнению",
+  "kanban.col.inProgress": "В работе",
+  "kanban.col.scheduled": "Запланировано",
+  "kanban.col.done": "Готово",
+  "kanban.addTask": "Добавить задачу…",
+  "kanban.noTasks": "Нет задач",
+  "kanban.customizeColumns": "Настроить колонки",
+  "kanban.error.load": "Не удалось загрузить задачи"
 }

@@ -28,8 +28,8 @@ export default function Tools() {
       titleKey: 'hub.kanban',
       descKey: 'hub.kanban.desc',
       href: '/tools/kanban',
-      available: false,
-      color: 'text-blue-400 bg-blue-500/10 border-blue-500/20',
+      available: true,
+      color: 'text-blue-400 bg-blue-500/10 border-blue-500/20 hover:border-blue-500/50',
     },
     {
       icon: <Grid2x2 className="w-6 h-6" />,

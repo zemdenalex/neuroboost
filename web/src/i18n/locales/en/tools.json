@@ -36,5 +36,16 @@
   "pomodoro.timeForBreak": "Time for a break",
   "pomodoro.timeToWork": "Time to work",
   "pomodoro.history": "Session History",
-  "pomodoro.noHistory": "No sessions today"
+  "pomodoro.noHistory": "No sessions today",
+
+  "kanban.title": "Kanban Board",
+  "kanban.col.inbox": "Inbox",
+  "kanban.col.todo": "To Do",
+  "kanban.col.inProgress": "In Progress",
+  "kanban.col.scheduled": "Scheduled",
+  "kanban.col.done": "Done",
+  "kanban.addTask": "Add task…",
+  "kanban.noTasks": "No tasks",
+  "kanban.customizeColumns": "Customize columns",
+  "kanban.error.load": "Failed to load tasks"
 }
