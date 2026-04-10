@@ -60,6 +60,7 @@
   "dateTime.startTime": "Время начала",
   "dateTime.endTime": "Время окончания",
   "dateTime.timePlaceholder": "напр. 1050, 10:50",
+  "allDay": "весь день",
   "today": "Сегодня",
   "quickCreate": "Быстро",
   "helpMobile": "Тап: выбрать \u2022 Долгое нажатие: создать \u2022 Перетащить: переместить \u2022 Esc: отмена",

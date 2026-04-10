@@ -60,6 +60,7 @@
   "dateTime.startTime": "Start Time",
   "dateTime.endTime": "End Time",
   "dateTime.timePlaceholder": "e.g. 1050, 10:50",
+  "allDay": "all-day",
   "today": "Today",
   "quickCreate": "Quick",
   "helpMobile": "Tap: select \u2022 Long-press: create \u2022 Drag: move \u2022 Esc: cancel",

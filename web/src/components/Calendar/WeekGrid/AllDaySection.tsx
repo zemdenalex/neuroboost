@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { ALL_DAY_HEIGHT, DAY_MS } from './weekgrid.constants';
 import type { ProcessedEvent, DragState, NbEvent, DayInfo } from './weekgrid.types';
 import { getTimezoneOffsetMs, formatDayLabel } from './weekgrid.utils';
@@ -27,6 +28,7 @@ export function AllDaySection({
   onSelectId,
   onDragStart,
 }: AllDaySectionProps) {
+  const { t } = useTranslation('calendar');
   const offset = getTimezoneOffsetMs(timezone);
 
   return (
@@ -51,7 +53,7 @@ export function AllDaySection({
               onMouseDown={() => onDragStart(dayUtc0)}
             >
               <div className="absolute inset-0 flex items-start p-1">
-                <span className="text-xs text-zinc-500 font-mono">all-day</span>
+                <span className="text-xs text-zinc-500 font-mono">{t('allDay')}</span>
               </div>
               
               {dayEvents.map(e => {
