@@ -1,19 +1,56 @@
 {
-  "title": "NeuroBoost",
-  "subtitle": "The Organizer for Non-Organizers",
-  "tagline": "Built for neurodivergent minds...",
-  "getStarted": "Get Started",
-  "signIn": "Sign In",
-  "problemTitle": "Traditional planners don't work for everyone",
-  "problem": "The Problem",
-  "approach": "Our Approach",
-  "howItWorks": "How NeuroBoost Works",
-  "features.timeBlocking": "Time-Blocking First",
-  "features.reminders": "Pushy Reminders",
-  "features.planVsActual": "Plan vs Actual",
-  "features.smartLearning": "Smart Learning",
-  "philosophy": "Our Philosophy",
-  "philosophyText": "Most productivity tools are designed by organized people...",
-  "cta": "Ready to try a different approach?",
-  "footer": "© {{year}} NeuroBoost"
+  "landing": {
+    "tagline": "A calendar-first productivity app built for neurodivergent minds — ADHD, autism, dyslexia, and everyone who thinks differently.",
+    "getStarted": "Get Started",
+    "learnMore": "Learn More",
+    "problemTitle": "The Problem",
+    "problem": "Traditional planners assume you think linearly. They expect you to remember deadlines, estimate time accurately, and stay motivated without external structure. For neurodivergent brains, this isn't a skill issue — it's a mismatch between the tool and the mind.",
+    "solutionTitle": "The NeuroBoost Approach",
+    "solution": "NeuroBoost puts the calendar at the center of everything. Tasks aren't just a list — they're scheduled blocks of time. The calendar is truth. Everything else exists to support it.",
+    "featuresTitle": "Everything Your Brain Needs",
+    "feature": {
+      "calendar": {
+        "title": "Visual Calendar",
+        "desc": "A week-first view with drag-and-drop scheduling. See your entire week at a glance, not just a list of obligations."
+      },
+      "tasks": {
+        "title": "Smart Tasks",
+        "desc": "Priority-grouped tasks with energy levels and GTD contexts. Drag any task onto the calendar to schedule it instantly."
+      },
+      "planning": {
+        "title": "Weekly Planning",
+        "desc": "Structured planning sessions to review the past week and prepare the next — without the overwhelm of a blank page."
+      },
+      "reflections": {
+        "title": "Reflections",
+        "desc": "Quick post-event check-ins to track focus, energy, and mood over time. Learn what conditions help you thrive."
+      },
+      "pomodoro": {
+        "title": "Pomodoro Timer",
+        "desc": "Built-in focus timer integrated with your calendar. Work in sustainable intervals and take breaks your brain actually needs."
+      },
+      "timeBlocking": {
+        "title": "Time Blocking",
+        "desc": "Convert intention into commitment by placing tasks on the calendar. If it's not scheduled, it's not real."
+      }
+    },
+    "ctaTitle": "Ready for a planner that works with your brain?",
+    "ctaText": "Join NeuroBoost and start scheduling the way your brain actually works.",
+    "ctaButton": "Create Free Account",
+    "footer": "© {{year}} NeuroBoost. Built for brains that work differently."
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "greeting": "Hello, {{name}}",
+    "newEvent": "+ Event",
+    "newTask": "+ Task",
+    "pomodoro": "Pomodoro",
+    "todaySchedule": "Today's Schedule",
+    "events": "View all",
+    "noEvents": "Nothing scheduled for today.",
+    "taskSummary": "Task Summary",
+    "todo": "To Do",
+    "done": "Done",
+    "overdue": "Overdue"
+  }
 }
