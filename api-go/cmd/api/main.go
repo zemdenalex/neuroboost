@@ -50,6 +50,7 @@ func main() {
 	e.InitDB(db)
 	t.InitDB(db)
 	rfl.InitDB(db)
+	pl.InitDB(db)
 
 	// Initialize router
 	r := chi.NewRouter()
@@ -137,10 +138,8 @@ func main() {
 		r.Get("/api/patterns/metrics", p.GetMetricsHandler)
 		r.Get("/api/patterns/alert-status", p.GetAlertStatusHandler)
 
-		// Planning graph
-		r.Get("/api/planning/graph", pl.GetGraphHandler)
-		r.Post("/api/planning/nodes", pl.CreateNodeHandler)
-		r.Post("/api/planning/edges", pl.CreateEdgeHandler)
+		// Planning
+		r.Get("/api/planning/week", pl.GetWeekHandler)
 	})
 
 	// Start server
