@@ -33,6 +33,8 @@ export function useWeekGridDrag({
       kind: 'move', dayUtc0: day.dayUtc0, targetDayUtc0: day.dayUtc0, id: event.id,
       offsetMin: startMin, durMin: endMin - startMin, daySpan: isMultiDay ? event.span!.spanDays : 1,
       originalStart: startMin, originalEnd: endMin, allDay: event.allDay || false,
+      originalStartMs: new Date(event.startsAt).getTime(),
+      originalEndMs: new Date(event.endsAt).getTime(),
       pending: true,
     });
   }, [timezone]);
@@ -93,7 +95,14 @@ export function useWeekGridDrag({
           const crossDay = targetDayUtc0 !== prev.startDayUtc0;
           return { ...prev, endDayUtc0: targetDayUtc0, curMin, crossDay, isMultiDayTimed: crossDay && !prev.allDay };
         }
-        if (prev.kind === 'move') return { ...prev, targetDayUtc0, offsetMin: curMin };
+        if (prev.kind === 'move') {
+          if (prev.daySpan > 1) {
+            // Multi-day: only change target day, keep original start time
+            return { ...prev, targetDayUtc0 };
+          }
+          // Single-day: follow cursor for both day and time
+          return { ...prev, targetDayUtc0, offsetMin: curMin };
+        }
         if (prev.kind === 'resize-start' || prev.kind === 'resize-end') return { ...prev, curMin };
         return prev;
       });

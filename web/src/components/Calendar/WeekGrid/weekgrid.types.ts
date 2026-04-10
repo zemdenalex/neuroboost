@@ -65,6 +65,10 @@ export interface DragMove {
   daySpan: number;
   originalStart: number;
   originalEnd: number;
+  /** UTC ms of the event's actual start (for multi-day delta move) */
+  originalStartMs?: number;
+  /** UTC ms of the event's actual end (for multi-day delta move) */
+  originalEndMs?: number;
   allDay: boolean;
   pending?: boolean;
   startX?: number;
