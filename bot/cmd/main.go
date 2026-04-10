@@ -3,13 +3,11 @@ package main
 import (
 	"context"
 	"log"
-	"net"
 	"net/http"
 	"net/url"
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 
@@ -25,24 +23,17 @@ func main() {
 		log.Fatal("TELEGRAM_BOT_TOKEN is required")
 	}
 
-	// Create bot — force IPv6 to bypass Russian IPv4 blocks on Telegram API
-	ipv6Dialer := &net.Dialer{Timeout: 30 * time.Second}
-	httpClient := &http.Client{
-		Transport: &http.Transport{
-			DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
-				// Force IPv6 — Russian hosting often blocks Telegram IPv4 but IPv6 works
-				return ipv6Dialer.DialContext(ctx, "tcp6", addr)
-			},
-		},
-	}
-
+	// Create bot — with optional proxy for Telegram API
+	// Russian hosting blocks Telegram IPv4. Set TELEGRAM_PROXY=http://euro-server:8888 to route through proxy.
 	var bot *tgbotapi.BotAPI
 	if cfg.ProxyURL != "" {
 		proxyURL, err := url.Parse(cfg.ProxyURL)
 		if err != nil {
 			log.Fatalf("Invalid TELEGRAM_PROXY: %v", err)
 		}
-		httpClient.Transport = &http.Transport{Proxy: http.ProxyURL(proxyURL)}
+		httpClient := &http.Client{
+			Transport: &http.Transport{Proxy: http.ProxyURL(proxyURL)},
+		}
 		bot, err = tgbotapi.NewBotAPIWithClient(cfg.TelegramToken, tgbotapi.APIEndpoint, httpClient)
 		if err != nil {
 			log.Fatalf("Failed to create bot with proxy: %v", err)
@@ -50,9 +41,9 @@ func main() {
 		log.Printf("Using proxy: %s", proxyURL.Host)
 	} else {
 		var err error
-		bot, err = tgbotapi.NewBotAPIWithClient(cfg.TelegramToken, tgbotapi.APIEndpoint, httpClient)
+		bot, err = tgbotapi.NewBotAPI(cfg.TelegramToken)
 		if err != nil {
-			log.Fatalf("Failed to create bot: %v", err)
+			log.Fatal("Failed to create bot (set TELEGRAM_PROXY if Telegram is blocked): ", err)
 		}
 	}
 	log.Printf("Bot authorized as @%s", bot.Self.UserName)
