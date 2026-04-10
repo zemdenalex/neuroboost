@@ -65,8 +65,8 @@ export function getDaySpan(
   const adjustedEndDay = endMin === 0 ? Math.max(startDay, endDay - 1) : endDay;
   
   return {
-    startDay: Math.max(0, startDay),
-    endDay: Math.min(6, adjustedEndDay),
+    startDay,
+    endDay: adjustedEndDay,
     spanDays: Math.max(1, adjustedEndDay - startDay + 1),
   };
 }
@@ -92,18 +92,24 @@ export function processEventsForWeek(
     const span = getDaySpan(event.startsAt, event.endsAt, mondayUtc0, timezone);
     
     if (event.allDay) {
-      // All-day event
+      // All-day event — skip if entirely outside the visible range
+      if (span.startDay >= visibleDays || span.endDay < 0) continue;
       allDayEvents.push({
         ...event,
-        dayUtc0: mondayUtc0 + span.startDay * DAY_MS,
+        dayUtc0: mondayUtc0 + Math.max(0, span.startDay) * DAY_MS,
         top: 0,
         height: 0,
-        span,
+        span: {
+          ...span,
+          startDay: Math.max(0, span.startDay),
+          endDay: Math.min(visibleDays - 1, span.endDay),
+        },
       });
     } else if (span.spanDays > 1) {
-      // Multi-day timed event - split into segments
-      for (let day = span.startDay; day <= span.endDay && day < visibleDays; day++) {
-        if (day < 0) continue;
+      // Multi-day timed event — skip if entirely outside the visible range
+      if (span.startDay >= visibleDays || span.endDay < 0) continue;
+      // Iterate only over visible days
+      for (let day = Math.max(0, span.startDay); day <= Math.min(visibleDays - 1, span.endDay); day++) {
         
         const dayUtc0 = mondayUtc0 + day * DAY_MS;
         const isFirst = day === span.startDay;
