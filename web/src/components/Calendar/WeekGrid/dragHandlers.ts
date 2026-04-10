@@ -67,12 +67,14 @@ function handleMoveComplete(
       endsAt: new Date(targetDay + drag.daySpan * DAY_MS).toISOString(),
     });
   } else if (drag.daySpan > 1) {
-    const durationMs = drag.durMin * 60000;
-    const newStart = new Date(targetDay + offsetMin * 60000);
+    // Shift the original event timestamps by the day delta to preserve exact times
+    const dayDelta = targetDay - drag.dayUtc0;
+    const originalStartMs = drag.originalStartMs ?? (drag.dayUtc0 + drag.originalStart * 60000);
+    const originalEndMs = drag.originalEndMs ?? (originalStartMs + drag.durMin * 60000);
     onMoveOrResize({
       id: drag.id,
-      startsAt: newStart.toISOString(),
-      endsAt: new Date(newStart.getTime() + durationMs).toISOString(),
+      startsAt: new Date(originalStartMs + dayDelta).toISOString(),
+      endsAt: new Date(originalEndMs + dayDelta).toISOString(),
     });
   } else {
     onMoveOrResize({

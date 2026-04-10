@@ -33,6 +33,8 @@ export function useWeekGridDrag({
       kind: 'move', dayUtc0: day.dayUtc0, targetDayUtc0: day.dayUtc0, id: event.id,
       offsetMin: startMin, durMin: endMin - startMin, daySpan: isMultiDay ? event.span!.spanDays : 1,
       originalStart: startMin, originalEnd: endMin, allDay: event.allDay || false,
+      originalStartMs: new Date(event.startsAt).getTime(),
+      originalEndMs: new Date(event.endsAt).getTime(),
       pending: true,
     });
   }, [timezone]);
