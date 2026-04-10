@@ -15,6 +15,7 @@ const Tools = lazy(() => import('./pages/Tools'))
 const Settings = lazy(() => import('./pages/Settings'))
 const Admin = lazy(() => import('./pages/Admin'))
 const Profile = lazy(() => import('./pages/Profile'))
+const Pomodoro = lazy(() => import('./pages/Tools/Pomodoro'))
 
 // Suspense fallback
 function PageLoader() {
@@ -134,6 +135,10 @@ export const router = createBrowserRouter([
           {
             path: '/tools',
             element: <Tools />,
+          },
+          {
+            path: '/tools/pomodoro',
+            element: <Pomodoro />,
           },
           {
             path: '/settings',
