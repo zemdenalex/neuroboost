@@ -46,7 +46,7 @@ function ProtectedRoute({ children }: { children?: React.ReactNode }) {
   return <>{children || <Outlet />}</>
 }
 
-// Public route wrapper (redirects to calendar if logged in)
+// Public route wrapper (redirects to /home if logged in)
 function PublicRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, loading } = useAuthContext()
 
@@ -93,20 +93,15 @@ export const router = createBrowserRouter([
     ),
   },
 
-  // Home page — accessible to everyone; Home.tsx handles auth split internally
+  // Landing page — unauthenticated root, full-screen without header
   {
     path: '/',
-    element: <Navigate to="/home" replace />,
-  },
-  {
-    path: '/home',
     element: (
-      <>
+      <PublicRoute>
         <Suspense fallback={<PageLoader />}>
           <Home />
         </Suspense>
-        <FeedbackButton />
-      </>
+      </PublicRoute>
     ),
   },
 
@@ -117,6 +112,11 @@ export const router = createBrowserRouter([
       {
         element: <AppLayout />,
         children: [
+          // Home/Dashboard for authenticated users — inside Layout so header/nav renders
+          {
+            path: '/home',
+            element: <Home />,
+          },
           {
             path: '/calendar',
             element: <Calendar />,
