@@ -310,7 +310,7 @@ function KanbanColumn({
 
   return (
     <div
-      className={`flex flex-col flex-shrink-0 w-70 rounded-xl border transition-all duration-150
+      className={`flex flex-col flex-shrink-0 w-[250px] sm:w-[280px] rounded-xl border transition-all duration-150
         ${accentClass}
         ${isDragOver ? 'ring-2 ring-blue-500/50 border-blue-500/50' : ''}`}
       onDragOver={(e) => onDragOver(e, colDef.id)}
@@ -557,9 +557,9 @@ export default function Kanban() {
   return (
     <div className="flex flex-col h-[calc(100vh-56px)] overflow-hidden">
       {/* Top bar */}
-      <div className="flex-shrink-0 flex items-center justify-between gap-4 px-4 py-3 border-b border-zinc-800">
-        <div className="flex items-center gap-3">
-          <h1 className="text-lg font-bold text-zinc-100">{t('kanban.title')}</h1>
+      <div className="flex-shrink-0 flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-b border-zinc-800">
+        <div className="flex flex-wrap items-center gap-3 min-w-0">
+          <h1 className="text-lg font-bold text-zinc-100 shrink-0">{t('kanban.title')}</h1>
           <FilterBar priorityFilter={priorityFilter} onPriorityChange={setPriorityFilter} />
         </div>
 

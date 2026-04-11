@@ -301,7 +301,7 @@ export default function Planning() {
                           )}
                         </div>
 
-                        <div className="shrink-0 text-right w-28 flex items-center gap-1.5 justify-end">
+                        <div className="shrink-0 text-right min-w-0 flex items-center gap-1.5 justify-end">
                           {day.hours > 0 ? (
                             <span className="text-xs text-zinc-400">
                               {day.hours.toFixed(1)}h
