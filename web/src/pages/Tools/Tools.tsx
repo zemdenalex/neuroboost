@@ -36,16 +36,16 @@ export default function Tools() {
       titleKey: 'hub.eisenhower',
       descKey: 'hub.eisenhower.desc',
       href: '/tools/eisenhower',
-      available: false,
-      color: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20',
+      available: true,
+      color: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20 hover:border-yellow-500/50',
     },
     {
       icon: <Clock4 className="w-6 h-6" />,
       titleKey: 'hub.timeBlocking',
       descKey: 'hub.timeBlocking.desc',
       href: '/tools/time-blocking',
-      available: false,
-      color: 'text-green-400 bg-green-500/10 border-green-500/20',
+      available: true,
+      color: 'text-green-400 bg-green-500/10 border-green-500/20 hover:border-green-500/50',
     },
   ]
 

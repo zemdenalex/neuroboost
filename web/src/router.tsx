@@ -17,6 +17,8 @@ const Admin = lazy(() => import('./pages/Admin'))
 const Profile = lazy(() => import('./pages/Profile'))
 const Pomodoro = lazy(() => import('./pages/Tools/Pomodoro'))
 const Kanban = lazy(() => import('./pages/Tools/Kanban'))
+const Eisenhower = lazy(() => import('./pages/Tools/Eisenhower'))
+const TimeBlocking = lazy(() => import('./pages/Tools/TimeBlocking'))
 
 // Suspense fallback
 function PageLoader() {
@@ -144,6 +146,14 @@ export const router = createBrowserRouter([
           {
             path: '/tools/kanban',
             element: <Kanban />,
+          },
+          {
+            path: '/tools/eisenhower',
+            element: <Eisenhower />,
+          },
+          {
+            path: '/tools/time-blocking',
+            element: <TimeBlocking />,
           },
           {
             path: '/settings',
