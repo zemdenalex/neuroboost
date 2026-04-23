@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import Header from './Header'
 import { MobileNavigation } from './MobileNav'
+import { ToastHost } from '../ui/Toast'
 
 type HeaderVariant = 'horizontal' | 'vertical'
 
@@ -45,6 +46,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         {children}
       </main>
       <MobileNavigation />
+      <ToastHost />
     </div>
   )
 }
