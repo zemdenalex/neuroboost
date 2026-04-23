@@ -28,18 +28,28 @@ Tags are created on `main` after merging tested `develop` code.
 
 ---
 
-## Current Sprint: v0.4.4 – v0.4.9
+## Current Sprint: v0.4.4 – v0.4.9 (DONE)
 
 **Priority:** Calendar UX > Mobile > Telegram > Features > Polish
 
-| Version | Theme | Key Deliverables |
-|---------|-------|-----------------|
-| **v0.4.4** | Calendar UX Fix | Fix click/select/resize/move model, task-to-calendar drag, performance, i18n day names |
-| **v0.4.5** | Mobile Polish | 4 mobile calendar views (day/3-day/month/agenda), event editor responsive, fix nav overlaps |
-| **v0.4.6** | Telegram Bot + MiniApp | Assistant bot commands, notification bot, MiniApp integration, Telegram WebApp auth |
-| **v0.4.7** | New Pages & Tools | Home dashboard, planning page, reflections page, pomodoro timer, kanban board |
-| **v0.4.8** | Settings & Cleanup | Global UI scale, feature toggles, export/import, bug cleanup |
-| **v0.4.9** | Final Test & Polish | Full regression, performance audit, mobile responsiveness pass |
+| Version | Theme | Key Deliverables | Status |
+|---------|-------|-----------------|--------|
+| **v0.4.4** | Calendar UX Fix | Fix click/select/resize/move model, task-to-calendar drag, performance, i18n day names | ✅ Tagged |
+| **v0.4.5** | Mobile Polish | 4 mobile calendar views (day/3-day/month/agenda), event editor responsive, fix nav overlaps | ✅ Tagged (partial — see M*) |
+| **v0.4.6** | Telegram Bot + MiniApp | Assistant bot commands, notification bot, MiniApp integration, Telegram WebApp auth | ✅ Tagged (bot blocked by proxy) |
+| **v0.4.7** | New Pages & Tools | Home dashboard, planning page, reflections page, pomodoro timer, kanban board | ✅ Tagged |
+| **v0.4.8** | Settings & Cleanup | Global UI scale, feature toggles, export/import, bug cleanup | ✅ Tagged |
+| **v0.4.9** | Polish | Reflections migration, calendar null guard, Planning two-pane + TZ fix, Settings hybrid auto-save, mobile Telegram login, backup script | ✅ Tagged 2026-04-24 |
+
+## Next Sprint: v0.4.10 — Intelligent Tools
+
+| Feature | Notes |
+|---------|-------|
+| Eisenhower Decision Helper | Inbox of untriaged tasks + triage wizard (3 questions) + overload advisor + healthy-life nudges. User wants it to "make users ask questions about each problem". |
+| Kanban rework | 5/10 → 8/10 UX. Design/UX improvements + missing features (TBD brainstorm). |
+| Mobile calendar views | 3-day, agenda, mini-month. Current swipe-day-nav is the only mobile calendar mode. |
+| Profile editable fields | Beyond name — timezone, gamification stats real data. |
+| Planning v2 polish | Day cells didn't stretch vertically even with `auto-rows-fr` — parent height chain needs investigation. Maybe redesign to hourly grid. |
 
 **Workflow per version:**
 1. Implement on `develop`
