@@ -1,9 +1,12 @@
-import { useState, useEffect } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import i18n from '../../i18n'
 import { useAuthContext } from '../../contexts/AuthContext'
 import { getStoredToken } from '../../api/client'
+import { useMediaQuery } from '../../hooks/useMediaQuery'
+import { showToast } from '../../components/ui/Toast'
+import type { UserSettings } from '../../api/auth'
 import {
   Clock,
   Globe,
@@ -11,9 +14,6 @@ import {
   Database,
   LogOut,
   AlertTriangle,
-  Save,
-  Loader2,
-  Check,
   LayoutGrid,
   Maximize,
   Smartphone,
@@ -43,11 +43,64 @@ export default function Settings() {
   const { t: tc } = useTranslation('common')
   const navigate = useNavigate()
   const { user, logout, updateSettings, updateProfile } = useAuthContext()
-  const [saving, setSaving] = useState(false)
-  const [saved, setSaved] = useState(false)
+  const isMobile = useMediaQuery('(max-width: 767px)')
   const [showConfirmLogout, setShowConfirmLogout] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [language, setLanguage] = useState(i18n.language?.startsWith('ru') ? 'ru' : 'en')
+
+  // Debounced auto-save — coalesces rapid changes (e.g. slider drags) into a single save.
+  // Separate timers + pending-patch refs per function so changes to different fields
+  // within the debounce window merge instead of cancelling each other.
+  const settingsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const profileTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const pendingSettingsRef = useRef<Partial<UserSettings>>({})
+  const pendingProfileRef = useRef<{ display_name?: string; timezone?: string; locale?: string }>({})
+
+  const autoSaveSettings = useCallback(
+    (patch: Partial<UserSettings>) => {
+      pendingSettingsRef.current = { ...pendingSettingsRef.current, ...patch }
+      if (settingsTimerRef.current) clearTimeout(settingsTimerRef.current)
+      settingsTimerRef.current = setTimeout(async () => {
+        const toSave = pendingSettingsRef.current
+        pendingSettingsRef.current = {}
+        try {
+          await updateSettings(toSave)
+          showToast(t('saved'))
+        } catch (err) {
+          console.error('Auto-save failed:', err)
+          setError(t('error.saveSettings'))
+        }
+      }, 300)
+    },
+    [updateSettings, t]
+  )
+
+  const autoSaveProfile = useCallback(
+    (patch: { display_name?: string; timezone?: string; locale?: string }) => {
+      pendingProfileRef.current = { ...pendingProfileRef.current, ...patch }
+      if (profileTimerRef.current) clearTimeout(profileTimerRef.current)
+      profileTimerRef.current = setTimeout(async () => {
+        const toSave = pendingProfileRef.current
+        pendingProfileRef.current = {}
+        try {
+          await updateProfile(toSave)
+          showToast(t('saved'))
+        } catch (err) {
+          console.error('Auto-save failed:', err)
+          setError(t('error.saveSettings'))
+        }
+      }, 300)
+    },
+    [updateProfile, t]
+  )
+
+  // Flush any pending save on unmount so a quick navigation doesn't drop changes.
+  useEffect(() => {
+    return () => {
+      if (settingsTimerRef.current) clearTimeout(settingsTimerRef.current)
+      if (profileTimerRef.current) clearTimeout(profileTimerRef.current)
+    }
+  }, [])
 
   // Settings state - initialize from user settings or defaults
   const [headerStyle, setHeaderStyle] = useState<HeaderVariant>('horizontal')
@@ -112,6 +165,7 @@ export default function Settings() {
     setHeaderStyle(style)
     try {
       await updateSettings({ header_variant: style })
+      showToast(t('saved'))
     } catch {
       setError(t('error.saveLayout'))
     }
@@ -121,6 +175,7 @@ export default function Settings() {
     setMobileNav(nav)
     try {
       await updateSettings({ mobile_nav: nav })
+      showToast(t('saved'))
     } catch {
       setError(t('error.saveMobileNav'))
     }
@@ -132,6 +187,7 @@ export default function Settings() {
     localStorage.setItem('neuroboost-locale', locale)
     try {
       await updateProfile({ locale })
+      showToast(t('saved'))
     } catch {
       setError(t('error.languageFailed'))
     }
@@ -142,36 +198,10 @@ export default function Settings() {
     navigate('/login')
   }
 
-  const handleSave = async () => {
-    setSaving(true)
-    setError(null)
-    
-    try {
-      // Save profile and settings in parallel
-      await Promise.all([
-        updateProfile({ timezone }),
-        updateSettings({
-          header_variant: headerStyle,
-          mobile_nav: mobileNav,
-          ui_scale: uiScale,
-          work_days: workDays,
-          work_start: workStart,
-          work_end: workEnd,
-          features,
-        }),
-      ])
-
-      setSaved(true)
-      setTimeout(() => setSaved(false), 2000)
-    } catch {
-      setError(t('error.saveSettings'))
-    } finally {
-      setSaving(false)
-    }
-  }
-
   const toggleFeature = (key: keyof typeof features) => {
-    setFeatures(prev => ({ ...prev, [key]: !prev[key] }))
+    const nextFeatures = { ...features, [key]: !features[key] }
+    setFeatures(nextFeatures)
+    autoSaveSettings({ features: nextFeatures })
   }
 
   const handleExport = async () => {
@@ -224,20 +254,6 @@ export default function Settings() {
     <div className="max-w-3xl mx-auto p-6 space-y-8">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-mono font-bold text-white">{t('title')}</h1>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 text-white font-mono text-sm rounded-lg transition-colors"
-          >
-            {saving ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : saved ? (
-              <Check className="w-4 h-4" />
-            ) : (
-              <Save className="w-4 h-4" />
-            )}
-            {saved ? t('saved') : t('saveChanges')}
-          </button>
         </div>
 
         {error && (
@@ -278,7 +294,8 @@ export default function Settings() {
           <p className="text-xs text-zinc-500 mt-2">{t('layout.note')}</p>
         </section>
 
-        {/* Mobile Navigation */}
+        {/* Mobile Navigation — only shown on mobile viewports */}
+        {isMobile && (
         <section className="bg-zinc-900 border border-zinc-800 rounded-lg p-5">
           <div className="flex items-center gap-2 mb-4">
             <Smartphone className="w-5 h-5 text-zinc-400" />
@@ -340,6 +357,7 @@ export default function Settings() {
           </div>
           <p className="text-xs text-zinc-500 mt-2">{t('mobileNav.note')}</p>
         </section>
+        )}
 
         {/* UI Scale */}
         <section className="bg-zinc-900 border border-zinc-800 rounded-lg p-5">
@@ -357,7 +375,11 @@ export default function Settings() {
                 max="150"
                 step="5"
                 value={uiScale}
-                onChange={(e) => setUIScale(Number(e.target.value))}
+                onChange={(e) => {
+                  const val = Number(e.target.value)
+                  setUIScale(val)
+                  autoSaveSettings({ ui_scale: val })
+                }}
                 className="flex-1 h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-600"
               />
               <span className="text-sm text-zinc-400 w-10">150%</span>
@@ -365,7 +387,10 @@ export default function Settings() {
             <div className="flex items-center justify-between">
               <span className="text-sm text-zinc-400">{t('uiScale.current')} <strong className="text-white">{uiScale}%</strong></span>
               <button
-                onClick={() => setUIScale(100)}
+                onClick={() => {
+                  setUIScale(100)
+                  autoSaveSettings({ ui_scale: 100 })
+                }}
                 className="text-xs text-blue-400 hover:text-blue-300"
               >
                 {t('uiScale.reset')}
@@ -389,11 +414,13 @@ export default function Settings() {
                 {(['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const).map((day) => (
                   <button
                     key={day}
-                    onClick={() =>
-                      setWorkDays((prev) =>
-                        prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
-                      )
-                    }
+                    onClick={() => {
+                      const next = workDays.includes(day)
+                        ? workDays.filter((d) => d !== day)
+                        : [...workDays, day]
+                      setWorkDays(next)
+                      autoSaveSettings({ work_days: next })
+                    }}
                     className={`px-3 py-1.5 rounded text-sm font-mono transition-colors ${
                       workDays.includes(day)
                         ? 'bg-blue-600 text-white'
@@ -413,7 +440,11 @@ export default function Settings() {
                 <input
                   type="time"
                   value={workStart}
-                  onChange={(e) => setWorkStart(e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value
+                    setWorkStart(val)
+                    autoSaveSettings({ work_start: val })
+                  }}
                   className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white font-mono focus:outline-none focus:border-blue-500"
                 />
               </div>
@@ -422,7 +453,11 @@ export default function Settings() {
                 <input
                   type="time"
                   value={workEnd}
-                  onChange={(e) => setWorkEnd(e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value
+                    setWorkEnd(val)
+                    autoSaveSettings({ work_end: val })
+                  }}
                   className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white font-mono focus:outline-none focus:border-blue-500"
                 />
               </div>
@@ -443,7 +478,11 @@ export default function Settings() {
               <div className="relative">
                 <select
                   value={timezone}
-                  onChange={(e) => setTimezone(e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value
+                    setTimezone(val)
+                    autoSaveProfile({ timezone: val })
+                  }}
                   className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white font-mono focus:outline-none focus:border-blue-500 appearance-none pr-10"
                 >
                   {TIMEZONES.map((tz) => (

@@ -65,7 +65,7 @@ import { api } from './client';
 export async function getEvents(startISO: string, endISO: string): Promise<NbEvent[]> {
   const params = new URLSearchParams({ start: startISO, end: endISO });
   const response = await api.get<{ events: ApiEvent[] } | ApiEvent[]>(`/events?${params}`);
-  const events = Array.isArray(response) ? response : response.events || [];
+  const events = Array.isArray(response) ? response : (response?.events ?? []);
   return events.map(toNbEvent);
 }
 

@@ -146,3 +146,6 @@ go.work
 private/
 *.key
 *.pem
+
+# Brainstorming companion
+.superpowers/

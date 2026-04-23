@@ -182,14 +182,15 @@ jobs:
           username: ${{ secrets.DEPLOY_SSH_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           script: |
-            cd /root/neuroboost
+            set -e
+            cd /opt/neuroboost
             # Backup before deploy
             ./scripts/backup.sh || echo "Backup failed, continuing deploy..."
             # Pull and rebuild
             git pull origin main
-            docker-compose build --pull
-            docker-compose down
-            docker-compose up -d
+            docker compose build --pull
+            docker compose down
+            docker compose up -d
             # Wait for health
             sleep 15
             curl -fsS http://127.0.0.1:8080/api/health || exit 1
