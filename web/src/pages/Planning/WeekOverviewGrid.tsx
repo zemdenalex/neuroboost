@@ -38,7 +38,7 @@ export function WeekOverviewGrid({ days, onTaskDrop }: Props) {
   const locale = i18n.language === 'ru' ? 'ru-RU' : 'en-US'
 
   return (
-    <div className="flex-1 grid grid-cols-7 gap-2 min-h-0">
+    <div className="flex-1 grid grid-cols-7 auto-rows-fr gap-2 min-h-0">
       {days.map((day) => {
         const dayName = day.date.toLocaleDateString(locale, { weekday: 'short' })
         const dayNum = day.date.getDate()
