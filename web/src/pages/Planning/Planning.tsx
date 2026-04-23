@@ -26,11 +26,6 @@ function getMondayOf(date: Date): Date {
   return d
 }
 
-// Format a Date to YYYY-MM-DD for API
-function toDateString(date: Date): string {
-  return date.toISOString().slice(0, 10)
-}
-
 export default function Planning() {
   const { t, i18n } = useTranslation('planning')
 
@@ -57,7 +52,7 @@ export default function Planning() {
     setLoading(true)
     setError(null)
     try {
-      const data = await getWeekPlan(toDateString(monday))
+      const data = await getWeekPlan(toLocalDateKey(monday))
       setPlan(data)
     } catch (err) {
       setError(err instanceof Error ? err.message : t('error.load'))
