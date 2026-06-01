@@ -3,6 +3,7 @@ import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom'
 import { useAuthContext } from './contexts/AuthContext'
 import { Layout } from './components/Layout'
 import { FeedbackButton } from './components/FeedbackButton'
+import { PomodoroWidget } from './components/Pomodoro/PomodoroWidget'
 
 // Lazy-loaded pages
 const Home = lazy(() => import('./pages/Home'))
@@ -76,6 +77,7 @@ function AppLayout() {
           <Outlet />
         </Suspense>
       </Layout>
+      <PomodoroWidget />
       <FeedbackButton />
     </>
   )
