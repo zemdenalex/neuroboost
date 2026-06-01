@@ -12,6 +12,7 @@ export interface Task {
   category?: TaskCategory
   priority: number
   estimated_minutes?: number
+  actual_minutes: number
   due_date?: string
   tags: string[]
   contexts: string[]
@@ -102,6 +103,10 @@ export async function deleteTask(id: string): Promise<void> {
 
 export async function scheduleTask(id: string, data: ScheduleTaskRequest): Promise<ScheduledEvent> {
   return api.post<ScheduledEvent>(`/tasks/${id}/schedule`, data)
+}
+
+export async function logTaskTime(id: string, minutes: number): Promise<Task> {
+  return api.post<Task>(`/tasks/${id}/log-time`, { minutes })
 }
 
 // Priority labels
