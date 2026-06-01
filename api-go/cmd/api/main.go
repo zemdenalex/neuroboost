@@ -118,6 +118,7 @@ func main() {
 		r.Patch("/api/tasks/{id}", t.UpdateHandler)
 		r.Delete("/api/tasks/{id}", t.DeleteHandler)
 		r.Post("/api/tasks/{id}/schedule", t.ScheduleHandler)
+		r.Post("/api/tasks/{id}/log-time", t.LogTimeHandler)
 
 		// Opportunities
 		r.Get("/api/opportunities", o.ListHandler)

@@ -551,3 +551,67 @@ func scheduleTask(ctx context.Context, userID, taskID string, startsAt, endsAt t
 
 	return &event, nil
 }
+
+// logTaskTime adds delta minutes to a task's actual_minutes, clamped at >= 0,
+// and returns the updated task. A negative delta is used for undo.
+func logTaskTime(ctx context.Context, userID, taskID string, delta int) (*Task, error) {
+	var t Task
+	var tags, contexts []string
+
+	err := db.Pool.QueryRow(ctx, `
+		UPDATE task
+		SET actual_minutes = GREATEST(0, actual_minutes + $1), updated_at = NOW()
+		WHERE id = $2 AND user_id = $3
+		RETURNING id, user_id, title, description, status, category, priority,
+		          estimated_minutes, due_date, COALESCE(tags, '{}'), COALESCE(contexts, '{}'),
+		          energy, parent_id, completed_at, created_at, updated_at, actual_minutes
+	`, delta, taskID, userID).Scan(
+		&t.ID, &t.UserID, &t.Title, &t.Description, &t.Status, &t.Category,
+		&t.Priority, &t.EstimatedMinutes, &t.DueDate, &tags, &contexts,
+		&t.Energy, &t.ParentID, &t.CompletedAt, &t.CreatedAt, &t.UpdatedAt, &t.ActualMinutes,
+	)
+	if err != nil {
+		return nil, err
+	}
+	t.Tags = tags
+	t.Contexts = contexts
+	return &t, nil
+}
+
+// LogTimeHandler adds (or removes, if negative) focused minutes on a task.
+func LogTimeHandler(w http.ResponseWriter, r *http.Request) {
+	if db == nil {
+		util.RespondError(w, http.StatusInternalServerError, "DB_NOT_INITIALIZED", "Database not initialized")
+		return
+	}
+
+	userID := middleware.UserIDFromContext(r.Context())
+	if userID == "" {
+		util.RespondError(w, http.StatusUnauthorized, "NOT_AUTHENTICATED", "Not authenticated")
+		return
+	}
+
+	taskID := chi.URLParam(r, "id")
+	if taskID == "" {
+		util.RespondError(w, http.StatusBadRequest, "MISSING_ID", "Task ID is required")
+		return
+	}
+
+	var req LogTimeRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		util.RespondError(w, http.StatusBadRequest, "INVALID_REQUEST", "Invalid request body")
+		return
+	}
+
+	task, err := logTaskTime(r.Context(), userID, taskID, req.Minutes)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			util.RespondError(w, http.StatusNotFound, "NOT_FOUND", "Task not found")
+			return
+		}
+		util.RespondError(w, http.StatusInternalServerError, "LOG_TIME_ERROR", "Failed to log time")
+		return
+	}
+
+	util.RespondJSON(w, http.StatusOK, task)
+}
