@@ -35,6 +35,7 @@ type Task struct {
 	Category         *TaskCategory `json:"category,omitempty"`
 	Priority         int           `json:"priority"`
 	EstimatedMinutes *int          `json:"estimated_minutes,omitempty"`
+	ActualMinutes    int           `json:"actual_minutes"`
 	DueDate          *time.Time    `json:"due_date,omitempty"`
 	Tags             []string      `json:"tags"`
 	Contexts         []string      `json:"contexts"`
@@ -73,6 +74,12 @@ type UpdateTaskRequest struct {
 	Contexts         []string      `json:"contexts,omitempty"`
 	Energy           *int          `json:"energy,omitempty"`
 	ParentID         *string       `json:"parent_id,omitempty"`
+}
+
+// LogTimeRequest adds (or, with a negative value, removes) focused minutes
+// to a task's actual_minutes total. Used by the Pomodoro timer + undo.
+type LogTimeRequest struct {
+	Minutes int `json:"minutes"`
 }
 
 // ScheduleTaskRequest represents scheduling a task as an event

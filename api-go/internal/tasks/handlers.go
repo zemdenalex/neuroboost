@@ -272,9 +272,9 @@ func ScheduleHandler(w http.ResponseWriter, r *http.Request) {
 
 func listTasks(ctx context.Context, userID, status, category, taskContext string) ([]Task, error) {
 	query := `
-		SELECT id, user_id, title, description, status, category, priority, 
+		SELECT id, user_id, title, description, status, category, priority,
 		       estimated_minutes, due_date, COALESCE(tags, '{}'), COALESCE(contexts, '{}'),
-		       energy, parent_id, completed_at, created_at, updated_at
+		       energy, parent_id, completed_at, created_at, updated_at, actual_minutes
 		FROM task
 		WHERE user_id = $1
 	`
@@ -314,7 +314,7 @@ func listTasks(ctx context.Context, userID, status, category, taskContext string
 		err := rows.Scan(
 			&t.ID, &t.UserID, &t.Title, &t.Description, &t.Status, &t.Category,
 			&t.Priority, &t.EstimatedMinutes, &t.DueDate, &tags, &contexts,
-			&t.Energy, &t.ParentID, &t.CompletedAt, &t.CreatedAt, &t.UpdatedAt,
+			&t.Energy, &t.ParentID, &t.CompletedAt, &t.CreatedAt, &t.UpdatedAt, &t.ActualMinutes,
 		)
 		if err != nil {
 			return nil, err
@@ -338,13 +338,13 @@ func createTask(ctx context.Context, userID string, req CreateTaskRequest, statu
 	err := db.Pool.QueryRow(ctx, `
 		INSERT INTO task (user_id, title, description, status, category, priority, estimated_minutes, due_date, tags, contexts, energy, parent_id)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-		RETURNING id, user_id, title, description, status, category, priority, 
+		RETURNING id, user_id, title, description, status, category, priority,
 		          estimated_minutes, due_date, COALESCE(tags, '{}'), COALESCE(contexts, '{}'),
-		          energy, parent_id, completed_at, created_at, updated_at
+		          energy, parent_id, completed_at, created_at, updated_at, actual_minutes
 	`, userID, req.Title, req.Description, status, req.Category, priority, req.EstimatedMinutes, dueDate, tags, contexts, req.Energy, req.ParentID).Scan(
 		&t.ID, &t.UserID, &t.Title, &t.Description, &t.Status, &t.Category,
 		&t.Priority, &t.EstimatedMinutes, &t.DueDate, &resultTags, &resultContexts,
-		&t.Energy, &t.ParentID, &t.CompletedAt, &t.CreatedAt, &t.UpdatedAt,
+		&t.Energy, &t.ParentID, &t.CompletedAt, &t.CreatedAt, &t.UpdatedAt, &t.ActualMinutes,
 	)
 
 	if err != nil {
@@ -361,15 +361,15 @@ func getTask(ctx context.Context, userID, taskID string) (*Task, error) {
 	var tags, contexts []string
 
 	err := db.Pool.QueryRow(ctx, `
-		SELECT id, user_id, title, description, status, category, priority, 
+		SELECT id, user_id, title, description, status, category, priority,
 		       estimated_minutes, due_date, COALESCE(tags, '{}'), COALESCE(contexts, '{}'),
-		       energy, parent_id, completed_at, created_at, updated_at
+		       energy, parent_id, completed_at, created_at, updated_at, actual_minutes
 		FROM task
 		WHERE id = $1 AND user_id = $2
 	`, taskID, userID).Scan(
 		&t.ID, &t.UserID, &t.Title, &t.Description, &t.Status, &t.Category,
 		&t.Priority, &t.EstimatedMinutes, &t.DueDate, &tags, &contexts,
-		&t.Energy, &t.ParentID, &t.CompletedAt, &t.CreatedAt, &t.UpdatedAt,
+		&t.Energy, &t.ParentID, &t.CompletedAt, &t.CreatedAt, &t.UpdatedAt, &t.ActualMinutes,
 	)
 
 	if err != nil {
@@ -469,9 +469,9 @@ func updateTask(ctx context.Context, userID, taskID string, req UpdateTaskReques
 	query := fmt.Sprintf(`
 		UPDATE task SET %s
 		WHERE id = $%d AND user_id = $%d
-		RETURNING id, user_id, title, description, status, category, priority, 
+		RETURNING id, user_id, title, description, status, category, priority,
 		          estimated_minutes, due_date, COALESCE(tags, '{}'), COALESCE(contexts, '{}'),
-		          energy, parent_id, completed_at, created_at, updated_at
+		          energy, parent_id, completed_at, created_at, updated_at, actual_minutes
 	`, strings.Join(updates, ", "), argNum, argNum+1)
 
 	var t Task
@@ -480,7 +480,7 @@ func updateTask(ctx context.Context, userID, taskID string, req UpdateTaskReques
 	err := db.Pool.QueryRow(ctx, query, args...).Scan(
 		&t.ID, &t.UserID, &t.Title, &t.Description, &t.Status, &t.Category,
 		&t.Priority, &t.EstimatedMinutes, &t.DueDate, &tags, &contexts,
-		&t.Energy, &t.ParentID, &t.CompletedAt, &t.CreatedAt, &t.UpdatedAt,
+		&t.Energy, &t.ParentID, &t.CompletedAt, &t.CreatedAt, &t.UpdatedAt, &t.ActualMinutes,
 	)
 
 	if err != nil {
