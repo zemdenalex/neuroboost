@@ -44,6 +44,7 @@ export interface SessionRecord {
 export interface Completion {
   eventId: string | null
   taskId: string | null
+  taskTitle: string | null
   minutes: number
   failed: boolean
 }

@@ -11,8 +11,6 @@ import {
   VolumeX,
   ChevronDown,
   ChevronUp,
-  Check,
-  X,
 } from 'lucide-react'
 import { listTasks, type Task } from '../../api/tasks'
 import { usePomodoro } from '../../contexts/PomodoroContext'
@@ -39,9 +37,6 @@ export default function Pomodoro() {
     sessionsCompleted,
     linkedTaskId,
     settings,
-    lastCompletion,
-    breakOver,
-    interruptedWhileAway,
     start,
     pause,
     reset,
@@ -49,10 +44,6 @@ export default function Pomodoro() {
     selectPhase,
     setLinkedTask,
     updateSettings,
-    dismissCompletion,
-    undoLastCompletion,
-    dismissBreakOver,
-    dismissInterrupted,
   } = usePomodoro()
 
   const [tasks, setTasks] = useState<Task[]>([])
@@ -265,56 +256,6 @@ export default function Pomodoro() {
           )}
         </div>
       </div>
-
-      {/* Interrupted note */}
-      {interruptedWhileAway && (
-        <div className="fixed bottom-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-3 rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 shadow-2xl">
-          <span className="text-sm text-zinc-300">{t('pomodoro.interrupted')}</span>
-          <button onClick={dismissInterrupted} className="text-zinc-500 hover:text-zinc-300" aria-label={t('pomodoro.dismiss')}>
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-      )}
-
-      {/* Break-over toast */}
-      {breakOver && (
-        <div className="fixed bottom-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-3 rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 shadow-2xl">
-          <span className="text-sm text-zinc-300">{t('pomodoro.breakOver')}</span>
-          <button onClick={() => { dismissBreakOver(); start() }} className="rounded-lg bg-red-600 px-3 py-1 text-sm font-semibold text-white">
-            {t('pomodoro.start')}
-          </button>
-          <button onClick={dismissBreakOver} className="text-zinc-500 hover:text-zinc-300" aria-label={t('pomodoro.dismiss')}>
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-      )}
-
-      {/* Completion toast */}
-      {lastCompletion && (
-        <div className="fixed bottom-4 right-4 z-50 flex max-w-sm items-center gap-3 rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 shadow-2xl" style={{ borderLeft: `3px solid ${lastCompletion.failed ? '#f59e0b' : '#22c55e'}` }}>
-          <span className="grid h-7 w-7 place-items-center rounded-lg" style={{ background: lastCompletion.failed ? 'rgba(245,158,11,0.15)' : 'rgba(34,197,94,0.15)', color: lastCompletion.failed ? '#f59e0b' : '#22c55e' }}>
-            {lastCompletion.failed ? <X className="h-4 w-4" /> : <Check className="h-4 w-4" />}
-          </span>
-          <span className="flex-1 text-xs text-zinc-300">
-            {lastCompletion.failed
-              ? t('pomodoro.saveFailed')
-              : lastCompletion.taskId
-              ? t('pomodoro.loggedToTask', {
-                  minutes: lastCompletion.minutes,
-                  task: tasks.find((tk) => tk.id === lastCompletion.taskId)?.title ?? '',
-                })
-              : t('pomodoro.loggedNoTask', { minutes: lastCompletion.minutes })}
-          </span>
-          {!lastCompletion.failed && (
-            <button onClick={undoLastCompletion} className="whitespace-nowrap rounded-lg border border-blue-500/40 px-3 py-1 text-xs font-bold text-blue-400">
-              {t('pomodoro.undo')}
-            </button>
-          )}
-          <button onClick={dismissCompletion} className="text-zinc-500 hover:text-zinc-300" aria-label={t('pomodoro.dismiss')}>
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-      )}
     </div>
   )
 }

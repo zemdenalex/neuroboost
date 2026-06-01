@@ -4,6 +4,7 @@ import { useAuthContext } from './contexts/AuthContext'
 import { Layout } from './components/Layout'
 import { FeedbackButton } from './components/FeedbackButton'
 import { PomodoroWidget } from './components/Pomodoro/PomodoroWidget'
+import { PomodoroToasts } from './components/Pomodoro/PomodoroToasts'
 
 // Lazy-loaded pages
 const Home = lazy(() => import('./pages/Home'))
@@ -78,6 +79,7 @@ function AppLayout() {
         </Suspense>
       </Layout>
       <PomodoroWidget />
+      <PomodoroToasts />
       <FeedbackButton />
     </>
   )

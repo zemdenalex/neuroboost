@@ -46,7 +46,7 @@ describe('recordWorkCompletion', () => {
     const res = await recordWorkCompletion({ ...baseParams, taskId: 't1', taskTitle: 'X' })
     expect(createEvent).toHaveBeenCalledOnce()
     expect(logTaskTime).toHaveBeenCalledWith('t1', 25)
-    expect(res).toEqual({ eventId: 'ev1', taskId: 't1', minutes: 25, failed: false })
+    expect(res).toEqual({ eventId: 'ev1', taskId: 't1', taskTitle: 'X', minutes: 25, failed: false })
   })
 
   it('creates the event but does NOT log time when unlinked', async () => {
@@ -54,6 +54,7 @@ describe('recordWorkCompletion', () => {
     const res = await recordWorkCompletion({ ...baseParams, taskId: null, taskTitle: null })
     expect(logTaskTime).not.toHaveBeenCalled()
     expect(res.eventId).toBe('ev2')
+    expect(res.taskTitle).toBeNull()
     expect(res.failed).toBe(false)
   })
 
@@ -62,6 +63,7 @@ describe('recordWorkCompletion', () => {
     const res = await recordWorkCompletion({ ...baseParams, taskId: 't1', taskTitle: 'X' })
     expect(res.failed).toBe(true)
     expect(res.eventId).toBeNull()
+    expect(res.taskTitle).toBe('X')
   })
 })
 
@@ -71,13 +73,13 @@ describe('undoWorkCompletion', () => {
   it('deletes the event and compensates the logged minutes', async () => {
     vi.mocked(deleteEvent).mockResolvedValue(undefined as never)
     vi.mocked(logTaskTime).mockResolvedValue({} as never)
-    await undoWorkCompletion({ eventId: 'ev1', taskId: 't1', minutes: 25, failed: false })
+    await undoWorkCompletion({ eventId: 'ev1', taskId: 't1', taskTitle: 'X', minutes: 25, failed: false })
     expect(deleteEvent).toHaveBeenCalledWith('ev1')
     expect(logTaskTime).toHaveBeenCalledWith('t1', -25)
   })
 
   it('skips deletion when there was no event', async () => {
-    await undoWorkCompletion({ eventId: null, taskId: null, minutes: 25, failed: true })
+    await undoWorkCompletion({ eventId: null, taskId: null, taskTitle: null, minutes: 25, failed: true })
     expect(deleteEvent).not.toHaveBeenCalled()
     expect(logTaskTime).not.toHaveBeenCalled()
   })

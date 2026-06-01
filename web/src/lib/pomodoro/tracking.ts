@@ -38,9 +38,9 @@ export async function recordWorkCompletion(params: CompletionParams): Promise<Co
     if (params.taskId) {
       await logTaskTime(params.taskId, params.minutes)
     }
-    return { eventId: event.id, taskId: params.taskId, minutes: params.minutes, failed: false }
+    return { eventId: event.id, taskId: params.taskId, taskTitle: params.taskTitle, minutes: params.minutes, failed: false }
   } catch {
-    return { eventId: null, taskId: params.taskId, minutes: params.minutes, failed: true }
+    return { eventId: null, taskId: params.taskId, taskTitle: params.taskTitle, minutes: params.minutes, failed: true }
   }
 }
 

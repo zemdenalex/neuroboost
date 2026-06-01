@@ -34,7 +34,7 @@ interface PomodoroContextValue {
   linkedTaskId: string | null
   linkedTaskTitle: string | null
   settings: PomodoroSettings
-  lastCompletion: Completion | null
+  completions: Array<Completion & { id: number }>
   breakOver: boolean
   interruptedWhileAway: boolean
   start: () => void
@@ -44,8 +44,8 @@ interface PomodoroContextValue {
   selectPhase: (m: TimerMode) => void
   setLinkedTask: (id: string | null, title: string | null) => void
   updateSettings: (patch: Partial<PomodoroSettings>) => void
-  dismissCompletion: () => void
-  undoLastCompletion: () => void
+  dismissCompletion: (id: number) => void
+  undoCompletion: (id: number) => void
   dismissBreakOver: () => void
   dismissInterrupted: () => void
 }
@@ -119,7 +119,10 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
   const [blockStartedAt, setBlockStartedAt] = useState<string | null>(init.blockStartedAt)
 
   const [now, setNow] = useState<number>(() => Date.now())
-  const [lastCompletion, setLastCompletion] = useState<Completion | null>(null)
+  const [completions, setCompletions] = useState<Array<Completion & { id: number }>>([])
+  const completionIdRef = useRef(0)
+  const completionsRef = useRef<Array<Completion & { id: number }>>([])
+  useEffect(() => { completionsRef.current = completions }, [completions])
   const [breakOver, setBreakOver] = useState(false)
   const [interruptedWhileAway, setInterruptedWhileAway] = useState(init.interrupted)
 
@@ -202,7 +205,10 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
         startedAtISO: startedISO,
         endsAtISO: endedISO,
         minutes,
-      }).then(setLastCompletion)
+      }).then((res) => {
+        const id = completionIdRef.current++
+        setCompletions((prev) => [...prev, { ...res, id }])
+      })
 
       const newCompleted = sessionsCompleted + 1
       setSessionsCompleted(newCompleted)
@@ -275,11 +281,14 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
     setSettings((prev) => ({ ...prev, ...patch }))
   }, [])
 
-  const dismissCompletion = useCallback(() => setLastCompletion(null), [])
-  const undoLastCompletion = useCallback(() => {
-    if (lastCompletion) void undoWorkCompletion(lastCompletion)
-    setLastCompletion(null)
-  }, [lastCompletion])
+  const dismissCompletion = useCallback((id: number) => {
+    setCompletions((prev) => prev.filter((c) => c.id !== id))
+  }, [])
+  const undoCompletion = useCallback((id: number) => {
+    const c = completionsRef.current.find((x) => x.id === id)
+    if (c) void undoWorkCompletion(c)
+    setCompletions((prev) => prev.filter((x) => x.id !== id))
+  }, [])
   const dismissBreakOver = useCallback(() => setBreakOver(false), [])
   const dismissInterrupted = useCallback(() => setInterruptedWhileAway(false), [])
 
@@ -292,7 +301,7 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
     linkedTaskId,
     linkedTaskTitle,
     settings,
-    lastCompletion,
+    completions,
     breakOver,
     interruptedWhileAway,
     start,
@@ -303,7 +312,7 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
     setLinkedTask,
     updateSettings,
     dismissCompletion,
-    undoLastCompletion,
+    undoCompletion,
     dismissBreakOver,
     dismissInterrupted,
   }
