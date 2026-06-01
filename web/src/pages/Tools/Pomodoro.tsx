@@ -11,7 +11,6 @@ import {
   VolumeX,
   ChevronDown,
   ChevronUp,
-  Link as LinkIcon,
   Check,
   X,
 } from 'lucide-react'
@@ -122,7 +121,7 @@ export default function Pomodoro() {
           <span className="font-mono text-6xl font-bold tabular-nums" style={{ color: MODE_HEX[phase] }}>
             {formatMs(remainingMs)}
           </span>
-          <span className="text-sm text-zinc-500">{t(`pomodoro.${phase}`)}</span>
+          <span className="text-sm text-zinc-500">{phase === 'work' ? t('pomodoro.focusBlock', { minutes: settings.workMinutes }) : t(`pomodoro.${phase}`)}</span>
         </div>
 
         {/* Controls */}

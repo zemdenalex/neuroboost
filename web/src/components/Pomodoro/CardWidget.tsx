@@ -11,7 +11,7 @@ export function CardWidget() {
   return (
     <div
       className="fixed bottom-4 right-4 z-40 w-56 rounded-xl bg-zinc-900/95 p-3 shadow-2xl backdrop-blur"
-      style={{ borderLeft: `3px solid ${MODE_HEX[phase]}`, border: '1px solid #27272a' }}
+      style={{ border: '1px solid #27272a', borderLeft: `3px solid ${MODE_HEX[phase]}` }}
     >
       <div className="mb-2 flex items-center justify-between">
         <span className="text-[10px] font-bold uppercase tracking-wide" style={{ color: MODE_HEX[phase] }}>

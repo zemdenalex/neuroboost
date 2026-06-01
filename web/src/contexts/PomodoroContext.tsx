@@ -158,6 +158,9 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
     })
   }, [phase, endsAt, isRunning, remainingWhenPaused, sessionsCompleted, linkedTaskId, linkedTaskTitle, blockStartedAt])
 
+  // Persist settings whenever they change (runs once on mount, then on every update).
+  useEffect(() => { saveSettings(settings) }, [settings])
+
   const seedPhase = useCallback(
     (mode: TimerMode, autoStart: boolean) => {
       const durMs = durationMsForMode(mode, settings)
@@ -268,16 +271,9 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
     setLinkedTaskTitle(title)
   }, [])
 
-  const updateSettings = useCallback(
-    (patch: Partial<PomodoroSettings>) => {
-      setSettings((prev) => {
-        const next = { ...prev, ...patch }
-        saveSettings(next)
-        return next
-      })
-    },
-    []
-  )
+  const updateSettings = useCallback((patch: Partial<PomodoroSettings>) => {
+    setSettings((prev) => ({ ...prev, ...patch }))
+  }, [])
 
   const dismissCompletion = useCallback(() => setLastCompletion(null), [])
   const undoLastCompletion = useCallback(() => {

@@ -1,9 +1,11 @@
 import { Play, Pause } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { usePomodoro } from '../../contexts/PomodoroContext'
 import { formatMs, MODE_HEX } from './formatTime'
 
 export function PillWidget() {
+  const { t } = useTranslation('tools')
   const { phase, remainingMs, isRunning, start, pause } = usePomodoro()
   return (
     <div
@@ -17,7 +19,7 @@ export function PillWidget() {
       <button
         onClick={isRunning ? pause : start}
         className="grid h-6 w-6 place-items-center rounded-full bg-zinc-800 text-zinc-300 hover:text-zinc-100"
-        aria-label={isRunning ? 'Pause' : 'Start'}
+        aria-label={isRunning ? t('pomodoro.pause') : t('pomodoro.start')}
       >
         {isRunning ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}
       </button>
