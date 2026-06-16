@@ -2,7 +2,7 @@ import type React from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import type { PlanningTask, PlanningEvent } from '../../api/planning'
-import { toLocalDateKey } from '../../utils/date'
+import { toLocalDateKey, dateLocale } from '../../utils/date'
 
 export interface DayData {
   date: Date
@@ -35,7 +35,7 @@ export function WeekOverviewGrid({ days, onTaskDrop }: Props) {
     }
   }
 
-  const locale = i18n.language === 'ru' ? 'ru-RU' : 'en-US'
+  const locale = dateLocale(i18n.language)
 
   return (
     <div className="flex-1 grid grid-cols-7 auto-rows-fr gap-2 min-h-0">

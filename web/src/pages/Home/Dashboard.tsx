@@ -6,6 +6,7 @@ import { useAuthContext } from '../../contexts/AuthContext'
 import { getEvents, getTasks } from '../../api'
 import type { NbEvent } from '../../types'
 import type { Task } from '../../types'
+import { dateLocale } from '../../utils/date'
 
 function formatTime(iso: string): string {
   return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -52,7 +53,7 @@ export function Dashboard() {
 
   const displayName = user?.display_name || user?.tg_first_name || user?.email?.split('@')[0] || 'User'
   const today = new Date()
-  const todayLabel = formatDate(today, i18n.language)
+  const todayLabel = formatDate(today, dateLocale(i18n.language))
 
   const todayEvents = events
     .slice()

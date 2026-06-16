@@ -7,6 +7,7 @@ import { HourGrid } from './HourGrid';
 import { TimeIndicator } from './TimeIndicator';
 import { EventBlock } from './EventBlock';
 import { GhostPreview, MultiDayTimedGhost } from './GhostPreview';
+import { dateLocale } from '../../../utils/date';
 
 interface DayColumnProps {
   day: DayInfo;
@@ -60,9 +61,9 @@ export const DayColumn = memo(function DayColumn({
   stopAutoScroll,
 }: DayColumnProps) {
   const { i18n } = useTranslation();
-  const dateLocale = i18n.language === 'ru' ? 'ru-RU' : 'en-US';
+  const locale = dateLocale(i18n.language);
   const { dayUtc0, dayLocal } = day;
-  const dayLabel = formatDayLabel(dayLocal, isMobile, dateLocale);
+  const dayLabel = formatDayLabel(dayLocal, isMobile, locale);
   const isToday = dayUtc0 === currentDayUtc0;
 
   const handleMouseDown = (ev: React.MouseEvent) => {

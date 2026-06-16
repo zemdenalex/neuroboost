@@ -9,7 +9,7 @@ import {
 } from 'lucide-react'
 import { getWeekPlan, WeekPlan, PlanningTask, PlanningEvent } from '../../api/planning'
 import { scheduleTask } from '../../api/tasks'
-import { toLocalDateKey, startOfWeek } from '../../utils/date'
+import { toLocalDateKey, startOfWeek, dateLocale } from '../../utils/date'
 import { UnscheduledList } from './UnscheduledList'
 import { CapacityMeter } from './CapacityMeter'
 import { WeekOverviewGrid } from './WeekOverviewGrid'
@@ -56,7 +56,7 @@ export default function Planning() {
 
   // Format week range label
   const weekLabel = useMemo(() => {
-    const locale = i18n.language
+    const locale = dateLocale(i18n.language)
     const startLabel = monday.toLocaleDateString(locale, { month: 'short', day: 'numeric' })
     const endLabel = sunday.toLocaleDateString(locale, {
       month: 'short',

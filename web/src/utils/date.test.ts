@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { addDays, startOfWeek, toLocalDateKey } from './date'
+import { addDays, startOfWeek, toLocalDateKey, dateLocale } from './date'
 
 describe('addDays', () => {
   it('adds days, preserves time, does not mutate input', () => {
@@ -55,6 +55,32 @@ describe('startOfWeek', () => {
     const before = d.getTime()
     startOfWeek(d)
     expect(d.getTime()).toBe(before)
+  })
+})
+
+describe('dateLocale', () => {
+  it('maps the Russian UI language to the ru-RU date locale', () => {
+    expect(dateLocale('ru')).toBe('ru-RU')
+  })
+
+  it('maps English (and the default) to en-US', () => {
+    expect(dateLocale('en')).toBe('en-US')
+  })
+
+  it('handles region-qualified language tags by their primary subtag', () => {
+    expect(dateLocale('ru-RU')).toBe('ru-RU')
+    expect(dateLocale('en-US')).toBe('en-US')
+    expect(dateLocale('en-GB')).toBe('en-US')
+  })
+
+  it('falls back to en-US for unsupported, empty, or missing languages', () => {
+    expect(dateLocale('de')).toBe('en-US')
+    expect(dateLocale('')).toBe('en-US')
+    expect(dateLocale(undefined)).toBe('en-US')
+  })
+
+  it('is case-insensitive on the primary subtag', () => {
+    expect(dateLocale('RU')).toBe('ru-RU')
   })
 })
 

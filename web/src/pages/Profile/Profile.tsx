@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuthContext } from '../../contexts/AuthContext'
+import { dateLocale } from '../../utils/date'
 import {
   User,
   Mail,
@@ -18,7 +19,7 @@ import {
 } from 'lucide-react'
 
 export default function Profile() {
-  const { t } = useTranslation('profile')
+  const { t, i18n } = useTranslation('profile')
   const { user, updateProfile } = useAuthContext()
   const [isEditingName, setIsEditingName] = useState(false)
   const [displayName, setDisplayName] = useState(user?.display_name || '')
@@ -60,7 +61,7 @@ export default function Profile() {
   }
 
   const userName = user?.display_name || user?.email?.split('@')[0] || 'User'
-  const memberSince = user?.created_at ? new Date(user.created_at).toLocaleDateString('en-US', {
+  const memberSince = user?.created_at ? new Date(user.created_at).toLocaleDateString(dateLocale(i18n.language), {
     month: 'long',
     year: 'numeric'
   }) : 'Unknown'

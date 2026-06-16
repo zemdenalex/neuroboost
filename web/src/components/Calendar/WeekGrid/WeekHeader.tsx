@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { getTimezoneOffsetMs } from './weekgrid.utils';
 import { DAY_MS } from './weekgrid.constants';
+import { dateLocale } from '../../../utils/date';
 
 interface WeekHeaderProps {
   mondayUtc0: number;
@@ -26,7 +27,7 @@ export function WeekHeader({
   onQuickCreate,
 }: WeekHeaderProps) {
   const { t, i18n } = useTranslation('calendar');
-  const dateLocale = i18n.language === 'ru' ? 'ru-RU' : 'en-US';
+  const locale = dateLocale(i18n.language);
 
   const offset = getTimezoneOffsetMs(timezone);
   const startDate = new Date(mondayUtc0 + offset);
@@ -34,16 +35,16 @@ export function WeekHeader({
 
   const weekLabel = (() => {
     if (visibleDays === 1) {
-      return startDate.toLocaleDateString(dateLocale, {
+      return startDate.toLocaleDateString(locale, {
         weekday: 'long',
         month: 'long',
         day: 'numeric'
       });
     } else if (visibleDays === 3) {
       const rangeEnd = new Date(mondayUtc0 + (visibleDays - 1) * DAY_MS + offset);
-      return `${startDate.toLocaleDateString(dateLocale, { month: 'short', day: 'numeric' })} – ${rangeEnd.toLocaleDateString(dateLocale, { month: 'short', day: 'numeric' })}`;
+      return `${startDate.toLocaleDateString(locale, { month: 'short', day: 'numeric' })} – ${rangeEnd.toLocaleDateString(locale, { month: 'short', day: 'numeric' })}`;
     }
-    return `${startDate.toLocaleDateString(dateLocale, { month: 'short', day: 'numeric' })} – ${endDate.toLocaleDateString(dateLocale, { month: 'short', day: 'numeric', year: 'numeric' })}`;
+    return `${startDate.toLocaleDateString(locale, { month: 'short', day: 'numeric' })} – ${endDate.toLocaleDateString(locale, { month: 'short', day: 'numeric', year: 'numeric' })}`;
   })();
 
   return (
