@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Plus, Settings, X, GripVertical, Clock, Calendar } from 'lucide-react'
 import { listTasks, createTask, updateTask } from '../../api/tasks'
 import type { Task, TaskStatus } from '../../api/tasks'
+import { PRIORITY_DOT_COLORS } from '../../lib/priority'
 
 // ─── Column definitions ──────────────────────────────────────────────────────
 
@@ -39,15 +40,7 @@ function statusToColumn(status: TaskStatus): KanbanColumnId {
 }
 
 // ─── Priority dot ─────────────────────────────────────────────────────────────
-
-const PRIORITY_DOT_COLORS: Record<number, string> = {
-  0: 'bg-zinc-500',
-  1: 'bg-red-500',
-  2: 'bg-orange-500',
-  3: 'bg-yellow-500',
-  4: 'bg-green-500',
-  5: 'bg-blue-500',
-}
+// Colors come from lib/priority (shared across Tasks, calendar, sidebar, Eisenhower).
 
 function PriorityDot({ priority }: { priority: number }) {
   const color = PRIORITY_DOT_COLORS[priority] ?? PRIORITY_DOT_COLORS[3]
@@ -400,14 +393,11 @@ interface FilterBarProps {
   onPriorityChange: (p: number | null) => void
 }
 
-const PRIORITY_OPTIONS = [
-  { value: 1, label: 'P1', dotColor: 'bg-red-500' },
-  { value: 2, label: 'P2', dotColor: 'bg-orange-500' },
-  { value: 3, label: 'P3', dotColor: 'bg-yellow-500' },
-  { value: 4, label: 'P4', dotColor: 'bg-green-500' },
-  { value: 5, label: 'P5', dotColor: 'bg-blue-500' },
-  { value: 0, label: 'P0', dotColor: 'bg-zinc-500' },
-]
+const PRIORITY_OPTIONS = [1, 2, 3, 4, 5, 0].map((value) => ({
+  value,
+  label: `P${value}`,
+  dotColor: PRIORITY_DOT_COLORS[value],
+}))
 
 function FilterBar({ priorityFilter, onPriorityChange }: FilterBarProps) {
   return (

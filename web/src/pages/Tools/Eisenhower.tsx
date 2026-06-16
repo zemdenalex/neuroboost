@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Grid2X2, RefreshCw, AlertCircle } from 'lucide-react'
 import { getTasks, updateTask } from '../../api'
 import type { Task } from '../../types'
+import { PRIORITY_DOT_COLORS } from '../../lib/priority'
 
 // ─── Priority → Quadrant mapping ─────────────────────────────────────────────
 
@@ -86,17 +87,6 @@ const QUADRANT_DEFS: QuadrantDef[] = [
   },
 ]
 
-// ─── Priority dot colors ──────────────────────────────────────────────────────
-
-const PRIORITY_DOT: Record<number, string> = {
-  0: 'bg-zinc-500',
-  1: 'bg-red-500',
-  2: 'bg-orange-500',
-  3: 'bg-yellow-500',
-  4: 'bg-green-500',
-  5: 'bg-blue-500',
-}
-
 // ─── Task Card ────────────────────────────────────────────────────────────────
 
 interface TaskCardProps {
@@ -106,7 +96,7 @@ interface TaskCardProps {
 }
 
 function TaskCard({ task, dotColor, onDragStart }: TaskCardProps) {
-  const dotClass = PRIORITY_DOT[task.priority] ?? dotColor
+  const dotClass = PRIORITY_DOT_COLORS[task.priority] ?? dotColor
 
   return (
     <div

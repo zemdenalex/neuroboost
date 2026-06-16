@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { PRIORITY_META, priorityMeta } from './priority'
+import { PRIORITY_META, priorityMeta, PRIORITY_DOT_COLORS } from './priority'
 
 const LEVELS = [0, 1, 2, 3, 4, 5]
 
@@ -29,6 +29,20 @@ describe('PRIORITY_META', () => {
       expect(m.blockClass).toContain(m.hue)
       expect(m.sidebarClass).toContain(m.hue)
     }
+  })
+})
+
+describe('PRIORITY_DOT_COLORS', () => {
+  // Pinned contract: the task list, Kanban, and Eisenhower all render dots from this map.
+  it('maps every level to its exact dot class', () => {
+    expect(PRIORITY_DOT_COLORS).toEqual({
+      0: 'bg-zinc-600',
+      1: 'bg-red-600',
+      2: 'bg-orange-500',
+      3: 'bg-yellow-500',
+      4: 'bg-green-500',
+      5: 'bg-blue-500',
+    })
   })
 })
 
