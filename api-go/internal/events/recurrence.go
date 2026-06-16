@@ -86,11 +86,22 @@ func expandRecurrence(event Event, rangeStart, rangeEnd time.Time, exceptions []
 
 	duration := event.EndsAt.Sub(event.StartsAt)
 	var instances []Event
-	count := 0
+	count := 0     // occurrence index from StartsAt — drives COUNT
 	monthStep := 0 // months advanced from StartsAt, for MONTHLY day-of-month anchoring
-	maxExpansions := 366
 
-	for occurrence := event.StartsAt; ; {
+	// maxInstances bounds the instances RETURNED for one event in one query (so a
+	// huge window can't produce an unbounded payload). It is deliberately a cap on
+	// emitted-in-window instances, NOT on occurrences-from-start: the latter made a
+	// long-running event (e.g. a daily one viewed >366 days after its start) exhaust
+	// the budget before the loop reached the window, silently dropping it.
+	// maxIterations is an absolute loop ceiling — it MUST stay comfortably larger
+	// than the largest realistic event-age-in-steps (100000 ≈ 273 years of daily),
+	// or this exact vanishing bug returns.
+	const maxInstances = 366
+	const maxIterations = 100000
+
+	occurrence := event.StartsAt
+	for iter := 0; iter < maxIterations; iter++ {
 		// Stop if past range end
 		if occurrence.After(rangeEnd) {
 			break
@@ -108,8 +119,8 @@ func expandRecurrence(event Event, rangeStart, rangeEnd time.Time, exceptions []
 			break
 		}
 
-		// Safety cap
-		if count >= maxExpansions {
+		// Stop once the response is full
+		if len(instances) >= maxInstances {
 			break
 		}
 

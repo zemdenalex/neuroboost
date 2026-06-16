@@ -172,6 +172,46 @@ func TestExpandRangeFiltering(t *testing.T) {
 	}
 }
 
+// A long-running recurring event must still appear in a query window far in the
+// future. Regression test for a cap that counted occurrences from the event's
+// StartsAt: a daily event would hit the 366 safety cap ~1 year after its start —
+// before the loop ever reached the requested window — and silently vanish from
+// the calendar. This is the ONE test here that fails on the pre-fix code; the
+// other two below are forward guards (bounded payload, COUNT exhaustion) that
+// pass on both versions.
+func TestExpandDailyLongRunningStillAppearsInWindow(t *testing.T) {
+	e := mkEvent("lr", dt(2026, 1, 1, 10, 0), time.Hour, "FREQ=DAILY")
+	// Window ~424 days after the start — well past the old 366 cap.
+	got := expandRecurrence(e, dt(2027, 3, 1, 0, 0), dt(2027, 3, 2, 0, 0), nil)
+	want := []string{"2027-03-01"}
+	if g := dates(got); !equal(g, want) {
+		t.Fatalf("long-running daily; dates = %v, want %v", g, want)
+	}
+}
+
+// The number of instances returned for a single event is bounded even when the
+// query window is enormous (defends against unbounded expansion / huge payloads).
+func TestExpandDailyResponseBounded(t *testing.T) {
+	e := mkEvent("hb", dt(2026, 1, 1, 10, 0), time.Hour, "FREQ=DAILY")
+	got := expandRecurrence(e, dt(2026, 1, 1, 0, 0), dt(2031, 1, 1, 0, 0), nil)
+	if len(got) > 366 {
+		t.Fatalf("expected at most 366 instances, got %d", len(got))
+	}
+	if len(got) == 0 {
+		t.Fatal("expected a bounded but non-empty set of instances")
+	}
+}
+
+// COUNT counts from the event's start, so once all occurrences are exhausted the
+// event must not reappear in a later window.
+func TestExpandCountRespectedAfterAllOccurrences(t *testing.T) {
+	e := mkEvent("ce", dt(2026, 1, 1, 10, 0), time.Hour, "FREQ=DAILY;COUNT=3")
+	got := expandRecurrence(e, dt(2027, 1, 1, 0, 0), dt(2027, 2, 1, 0, 0), nil)
+	if len(got) != 0 {
+		t.Fatalf("COUNT=3 exhausted by 2026-01-03; window in 2027 should be empty, got %v", dates(got))
+	}
+}
+
 func TestExpandExceptionsSkip(t *testing.T) {
 	e := mkEvent("x", dt(2026, 6, 1, 10, 0), time.Hour, "FREQ=DAILY;COUNT=3")
 	exc := []time.Time{dt(2026, 6, 2, 0, 0)}
