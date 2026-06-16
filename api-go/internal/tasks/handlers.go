@@ -86,6 +86,11 @@ func CreateHandler(w http.ResponseWriter, r *http.Request) {
 		dueDate = &t
 	}
 
+	if code, msg := validateTaskMutation(req.Status, req.Priority, req.Category); code != "" {
+		util.RespondError(w, http.StatusBadRequest, code, msg)
+		return
+	}
+
 	// Set defaults
 	status := StatusTodo
 	if req.Status != nil {
@@ -170,6 +175,11 @@ func UpdateHandler(w http.ResponseWriter, r *http.Request) {
 	var req UpdateTaskRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		util.RespondError(w, http.StatusBadRequest, "INVALID_REQUEST", "Invalid request body")
+		return
+	}
+
+	if code, msg := validateTaskMutation(req.Status, req.Priority, req.Category); code != "" {
+		util.RespondError(w, http.StatusBadRequest, code, msg)
 		return
 	}
 
