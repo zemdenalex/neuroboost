@@ -1,5 +1,6 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
+import { createInFlightGuard } from '../../lib/inFlightGuard'
 import {
   Plus,
   Loader2,
@@ -34,6 +35,10 @@ export default function Tasks() {
   const [loading, setLoading] = useState(true)
   const [showEditor, setShowEditor] = useState(false)
   const [editingTask, setEditingTask] = useState<Partial<Task> | null>(null)
+  const [saving, setSaving] = useState(false)
+  // Stable across renders so a synchronous double-click is blocked (a useState
+  // flag would not update before the second click's handler reads it).
+  const saveGuard = useRef(createInFlightGuard()).current
   const [search, setSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState<TaskStatus | 'ALL'>('ALL')
   const [expandedGroups, setExpandedGroups] = useState<Set<number>>(new Set([1, 2, 3, 4, 5]))
@@ -101,40 +106,48 @@ export default function Tasks() {
     }
   }
 
-  const handleSaveTask = async () => {
+  const handleSaveTask = () => {
     if (!editingTask?.title) return
+    // Capture the narrowed title: property narrowing from the guard above is not
+    // preserved inside the deferred async closure (TS widens it back to string | undefined).
+    const title = editingTask.title
 
-    try {
-      if (editingTask.id) {
-        // Update existing
-        const updated = await updateTask(editingTask.id, {
-          title: editingTask.title,
-          description: editingTask.description,
-          priority: editingTask.priority,
-          due_date: editingTask.due_date,
-          estimated_minutes: editingTask.estimated_minutes,
-          contexts: editingTask.contexts,
-          tags: editingTask.tags,
-        })
-        setTasks(prev => prev.map(t => t.id === updated.id ? updated : t))
-      } else {
-        // Create new
-        const created = await createTask({
-          title: editingTask.title,
-          description: editingTask.description,
-          priority: editingTask.priority ?? 3,
-          due_date: editingTask.due_date,
-          estimated_minutes: editingTask.estimated_minutes,
-          contexts: editingTask.contexts ?? [],
-          tags: editingTask.tags ?? [],
-        })
-        setTasks(prev => [...prev, created])
+    return saveGuard(async () => {
+      setSaving(true)
+      try {
+        if (editingTask.id) {
+          // Update existing
+          const updated = await updateTask(editingTask.id, {
+            title,
+            description: editingTask.description,
+            priority: editingTask.priority,
+            due_date: editingTask.due_date,
+            estimated_minutes: editingTask.estimated_minutes,
+            contexts: editingTask.contexts,
+            tags: editingTask.tags,
+          })
+          setTasks(prev => prev.map(t => t.id === updated.id ? updated : t))
+        } else {
+          // Create new
+          const created = await createTask({
+            title,
+            description: editingTask.description,
+            priority: editingTask.priority ?? 3,
+            due_date: editingTask.due_date,
+            estimated_minutes: editingTask.estimated_minutes,
+            contexts: editingTask.contexts ?? [],
+            tags: editingTask.tags ?? [],
+          })
+          setTasks(prev => [...prev, created])
+        }
+        setShowEditor(false)
+        setEditingTask(null)
+      } catch (error) {
+        console.error('Failed to save task:', error)
+      } finally {
+        setSaving(false)
       }
-      setShowEditor(false)
-      setEditingTask(null)
-    } catch (error) {
-      console.error('Failed to save task:', error)
-    }
+    })
   }
 
   const handleDeleteTask = async () => {
@@ -472,7 +485,7 @@ export default function Tasks() {
                   </button>
                   <button
                     onClick={handleSaveTask}
-                    disabled={!editingTask.title}
+                    disabled={!editingTask.title || saving}
                     className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-zinc-700 disabled:text-zinc-500 text-white rounded-lg transition-colors"
                   >
                     {tc('action.save')}
