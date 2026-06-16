@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { ALL_DAY_HEIGHT, DAY_MS } from './weekgrid.constants';
 import type { ProcessedEvent, DragState, NbEvent, DayInfo } from './weekgrid.types';
-import { getTimezoneOffsetMs, formatDayLabel } from './weekgrid.utils';
+import { getTimezoneOffsetMs, formatDayLabel, formatAllDayGhostLabel } from './weekgrid.utils';
 
 interface AllDaySectionProps {
   days: DayInfo[];
@@ -28,7 +28,7 @@ export function AllDaySection({
   onSelectId,
   onDragStart,
 }: AllDaySectionProps) {
-  const { t } = useTranslation('calendar');
+  const { t, i18n } = useTranslation('calendar');
   const offset = getTimezoneOffsetMs(timezone);
 
   return (
@@ -104,37 +104,41 @@ export function AllDaySection({
       
       {/* Multi-day create ghost in all-day section */}
       {drag && drag.kind === 'create' && drag.allDay && drag.crossDay && (
-        <AllDayCreateGhost 
-          drag={drag} 
-          mondayUtc0={mondayUtc0} 
+        <AllDayCreateGhost
+          drag={drag}
+          mondayUtc0={mondayUtc0}
           visibleDays={visibleDays}
           offset={offset}
+          language={i18n.language}
         />
       )}
-      
+
       {/* Single-day all-day create ghost */}
       {drag && drag.kind === 'create' && drag.allDay && !drag.crossDay && (
-        <SingleAllDayGhost 
-          drag={drag} 
-          mondayUtc0={mondayUtc0} 
+        <SingleAllDayGhost
+          drag={drag}
+          mondayUtc0={mondayUtc0}
           visibleDays={visibleDays}
           offset={offset}
+          language={i18n.language}
         />
       )}
     </div>
   );
 }
 
-function AllDayCreateGhost({ 
-  drag, 
-  mondayUtc0, 
+function AllDayCreateGhost({
+  drag,
+  mondayUtc0,
   visibleDays,
-  offset 
-}: { 
-  drag: NonNullable<DragState> & { kind: 'create' }; 
-  mondayUtc0: number; 
+  offset,
+  language,
+}: {
+  drag: NonNullable<DragState> & { kind: 'create' };
+  mondayUtc0: number;
   visibleDays: number;
   offset: number;
+  language: string;
 }) {
   const startDayIndex = Math.max(0, Math.min(visibleDays - 1, 
     Math.floor((Math.min(drag.startDayUtc0, drag.endDayUtc0) - mondayUtc0) / DAY_MS)));
@@ -144,9 +148,7 @@ function AllDayCreateGhost({
   const leftPercent = (startDayIndex / visibleDays) * 100;
   const widthPercent = ((endDayIndex - startDayIndex + 1) / visibleDays) * 100;
   
-  const startDate = new Date(Math.min(drag.startDayUtc0, drag.endDayUtc0) + offset);
-  const endDate = new Date(Math.max(drag.startDayUtc0, drag.endDayUtc0) + offset);
-  const label = `${startDate.toLocaleDateString('ru-RU', { month: 'short', day: 'numeric' })} — ${endDate.toLocaleDateString('ru-RU', { month: 'short', day: 'numeric' })}`;
+  const label = formatAllDayGhostLabel(drag.startDayUtc0, drag.endDayUtc0, offset, language);
   
   return (
     <div 
@@ -167,11 +169,11 @@ function AllDayCreateGhost({
   );
 }
 
-function SingleAllDayGhost({ drag, mondayUtc0, visibleDays, offset }: { 
-  drag: NonNullable<DragState> & { kind: 'create' }; mondayUtc0: number; visibleDays: number; offset: number;
+function SingleAllDayGhost({ drag, mondayUtc0, visibleDays, offset, language }: {
+  drag: NonNullable<DragState> & { kind: 'create' }; mondayUtc0: number; visibleDays: number; offset: number; language: string;
 }) {
   const dayIndex = Math.max(0, Math.min(visibleDays - 1, Math.floor((drag.startDayUtc0 - mondayUtc0) / DAY_MS)));
-  const label = new Date(drag.startDayUtc0 + offset).toLocaleDateString('ru-RU', { month: 'short', day: 'numeric' });
+  const label = formatAllDayGhostLabel(drag.startDayUtc0, drag.startDayUtc0, offset, language);
   
   return (
     <div className="absolute bg-emerald-400/40 border border-emerald-400/60 pointer-events-none flex items-center justify-center"

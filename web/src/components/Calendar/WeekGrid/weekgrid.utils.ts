@@ -1,5 +1,6 @@
 import { HOUR_PX, MIN_SLOT_MIN, DAY_MS } from './weekgrid.constants';
 import type { NbEvent, ProcessedEvent, DayInfo, DaySpan } from './weekgrid.types';
+import { dateLocale } from '../../../utils/date';
 
 // Re-export timezone utilities
 export {
@@ -44,6 +45,28 @@ export function formatDayLabel(date: Date, isMobile: boolean, locale: string = '
     return date.toLocaleDateString(locale, { weekday: 'short', day: 'numeric' });
   }
   return date.toLocaleDateString(locale, { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
+/**
+ * Label for the all-day drag-to-create ghost. Renders the user's locale (was
+ * hardcoded to 'ru-RU', so English users saw Russian dates). startDayUtc0 and
+ * endDayUtc0 are day-anchor UTC ms; offsetMs shifts them into the user's tz the
+ * same way the rest of the all-day section does. A same-day range collapses to a
+ * single date; a multi-day range renders "start — end" (em-dash, as before).
+ */
+export function formatAllDayGhostLabel(
+  startDayUtc0: number,
+  endDayUtc0: number,
+  offsetMs: number,
+  language: string | undefined,
+): string {
+  const locale = dateLocale(language);
+  const lo = Math.min(startDayUtc0, endDayUtc0);
+  const hi = Math.max(startDayUtc0, endDayUtc0);
+  const fmt = (utc0: number) =>
+    new Date(utc0 + offsetMs).toLocaleDateString(locale, { month: 'short', day: 'numeric' });
+  const start = fmt(lo);
+  return lo === hi ? start : `${start} — ${fmt(hi)}`;
 }
 
 // === EVENT PROCESSING ===

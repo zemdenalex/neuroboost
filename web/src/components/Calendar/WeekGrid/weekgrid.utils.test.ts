@@ -8,6 +8,7 @@ import {
   snapMin,
   clampMins,
   formatMinutesToTime,
+  formatAllDayGhostLabel,
 } from './weekgrid.utils'
 import { DAY_MS, MIN_SLOT_MIN } from './weekgrid.constants'
 import type { NbEvent } from './weekgrid.types'
@@ -196,5 +197,39 @@ describe('processEventsForWeek — overlap lanes', () => {
     const tue = timedPerDay.get(MONDAY + DAY_MS)!
     const single = tue.find((e) => e.id === 'single')!
     expect(single.widthPct).toBe(1) // laned only among single-day events
+  })
+})
+
+describe('formatAllDayGhostLabel', () => {
+  // Midday-UTC timestamps + offset 0 so the formatted day can't shift under the
+  // test runtime's local timezone (toLocaleDateString renders in runtime-local tz).
+  const jan5 = Date.UTC(2026, 0, 5, 12)
+  const jan8 = Date.UTC(2026, 0, 8, 12)
+
+  it('formats a single day in the en locale', () => {
+    expect(formatAllDayGhostLabel(jan5, jan5, 0, 'en')).toBe('Jan 5')
+  })
+
+  it('formats a range with the em-dash separator', () => {
+    expect(formatAllDayGhostLabel(jan5, jan8, 0, 'en')).toBe('Jan 5 — Jan 8')
+  })
+
+  it('collapses a same-day range to a single label (no separator)', () => {
+    expect(formatAllDayGhostLabel(jan5, jan5, 0, 'en')).not.toContain('—')
+  })
+
+  it('normalizes reversed start/end to the same min→max label', () => {
+    expect(formatAllDayGhostLabel(jan8, jan5, 0, 'en')).toBe('Jan 5 — Jan 8')
+  })
+
+  it('applies the user language — Russian differs from English', () => {
+    const en = formatAllDayGhostLabel(jan5, jan5, 0, 'en')
+    const ru = formatAllDayGhostLabel(jan5, jan5, 0, 'ru')
+    expect(ru).not.toBe(en) // locale actually applied, not hardcoded
+    expect(ru).toContain('5') // day-numeric still present
+  })
+
+  it('falls back to en-US for an undefined language (no Russian leak)', () => {
+    expect(formatAllDayGhostLabel(jan5, jan5, 0, undefined)).toBe('Jan 5')
   })
 })
