@@ -14,19 +14,9 @@ import {
 } from 'lucide-react'
 import { listTasks, type Task } from '../../api/tasks'
 import { usePomodoro } from '../../contexts/PomodoroContext'
-import type { TimerMode, WidgetStyle, SessionRecord } from '../../lib/pomodoro/types'
+import type { TimerMode, WidgetStyle } from '../../lib/pomodoro/types'
+import { summarizeToday, loadHistory } from '../../lib/pomodoro/history'
 import { formatMs, MODE_HEX } from '../../components/Pomodoro/formatTime'
-
-function loadTodayWork(): SessionRecord[] {
-  try {
-    const raw = localStorage.getItem('nb-pomodoro-history')
-    const list: SessionRecord[] = raw ? JSON.parse(raw) : []
-    const today = new Date().toISOString().slice(0, 10)
-    return list.filter((r) => r.date === today && r.mode === 'work')
-  } catch {
-    return []
-  }
-}
 
 export default function Pomodoro() {
   const { t } = useTranslation('tools')
@@ -55,9 +45,7 @@ export default function Pomodoro() {
       .catch(console.error)
   }, [])
 
-  const today = loadTodayWork()
-  const todayCount = today.length
-  const todayMinutes = today.reduce((acc, r) => acc + Math.floor(r.durationSeconds / 60), 0)
+  const { count: todayCount, minutes: todayMinutes } = summarizeToday(loadHistory(), new Date())
   const filled = sessionsCompleted % settings.sessionsBeforeLong
 
   const onSelectTask = (id: string) => {

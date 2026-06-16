@@ -23,6 +23,7 @@ import {
 } from '../lib/pomodoro/storage'
 import { nextPhase, durationMsForMode, minutesForMode } from '../lib/pomodoro/machine'
 import { recordWorkCompletion, retryWorkCompletion, undoWorkCompletion } from '../lib/pomodoro/tracking'
+import { HISTORY_KEY } from '../lib/pomodoro/history'
 import { playBeep, requestNotificationPermission, showNotification } from '../lib/pomodoro/notify'
 
 /** A queued completion toast. `retrying` is set while a failed save is being replayed. */
@@ -55,8 +56,6 @@ interface PomodoroContextValue {
 }
 
 const PomodoroContext = createContext<PomodoroContextValue | null>(null)
-
-const HISTORY_KEY = 'nb-pomodoro-history'
 
 function appendHistory(record: SessionRecord): void {
   try {
