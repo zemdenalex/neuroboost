@@ -33,5 +33,10 @@
   "confirm.signOut": "Вы уверены, что хотите выйти?",
   "confirm.yesSignOut": "Да, выйти",
   "error.generic": "Что-то пошло не так",
-  "error.networkError": "Ошибка сети. Попробуйте ещё раз."
+  "error.networkError": "Ошибка сети. Попробуйте ещё раз.",
+  "dueDate.today": "сегодня",
+  "dueDate.tomorrow": "завтра",
+  "dueDate.inDays": "{{count}} дн",
+  "dueDate.overdue": "просрочено {{count}} дн",
+  "task.scheduled": "запланировано"
 }

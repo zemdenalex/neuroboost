@@ -33,5 +33,10 @@
   "confirm.signOut": "Are you sure you want to sign out?",
   "confirm.yesSignOut": "Yes, sign out",
   "error.generic": "Something went wrong",
-  "error.networkError": "Network error. Please try again."
+  "error.networkError": "Network error. Please try again.",
+  "dueDate.today": "today",
+  "dueDate.tomorrow": "tomorrow",
+  "dueDate.inDays": "{{count}}d",
+  "dueDate.overdue": "{{count}}d overdue",
+  "task.scheduled": "scheduled"
 }
