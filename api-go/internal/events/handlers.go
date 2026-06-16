@@ -125,7 +125,7 @@ func CreateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if endsAt.Before(startsAt) || endsAt.Equal(startsAt) {
+	if err := validateTimeRange(startsAt, endsAt); err != nil {
 		util.RespondError(w, http.StatusBadRequest, "INVALID_RANGE", "End time must be after start time")
 		return
 	}
@@ -212,6 +212,40 @@ func UpdateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Validate the effective time window when either bound changes — the update
+	// path must not be able to persist a zero-length or inverted event (the other
+	// mutation paths all guard this).
+	if req.StartsAt != nil || req.EndsAt != nil {
+		existing, err := getEvent(r.Context(), userID, eventID)
+		if err != nil {
+			if err == pgx.ErrNoRows {
+				util.RespondError(w, http.StatusNotFound, "NOT_FOUND", "Event not found")
+				return
+			}
+			util.RespondError(w, http.StatusInternalServerError, "UPDATE_ERROR", "Failed to update event")
+			return
+		}
+		startsAt, endsAt := existing.StartsAt, existing.EndsAt
+		if req.StartsAt != nil {
+			startsAt, err = time.Parse(time.RFC3339, *req.StartsAt)
+			if err != nil {
+				util.RespondError(w, http.StatusBadRequest, "INVALID_START", "Invalid start date format")
+				return
+			}
+		}
+		if req.EndsAt != nil {
+			endsAt, err = time.Parse(time.RFC3339, *req.EndsAt)
+			if err != nil {
+				util.RespondError(w, http.StatusBadRequest, "INVALID_END", "Invalid end date format")
+				return
+			}
+		}
+		if err := validateTimeRange(startsAt, endsAt); err != nil {
+			util.RespondError(w, http.StatusBadRequest, "INVALID_RANGE", "End time must be after start time")
+			return
+		}
+	}
+
 	event, err := updateEvent(r.Context(), userID, eventID, req)
 	if err != nil {
 		if err == pgx.ErrNoRows {
@@ -294,7 +328,7 @@ func MoveHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if endsAt.Before(startsAt) || endsAt.Equal(startsAt) {
+	if err := validateTimeRange(startsAt, endsAt); err != nil {
 		util.RespondError(w, http.StatusBadRequest, "INVALID_RANGE", "End time must be after start time")
 		return
 	}
@@ -358,7 +392,7 @@ func ResizeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if endsAt.Before(startsAt) || endsAt.Equal(startsAt) {
+	if err := validateTimeRange(startsAt, endsAt); err != nil {
 		util.RespondError(w, http.StatusBadRequest, "INVALID_RANGE", "End time must be after start time")
 		return
 	}
