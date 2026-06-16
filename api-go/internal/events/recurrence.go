@@ -87,6 +87,7 @@ func expandRecurrence(event Event, rangeStart, rangeEnd time.Time, exceptions []
 	duration := event.EndsAt.Sub(event.StartsAt)
 	var instances []Event
 	count := 0
+	monthStep := 0 // months advanced from StartsAt, for MONTHLY day-of-month anchoring
 	maxExpansions := 366
 
 	for occurrence := event.StartsAt; ; {
@@ -137,11 +138,45 @@ func expandRecurrence(event Event, rangeStart, rangeEnd time.Time, exceptions []
 		case "WEEKLY":
 			occurrence = occurrence.AddDate(0, 0, rule.Interval*7)
 		case "MONTHLY":
-			occurrence = occurrence.AddDate(0, rule.Interval, 0)
+			// Anchor each occurrence to the original start day-of-month and SKIP
+			// months that lack it (RFC 5545 §3.3.10), instead of letting AddDate
+			// drift (e.g. Jan-31 + 1mo → Mar-3). Skipped months emit no instance.
+			advanced := false
+			for tries := 0; tries < 120; tries++ {
+				monthStep += rule.Interval
+				if next, ok := monthlyOccurrence(event.StartsAt, monthStep); ok {
+					occurrence = next
+					advanced = true
+					break
+				}
+			}
+			if !advanced {
+				return instances // no valid month within the lookahead window
+			}
 		}
 	}
 
 	return instances
+}
+
+// daysInMonth returns the number of days in the given month, handling leap February.
+func daysInMonth(year int, month time.Month) int {
+	// Day 0 of the following month is the last day of this month.
+	return time.Date(year, month+1, 0, 0, 0, 0, 0, time.UTC).Day()
+}
+
+// monthlyOccurrence returns the instant `months` months after start, preserving the
+// start's day-of-month and clock time. ok is false when the target month has no such
+// day (e.g. the 31st of a 30-day month) — signaling that month should be skipped.
+func monthlyOccurrence(start time.Time, months int) (time.Time, bool) {
+	total := int(start.Month()) - 1 + months
+	year := start.Year() + total/12
+	month := time.Month(total%12 + 1)
+	day := start.Day()
+	if day > daysInMonth(year, month) {
+		return time.Time{}, false
+	}
+	return time.Date(year, month, day, start.Hour(), start.Minute(), start.Second(), start.Nanosecond(), start.Location()), true
 }
 
 // isException checks if the given occurrence date matches any exception date (date-only comparison)

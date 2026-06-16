@@ -102,6 +102,67 @@ func TestExpandMonthly(t *testing.T) {
 	}
 }
 
+// MONTHLY must anchor to the start day-of-month and SKIP months that lack it,
+// per RFC 5545 §3.3.10 — not drift into the next month (Jan-31 + 1mo ≠ Mar-3).
+func TestExpandMonthlyDay31SkipsShortMonths(t *testing.T) {
+	e := mkEvent("m31", dt(2026, 1, 31, 9, 0), time.Hour, "FREQ=MONTHLY;COUNT=4")
+	got := expandRecurrence(e, wideStart, wideEnd, nil)
+	// Feb, Apr, Jun have no 31st → skipped.
+	want := []string{"2026-01-31", "2026-03-31", "2026-05-31", "2026-07-31"}
+	if g := dates(got); !equal(g, want) {
+		t.Fatalf("Jan-31 monthly; dates = %v, want %v", g, want)
+	}
+}
+
+func TestExpandMonthlyDay30SkipsFebruary(t *testing.T) {
+	e := mkEvent("m30", dt(2026, 1, 30, 9, 0), time.Hour, "FREQ=MONTHLY;COUNT=3")
+	got := expandRecurrence(e, wideStart, wideEnd, nil)
+	want := []string{"2026-01-30", "2026-03-30", "2026-04-30"}
+	if g := dates(got); !equal(g, want) {
+		t.Fatalf("Jan-30 monthly; dates = %v, want %v", g, want)
+	}
+}
+
+func TestExpandMonthlyDay29NonLeapSkipsFebruary(t *testing.T) {
+	// 2026 is not a leap year → February has 28 days, so the 29th is skipped.
+	e := mkEvent("m29", dt(2026, 1, 29, 8, 0), time.Hour, "FREQ=MONTHLY;COUNT=3")
+	got := expandRecurrence(e, wideStart, wideEnd, nil)
+	want := []string{"2026-01-29", "2026-03-29", "2026-04-29"}
+	if g := dates(got); !equal(g, want) {
+		t.Fatalf("Jan-29 monthly; dates = %v, want %v", g, want)
+	}
+}
+
+func TestExpandMonthlyIntervalPreservesDay(t *testing.T) {
+	// Every 2 months from Jan-31; all target months (Mar, May, Jul) have a 31st.
+	e := mkEvent("m31i2", dt(2026, 1, 31, 9, 0), time.Hour, "FREQ=MONTHLY;INTERVAL=2;COUNT=4")
+	got := expandRecurrence(e, wideStart, wideEnd, nil)
+	want := []string{"2026-01-31", "2026-03-31", "2026-05-31", "2026-07-31"}
+	if g := dates(got); !equal(g, want) {
+		t.Fatalf("Jan-31 bi-monthly; dates = %v, want %v", g, want)
+	}
+}
+
+func TestExpandMonthlyCrossesYearBoundary(t *testing.T) {
+	// Exercises the total/12 year rollover: Nov → Dec → Jan(next year).
+	e := mkEvent("mny", dt(2026, 11, 30, 9, 0), time.Hour, "FREQ=MONTHLY;COUNT=3")
+	got := expandRecurrence(e, wideStart, dt(2027, 6, 1, 0, 0), nil)
+	want := []string{"2026-11-30", "2026-12-30", "2027-01-30"}
+	if g := dates(got); !equal(g, want) {
+		t.Fatalf("year-crossing monthly; dates = %v, want %v", g, want)
+	}
+}
+
+func TestExpandMonthlyLeapDayAnchor(t *testing.T) {
+	// Feb-29 in a leap year is a valid anchor; following months keep day 29.
+	e := mkEvent("m29l", dt(2028, 2, 29, 8, 0), time.Hour, "FREQ=MONTHLY;COUNT=3")
+	got := expandRecurrence(e, dt(2028, 1, 1, 0, 0), dt(2028, 12, 1, 0, 0), nil)
+	want := []string{"2028-02-29", "2028-03-29", "2028-04-29"}
+	if g := dates(got); !equal(g, want) {
+		t.Fatalf("leap-day anchor monthly; dates = %v, want %v", g, want)
+	}
+}
+
 func TestExpandRangeFiltering(t *testing.T) {
 	e := mkEvent("r", dt(2026, 6, 1, 10, 0), time.Hour, "FREQ=DAILY;COUNT=10")
 	got := expandRecurrence(e, dt(2026, 6, 3, 0, 0), dt(2026, 6, 5, 0, 0), nil)
