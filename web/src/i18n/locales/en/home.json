@@ -51,6 +51,7 @@
     "taskSummary": "Task Summary",
     "todo": "To Do",
     "done": "Done",
-    "overdue": "Overdue"
+    "overdue": "Overdue",
+    "allTasks": "All tasks"
   }
 }

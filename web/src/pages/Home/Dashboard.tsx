@@ -168,7 +168,7 @@ export function Dashboard() {
               to="/tasks"
               className="mt-4 block text-xs text-green-400 hover:text-green-300 transition-colors text-right"
             >
-              {t('dashboard.events')} →
+              {t('dashboard.allTasks')} →
             </Link>
           </div>
         </div>
