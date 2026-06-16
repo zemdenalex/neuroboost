@@ -95,8 +95,10 @@ func expandRecurrence(event Event, rangeStart, rangeEnd time.Time, exceptions []
 			break
 		}
 
-		// Stop if past UNTIL
-		if rule.Until != nil && occurrence.After(*rule.Until) {
+		// Stop once past the UNTIL day. UNTIL is a DATE value (parsed at midnight)
+		// and, per iCalendar, the whole UNTIL day is inclusive — so compare against
+		// the start of the following day rather than the bare midnight instant.
+		if rule.Until != nil && !occurrence.Before(rule.Until.AddDate(0, 0, 1)) {
 			break
 		}
 
