@@ -32,6 +32,8 @@ export interface ProcessedEvent extends NbEvent {
   top: number;
   height: number;
   span?: DaySpan;
+  leftPct?: number;  // horizontal lane offset 0..1 (overlap layout); default 0 = full width
+  widthPct?: number; // lane width 0..1; default 1 = full width
 }
 
 // Day column data

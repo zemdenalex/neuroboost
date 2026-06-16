@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   processEventsForWeek,
   getDaySpan,
+  assignLanes,
   minsToTop,
   topToMins,
   snapMin,
@@ -106,5 +107,94 @@ describe('position helpers', () => {
   it('formatMinutesToTime zero-pads h:mm', () => {
     expect(formatMinutesToTime(90)).toBe('01:30')
     expect(formatMinutesToTime(540)).toBe('09:00')
+  })
+})
+
+describe('assignLanes', () => {
+  const rng = (startMin: number, endMin: number) => ({ startMin, endMin })
+
+  it('gives a lone event the full width', () => {
+    expect(assignLanes([rng(600, 660)])).toEqual([{ leftPct: 0, widthPct: 1 }])
+  })
+
+  it('returns [] for no events', () => {
+    expect(assignLanes([])).toEqual([])
+  })
+
+  it('keeps sequential (non-overlapping) events full width', () => {
+    // 10:00–11:00 then 11:00–12:00 — touching is NOT overlapping.
+    const lanes = assignLanes([rng(600, 660), rng(660, 720)])
+    expect(lanes).toEqual([{ leftPct: 0, widthPct: 1 }, { leftPct: 0, widthPct: 1 }])
+  })
+
+  it('splits two overlapping events into halves', () => {
+    const lanes = assignLanes([rng(600, 720), rng(660, 780)])
+    expect(lanes).toEqual([{ leftPct: 0, widthPct: 0.5 }, { leftPct: 0.5, widthPct: 0.5 }])
+  })
+
+  it('splits three mutually overlapping events into thirds', () => {
+    const lanes = assignLanes([rng(600, 720), rng(610, 720), rng(620, 720)])
+    expect(lanes).toEqual([
+      { leftPct: 0, widthPct: 1 / 3 },
+      { leftPct: 1 / 3, widthPct: 1 / 3 },
+      { leftPct: 2 / 3, widthPct: 1 / 3 },
+    ])
+  })
+
+  it('reuses a freed column within a transitive cluster (staircase)', () => {
+    // A 10–12, B 11–13, C 12–14. A&B overlap, B&C overlap, A&C touch (no overlap).
+    // Cluster {A,B,C}; A→col0, B→col1, C reuses col0. 2 columns total.
+    const lanes = assignLanes([rng(600, 720), rng(660, 780), rng(720, 840)])
+    expect(lanes).toEqual([
+      { leftPct: 0, widthPct: 0.5 },
+      { leftPct: 0.5, widthPct: 0.5 },
+      { leftPct: 0, widthPct: 0.5 },
+    ])
+  })
+
+  it('is independent of input order', () => {
+    const a = assignLanes([rng(660, 780), rng(600, 720)])
+    // First input (later start) lands in column 1; second in column 0.
+    expect(a[0]).toEqual({ leftPct: 0.5, widthPct: 0.5 })
+    expect(a[1]).toEqual({ leftPct: 0, widthPct: 0.5 })
+  })
+})
+
+describe('processEventsForWeek — overlap lanes', () => {
+  it('lays two overlapping single-day events side by side', () => {
+    const { timedPerDay } = processEventsForWeek(
+      [ev('a', '2026-06-15T10:00:00Z', '2026-06-15T11:00:00Z'),
+       ev('b', '2026-06-15T10:30:00Z', '2026-06-15T11:30:00Z')],
+      MONDAY, TZ, 7
+    )
+    const day0 = timedPerDay.get(MONDAY)!
+    expect(day0).toHaveLength(2)
+    const byId = Object.fromEntries(day0.map((e) => [e.id, e]))
+    expect(byId.a.widthPct).toBe(0.5)
+    expect(byId.b.widthPct).toBe(0.5)
+    expect(new Set([byId.a.leftPct, byId.b.leftPct])).toEqual(new Set([0, 0.5]))
+  })
+
+  it('does NOT merge two adjacent sub-slot events (uses real minutes, not clamped height)', () => {
+    // Both are 5 min — their rendered HEIGHT is clamped to the 15-min minimum, which
+    // would falsely overlap if laning used pixels. Real minutes keep them full-width.
+    const { timedPerDay } = processEventsForWeek(
+      [ev('x', '2026-06-15T10:00:00Z', '2026-06-15T10:05:00Z'),
+       ev('y', '2026-06-15T10:10:00Z', '2026-06-15T10:15:00Z')],
+      MONDAY, TZ, 7
+    )
+    const day0 = timedPerDay.get(MONDAY)!
+    expect(day0.every((e) => e.widthPct === 1)).toBe(true)
+  })
+
+  it('does not squeeze a single-day event because a multi-day segment shares the day', () => {
+    const { timedPerDay } = processEventsForWeek(
+      [ev('multi', '2026-06-15T09:00:00Z', '2026-06-17T09:00:00Z'), // Mon→Wed
+       ev('single', '2026-06-16T10:00:00Z', '2026-06-16T11:00:00Z')], // Tue, inside multi
+      MONDAY, TZ, 7
+    )
+    const tue = timedPerDay.get(MONDAY + DAY_MS)!
+    const single = tue.find((e) => e.id === 'single')!
+    expect(single.widthPct).toBe(1) // laned only among single-day events
   })
 })

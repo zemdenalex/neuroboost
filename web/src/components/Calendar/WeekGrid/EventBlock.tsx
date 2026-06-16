@@ -49,11 +49,13 @@ export const EventBlock = memo(function EventBlock({
         }
         ${isMultiDaySegment ? 'border-l-4 border-l-purple-400' : ''}
         ${zIndexClass}`}
-      style={{ 
-        top: event.top, 
-        height: event.height, 
-        left: 2, 
-        right: 2,
+      style={{
+        top: event.top,
+        height: event.height,
+        // Horizontal lane from overlap layout (defaults to full width). The 2px
+        // insets reproduce the previous left:2/right:2 gap when width is full.
+        left: `calc(${(event.leftPct ?? 0) * 100}% + 2px)`,
+        width: `calc(${(event.widthPct ?? 1) * 100}% - 4px)`,
         borderRadius,
         backgroundColor: event.color || undefined,
       }}
