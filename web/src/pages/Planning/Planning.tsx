@@ -9,22 +9,10 @@ import {
 } from 'lucide-react'
 import { getWeekPlan, WeekPlan, PlanningTask, PlanningEvent } from '../../api/planning'
 import { scheduleTask } from '../../api/tasks'
-import { toLocalDateKey } from '../../utils/date'
+import { toLocalDateKey, startOfWeek } from '../../utils/date'
 import { UnscheduledList } from './UnscheduledList'
 import { CapacityMeter } from './CapacityMeter'
 import { WeekOverviewGrid } from './WeekOverviewGrid'
-
-// Compute the Monday of the week that contains `date`.
-// Note: this differs from utils/date.ts `startOfWeek` because it also normalizes
-// to start-of-day (00:00:00.000). Keep both — semantics differ.
-function getMondayOf(date: Date): Date {
-  const d = new Date(date)
-  const day = d.getDay() // 0 = Sun, 1 = Mon, ...
-  const daysToMonday = day === 0 ? -6 : 1 - day
-  d.setDate(d.getDate() + daysToMonday)
-  d.setHours(0, 0, 0, 0)
-  return d
-}
 
 export default function Planning() {
   const { t, i18n } = useTranslation('planning')
@@ -37,7 +25,7 @@ export default function Planning() {
 
   // Compute the Monday for this week offset
   const monday = useMemo(() => {
-    const m = getMondayOf(new Date())
+    const m = startOfWeek(new Date())
     m.setDate(m.getDate() + weekOffset * 7)
     return m
   }, [weekOffset])

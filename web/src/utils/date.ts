@@ -1,5 +1,6 @@
 export function addDays(d: Date, n: number) { const x = new Date(d); x.setDate(x.getDate()+n); return x }
-export function startOfWeek(d: Date) { const x = new Date(d); const wd = x.getDay(); x.setDate(x.getDate() - ((wd+6)%7)); return x }
+// Monday of the week containing `d`, normalized to local midnight (00:00:00.000).
+export function startOfWeek(d: Date) { const x = new Date(d); const wd = x.getDay(); x.setDate(x.getDate() - ((wd+6)%7)); x.setHours(0, 0, 0, 0); return x }
 
 // Local YYYY-MM-DD key (day bucket in viewer's local TZ)
 export function toLocalDateKey(date: Date): string {
