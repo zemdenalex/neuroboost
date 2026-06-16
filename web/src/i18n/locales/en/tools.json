@@ -47,6 +47,7 @@
   "pomodoro.loggedToTask": "Logged {{minutes}} min to {{task}} · added to calendar",
   "pomodoro.loggedNoTask": "Added {{minutes}} min focus block to your calendar",
   "pomodoro.saveFailed": "Timer kept going — couldn't save to calendar",
+  "pomodoro.retry": "Retry",
   "pomodoro.undo": "Undo",
   "pomodoro.breakOver": "Break over — back to focus?",
   "pomodoro.interrupted": "Your timer was interrupted while you were away",

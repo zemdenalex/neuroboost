@@ -22,8 +22,11 @@ import {
   isStale,
 } from '../lib/pomodoro/storage'
 import { nextPhase, durationMsForMode, minutesForMode } from '../lib/pomodoro/machine'
-import { recordWorkCompletion, undoWorkCompletion } from '../lib/pomodoro/tracking'
+import { recordWorkCompletion, retryWorkCompletion, undoWorkCompletion } from '../lib/pomodoro/tracking'
 import { playBeep, requestNotificationPermission, showNotification } from '../lib/pomodoro/notify'
+
+/** A queued completion toast. `retrying` is set while a failed save is being replayed. */
+type CompletionEntry = Completion & { id: number; retrying?: boolean }
 
 interface PomodoroContextValue {
   phase: TimerMode
@@ -34,7 +37,7 @@ interface PomodoroContextValue {
   linkedTaskId: string | null
   linkedTaskTitle: string | null
   settings: PomodoroSettings
-  completions: Array<Completion & { id: number }>
+  completions: CompletionEntry[]
   breakOver: boolean
   interruptedWhileAway: boolean
   start: () => void
@@ -46,6 +49,7 @@ interface PomodoroContextValue {
   updateSettings: (patch: Partial<PomodoroSettings>) => void
   dismissCompletion: (id: number) => void
   undoCompletion: (id: number) => void
+  retryCompletion: (id: number) => void
   dismissBreakOver: () => void
   dismissInterrupted: () => void
 }
@@ -119,9 +123,9 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
   const [blockStartedAt, setBlockStartedAt] = useState<string | null>(init.blockStartedAt)
 
   const [now, setNow] = useState<number>(() => Date.now())
-  const [completions, setCompletions] = useState<Array<Completion & { id: number }>>([])
+  const [completions, setCompletions] = useState<CompletionEntry[]>([])
   const completionIdRef = useRef(0)
-  const completionsRef = useRef<Array<Completion & { id: number }>>([])
+  const completionsRef = useRef<CompletionEntry[]>([])
   useEffect(() => { completionsRef.current = completions }, [completions])
   const [breakOver, setBreakOver] = useState(false)
   const [interruptedWhileAway, setInterruptedWhileAway] = useState(init.interrupted)
@@ -289,6 +293,16 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
     if (c) void undoWorkCompletion(c)
     setCompletions((prev) => prev.filter((x) => x.id !== id))
   }, [])
+  const retryCompletion = useCallback((id: number) => {
+    const c = completionsRef.current.find((x) => x.id === id)
+    if (!c || !c.failed || c.retrying) return // only retry a failed save once at a time
+    setCompletions((prev) => prev.map((x) => (x.id === id ? { ...x, retrying: true } : x)))
+    void retryWorkCompletion(c).then((res) => {
+      // Replace in place: on success the toast flips to "logged" + Undo; on repeat
+      // failure it stays failed with retrying cleared, so Retry is available again.
+      setCompletions((prev) => prev.map((x) => (x.id === id ? { ...res, id } : x)))
+    })
+  }, [])
   const dismissBreakOver = useCallback(() => setBreakOver(false), [])
   const dismissInterrupted = useCallback(() => setInterruptedWhileAway(false), [])
 
@@ -313,6 +327,7 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
     updateSettings,
     dismissCompletion,
     undoCompletion,
+    retryCompletion,
     dismissBreakOver,
     dismissInterrupted,
   }

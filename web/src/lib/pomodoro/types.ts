@@ -47,4 +47,7 @@ export interface Completion {
   taskTitle: string | null
   minutes: number
   failed: boolean
+  // Original block window, retained so a failed completion can be replayed (Retry).
+  startedAtISO: string
+  endsAtISO: string
 }

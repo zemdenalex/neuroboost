@@ -47,6 +47,7 @@
   "pomodoro.loggedToTask": "Записано {{minutes}} мин в «{{task}}» · добавлено в календарь",
   "pomodoro.loggedNoTask": "Блок фокуса {{minutes}} мин добавлен в календарь",
   "pomodoro.saveFailed": "Таймер продолжил идти — не удалось сохранить в календарь",
+  "pomodoro.retry": "Повторить",
   "pomodoro.undo": "Отменить",
   "pomodoro.breakOver": "Перерыв окончен — вернуться к работе?",
   "pomodoro.interrupted": "Таймер был прерван, пока вас не было",

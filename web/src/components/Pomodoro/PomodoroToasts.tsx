@@ -17,6 +17,7 @@ export function PomodoroToasts() {
     start,
     dismissCompletion,
     undoCompletion,
+    retryCompletion,
     dismissBreakOver,
     dismissInterrupted,
   } = usePomodoro()
@@ -71,7 +72,15 @@ export function PomodoroToasts() {
               ? t('pomodoro.loggedToTask', { minutes: c.minutes, task: c.taskTitle ?? '' })
               : t('pomodoro.loggedNoTask', { minutes: c.minutes })}
           </span>
-          {!c.failed && (
+          {c.failed ? (
+            <button
+              onClick={() => retryCompletion(c.id)}
+              disabled={c.retrying}
+              className="whitespace-nowrap rounded-lg border border-amber-500/40 px-3 py-1 text-xs font-bold text-amber-400 disabled:opacity-50"
+            >
+              {t('pomodoro.retry')}
+            </button>
+          ) : (
             <button
               onClick={() => undoCompletion(c.id)}
               className="whitespace-nowrap rounded-lg border border-blue-500/40 px-3 py-1 text-xs font-bold text-blue-400"

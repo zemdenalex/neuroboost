@@ -33,15 +33,57 @@ export interface CompletionParams extends FocusEventParams {
  * { failed: true } so the timer can advance and the UI can show an honest toast.
  */
 export async function recordWorkCompletion(params: CompletionParams): Promise<Completion> {
+  let createdEventId: string | null = null
   try {
     const event = await createEvent(buildFocusEvent(params))
+    createdEventId = event.id
     if (params.taskId) {
       await logTaskTime(params.taskId, params.minutes)
     }
-    return { eventId: event.id, taskId: params.taskId, taskTitle: params.taskTitle, minutes: params.minutes, failed: false }
+    return {
+      eventId: event.id,
+      taskId: params.taskId,
+      taskTitle: params.taskTitle,
+      minutes: params.minutes,
+      failed: false,
+      startedAtISO: params.startedAtISO,
+      endsAtISO: params.endsAtISO,
+    }
   } catch {
-    return { eventId: null, taskId: params.taskId, taskTitle: params.taskTitle, minutes: params.minutes, failed: true }
+    // Roll back a partially-created event so "failed" means nothing persisted.
+    // Without this, a Retry (or the orphaned event) would duplicate the calendar block.
+    if (createdEventId) {
+      try {
+        await deleteEvent(createdEventId)
+      } catch {
+        // best-effort cleanup; nothing more we can do offline
+      }
+    }
+    return {
+      eventId: null,
+      taskId: params.taskId,
+      taskTitle: params.taskTitle,
+      minutes: params.minutes,
+      failed: true,
+      startedAtISO: params.startedAtISO,
+      endsAtISO: params.endsAtISO,
+    }
   }
+}
+
+/**
+ * Re-attempts a failed completion using its retained window — same event span and
+ * logged minutes as the original block, never "now". Returns a fresh Completion
+ * (failed:false with an event id on success, failed:true again on repeated error).
+ */
+export function retryWorkCompletion(c: Completion): Promise<Completion> {
+  return recordWorkCompletion({
+    taskId: c.taskId,
+    taskTitle: c.taskTitle,
+    startedAtISO: c.startedAtISO,
+    endsAtISO: c.endsAtISO,
+    minutes: c.minutes,
+  })
 }
 
 /** Reverses a recorded completion: deletes the event and compensates the minutes. */
