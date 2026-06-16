@@ -17,7 +17,11 @@ export type DueDateInfo =
 
 export function describeDueDate(dueDate: string, now: Date = new Date()): DueDateInfo {
   const due = new Date(dueDate)
-  const diffDays = Math.ceil((due.getTime() - now.getTime()) / DAY_MS)
+  // Bucket by LOCAL calendar day, not elapsed time: a task due later *today* must
+  // read "today" (the old elapsed-ms Math.ceil bucketed it as "tomorrow"). Compare
+  // local-midnight boundaries; Math.round absorbs the 23h/25h DST day lengths.
+  const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
+  const diffDays = Math.round((startOfDay(due) - startOfDay(now)) / DAY_MS)
   if (diffDays < 0) return { kind: 'overdue', days: -diffDays }
   if (diffDays === 0) return { kind: 'today' }
   if (diffDays === 1) return { kind: 'tomorrow' }

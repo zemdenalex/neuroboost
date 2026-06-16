@@ -2,8 +2,10 @@ import { describe, it, expect } from 'vitest'
 import type { TFunction } from 'i18next'
 import { describeDueDate, dueDateColorClass, formatDueDateLabel } from './dueDate'
 
-// Fixed reference instant (mid-day UTC) so day diffs come out as whole numbers
-// regardless of the runtime timezone.
+// describeDueDate now buckets by LOCAL calendar day, so it depends on the runtime
+// timezone. Every instant below sits between 06:00 and 20:00 UTC, so it falls on the
+// same calendar date in both UTC (CI) and UTC+3 (dev) — the day buckets are stable
+// across both runtimes.
 const NOW = new Date('2026-06-16T12:00:00Z')
 const at = (iso: string) => iso
 
@@ -13,13 +15,19 @@ describe('describeDueDate', () => {
     expect(describeDueDate(at('2026-06-15T12:00:00Z'), NOW)).toEqual({ kind: 'overdue', days: 1 })
   })
 
-  it('treats anything due within the trailing 24h (incl. now) as today', () => {
+  it('treats anything on the same calendar day as today, regardless of time of day', () => {
     expect(describeDueDate(at('2026-06-16T12:00:00Z'), NOW)).toEqual({ kind: 'today' })
     expect(describeDueDate(at('2026-06-16T06:00:00Z'), NOW)).toEqual({ kind: 'today' })
+    // Due LATER today (8h out) must read "today", not "tomorrow". This is the
+    // calendar-day regression: the old elapsed-ms model bucketed it as tomorrow.
+    expect(describeDueDate(at('2026-06-16T20:00:00Z'), NOW)).toEqual({ kind: 'today' })
   })
 
-  it('reports tomorrow for the next day', () => {
+  it('reports tomorrow for the next calendar day at any time of day', () => {
     expect(describeDueDate(at('2026-06-17T12:00:00Z'), NOW)).toEqual({ kind: 'tomorrow' })
+    // Tomorrow afternoon (>24h out) must still read "tomorrow", not "in 2 days"
+    // — the other half of the calendar-day regression.
+    expect(describeDueDate(at('2026-06-17T18:00:00Z'), NOW)).toEqual({ kind: 'tomorrow' })
   })
 
   it('reports a day count for 2..6 days out', () => {
