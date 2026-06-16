@@ -235,16 +235,9 @@ func (h *Handler) UpdateMe(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if req.Timezone != nil {
-		// Validate timezone
-		validTimezones := map[string]bool{
-			"Europe/Moscow":       true,
-			"Europe/London":       true,
-			"America/New_York":    true,
-			"America/Los_Angeles": true,
-			"Asia/Tokyo":          true,
-			"UTC":                 true,
-		}
-		if !validTimezones[*req.Timezone] {
+		// Accept any valid IANA timezone (validated against the system tz database)
+		// rather than a hand-maintained allowlist that drifted out of sync with the UI.
+		if !validTimezone(*req.Timezone) {
 			util.RespondError(w, http.StatusBadRequest, "INVALID_TIMEZONE", "Invalid timezone")
 			return
 		}
