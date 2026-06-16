@@ -44,7 +44,7 @@ func queryEvents(ctx context.Context, userID string) ([]EventRow, error) {
 func queryTasks(ctx context.Context, userID string) ([]TaskRow, error) {
 	rows, err := db.Pool.Query(ctx, `
 		SELECT id, user_id, title, description, status, category, priority,
-		       estimated_minutes, due_date, COALESCE(tags, '{}'), COALESCE(contexts, '{}'),
+		       estimated_minutes, actual_minutes, due_date, COALESCE(tags, '{}'), COALESCE(contexts, '{}'),
 		       energy, parent_id, completed_at, created_at, updated_at
 		FROM task
 		WHERE user_id = $1
@@ -61,7 +61,7 @@ func queryTasks(ctx context.Context, userID string) ([]TaskRow, error) {
 		var tags, contexts []string
 		err := rows.Scan(
 			&tk.ID, &tk.UserID, &tk.Title, &tk.Description, &tk.Status, &tk.Category,
-			&tk.Priority, &tk.EstimatedMinutes, &tk.DueDate, &tags, &contexts,
+			&tk.Priority, &tk.EstimatedMinutes, &tk.ActualMinutes, &tk.DueDate, &tags, &contexts,
 			&tk.Energy, &tk.ParentID, &tk.CompletedAt, &tk.CreatedAt, &tk.UpdatedAt,
 		)
 		if err != nil {

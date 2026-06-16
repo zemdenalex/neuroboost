@@ -19,31 +19,31 @@ func InitDB(database *database.DB) {
 
 // ExportPayload is the top-level structure returned by ExportHandler
 type ExportPayload struct {
-	Version    string      `json:"version"`
-	ExportedAt time.Time   `json:"exported_at"`
-	Events     []EventRow  `json:"events"`
-	Tasks      []TaskRow   `json:"tasks"`
-	Settings   any `json:"settings"`
+	Version    string     `json:"version"`
+	ExportedAt time.Time  `json:"exported_at"`
+	Events     []EventRow `json:"events"`
+	Tasks      []TaskRow  `json:"tasks"`
+	Settings   any        `json:"settings"`
 }
 
 // EventRow holds the columns exported from the event table
 type EventRow struct {
-	ID          string     `json:"id"`
-	UserID      string     `json:"user_id"`
-	Title       string     `json:"title"`
-	Description *string    `json:"description,omitempty"`
-	StartsAt    time.Time  `json:"starts_at"`
-	EndsAt      time.Time  `json:"ends_at"`
-	AllDay      bool       `json:"all_day"`
-	Rrule       *string    `json:"rrule,omitempty"`
-	Timezone    string     `json:"timezone"`
-	Location    *string    `json:"location,omitempty"`
-	Color       *string    `json:"color,omitempty"`
-	Tags        []string   `json:"tags"`
-	TaskID      *string    `json:"task_id,omitempty"`
-	IsWorkEvent bool       `json:"is_work_event"`
-	CreatedAt   time.Time  `json:"created_at"`
-	UpdatedAt   time.Time  `json:"updated_at"`
+	ID          string    `json:"id"`
+	UserID      string    `json:"user_id"`
+	Title       string    `json:"title"`
+	Description *string   `json:"description,omitempty"`
+	StartsAt    time.Time `json:"starts_at"`
+	EndsAt      time.Time `json:"ends_at"`
+	AllDay      bool      `json:"all_day"`
+	Rrule       *string   `json:"rrule,omitempty"`
+	Timezone    string    `json:"timezone"`
+	Location    *string   `json:"location,omitempty"`
+	Color       *string   `json:"color,omitempty"`
+	Tags        []string  `json:"tags"`
+	TaskID      *string   `json:"task_id,omitempty"`
+	IsWorkEvent bool      `json:"is_work_event"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
 }
 
 // TaskRow holds the columns exported from the task table
@@ -56,6 +56,7 @@ type TaskRow struct {
 	Category         *string    `json:"category,omitempty"`
 	Priority         int        `json:"priority"`
 	EstimatedMinutes *int       `json:"estimated_minutes,omitempty"`
+	ActualMinutes    int        `json:"actual_minutes"`
 	DueDate          *time.Time `json:"due_date,omitempty"`
 	Tags             []string   `json:"tags"`
 	Contexts         []string   `json:"contexts"`
@@ -174,17 +175,17 @@ func ImportHandler(w http.ResponseWriter, r *http.Request) {
 			INSERT INTO task (
 				id, user_id, title, description, status, category, priority,
 				estimated_minutes, due_date, tags, contexts, energy, parent_id,
-				completed_at, created_at, updated_at
+				completed_at, created_at, updated_at, actual_minutes
 			) VALUES (
 				$1, $2, $3, $4, $5, $6, $7,
 				$8, $9, $10, $11, $12, $13,
-				$14, $15, $16
+				$14, $15, $16, $17
 			)
 			ON CONFLICT (id) DO NOTHING
 		`,
 			tk.ID, userID, tk.Title, tk.Description, tk.Status, tk.Category, tk.Priority,
 			tk.EstimatedMinutes, tk.DueDate, tags, contexts, tk.Energy, tk.ParentID,
-			tk.CompletedAt, tk.CreatedAt, tk.UpdatedAt,
+			tk.CompletedAt, tk.CreatedAt, tk.UpdatedAt, tk.ActualMinutes,
 		)
 		if err == nil && result.RowsAffected() > 0 {
 			tasksImported++
