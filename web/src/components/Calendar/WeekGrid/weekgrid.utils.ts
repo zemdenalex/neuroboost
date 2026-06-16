@@ -124,6 +124,9 @@ export function processEventsForWeek(
         } else if (isLast) {
           startMin = 0; // Start of day
           endMin = utcToLocalMinutes(event.endsAt, timezone);
+          // getDaySpan shifts a midnight end back to the previous day, so this
+          // last segment's day is fully covered — render it whole, not zero-height.
+          if (endMin === 0) endMin = 1440;
         } else {
           startMin = 0;
           endMin = 1440;
