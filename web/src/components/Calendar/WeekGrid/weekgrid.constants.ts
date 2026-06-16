@@ -13,15 +13,8 @@ export const SCROLL_SPEED = 8;
 export const MOBILE_BREAKPOINT = 480;
 export const TABLET_BREAKPOINT = 768;
 
-// Priority colors for task integration
-export const PRIORITY_COLORS: Record<number, string> = {
-  0: 'bg-zinc-600', // Buffer
-  1: 'bg-red-600',  // Emergency
-  2: 'bg-orange-600', // ASAP
-  3: 'bg-yellow-600', // Must today
-  4: 'bg-green-600', // Deadline soon
-  5: 'bg-blue-600', // If possible
-};
+// Priority colors for task integration — from lib/priority (single source of truth).
+export { PRIORITY_BLOCK_COLORS as PRIORITY_COLORS } from '../../../lib/priority';
 
 // Ghost preview colors
 export const GHOST_COLORS = {

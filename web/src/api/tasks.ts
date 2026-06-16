@@ -109,25 +109,9 @@ export async function logTaskTime(id: string, minutes: number): Promise<Task> {
   return api.post<Task>(`/tasks/${id}/log-time`, { minutes })
 }
 
-// Priority labels
-export const PRIORITY_LABELS: Record<number, string> = {
-  1: 'Emergency',
-  2: 'ASAP',
-  3: 'Must Today',
-  4: 'Deadline Soon',
-  5: 'If Possible',
-  0: 'Buffer',
-}
-
-// Priority colors
-export const PRIORITY_COLORS: Record<number, string> = {
-  1: 'bg-red-600',
-  2: 'bg-orange-500',
-  3: 'bg-yellow-500',
-  4: 'bg-blue-500',
-  5: 'bg-green-500',
-  0: 'bg-zinc-600',
-}
+// Priority display metadata is centralized in lib/priority (single source of truth).
+// PRIORITY_COLORS maps to the solid dot/badge variant used by the task list.
+export { PRIORITY_LABELS, PRIORITY_DOT_COLORS as PRIORITY_COLORS } from '../lib/priority'
 
 // Context icons (using emoji for now, can be replaced with Lucide icons)
 export const CONTEXT_ICONS: Record<string, string> = {
