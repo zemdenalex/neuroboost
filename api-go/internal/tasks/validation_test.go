@@ -1,6 +1,22 @@
 package tasks
 
-import "testing"
+import (
+	"testing"
+	"time"
+)
+
+func TestValidTimeRange(t *testing.T) {
+	base := time.Date(2026, 6, 16, 10, 0, 0, 0, time.UTC)
+	if !validTimeRange(base, base.Add(time.Hour)) {
+		t.Error("end after start should be valid")
+	}
+	if validTimeRange(base, base) {
+		t.Error("equal start/end (zero length) should be invalid")
+	}
+	if validTimeRange(base, base.Add(-time.Hour)) {
+		t.Error("end before start should be invalid")
+	}
+}
 
 func TestValidPriority(t *testing.T) {
 	for _, p := range []int{0, 1, 2, 3, 4, 5} {

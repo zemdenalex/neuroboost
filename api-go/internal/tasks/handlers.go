@@ -265,6 +265,11 @@ func ScheduleHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !validTimeRange(startsAt, endsAt) {
+		util.RespondError(w, http.StatusBadRequest, "INVALID_RANGE", "End time must be after start time")
+		return
+	}
+
 	event, err := scheduleTask(r.Context(), userID, taskID, startsAt, endsAt, req.AllDay, req.Color)
 	if err != nil {
 		if err == pgx.ErrNoRows {

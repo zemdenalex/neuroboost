@@ -1,5 +1,13 @@
 package tasks
 
+import "time"
+
+// validTimeRange reports whether end is strictly after start — no zero-length or
+// inverted scheduling windows (mirrors the events package's event-window rule).
+func validTimeRange(start, end time.Time) bool {
+	return end.After(start)
+}
+
 // validPriority reports whether p is a usable task priority
 // (0 = Buffer … 5 = If Possible).
 func validPriority(p int) bool {

@@ -108,7 +108,9 @@ export default function Planning() {
       // Schedule at 09:00 local time on the dropped date
       const start = new Date(date)
       start.setHours(9, 0, 0, 0)
-      const durationMin = task.estimated_minutes ?? 60
+      // Clamp to a 15-min minimum so a task with no/zero estimate still schedules a
+      // real block instead of a zero-length event (matches the Calendar scheduler).
+      const durationMin = Math.max(15, task.estimated_minutes ?? 60)
       const end = new Date(start.getTime() + durationMin * 60000)
       try {
         await scheduleTask(task.id, {
