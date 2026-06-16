@@ -43,6 +43,8 @@
   "context.personal": "@личное",
   "context.routine": "@рутина",
   "confirmDelete": "Удалить «{{title}}»?",
+  "error.saveFailed": "Не удалось сохранить задачу. Попробуйте ещё раз.",
+  "error.deleteFailed": "Не удалось удалить задачу. Попробуйте ещё раз.",
   "taskCount_one": "{{count}} задача",
   "taskCount_few": "{{count}} задачи",
   "taskCount_many": "{{count}} задач"

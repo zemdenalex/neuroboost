@@ -36,6 +36,7 @@ export default function Tasks() {
   const [showEditor, setShowEditor] = useState(false)
   const [editingTask, setEditingTask] = useState<Partial<Task> | null>(null)
   const [saving, setSaving] = useState(false)
+  const [editorError, setEditorError] = useState<string | null>(null)
   // Stable across renders so a synchronous double-click is blocked (a useState
   // flag would not update before the second click's handler reads it).
   const saveGuard = useRef(createInFlightGuard()).current
@@ -58,6 +59,12 @@ export default function Tasks() {
     }
     fetchTasks()
   }, [])
+
+  // Clear any stale editor error whenever the editor opens or closes, so a
+  // previous failure never lingers on the next open.
+  useEffect(() => {
+    setEditorError(null)
+  }, [showEditor])
 
   // Filter and group tasks
   const filteredTasks = useMemo(() => {
@@ -114,6 +121,7 @@ export default function Tasks() {
 
     return saveGuard(async () => {
       setSaving(true)
+      setEditorError(null)
       try {
         if (editingTask.id) {
           // Update existing
@@ -144,6 +152,7 @@ export default function Tasks() {
         setEditingTask(null)
       } catch (error) {
         console.error('Failed to save task:', error)
+        setEditorError(t('error.saveFailed'))
       } finally {
         setSaving(false)
       }
@@ -154,6 +163,7 @@ export default function Tasks() {
     if (!editingTask?.id) return
     
     if (confirm(t('confirmDelete', { title: editingTask.title }))) {
+      setEditorError(null)
       try {
         await deleteTask(editingTask.id)
         setTasks(prev => prev.filter(t => t.id !== editingTask.id))
@@ -161,6 +171,7 @@ export default function Tasks() {
         setEditingTask(null)
       } catch (error) {
         console.error('Failed to delete task:', error)
+        setEditorError(t('error.deleteFailed'))
       }
     }
   }
@@ -354,8 +365,14 @@ export default function Tasks() {
                             <button
                               onClick={async () => {
                                 if (confirm(t('confirmDelete', { title: task.title }))) {
-                                  await deleteTask(task.id)
-                                  setTasks(prev => prev.filter(t => t.id !== task.id))
+                                  try {
+                                    await deleteTask(task.id)
+                                    setTasks(prev => prev.filter(t => t.id !== task.id))
+                                  } catch (error) {
+                                    // Keep the row (setTasks is skipped on throw) and avoid an
+                                    // unhandled rejection. List-level error UI is a follow-up.
+                                    console.error('Failed to delete task:', error)
+                                  }
                                 }
                               }}
                               className="p-1.5 text-zinc-500 hover:text-red-400 hover:bg-zinc-700 rounded transition-colors"
@@ -463,6 +480,15 @@ export default function Tasks() {
                   ))}
                 </div>
               </div>
+
+              {editorError && (
+                <div
+                  role="alert"
+                  className="p-3 bg-red-900/30 border border-red-800 rounded-lg text-red-400 text-sm"
+                >
+                  {editorError}
+                </div>
+              )}
 
               <div className="flex justify-between pt-4">
                 {editingTask.id && (
