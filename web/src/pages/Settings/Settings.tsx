@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import i18n from '../../i18n'
 import { useAuthContext } from '../../contexts/AuthContext'
-import { getStoredToken } from '../../api/client'
+import { api } from '../../api/client'
 import { useMediaQuery } from '../../hooks/useMediaQuery'
 import { showToast } from '../../components/ui/Toast'
 import type { UserSettings } from '../../api/auth'
@@ -206,11 +206,10 @@ export default function Settings() {
 
   const handleExport = async () => {
     try {
-      const response = await fetch('/api/export', {
-        headers: { Authorization: `Bearer ${getStoredToken()}` },
-      })
-      const data = await response.json()
-      const blob = new Blob([JSON.stringify(data.data, null, 2)], {
+      // api.get throws on non-2xx / 401 (and unwraps the { data } envelope), so a
+      // failed export no longer downloads an "undefined" blob as if it succeeded.
+      const exported = await api.get('/export')
+      const blob = new Blob([JSON.stringify(exported, null, 2)], {
         type: 'application/json',
       })
       const url = URL.createObjectURL(blob)
@@ -234,14 +233,9 @@ export default function Settings() {
       try {
         const text = await file.text()
         const data = JSON.parse(text) as unknown
-        await fetch('/api/import', {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${getStoredToken()}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(data),
-        })
+        // api.post throws on non-2xx / 401, so the reload only happens on a real
+        // success — a failed import no longer reloads and masks itself as done.
+        await api.post('/import', data)
         window.location.reload()
       } catch {
         setError(t('dataManagement.importFailed'))
