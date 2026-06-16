@@ -4,6 +4,7 @@ import { Plus, Settings, X, GripVertical, Clock, Calendar } from 'lucide-react'
 import { listTasks, createTask, updateTask } from '../../api/tasks'
 import type { Task, TaskStatus } from '../../api/tasks'
 import { PRIORITY_DOT_COLORS } from '../../lib/priority'
+import { describeDueDate, dueDateColorClass, formatDueDateLabel } from '../../lib/dueDate'
 
 // ─── Column definitions ──────────────────────────────────────────────────────
 
@@ -102,29 +103,6 @@ function saveColumnVisibility(visibility: Record<KanbanColumnId, boolean>) {
   localStorage.setItem(LS_KEY, JSON.stringify(visibility))
 }
 
-// ─── Due date helpers ─────────────────────────────────────────────────────────
-
-function formatDueDate(dueDate: string): string {
-  const due = new Date(dueDate)
-  const now = new Date()
-  const diffDays = Math.ceil((due.getTime() - now.getTime()) / (24 * 60 * 60 * 1000))
-  if (diffDays < 0) return `${Math.abs(diffDays)}d late`
-  if (diffDays === 0) return 'today'
-  if (diffDays === 1) return 'tmrw'
-  if (diffDays < 7) return `${diffDays}d`
-  return due.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
-}
-
-function getDueDateColor(dueDate: string): string {
-  const due = new Date(dueDate)
-  const now = new Date()
-  const diffDays = Math.ceil((due.getTime() - now.getTime()) / (24 * 60 * 60 * 1000))
-  if (diffDays < 0) return 'text-red-400'
-  if (diffDays === 0) return 'text-orange-400'
-  if (diffDays <= 1) return 'text-yellow-400'
-  return 'text-zinc-500'
-}
-
 // ─── Task Card ────────────────────────────────────────────────────────────────
 
 interface TaskCardProps {
@@ -133,6 +111,8 @@ interface TaskCardProps {
 }
 
 function TaskCard({ task, onDragStart }: TaskCardProps) {
+  const { t, i18n } = useTranslation('common')
+  const dueInfo = task.due_date ? describeDueDate(task.due_date) : null
   return (
     <div
       draggable
@@ -167,10 +147,10 @@ function TaskCard({ task, onDragStart }: TaskCardProps) {
                   {task.estimated_minutes}m
                 </span>
               )}
-              {task.due_date && (
-                <span className={`flex items-center gap-0.5 ${getDueDateColor(task.due_date)}`}>
+              {dueInfo && (
+                <span className={`flex items-center gap-0.5 ${dueDateColorClass(dueInfo)}`}>
                   <Calendar className="w-3 h-3" />
-                  {formatDueDate(task.due_date)}
+                  {formatDueDateLabel(dueInfo, t, i18n.language)}
                 </span>
               )}
             </div>
