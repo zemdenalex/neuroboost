@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuthContext } from '../../contexts/AuthContext'
 import { dateLocale } from '../../utils/date'
+import { resolveDisplayName } from '../../lib/profile/resolveDisplayName'
 import {
   User,
   Mail,
@@ -60,11 +61,11 @@ export default function Profile() {
     }
   }
 
-  const userName = user?.display_name || user?.email?.split('@')[0] || 'User'
+  const userName = resolveDisplayName(user?.display_name, user?.email, t('anonymous'))
   const memberSince = user?.created_at ? new Date(user.created_at).toLocaleDateString(dateLocale(i18n.language), {
     month: 'long',
     year: 'numeric'
-  }) : 'Unknown'
+  }) : t('unknownDate')
 
   // Calculate level progress (XP needed for next level)
   const xpForCurrentLevel = (stats.level - 1) * 500

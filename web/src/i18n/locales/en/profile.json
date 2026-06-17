@@ -1,4 +1,6 @@
 {
+  "anonymous": "User",
+  "unknownDate": "Unknown",
   "memberSince": "Member since {{date}}",
   "level": "Level {{level}}",
   "xp": "{{current}} / {{max}} XP",
