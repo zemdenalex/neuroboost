@@ -4,6 +4,7 @@ import { MobileNavigation } from './MobileNav'
 import { ToastHost } from '../ui/Toast'
 import { OnboardingProvider } from '../../contexts/OnboardingContext'
 import { OnboardingOverlay } from '../Onboarding/OnboardingOverlay'
+import { HintsLayer } from '../Hints/HintsLayer'
 
 type HeaderVariant = 'horizontal' | 'vertical'
 
@@ -51,6 +52,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <MobileNavigation />
         <ToastHost />
         <OnboardingOverlay />
+        <HintsLayer />
       </div>
     </OnboardingProvider>
   )

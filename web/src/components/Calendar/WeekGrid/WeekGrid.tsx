@@ -220,6 +220,7 @@ export function WeekGrid({
 
       <div
         ref={scrollRef}
+        data-hint="calendar.grid"
         className="flex-1 overflow-x-auto overflow-y-auto outline-none relative"
         tabIndex={0}
         role="application"

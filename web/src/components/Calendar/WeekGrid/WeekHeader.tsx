@@ -101,6 +101,7 @@ export function WeekHeader({
           )}
           {!isMobile && (
             <button
+              data-hint="calendar.newEvent"
               onClick={onQuickCreate}
               className="px-2 py-1 text-xs rounded bg-zinc-800 border border-zinc-700 hover:bg-zinc-700 transition-colors"
             >

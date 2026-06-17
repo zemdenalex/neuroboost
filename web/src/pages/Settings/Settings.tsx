@@ -17,7 +17,9 @@ import {
   LayoutGrid,
   Maximize,
   Smartphone,
+  Lightbulb,
 } from 'lucide-react'
+import { getHintStyle, setHintStyle as persistHintStyle, type HintStyle } from '../../lib/onboarding/hintStyle'
 
 type HeaderVariant = 'horizontal' | 'vertical'
 type MobileNavType = 'bottom_tabs' | 'hamburger' | 'fab'
@@ -104,6 +106,7 @@ export default function Settings() {
 
   // Settings state - initialize from user settings or defaults
   const [headerStyle, setHeaderStyle] = useState<HeaderVariant>('horizontal')
+  const [hintStyle, setHintStyle] = useState<HintStyle>(() => getHintStyle())
   const [mobileNav, setMobileNav] = useState<MobileNavType>('bottom_tabs')
   const [uiScale, setUIScale] = useState(100)
   const [timezone, setTimezone] = useState('Europe/Moscow')
@@ -169,6 +172,13 @@ export default function Settings() {
     } catch {
       setError(t('error.saveLayout'))
     }
+  }
+
+  // Hint style is localStorage-only (v1); broadcast so the live OnboardingProvider updates immediately.
+  const handleHintStyleChange = (style: HintStyle) => {
+    setHintStyle(style)
+    persistHintStyle(style)
+    window.dispatchEvent(new CustomEvent('neuroboost-hints-style-change', { detail: style }))
   }
 
   const handleMobileNavChange = async (nav: MobileNavType) => {
@@ -286,6 +296,30 @@ export default function Settings() {
             </button>
           </div>
           <p className="text-xs text-zinc-500 mt-2">{t('layout.note')}</p>
+        </section>
+
+        {/* Hint Style */}
+        <section className="bg-zinc-900 border border-zinc-800 rounded-lg p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <Lightbulb className="w-5 h-5 text-zinc-400" />
+            <h2 className="text-lg font-mono font-semibold text-white">{t('hints.title')}</h2>
+          </div>
+          <div className="flex gap-3">
+            {(['bubbles', 'walkthrough', 'markers'] as const).map((style) => (
+              <button
+                key={style}
+                onClick={() => handleHintStyleChange(style)}
+                className={`flex-1 p-3 rounded-lg border text-sm font-mono transition-colors ${
+                  hintStyle === style
+                    ? 'bg-blue-600/20 border-blue-500 text-blue-400'
+                    : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:border-zinc-600'
+                }`}
+              >
+                {t(`hints.${style}`)}
+              </button>
+            ))}
+          </div>
+          <p className="text-xs text-zinc-500 mt-2">{t('hints.note')}</p>
         </section>
 
         {/* Mobile Navigation — only shown on mobile viewports */}

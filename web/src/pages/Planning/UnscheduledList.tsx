@@ -16,7 +16,7 @@ export function UnscheduledList({ tasks, scheduledHours, onDragStart }: Props) {
   const emptyVariant = planningEmptyVariant(tasks.length, scheduledHours)
 
   return (
-    <aside className="flex flex-col h-full bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden">
+    <aside data-hint="planning.unscheduled" className="flex flex-col h-full bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden">
       <header className="px-4 py-3 border-b border-zinc-800 flex items-center justify-between">
         <span className="text-xs uppercase tracking-wider text-zinc-500">
           {t('unscheduledTasks')}

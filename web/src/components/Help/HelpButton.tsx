@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { HelpCircle, X } from 'lucide-react'
+import { HelpCircle, Lightbulb, X } from 'lucide-react'
 import { helpKeysFor } from '../../lib/onboarding/helpContent'
+import { hintsForRoute } from '../../lib/onboarding/hintsContent'
+import { useOnboarding } from '../../contexts/OnboardingContext'
 
 /**
  * Always-available contextual help. A trigger opens a right-side slide-in panel
@@ -18,7 +20,17 @@ export function HelpButton({ variant = 'icon' }: { variant?: 'icon' | 'sidebar' 
   const { pathname } = useLocation()
   const { t } = useTranslation('onboarding')
   const { titleKey, bodyKey } = helpKeysFor(pathname)
+  const { hintStyle, showHints } = useOnboarding()
   const closeRef = useRef<HTMLButtonElement>(null)
+
+  // "Show hints" reveals the on-demand bubbles/walkthrough; pointless when the
+  // style is always-on markers, or when the page has no anchored hints.
+  const canShowHints = hintStyle !== 'markers' && hintsForRoute(pathname).length > 0
+
+  const handleShowHints = () => {
+    setOpen(false)
+    showHints()
+  }
 
   useEffect(() => {
     if (!open) return
@@ -76,6 +88,16 @@ export function HelpButton({ variant = 'icon' }: { variant?: 'icon' | 'sidebar' 
               </button>
             </div>
             <p className="whitespace-pre-line text-sm leading-relaxed text-zinc-300">{t(bodyKey)}</p>
+            {canShowHints && (
+              <button
+                type="button"
+                onClick={handleShowHints}
+                className="mt-5 flex w-full items-center justify-center gap-2 rounded-lg border border-blue-500 bg-blue-600/20 px-4 py-2 text-sm text-blue-300 transition-colors hover:bg-blue-600/30"
+              >
+                <Lightbulb className="h-4 w-4" />
+                {t('hints.showHints')}
+              </button>
+            )}
           </aside>
         </div>
       )}

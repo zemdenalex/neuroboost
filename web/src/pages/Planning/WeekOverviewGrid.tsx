@@ -39,13 +39,14 @@ export function WeekOverviewGrid({ days, onTaskDrop }: Props) {
 
   return (
     <div className="flex-1 grid grid-cols-7 auto-rows-fr gap-2 min-h-0">
-      {days.map((day) => {
+      {days.map((day, i) => {
         const dayName = day.date.toLocaleDateString(locale, { weekday: 'short' })
         const dayNum = day.date.getDate()
         const isToday = new Date().toDateString() === day.date.toDateString()
         return (
           <div
             key={day.date.toISOString()}
+            data-hint={i === 0 ? 'planning.day' : undefined}
             role="button"
             tabIndex={0}
             aria-label={`${dayName} ${dayNum}`}

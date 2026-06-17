@@ -77,7 +77,7 @@ export function Dashboard() {
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-3 gap-4">
+        <div data-hint="home.quickAdd" className="grid grid-cols-3 gap-4">
           <Link
             to="/calendar"
             className="flex flex-col items-center gap-2 p-4 bg-zinc-900 border border-zinc-800 hover:border-blue-600 rounded-xl transition-colors"
@@ -104,7 +104,7 @@ export function Dashboard() {
         {/* Today's Schedule + Task Summary */}
         <div className="grid md:grid-cols-2 gap-6">
           {/* Today's Schedule */}
-          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
+          <div data-hint="home.schedule" className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
             <h2 className="font-semibold text-zinc-100 mb-4 flex items-center gap-2">
               <Clock size={18} className="text-blue-400" />
               {t('dashboard.todaySchedule')}
@@ -143,7 +143,7 @@ export function Dashboard() {
           </div>
 
           {/* Task Summary */}
-          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
+          <div data-hint="home.tasks" className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
             <h2 className="font-semibold text-zinc-100 mb-4 flex items-center gap-2">
               <ListTodo size={18} className="text-green-400" />
               {t('dashboard.taskSummary')}

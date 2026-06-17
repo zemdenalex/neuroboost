@@ -210,6 +210,7 @@ export default function Tasks() {
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-xl font-mono font-semibold text-white">{t('title')}</h1>
             <button
+              data-hint="tasks.new"
               onClick={() => {
                 setEditingTask({ title: '', priority: 3, contexts: [], tags: [] })
                 setShowEditor(true)
@@ -323,6 +324,7 @@ export default function Tasks() {
                         >
                           {/* Status toggle */}
                           <button
+                            data-hint="tasks.complete"
                             onClick={() => handleStatusToggle(task)}
                             className="shrink-0"
                           >
@@ -374,6 +376,7 @@ export default function Tasks() {
                           {/* Actions — always visible on touch (no hover), hover-revealed on desktop */}
                           <div className="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                             <button
+                              data-hint="tasks.schedule"
                               onClick={() => handleScheduleTask(task)}
                               title={t('schedule')}
                               aria-label={t('schedule')}
