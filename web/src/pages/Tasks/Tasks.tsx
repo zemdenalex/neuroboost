@@ -30,6 +30,7 @@ import {
   CONTEXT_ICONS,
 } from '../../api/tasks'
 import { defaultScheduleSlot } from '../../lib/schedule/defaultScheduleSlot'
+import { toDateTimeLocalValue, fromDateTimeLocalValue } from '../../lib/datetime/dateTimeLocal'
 
 export default function Tasks() {
   const { t } = useTranslation('tasks')
@@ -468,8 +469,8 @@ export default function Tasks() {
                   <label className="block text-sm text-zinc-400 mb-1">{t('form.dueDate')}</label>
                   <input
                     type="datetime-local"
-                    value={editingTask.due_date ? new Date(editingTask.due_date).toISOString().slice(0, 16) : ''}
-                    onChange={(e) => setEditingTask(prev => ({ ...prev!, due_date: e.target.value ? new Date(e.target.value).toISOString() : undefined }))}
+                    value={editingTask.due_date ? toDateTimeLocalValue(editingTask.due_date) : ''}
+                    onChange={(e) => setEditingTask(prev => ({ ...prev!, due_date: e.target.value ? fromDateTimeLocalValue(e.target.value) : undefined }))}
                     className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white font-mono focus:outline-none focus:border-blue-500"
                   />
                 </div>
