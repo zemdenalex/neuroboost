@@ -12,7 +12,7 @@ export interface ChecklistItem {
 
 const STEP_META: ReadonlyArray<{ id: ChecklistStepId; labelKey: string; ctaRoute: string }> = [
   { id: 'createTask', labelKey: 'checklist.createTask', ctaRoute: '/tasks' },
-  { id: 'scheduleTask', labelKey: 'checklist.scheduleTask', ctaRoute: '/calendar' },
+  { id: 'scheduleTask', labelKey: 'checklist.scheduleTask', ctaRoute: '/tasks' },
   { id: 'completeAndReflect', labelKey: 'checklist.completeAndReflect', ctaRoute: '/reflections' },
 ]
 

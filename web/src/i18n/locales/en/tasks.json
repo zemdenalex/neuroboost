@@ -7,6 +7,7 @@
   "noTasksYet": "No tasks yet",
   "noTasksMatch": "No tasks match your search",
   "createFirst": "Create your first task",
+  "schedule": "Schedule on calendar",
   "dragHint": "Drag tasks to calendar to schedule",
   "showCompleted": "Show completed",
   "addTask": "Add task",

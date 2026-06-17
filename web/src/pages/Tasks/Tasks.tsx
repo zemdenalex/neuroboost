@@ -15,18 +15,21 @@ import {
   Edit2,
   Search,
   Filter,
+  CalendarPlus,
 } from 'lucide-react'
 import {
   listTasks,
   createTask,
   updateTask,
   deleteTask,
+  scheduleTask,
   Task,
   TaskStatus,
   PRIORITY_LABELS,
   PRIORITY_COLORS,
   CONTEXT_ICONS,
 } from '../../api/tasks'
+import { defaultScheduleSlot } from '../../lib/schedule/defaultScheduleSlot'
 
 export default function Tasks() {
   const { t } = useTranslation('tasks')
@@ -40,6 +43,9 @@ export default function Tasks() {
   // Stable across renders so a synchronous double-click is blocked (a useState
   // flag would not update before the second click's handler reads it).
   const saveGuard = useRef(createInFlightGuard()).current
+  // Separate guard so a double-tap on Schedule can't POST twice — the backend
+  // INSERTs a new event per call (no upsert), so re-entrancy duplicates events.
+  const scheduleGuard = useRef(createInFlightGuard()).current
   const [search, setSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState<TaskStatus | 'ALL'>('ALL')
   const [expandedGroups, setExpandedGroups] = useState<Set<number>>(new Set([1, 2, 3, 4, 5]))
@@ -111,6 +117,20 @@ export default function Tasks() {
     } catch (error) {
       console.error('Failed to update task:', error)
     }
+  }
+
+  // Tap-friendly alternative to drag-scheduling: drop the task on the calendar
+  // at a sensible default slot. Optimistically reflect the SCHEDULED status.
+  const handleScheduleTask = (task: Task) => {
+    const slot = defaultScheduleSlot(new Date(), task.estimated_minutes)
+    return scheduleGuard(async () => {
+      try {
+        await scheduleTask(task.id, { starts_at: slot.startsAt, ends_at: slot.endsAt, all_day: false })
+        setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: 'SCHEDULED' } : t))
+      } catch (error) {
+        console.error('Failed to schedule task:', error)
+      }
+    })
   }
 
   const handleSaveTask = () => {
@@ -351,8 +371,16 @@ export default function Tasks() {
                             </div>
                           </div>
 
-                          {/* Actions */}
-                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          {/* Actions — always visible on touch (no hover), hover-revealed on desktop */}
+                          <div className="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                            <button
+                              onClick={() => handleScheduleTask(task)}
+                              title={t('schedule')}
+                              aria-label={t('schedule')}
+                              className="p-1.5 text-zinc-500 hover:text-blue-400 hover:bg-zinc-700 rounded transition-colors"
+                            >
+                              <CalendarPlus className="w-4 h-4" />
+                            </button>
                             <button
                               onClick={() => {
                                 setEditingTask(task)

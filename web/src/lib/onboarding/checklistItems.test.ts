@@ -6,7 +6,7 @@ describe('buildChecklistItems', () => {
   it('returns the three steps in order with stable routes', () => {
     const items = buildChecklistItems(computeChecklistProgress({}))
     expect(items.map((i) => i.id)).toEqual(['createTask', 'scheduleTask', 'completeAndReflect'])
-    expect(items.map((i) => i.ctaRoute)).toEqual(['/tasks', '/calendar', '/reflections'])
+    expect(items.map((i) => i.ctaRoute)).toEqual(['/tasks', '/tasks', '/reflections'])
     expect(items.every((i) => i.labelKey.startsWith('checklist.'))).toBe(true)
   })
 
