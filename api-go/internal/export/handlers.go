@@ -74,10 +74,13 @@ type ImportRequest struct {
 	Tasks   []TaskRow  `json:"tasks"`
 }
 
-// ImportResult reports how many records were inserted
+// ImportResult reports how many records were inserted and how many were skipped
+// because they failed per-row validation (e.g. a corrupted or hand-edited export).
 type ImportResult struct {
 	EventsImported int `json:"events_imported"`
 	TasksImported  int `json:"tasks_imported"`
+	EventsSkipped  int `json:"events_skipped"`
+	TasksSkipped   int `json:"tasks_skipped"`
 }
 
 // ExportHandler returns all events and tasks for the authenticated user
@@ -136,7 +139,15 @@ func ImportHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	eventsImported := 0
+	eventsSkipped := 0
 	for _, ev := range req.Events {
+		// Enforce the same per-row rules as the Create handler — never silently
+		// persist an invalid (e.g. inverted-time) row from a tampered export.
+		if validateImportEvent(ev) != "" {
+			eventsSkipped++
+			continue
+		}
+
 		tags := ev.Tags
 		if tags == nil {
 			tags = []string{}
@@ -161,7 +172,13 @@ func ImportHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tasksImported := 0
+	tasksSkipped := 0
 	for _, tk := range req.Tasks {
+		if validateImportTask(tk) != "" {
+			tasksSkipped++
+			continue
+		}
+
 		tags := tk.Tags
 		if tags == nil {
 			tags = []string{}
@@ -195,5 +212,7 @@ func ImportHandler(w http.ResponseWriter, r *http.Request) {
 	util.RespondJSON(w, http.StatusOK, ImportResult{
 		EventsImported: eventsImported,
 		TasksImported:  tasksImported,
+		EventsSkipped:  eventsSkipped,
+		TasksSkipped:   tasksSkipped,
 	})
 }
