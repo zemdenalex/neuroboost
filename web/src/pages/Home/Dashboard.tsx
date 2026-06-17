@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { CalendarPlus, ListTodo, Timer, Clock } from 'lucide-react'
 import { useAuthContext } from '../../contexts/AuthContext'
+import { EmptyState } from '../../components/ui/EmptyState'
 import { getEvents, getTasks } from '../../api'
 import type { NbEvent } from '../../types'
 import type { Task } from '../../types'
@@ -114,7 +115,12 @@ export function Dashboard() {
                 <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-500" />
               </div>
             ) : todayEvents.length === 0 ? (
-              <p className="text-zinc-500 text-sm py-4 text-center">{t('dashboard.noEvents')}</p>
+              <EmptyState
+                icon={CalendarPlus}
+                title={t('dashboard.noEvents')}
+                description={t('dashboard.noEventsHint')}
+                className="py-6"
+              />
             ) : (
               <ul className="space-y-2">
                 {todayEvents.map(event => (
@@ -147,6 +153,13 @@ export function Dashboard() {
               <div className="flex justify-center py-6">
                 <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-green-500" />
               </div>
+            ) : tasks.length === 0 ? (
+              <EmptyState
+                icon={ListTodo}
+                title={t('dashboard.noTasks')}
+                description={t('dashboard.noTasksHint')}
+                className="py-6"
+              />
             ) : (
               <div className="grid grid-cols-3 gap-3">
                 <div className="bg-zinc-800 rounded-lg p-4 text-center">

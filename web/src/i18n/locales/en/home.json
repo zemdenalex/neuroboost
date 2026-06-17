@@ -48,10 +48,13 @@
     "todaySchedule": "Today's Schedule",
     "events": "View all",
     "noEvents": "Nothing scheduled for today.",
+    "noEventsHint": "Click a time slot on the calendar, or schedule a task to fill your day.",
     "taskSummary": "Task Summary",
     "todo": "To Do",
     "done": "Done",
     "overdue": "Overdue",
+    "noTasks": "No tasks yet",
+    "noTasksHint": "Create your first task to start planning your week.",
     "allTasks": "All tasks"
   }
 }
