@@ -1,5 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuthContext } from '../../../contexts/AuthContext'
+import { HelpButton } from '../../Help/HelpButton'
 import {
   Calendar,
   CheckSquare,
@@ -104,6 +105,9 @@ export default function VerticalSidebar() {
             <p className="text-xs text-zinc-500 truncate">{user?.email}</p>
           </div>
         </div>
+
+        {/* Contextual help for the current page */}
+        <HelpButton variant="sidebar" />
 
         {/* Logout button */}
         <button

@@ -17,6 +17,7 @@
   "help": {
     "open": "Help for this page",
     "close": "Close help",
+    "label": "Help",
     "default": {
       "title": "NeuroBoost",
       "body": "NeuroBoost helps you plan your time and get things done.\n\nThe core loop: capture a task, schedule it on your calendar, finish it, then reflect. Use the menu to move between pages, and open this help on any page to see what it does."

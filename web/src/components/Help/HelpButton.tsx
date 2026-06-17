@@ -5,11 +5,15 @@ import { HelpCircle, X } from 'lucide-react'
 import { helpKeysFor } from '../../lib/onboarding/helpContent'
 
 /**
- * Always-available contextual help. A "?" trigger (mounted in the header) opens
- * a right-side slide-in panel explaining the current page, resolved from the
- * route via helpKeysFor. Self-contained: holds its own open state.
+ * Always-available contextual help. A trigger opens a right-side slide-in panel
+ * explaining the current page, resolved from the route via helpKeysFor.
+ * Self-contained: holds its own open state.
+ *
+ * The panel is shared; only the trigger's appearance changes by variant:
+ *  - "icon" (default): compact "?" button for the horizontal header.
+ *  - "sidebar": full-width labelled row matching the vertical sidebar nav idiom.
  */
-export function HelpButton() {
+export function HelpButton({ variant = 'icon' }: { variant?: 'icon' | 'sidebar' }) {
   const [open, setOpen] = useState(false)
   const { pathname } = useLocation()
   const { t } = useTranslation('onboarding')
@@ -28,14 +32,25 @@ export function HelpButton() {
 
   return (
     <>
-      <button
-        onClick={() => setOpen(true)}
-        aria-label={t('help.open')}
-        title={t('help.open')}
-        className="flex h-8 w-8 items-center justify-center rounded-md text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-white"
-      >
-        <HelpCircle className="h-5 w-5" />
-      </button>
+      {variant === 'sidebar' ? (
+        <button
+          onClick={() => setOpen(true)}
+          aria-label={t('help.open')}
+          className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-mono text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+        >
+          <HelpCircle className="w-4 h-4" />
+          {t('help.label')}
+        </button>
+      ) : (
+        <button
+          onClick={() => setOpen(true)}
+          aria-label={t('help.open')}
+          title={t('help.open')}
+          className="flex h-8 w-8 items-center justify-center rounded-md text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-white"
+        >
+          <HelpCircle className="h-5 w-5" />
+        </button>
+      )}
 
       {open && (
         <div
