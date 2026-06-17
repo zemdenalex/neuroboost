@@ -1,15 +1,19 @@
 import type React from 'react'
 import { useTranslation } from 'react-i18next'
-import { Clock } from 'lucide-react'
+import { Clock, ListTodo, CheckCircle2, Plus } from 'lucide-react'
 import type { PlanningTask } from '../../api/planning'
+import { EmptyState } from '../../components/ui/EmptyState'
+import { planningEmptyVariant } from '../../lib/planning/planningEmptyState'
 
 interface Props {
   tasks: PlanningTask[]
+  scheduledHours: number
   onDragStart: (e: React.DragEvent, task: PlanningTask) => void
 }
 
-export function UnscheduledList({ tasks, onDragStart }: Props) {
+export function UnscheduledList({ tasks, scheduledHours, onDragStart }: Props) {
   const { t } = useTranslation('planning')
+  const emptyVariant = planningEmptyVariant(tasks.length, scheduledHours)
 
   return (
     <aside className="flex flex-col h-full bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden">
@@ -22,9 +26,22 @@ export function UnscheduledList({ tasks, onDragStart }: Props) {
         </span>
       </header>
       <ul className="flex-1 overflow-y-auto p-2 space-y-1">
-        {tasks.length === 0 ? (
-          <li className="text-center text-sm text-zinc-500 py-8">
-            {t('noUnscheduledTasks')}
+        {emptyVariant === 'noTasks' ? (
+          <li className="px-2">
+            <EmptyState
+              icon={ListTodo}
+              title={t('emptyNoTasksTitle')}
+              description={t('emptyNoTasksHint')}
+              cta={{ to: '/tasks', label: t('goToTasks'), icon: Plus }}
+            />
+          </li>
+        ) : emptyVariant === 'allScheduled' ? (
+          <li className="px-2">
+            <EmptyState
+              icon={CheckCircle2}
+              title={t('noUnscheduledTasks')}
+              description={t('noUnscheduledTasksHint')}
+            />
           </li>
         ) : (
           tasks.map((task) => (

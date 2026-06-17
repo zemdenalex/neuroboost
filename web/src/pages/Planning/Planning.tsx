@@ -193,6 +193,7 @@ export default function Planning() {
           <div className="lg:w-1/3 lg:min-w-[280px] max-h-[40vh] lg:max-h-none">
             <UnscheduledList
               tasks={plan.unscheduledTasks}
+              scheduledHours={plan.scheduledHours}
               onDragStart={handleTaskDragStart}
             />
           </div>
