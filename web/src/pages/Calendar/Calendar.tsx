@@ -6,6 +6,7 @@ import { TaskSidebar } from '../../components/TaskSidebar';
 import { MobileTaskPanel } from '../../components/TaskSidebar/MobileTaskPanel';
 import { EventEditor } from '../../components/Calendar/EventEditor';
 import { useAuthContext } from '../../contexts/AuthContext';
+import { computeWeekRange } from '../../lib/calendar/weekRange';
 import { createTask } from '../../api';
 import {
   getEvents,
@@ -35,17 +36,9 @@ export function Calendar() {
   const [quickTaskOpen, setQuickTaskOpen] = useState(false);
   const [quickTaskTitle, setQuickTaskTitle] = useState('');
 
-  // Calculate week range
+  // Calculate week range (Monday-based; Sunday stays in the current week — see computeWeekRange)
   const getWeekRange = useCallback((offset: number) => {
-    const now = new Date();
-    const monday = new Date(now);
-    monday.setDate(now.getDate() - now.getDay() + 1 + offset * 7);
-    monday.setHours(0, 0, 0, 0);
-
-    const sunday = new Date(monday);
-    sunday.setDate(monday.getDate() + 7);
-
-    return { start: monday, end: sunday };
+    return computeWeekRange(new Date(), offset);
   }, []);
 
   // Load events for current week
