@@ -5,5 +5,13 @@
     "loop": "The rhythm is simple: capture a task, drop it onto your calendar, finish it, then reflect.",
     "getStarted": "Show me how",
     "skip": "Skip for now"
+  },
+  "checklist": {
+    "title": "Get started",
+    "progress": "{{done}} of {{total}} done",
+    "dismiss": "Dismiss checklist",
+    "createTask": "Create your first task",
+    "scheduleTask": "Put it on your calendar",
+    "completeAndReflect": "Complete it and reflect"
   }
 }
