@@ -30,11 +30,12 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
           go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: api-go/go.sum
 
       - name: Install golang-migrate
         run: |
@@ -76,9 +77,9 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: ${{ env.NODE_VERSION }}
 
@@ -106,7 +107,7 @@ jobs:
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
     
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Create test .env file
         run: |
@@ -183,11 +184,14 @@ jobs:
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           script: |
             set -e
+            # Retry git over transient DNS/network blips on the host (a failed
+            # `git pull` here has aborted a deploy with "Could not resolve host").
+            retry() { for i in 1 2 3; do "$@" && return 0; echo "attempt $i failed, retrying in 5s..."; sleep 5; done; return 1; }
             cd /opt/neuroboost
             # Backup before deploy
             ./scripts/backup.sh || echo "Backup failed, continuing deploy..."
             # Pull and rebuild
-            git pull origin main
+            retry git pull origin main
             docker compose build --pull
             docker compose down
             docker compose up -d
@@ -226,10 +230,13 @@ jobs:
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           script: |
             set -e
+            # Retry git over transient DNS/network blips on the host (a failed
+            # `git fetch` here has aborted a deploy with "Could not resolve host").
+            retry() { for i in 1 2 3; do "$@" && return 0; echo "attempt $i failed, retrying in 5s..."; sleep 5; done; return 1; }
             cd /root/neuroboost-dev
-            git fetch origin develop
+            retry git fetch origin develop
             git checkout develop
-            git pull origin develop
+            retry git pull origin develop
 
             # Sync production DB → dev DB (both containers must be running)
             echo "Syncing production database to dev..."
