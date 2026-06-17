@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuthContext } from '../../../contexts/AuthContext'
 import { useFeatureFlags } from '../../../hooks/useFeatureFlags'
+import { HelpButton } from '../../Help/HelpButton'
 import {
   Calendar,
   CheckSquare,
@@ -85,6 +86,9 @@ export default function HorizontalHeader() {
           })}
         </nav>
 
+        {/* Right side: contextual help + profile */}
+        <div className="flex items-center gap-1">
+        <HelpButton />
         {/* Profile Dropdown */}
         <div className="relative" ref={dropdownRef}>
           <button
@@ -159,6 +163,7 @@ export default function HorizontalHeader() {
               </div>
             </div>
           )}
+        </div>
         </div>
       </div>
     </header>

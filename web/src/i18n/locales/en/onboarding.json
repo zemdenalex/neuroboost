@@ -13,5 +13,45 @@
     "createTask": "Create your first task",
     "scheduleTask": "Put it on your calendar",
     "completeAndReflect": "Complete it and reflect"
+  },
+  "help": {
+    "open": "Help for this page",
+    "close": "Close help",
+    "default": {
+      "title": "NeuroBoost",
+      "body": "NeuroBoost helps you plan your time and get things done.\n\nThe core loop: capture a task, schedule it on your calendar, finish it, then reflect. Use the menu to move between pages, and open this help on any page to see what it does."
+    },
+    "home": {
+      "title": "Dashboard",
+      "body": "Your daily overview: today's schedule and a summary of your tasks.\n\nUse the quick actions to add an event or task, or start a Pomodoro session. It's the fastest way to see where your day stands."
+    },
+    "calendar": {
+      "title": "Calendar",
+      "body": "Your week at a glance. Events are time blocks for your day.\n\nClick an empty slot to create an event, or drag a task from the sidebar onto the grid to schedule it. Drag an event's edges to resize it, or move it to reschedule."
+    },
+    "tasks": {
+      "title": "Tasks",
+      "body": "Everything you need to do, grouped by priority.\n\nAdd a task with the New Task button, then use the Schedule button on a task to drop it onto your calendar. Tick the circle to mark a task done."
+    },
+    "planning": {
+      "title": "Planning",
+      "body": "Plan your week by placing unscheduled tasks onto specific days.\n\nDrag a task from the sidebar onto a day to schedule it. Create tasks on the Tasks page first if the sidebar is empty."
+    },
+    "reflections": {
+      "title": "Reflections",
+      "body": "Look back on what you did and how it went.\n\nReflections are short notes tied to your completed work. They help you notice patterns over time. Finish a task or event, then jot down a quick reflection."
+    },
+    "tools": {
+      "title": "Tools",
+      "body": "Extra ways to focus and organise: a Pomodoro timer, a Kanban board, an Eisenhower matrix, and time-blocking.\n\nPick whichever fits how you work right now."
+    },
+    "settings": {
+      "title": "Settings",
+      "body": "Make NeuroBoost yours: language, layout, work days and hours, and which features are visible.\n\nChanges apply immediately and are saved to your account."
+    },
+    "profile": {
+      "title": "Profile",
+      "body": "Your account details: display name, timezone, and language.\n\nKeeping your timezone accurate makes sure events and reminders land at the right time."
+    }
   }
 }
