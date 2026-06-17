@@ -36,28 +36,12 @@ func ListHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Parse query parameters
-	start := r.URL.Query().Get("start")
-	end := r.URL.Query().Get("end")
-
-	if start == "" || end == "" {
-		// Default to current week
-		now := time.Now()
-		weekStart := now.AddDate(0, 0, -int(now.Weekday()))
-		weekEnd := weekStart.AddDate(0, 0, 7)
-		start = weekStart.Format(time.RFC3339)
-		end = weekEnd.Format(time.RFC3339)
-	}
-
-	startTime, err := time.Parse(time.RFC3339, start)
-	if err != nil {
-		util.RespondError(w, http.StatusBadRequest, "INVALID_START", "Invalid start date format")
-		return
-	}
-
-	endTime, err := time.Parse(time.RFC3339, end)
-	if err != nil {
-		util.RespondError(w, http.StatusBadRequest, "INVALID_END", "Invalid end date format")
+	// Parse + validate the query window (defaults to the current week; rejects
+	// unparseable or inverted/zero-length ranges instead of silently returning empty).
+	startTime, endTime, errCode, errMsg := parseListRange(
+		r.URL.Query().Get("start"), r.URL.Query().Get("end"), time.Now())
+	if errCode != "" {
+		util.RespondError(w, http.StatusBadRequest, errCode, errMsg)
 		return
 	}
 
