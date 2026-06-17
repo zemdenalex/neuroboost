@@ -58,6 +58,9 @@
   "hints": {
     "showHints": "Show hints on this page",
     "gotIt": "Got it",
+    "next": "Next",
+    "back": "Back",
+    "step": "Step {{n}} of {{total}}",
     "home": {
       "quickAdd": { "title": "Quick actions", "body": "Jump straight to adding an event or task, or start a focus timer." },
       "schedule": { "title": "Today's schedule", "body": "Everything you've planned for today, in order." },
