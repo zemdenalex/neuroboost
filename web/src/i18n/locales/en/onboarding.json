@@ -1,0 +1,9 @@
+{
+  "welcome": {
+    "title": "Welcome to NeuroBoost",
+    "intro": "NeuroBoost turns what you need to do into a plan you can actually follow.",
+    "loop": "The rhythm is simple: capture a task, drop it onto your calendar, finish it, then reflect.",
+    "getStarted": "Show me how",
+    "skip": "Skip for now"
+  }
+}

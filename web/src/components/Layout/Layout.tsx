@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import Header from './Header'
 import { MobileNavigation } from './MobileNav'
 import { ToastHost } from '../ui/Toast'
+import { OnboardingProvider } from '../../contexts/OnboardingContext'
+import { OnboardingOverlay } from '../Onboarding/OnboardingOverlay'
 
 type HeaderVariant = 'horizontal' | 'vertical'
 
@@ -34,20 +36,23 @@ export function Layout({ children }: { children: React.ReactNode }) {
   }, [])
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 font-mono">
-      <Header />
-      <main
-        className={
-          variant === 'horizontal'
-            ? 'pt-14 pb-16 md:pb-0' // Top padding for horizontal header, bottom padding for mobile nav
-            : 'pl-56' // Left padding for vertical sidebar
-        }
-      >
-        {children}
-      </main>
-      <MobileNavigation />
-      <ToastHost />
-    </div>
+    <OnboardingProvider>
+      <div className="min-h-screen bg-zinc-950 text-zinc-100 font-mono">
+        <Header />
+        <main
+          className={
+            variant === 'horizontal'
+              ? 'pt-14 pb-16 md:pb-0' // Top padding for horizontal header, bottom padding for mobile nav
+              : 'pl-56' // Left padding for vertical sidebar
+          }
+        >
+          {children}
+        </main>
+        <MobileNavigation />
+        <ToastHost />
+        <OnboardingOverlay />
+      </div>
+    </OnboardingProvider>
   )
 }
 
