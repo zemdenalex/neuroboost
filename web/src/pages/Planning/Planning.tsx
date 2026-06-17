@@ -47,8 +47,7 @@ export default function Planning() {
     } finally {
       setLoading(false)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [monday])
+  }, [monday, t])
 
   useEffect(() => {
     fetchPlan()
