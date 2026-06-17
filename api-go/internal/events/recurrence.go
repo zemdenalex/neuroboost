@@ -85,6 +85,19 @@ func expandRecurrence(event Event, rangeStart, rangeEnd time.Time, exceptions []
 	}
 
 	duration := event.EndsAt.Sub(event.StartsAt)
+
+	// Advance occurrences in the event's own timezone so a recurring "09:00 local"
+	// event keeps its local clock time across DST transitions, instead of holding a
+	// fixed UTC instant (which drifts ±1h after spring-forward / fall-back). Empty or
+	// invalid timezone falls back to explicit UTC — reproducible and identical to the
+	// prior behaviour. Instances are still emitted in UTC (below), so the wire format
+	// and the date basis used for IDs / exceptions are unchanged.
+	loc, locErr := time.LoadLocation(event.Timezone)
+	if locErr != nil {
+		loc = time.UTC
+	}
+	startLocal := event.StartsAt.In(loc)
+
 	var instances []Event
 	count := 0     // occurrence index from StartsAt — drives COUNT
 	monthStep := 0 // months advanced from StartsAt, for MONTHLY day-of-month anchoring
@@ -100,7 +113,7 @@ func expandRecurrence(event Event, rangeStart, rangeEnd time.Time, exceptions []
 	const maxInstances = 366
 	const maxIterations = 100000
 
-	occurrence := event.StartsAt
+	occurrence := startLocal
 	for iter := 0; iter < maxIterations; iter++ {
 		// Stop if past range end
 		if occurrence.After(rangeEnd) {
@@ -128,12 +141,15 @@ func expandRecurrence(event Event, rangeStart, rangeEnd time.Time, exceptions []
 
 		// Check if this occurrence is within the range
 		if occurrenceEnd.After(rangeStart) && occurrence.Before(rangeEnd) {
+			// Emit in UTC: the instant is timezone-correct, while the representation
+			// and the date basis for the ID / exception match stay UTC as before.
+			occUTC := occurrence.UTC()
 			// Check if this occurrence is an exception (compare dates only)
-			if !isException(occurrence, exceptions) {
+			if !isException(occUTC, exceptions) {
 				inst := event
-				inst.StartsAt = occurrence
-				inst.EndsAt = occurrenceEnd
-				inst.ID = fmt.Sprintf("%s:%s", event.ID, occurrence.Format("2006-01-02"))
+				inst.StartsAt = occUTC
+				inst.EndsAt = occurrenceEnd.UTC()
+				inst.ID = fmt.Sprintf("%s:%s", event.ID, occUTC.Format("2006-01-02"))
 				parentID := event.ID
 				inst.RecurringEventID = &parentID
 				instances = append(instances, inst)
@@ -155,7 +171,7 @@ func expandRecurrence(event Event, rangeStart, rangeEnd time.Time, exceptions []
 			advanced := false
 			for tries := 0; tries < 120; tries++ {
 				monthStep += rule.Interval
-				if next, ok := monthlyOccurrence(event.StartsAt, monthStep); ok {
+				if next, ok := monthlyOccurrence(startLocal, monthStep); ok {
 					occurrence = next
 					advanced = true
 					break

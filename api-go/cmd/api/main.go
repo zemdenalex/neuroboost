@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	_ "time/tzdata" // embed the IANA tz database so recurrence DST handling works on any image
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
