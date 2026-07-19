@@ -89,12 +89,24 @@ function handleResizeComplete(
   drag: NonNullable<DragState> & { kind: 'resize-start' | 'resize-end' },
   onMoveOrResize: MoveCallback
 ): void {
-  const startMin = Math.min(drag.curMin, drag.otherEndMin);
-  const endMin = Math.max(drag.curMin, drag.otherEndMin);
-  
+  const MIN_SLOT_MS = MIN_SLOT_MIN * 60000;
+
+  // Prefer absolute UTC ms. The day-relative fallback cannot express a range
+  // crossing midnight (MD1/MD2) but stays correct for same-day resizes.
+  const anchorMs = drag.anchorMs ?? drag.dayUtc0 + drag.otherEndMin * 60000;
+  const cursorMs = drag.cursorMs ?? drag.dayUtc0 + drag.curMin * 60000;
+
+  // The dragged endpoint follows the cursor; the anchor never moves. Clamp a
+  // too-short drag instead of min/max-swapping, which used to silently move
+  // whichever endpoint the user was not holding.
+  const [startMs, endMs] =
+    drag.kind === 'resize-end'
+      ? [anchorMs, Math.max(cursorMs, anchorMs + MIN_SLOT_MS)]
+      : [Math.min(cursorMs, anchorMs - MIN_SLOT_MS), anchorMs];
+
   onMoveOrResize({
     id: drag.id,
-    startsAt: new Date(drag.dayUtc0 + startMin * 60000).toISOString(),
-    endsAt: new Date(drag.dayUtc0 + Math.max(startMin + MIN_SLOT_MIN, endMin) * 60000).toISOString(),
+    startsAt: new Date(startMs).toISOString(),
+    endsAt: new Date(endMs).toISOString(),
   });
 }

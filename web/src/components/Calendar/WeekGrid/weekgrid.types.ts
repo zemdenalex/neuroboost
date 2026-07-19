@@ -77,7 +77,22 @@ export interface DragMove {
   startY?: number;
 }
 
-export interface DragResizeStart {
+/**
+ * Absolute-time coordinates for a resize.
+ *
+ * `dayUtc0` + `otherEndMin`/`curMin` are day-relative and cannot express a range
+ * that crosses midnight — the cause of MD1/MD2. These carry the same two points
+ * in absolute UTC ms instead. Optional while producers are migrated; when absent
+ * the handler falls back to the day-relative fields.
+ */
+interface ResizeAbsolute {
+  /** The endpoint NOT being dragged. Must never move. */
+  anchorMs?: number;
+  /** Absolute time the cursor currently maps to, including its day column. */
+  cursorMs?: number;
+}
+
+export interface DragResizeStart extends ResizeAbsolute {
   kind: 'resize-start';
   dayUtc0: number;
   id: string;
@@ -85,7 +100,7 @@ export interface DragResizeStart {
   curMin: number;
 }
 
-export interface DragResizeEnd {
+export interface DragResizeEnd extends ResizeAbsolute {
   kind: 'resize-end';
   dayUtc0: number;
   id: string;
