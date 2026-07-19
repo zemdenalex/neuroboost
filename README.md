@@ -2,8 +2,8 @@
 
 > Calendar-first productivity app for neurodivergent users
 
-**Status:** v0.4.0 - Active Development  
-**Live:** [neuroboost.website](https://neuroboost.website)
+**Status:** v0.4.9 released · v0.4.10 in development  
+**Live:** [neuroboost.website](https://neuroboost.website) · **Staging:** [dev.neuroboost.website](https://dev.neuroboost.website)
 
 ---
 
@@ -64,31 +64,36 @@ neuroboost/
 
 ## Documentation
 
-- [Development Guide](docs/NEUROBOOST_DEV_GUIDE.md) - How to contribute
-- [Implementation Plan](docs/IMPLEMENTATION_PLAN.md) - Current roadmap
-- [GitHub Guide](docs/GITHUB_FEATURES_GUIDE.md) - Git workflow
-- [Feature List](docs/NeuroBoost_v0_4_0_Feature_List.md) - All planned features
+- [Roadmap](docs/ROADMAP.md) — **status source of truth**: versions, bug registry, what's next
+- [Progress](PROGRESS.md) — verified snapshot of what's built
+- [Codebase Map](docs/CODEBASE_MAP.md) — architecture and module guide
+- [CLAUDE.md](CLAUDE.md) — development conventions, commands, gotchas
 
 ---
 
-## Current Version: v0.4.0.x
+## Current Version
 
-### Done
-- ✅ Server infrastructure (Docker, Nginx, SSL)
-- ✅ PostgreSQL database with migrations
-- ✅ Authentication backend (Telegram + Email/Password)
-- ✅ JWT middleware
-- ✅ Health checks
+`main` runs **v0.4.9** (tagged 2026-04-24). `develop` holds the unreleased **v0.4.10** candidate.
 
-### In Progress
-- 🔧 Login page frontend
-- 🔧 Feedback system
-- 🔧 Admin panel
+### Built
+- ✅ Infrastructure — Docker, Nginx, SSL, CI/CD with per-branch auto-deploy
+- ✅ Auth — email/password + Telegram, JWT, admin roles
+- ✅ Calendar — week/day grid, drag to create/move/resize, recurring events (RRULE) with
+  exceptions, all-day and multi-day events, timezone-aware
+- ✅ Tasks — CRUD, priorities/contexts/energy, drag-to-schedule onto the calendar
+- ✅ Reflections, Planning, Kanban, Eisenhower, time-blocking
+- ✅ Pomodoro focus timer with cross-page widget and time logging
+- ✅ Onboarding & contextual help — first-run guidance, per-page help, 3 hint styles
+- ✅ Export / import, feedback system, admin panel
+- ✅ Bilingual UI (en + ru), Telegram bot
+
+### Known Broken
+- ❌ Multi-day event move/resize (MD1/MD2) — drag mapping breaks across day columns
+- ❌ Mobile calendar views (3-day, agenda, mini-month) — only swipe-day nav exists
 
 ### Next
-- 📋 Events CRUD
-- 📋 Tasks CRUD
-- 📋 Calendar UI port from v0.3.x
+- 📋 Fix multi-day event move/resize
+- 📋 Eisenhower decision helper, Kanban rework — see [Roadmap](docs/ROADMAP.md)
 
 ---
 
@@ -96,9 +101,11 @@ neuroboost/
 
 This is currently a solo project, but issues and suggestions are welcome!
 
-1. Check [Feature List](docs/NeuroBoost_v0_4_0_Feature_List.md) for planned work
+1. Check the [Roadmap](docs/ROADMAP.md) for planned work
 2. Open an issue to discuss before starting
-3. Follow the [Development Guide](docs/NEUROBOOST_DEV_GUIDE.md)
+3. Follow the conventions in [CLAUDE.md](CLAUDE.md)
+
+Work happens on `develop` (auto-deploys to staging), then merges to `main` for release.
 
 ---
 
