@@ -3,8 +3,6 @@ package auth
 import (
 	"context"
 	"time"
-
-	"github.com/golang-jwt/jwt/v5"
 )
 
 // User represents a user in the system
@@ -23,13 +21,6 @@ type User struct {
 	Settings    map[string]interface{} `json:"settings"`
 	CreatedAt   time.Time              `json:"created_at"`
 	LastLoginAt *time.Time             `json:"last_login_at,omitempty"`
-}
-
-type Claims struct {
-	UserID     int64  `json:"user_id"`
-	TelegramID int64  `json:"telegram_id"`
-	Username   string `json:"username"`
-	jwt.RegisteredClaims
 }
 
 // AuthResponse represents the response after successful authentication
