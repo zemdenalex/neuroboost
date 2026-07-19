@@ -83,8 +83,10 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
+      # Keep this pinned to the `packageManager` field in web/package.json.
+      # CI previously installed pnpm@9 against a pnpm@10 declaration.
       - name: Install pnpm
-        run: npm i -g pnpm@9
+        run: npm i -g pnpm@10.12.0
 
       - name: Install dependencies
         run: |
@@ -95,6 +97,11 @@ jobs:
         run: |
           cd web
           pnpm typecheck
+
+      - name: Run tests
+        run: |
+          cd web
+          pnpm test --run
 
       - name: Build
         run: |
