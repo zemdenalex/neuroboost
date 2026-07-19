@@ -262,7 +262,22 @@ func DeleteHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := deleteEvent(r.Context(), userID, eventID)
+	// A recurring instance arrives as "<parent uuid>:<date>", which is not a
+	// uuid and would fail the cast in deleteEvent. Resolve it to the parent row
+	// plus the scope the caller asked for.
+	targetID, occurrence, mode := resolveMutation(eventID, r.URL.Query().Get("scope"))
+
+	if mode == mutateOccurrence {
+		// Skip this one occurrence; the series itself is untouched.
+		if _, err := addException(r.Context(), userID, targetID, occurrence, true, nil); err != nil {
+			util.RespondError(w, http.StatusInternalServerError, "DELETE_ERROR", "Failed to delete occurrence")
+			return
+		}
+		util.RespondJSON(w, http.StatusOK, map[string]string{"message": "Occurrence deleted"})
+		return
+	}
+
+	err := deleteEvent(r.Context(), userID, targetID)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			util.RespondError(w, http.StatusNotFound, "NOT_FOUND", "Event not found")

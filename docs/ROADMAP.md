@@ -198,11 +198,38 @@ Not in the old bug registry — found by reading code, all verified with file:li
 
 | ID | Bug | Severity | Detail |
 |----|-----|----------|--------|
-| **R1** | **Mutating any recurring-event instance returns 500** | **High** | `expandRecurrence` assigns synthetic IDs `"<parentUUID>:2026-07-21"` (`events/recurrence.go:152`). No handler strips the suffix (`handlers.go:187,259,291`), and `event.id` is a Postgres `UUID` — so the cast fails and returns 500 (not `ErrNoRows`). Drag, Shift+Arrow, edit-save or delete on any recurring instance fails and the calendar snaps back. **Recurring events are effectively display-only.** `AddExceptionHandler` exists but the frontend never calls it — decide the instance-mutation story (exception + detached event) during v0.4.11. |
+| **R1** | **Mutating any recurring-event instance returns 500** — *in progress* | **High** | `expandRecurrence` assigns synthetic IDs `"<parentUUID>:2026-07-21"` (`events/recurrence.go:152`). No handler strips the suffix (`handlers.go:187,259,291`), and `event.id` is a Postgres `UUID` — so the cast fails and returns 500 (not `ErrNoRows`). Drag, Shift+Arrow, edit-save or delete on any recurring instance fails and the calendar snaps back. **Recurring events are effectively display-only.** `AddExceptionHandler` exists but the frontend never calls it — decide the instance-mutation story (exception + detached event) during v0.4.11. |
 | **T1** | `getTasks` casts snake_case JSON to a camelCase type | Medium | Go emits `estimated_minutes`/`due_date` (`tasks/types.go:37,39`); `getTasks` (`web/src/api/index.ts:161-168`) casts with **no conversion**. So `task.estimatedMinutes` is always `undefined` → `scheduleTask` always defaults to 60 min (`api/index.ts:208`). Same for `dueDate` reads off that array. |
 | **A1** | Two same-named `moveEvent` functions hit different endpoints | Medium | `api/events.ts` → `PATCH /events/:id/move`; `api/index.ts:135-137` → generic `PATCH /events/:id`. The calendar never calls the dedicated `/move`+`/resize` endpoints, so any move-specific backend logic is silently bypassed. |
 | **A2** | Two `NbEvent` interfaces | Low | `types/index.ts:66` (full) vs `weekgrid.types.ts:4` (subset, missing `recurringEventId`/`reflections`). Structural typing hides it until WeekGrid needs `recurringEventId` — which R1's fix will require. |
 | **D1** | Dead module `web/src/hooks/useEvents.ts` | Low | Zero consumers. Delete with the §Dead Code batch. |
+
+### R1 — agreed design (decided 2026-07-19)
+
+**Dialog offers two choices: "This event" and "All events".** "This and following" is
+deliberately out of scope — it needs series-splitting (set `UNTIL` on the original RRULE,
+create a new series, migrate exceptions past the split) whereas both chosen options use
+machinery that already exists. The dialog and the stored preference both carry a string value,
+so a third option can be added later without redesign.
+
+- **Dialog appears every time** until the user ticks **"Remember my choice"**.
+- The remembered value is **one global choice** applied to move, edit and delete alike,
+  exposed as a toggle in Settings.
+- Wire format: query parameter `scope=occurrence|series`. **An absent or unrecognised scope
+  falls back to `occurrence`** — the narrowest change. Defaulting to `series` would let a
+  dropped parameter silently rewrite every occurrence, which the user cannot undo.
+
+**Progress:**
+- ✅ `parseInstanceID` — splits `"<uuid>:<YYYY-MM-DD>"`, round-trip tested against
+  `expandRecurrence`'s real output so the formats cannot drift
+- ✅ `resolveMutation` — maps raw ID + scope to (target row, occurrence, mode)
+- ✅ `DeleteHandler` — "this event" writes a skip exception; "all events" deletes the series
+- ⬜ `UpdateHandler` / `MoveHandler` / `ResizeHandler` — the occurrence path needs
+  exception + **detached replacement event** (`addException` already takes a
+  `replacement_event_id`); the series path updates the parent row
+- ⬜ Frontend: the dialog, the `scope` parameter on every mutation call, Settings toggle
+- ⬜ `web/src/api` has **two** `moveEvent` functions (see A1) — make sure the one the calendar
+  actually calls is the one that gains `scope`
 
 ### Dead code — verified safe to delete
 `api-go/internal/auth/telegram.go` `VerifyTelegramAuth` (zero callers; live path is the private
