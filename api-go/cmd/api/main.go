@@ -115,6 +115,7 @@ func main() {
 		// Tasks
 		r.Get("/api/tasks", t.ListHandler)
 		r.Post("/api/tasks", t.CreateHandler)
+		r.Post("/api/tasks/batch", t.BatchCreateHandler)
 		r.Get("/api/tasks/{id}", t.GetHandler)
 		r.Patch("/api/tasks/{id}", t.UpdateHandler)
 		r.Delete("/api/tasks/{id}", t.DeleteHandler)

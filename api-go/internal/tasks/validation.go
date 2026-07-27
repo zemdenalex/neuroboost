@@ -1,6 +1,9 @@
 package tasks
 
-import "time"
+import (
+	"strings"
+	"time"
+)
 
 // validTimeRange reports whether end is strictly after start — no zero-length or
 // inverted scheduling windows (mirrors the events package's event-window rule).
@@ -35,6 +38,20 @@ func validCategory(c TaskCategory) bool {
 // validateTaskMutation checks the optional status/priority/category fields shared by
 // create and update requests. It returns an (errorCode, message) pair to respond with,
 // or ("", "") when every provided field is valid. Nil fields are not validated.
+// validateBatchRow checks one row of a batch create without touching the DB.
+// Returns ("", "") when the row is acceptable.
+func validateBatchRow(req CreateTaskRequest) (string, string) {
+	if strings.TrimSpace(req.Title) == "" {
+		return "MISSING_TITLE", "Title is required"
+	}
+	if req.DueDate != nil && *req.DueDate != "" {
+		if _, err := time.Parse(time.RFC3339, *req.DueDate); err != nil {
+			return "INVALID_DUE_DATE", "Invalid due date format"
+		}
+	}
+	return validateTaskMutation(req.Status, req.Priority, req.Category)
+}
+
 func validateTaskMutation(status *TaskStatus, priority *int, category *TaskCategory) (string, string) {
 	if status != nil && !validStatus(*status) {
 		return "INVALID_STATUS", "Invalid task status"

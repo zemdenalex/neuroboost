@@ -91,7 +91,18 @@ func CreateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Set defaults
+	task, err := insertTask(r.Context(), userID, req, dueDate)
+	if err != nil {
+		util.RespondError(w, http.StatusInternalServerError, "CREATE_ERROR", "Failed to create task")
+		return
+	}
+
+	util.RespondJSON(w, http.StatusCreated, task)
+}
+
+// insertTask applies the create defaults and writes one row. Shared by the
+// single-create and batch-create paths so the two cannot drift apart.
+func insertTask(ctx context.Context, userID string, req CreateTaskRequest, dueDate *time.Time) (*Task, error) {
 	status := StatusTodo
 	if req.Status != nil {
 		status = *req.Status
@@ -112,13 +123,64 @@ func CreateHandler(w http.ResponseWriter, r *http.Request) {
 		contexts = []string{}
 	}
 
-	task, err := createTask(r.Context(), userID, req, status, priority, dueDate, tags, contexts)
-	if err != nil {
-		util.RespondError(w, http.StatusInternalServerError, "CREATE_ERROR", "Failed to create task")
+	return createTask(ctx, userID, req, status, priority, dueDate, tags, contexts)
+}
+
+// BatchCreateHandler creates many tasks in one request.
+//
+// Rows are independent: valid rows are created and invalid rows come back with
+// their index. One bad line out of twenty must not discard the other nineteen —
+// for a paste-many flow, a full rollback would be hostile.
+func BatchCreateHandler(w http.ResponseWriter, r *http.Request) {
+	if db == nil {
+		util.RespondError(w, http.StatusInternalServerError, "DB_NOT_INITIALIZED", "Database not initialized")
 		return
 	}
 
-	util.RespondJSON(w, http.StatusCreated, task)
+	userID := middleware.UserIDFromContext(r.Context())
+	if userID == "" {
+		util.RespondError(w, http.StatusUnauthorized, "NOT_AUTHENTICATED", "Not authenticated")
+		return
+	}
+
+	var req BatchCreateRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		util.RespondError(w, http.StatusBadRequest, "INVALID_REQUEST", "Invalid request body")
+		return
+	}
+
+	if len(req.Tasks) == 0 {
+		util.RespondError(w, http.StatusBadRequest, "EMPTY_BATCH", "No tasks provided")
+		return
+	}
+	if len(req.Tasks) > MaxBatchTasks {
+		util.RespondError(w, http.StatusBadRequest, "BATCH_TOO_LARGE", "Too many tasks in one request")
+		return
+	}
+
+	resp := BatchCreateResponse{Tasks: []Task{}, Errors: []BatchRowError{}}
+	for i, row := range req.Tasks {
+		if code, msg := validateBatchRow(row); code != "" {
+			resp.Errors = append(resp.Errors, BatchRowError{Index: i, Code: code, Message: msg})
+			continue
+		}
+
+		var dueDate *time.Time
+		if row.DueDate != nil && *row.DueDate != "" {
+			// Already validated above, so this parse cannot fail.
+			parsed, _ := time.Parse(time.RFC3339, *row.DueDate)
+			dueDate = &parsed
+		}
+
+		task, err := insertTask(r.Context(), userID, row, dueDate)
+		if err != nil {
+			resp.Errors = append(resp.Errors, BatchRowError{Index: i, Code: "CREATE_ERROR", Message: "Failed to create task"})
+			continue
+		}
+		resp.Tasks = append(resp.Tasks, *task)
+	}
+
+	util.RespondJSON(w, http.StatusCreated, resp)
 }
 
 // GetHandler returns a single task

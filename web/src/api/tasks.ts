@@ -89,6 +89,25 @@ export async function createTask(data: CreateTaskRequest): Promise<Task> {
   return api.post<Task>('/tasks', data)
 }
 
+export interface BatchRowError {
+  index: number
+  code: string
+  message: string
+}
+
+export interface BatchCreateResponse {
+  tasks: Task[]
+  errors: BatchRowError[]
+}
+
+/**
+ * Create many tasks in one round-trip. Rows fail independently: valid rows are
+ * created and invalid ones come back in `errors` with their index.
+ */
+export async function createTasksBatch(tasks: CreateTaskRequest[]): Promise<BatchCreateResponse> {
+  return api.post<BatchCreateResponse>('/tasks/batch', { tasks })
+}
+
 export async function getTask(id: string): Promise<Task> {
   return api.get<Task>(`/tasks/${id}`)
 }

@@ -61,6 +61,31 @@ type CreateTaskRequest struct {
 	ParentID         *string       `json:"parent_id,omitempty"`
 }
 
+// BatchCreateRequest creates many tasks in one round-trip, so pasting a list
+// of twenty is one request rather than twenty.
+type BatchCreateRequest struct {
+	Tasks []CreateTaskRequest `json:"tasks"`
+}
+
+// BatchRowError reports a single row that could not be created.
+// Index is the row's position in the submitted Tasks slice.
+type BatchRowError struct {
+	Index   int    `json:"index"`
+	Code    string `json:"code"`
+	Message string `json:"message"`
+}
+
+// BatchCreateResponse carries the tasks that were created plus the rows that
+// failed. Rows are independent: one bad line does not discard a whole paste.
+type BatchCreateResponse struct {
+	Tasks  []Task          `json:"tasks"`
+	Errors []BatchRowError `json:"errors"`
+}
+
+// MaxBatchTasks caps one batch request, guarding against an accidental paste
+// of a very large document.
+const MaxBatchTasks = 100
+
 // UpdateTaskRequest represents the request to update a task
 type UpdateTaskRequest struct {
 	Title            *string       `json:"title,omitempty"`
