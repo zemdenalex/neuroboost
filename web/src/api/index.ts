@@ -1,3 +1,5 @@
+import { toTask, type RawTask } from './toTask';
+
 // HTTP client & token management
 export {
   api,
@@ -163,8 +165,9 @@ export async function getTasks(status?: string, priority?: number): Promise<impo
   if (status) params.append('status', status);
   if (priority !== undefined) params.append('priority', String(priority));
 
-  const response = await api.get<{ tasks: import('../types').Task[] } | import('../types').Task[]>(`/tasks?${params}`);
-  return Array.isArray(response) ? response : response.tasks || [];
+  const response = await api.get<{ tasks: RawTask[] } | RawTask[]>(`/tasks?${params}`);
+  const rows = Array.isArray(response) ? response : response.tasks || [];
+  return rows.map(toTask);
 }
 
 /** Create task with camelCase body */
