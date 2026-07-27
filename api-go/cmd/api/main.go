@@ -57,6 +57,7 @@ func main() {
 	pl.InitDB(db)
 	exp.InitDB(db)
 	rem.InitDB(db)
+	rem.InitService(log)
 
 	// The reminder worker runs for the life of the process: it needs both the
 	// pgx pool and the recurrence expander, so it cannot live in cron.
@@ -91,6 +92,17 @@ func main() {
 	// Feedback - create is public (with optional auth)
 	feedbackHandler := f.NewHandler(db)
 	r.Post("/api/feedback", feedbackHandler.Create)
+
+	// Service endpoints for the notifier bot. Guarded by a shared secret, NOT
+	// by network topology — the notifier runs on a foreign host, so this is a
+	// public endpoint returning every user's tg_id. Rate limit goes first so a
+	// flood of bad-token requests is cheap to reject.
+	r.Route("/api/svc", func(sr chi.Router) {
+		sr.Use(rem.RateLimitMiddleware())
+		sr.Use(rem.ServiceTokenMiddleware(cfg.ServiceToken))
+		sr.Get("/notifications/pending", rem.PendingHandler)
+		sr.Post("/notifications/{id}/ack", rem.AckHandler)
+	})
 
 	// Protected routes (JWT required)
 	r.Group(func(r chi.Router) {

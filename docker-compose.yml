@@ -30,6 +30,8 @@ services:
       API_PORT: 8080
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
       TELEGRAM_NOTIFICATION_BOT_TOKEN: ${TELEGRAM_NOTIFICATION_BOT_TOKEN}
+      # Guards /api/svc/*. Unset closes those endpoints with 503.
+      SERVICE_TOKEN: ${SERVICE_TOKEN}
       FRONTEND_URL: ${FRONTEND_URL:-https://neuroboost.website}
     depends_on:
       db:
