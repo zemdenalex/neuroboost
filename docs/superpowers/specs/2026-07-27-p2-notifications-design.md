@@ -107,8 +107,22 @@ CREATE UNIQUE INDEX idx_reminder_dedupe
 которую кто-то добавит, не прочитав этот абзац.
 
 ⚠️ Существующие строки `reminder` в проде: их нет (таблица никогда не заполнялась), но миграция
-всё равно обязана пережить непустую таблицу — `source_kind` добавляется nullable, бэкфилл
-`'EVENT'` там, где `event_id IS NOT NULL`, и только потом уникальный индекс.
+всё равно обязана пережить непустую таблицу. Порядок строго такой:
+
+1. `source_kind` добавляется **nullable** — иначе `ALTER` упал бы на непустой таблице;
+2. бэкфилл `'EVENT'` там, где `event_id IS NOT NULL`, `'TASK'` где `task_id IS NOT NULL`;
+3. `ALTER TABLE reminder ALTER COLUMN source_kind SET NOT NULL;`
+4. и только теперь уникальный индекс.
+
+🔴 **Шаг 3 обязателен, и его легко потерять.** Оставленный nullable `source_kind` вместе с
+`NULLS NOT DISTINCT` превращает NULL в **полноценное значение ключа дедупликации**: строка с
+`source_kind IS NULL` не конфликтует ни с `'EVENT'`, ни с `'TASK'` — то есть открывает ровно ту
+дыру, которую весь предыдущий абзац закрывает.
+
+Проверка схемы (`000001_baseline.up.sql:151-165`, сверено 2026-07-27): в таблице уже есть
+`user_id`, `event_id`, `minutes_before`, `remind_at`, `status`, `channel`, `message`, `sent_at` —
+все имена в этом разделе существуют, добавляем только `source_kind`, `task_id`,
+`occurrence_start`. Postgres — `16-alpine`, `NULLS NOT DISTINCT` доступен (PG15+).
 
 ### 4.3. Пресеты
 
