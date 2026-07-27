@@ -477,14 +477,23 @@ export default function Tasks() {
                           key={task.id}
                           className={`flex items-center gap-3 px-4 py-3 border-b border-zinc-800/50 last:border-b-0 transition-colors group ${selected.has(task.id) ? 'bg-blue-950/40' : 'hover:bg-zinc-800/30'}`}
                         >
-                          {/* Selection — Shift+click extends from the last plain click */}
+                          {/* Selection — Shift+click extends from the last plain click.
+                              Hidden at rest so the row shows ONE control and the
+                              "done" circle is unambiguous; it fades in on hover, on
+                              keyboard focus, and stays up for every row while a
+                              selection exists.
+                              Opacity rather than `hidden`: a display:none checkbox
+                              leaves the Tab order, which would make bulk selection
+                              unreachable without a mouse. */}
                           <input
                             type="checkbox"
                             checked={selected.has(task.id)}
                             onChange={() => {}}
                             onClick={(e) => handleRowSelect(task.id, e.shiftKey)}
                             aria-label={t('bulk.select', { title: task.title })}
-                            className="shrink-0 accent-blue-500"
+                            className={`shrink-0 accent-blue-500 transition-opacity focus-visible:opacity-100 ${
+                              selected.size > 0 ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100'
+                            }`}
                           />
                           {/* Status toggle */}
                           <button
