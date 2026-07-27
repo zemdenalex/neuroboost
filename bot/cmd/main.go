@@ -8,12 +8,14 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 
 	"github.com/zemdenalex/neuroboost-bot/internal/api"
 	"github.com/zemdenalex/neuroboost-bot/internal/config"
 	"github.com/zemdenalex/neuroboost-bot/internal/handlers"
+	"github.com/zemdenalex/neuroboost-bot/internal/notifier"
 	"github.com/zemdenalex/neuroboost-bot/internal/state"
 )
 
@@ -78,6 +80,10 @@ func main() {
 		bot.StopReceivingUpdates()
 		cancel()
 	}()
+
+	// Reminder delivery shares this process and this ctx, so it stops with the
+	// bot on SIGTERM rather than outliving it.
+	go notifier.Start(ctx, bot, apiClient, cfg.ServiceToken, time.Minute)
 
 	log.Println("Bot started, listening for updates...")
 	for {

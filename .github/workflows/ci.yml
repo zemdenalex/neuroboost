@@ -73,6 +73,16 @@ jobs:
           DATABASE_URL: postgres://test:test@localhost:5432/neuroboost_test?sslmode=disable
           JWT_SECRET: test-secret-minimum-32-characters-long
 
+      # bot/ is a SEPARATE Go module (github.com/zemdenalex/neuroboost-bot), so
+      # none of the api-go steps above compile it. Without this, a bot that does
+      # not build ships green and reminder delivery stops silently.
+      - name: Build and test bot
+        run: |
+          cd bot
+          go build ./...
+          go vet ./...
+          go test ./...
+
   frontend:
     runs-on: ubuntu-latest
     

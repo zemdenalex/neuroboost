@@ -73,6 +73,9 @@ services:
       - API_BASE=http://api:8080
       - BOT_PORT=3002
       - TIMEZONE=Europe/Moscow
+      # Same value as the API's SERVICE_TOKEN. Unset disables the notifier.
+      - SERVICE_TOKEN=${SERVICE_TOKEN}
+      - TELEGRAM_PROXY=${TELEGRAM_PROXY}
     depends_on:
       api:
         condition: service_healthy

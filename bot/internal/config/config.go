@@ -8,6 +8,9 @@ type Config struct {
 	BotPort       string
 	Timezone      string
 	ProxyURL      string // SOCKS5 or HTTP proxy for Telegram API (e.g. socks5://host:1080)
+	// ServiceToken authenticates the notifier against /api/svc. No default:
+	// unset means notifications stay off rather than failing every minute.
+	ServiceToken string
 }
 
 func Load() Config {
@@ -17,6 +20,7 @@ func Load() Config {
 		BotPort:       os.Getenv("BOT_PORT"),
 		Timezone:      os.Getenv("TIMEZONE"),
 		ProxyURL:      os.Getenv("TELEGRAM_PROXY"),
+		ServiceToken:  os.Getenv("SERVICE_TOKEN"),
 	}
 	if c.APIBase == "" {
 		c.APIBase = "http://localhost:8080"
