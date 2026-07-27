@@ -56,5 +56,18 @@
   "error.saveLayout": "Failed to save layout preference",
   "error.saveMobileNav": "Failed to save mobile navigation preference",
   "error.saveSettings": "Failed to save settings",
-  "error.languageFailed": "Failed to save language preference"
+  "error.languageFailed": "Failed to save language preference",
+  "quickTask": {
+    "title": "Quick task defaults",
+    "due": "Default due date",
+    "dueTomorrow": "Tomorrow",
+    "dueToday": "Today",
+    "dueNone": "No date",
+    "priority": "Default priority",
+    "estimate": "Default estimate, minutes",
+    "estimateNone": "no estimate",
+    "estimateHint": "Leave empty to create tasks without an estimate. Comparing this against logged time later shows how well you size your tasks.",
+    "inherit": "Inherit the page's active filters",
+    "inheritHint": "A new task picks up the tags and context you are currently filtering by, instead of the defaults above."
+  }
 }

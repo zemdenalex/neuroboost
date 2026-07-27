@@ -7,6 +7,7 @@ import { api } from '../../api/client'
 import { useMediaQuery } from '../../hooks/useMediaQuery'
 import { showToast } from '../../components/ui/Toast'
 import type { UserSettings } from '../../api/auth'
+import { resolveQuickTaskSettings, type QuickTaskSettings } from '../../lib/quickTask/settings'
 import {
   Clock,
   Globe,
@@ -16,6 +17,7 @@ import {
   AlertTriangle,
   LayoutGrid,
   Maximize,
+  Zap,
   Smartphone,
   Lightbulb,
 } from 'lucide-react'
@@ -45,6 +47,7 @@ export default function Settings() {
   const { t: tc } = useTranslation('common')
   const navigate = useNavigate()
   const { user, logout, updateSettings, updateProfile } = useAuthContext()
+  const [quickTask, setQuickTask] = useState<QuickTaskSettings>(() => resolveQuickTaskSettings(user?.settings))
   const isMobile = useMediaQuery('(max-width: 767px)')
   const [showConfirmLogout, setShowConfirmLogout] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -424,6 +427,87 @@ export default function Settings() {
                 {t('uiScale.reset')}
               </button>
             </div>
+          </div>
+        </section>
+
+        {/* Quick task defaults */}
+        <section className="bg-zinc-900 border border-zinc-800 rounded-lg p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <Zap className="w-5 h-5 text-zinc-400" />
+            <h2 className="text-lg font-mono font-semibold text-white">{t('quickTask.title')}</h2>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm text-zinc-400 mb-1" htmlFor="qt-due">{t('quickTask.due')}</label>
+              <select
+                id="qt-due"
+                value={quickTask.default_due}
+                onChange={(e) => {
+                  const value = e.target.value as QuickTaskSettings['default_due']
+                  setQuickTask(prev => ({ ...prev, default_due: value }))
+                  autoSaveSettings({ quick_task: { ...quickTask, default_due: value } })
+                }}
+                className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white font-mono text-sm focus:outline-none focus:border-blue-500"
+              >
+                <option value="tomorrow">{t('quickTask.dueTomorrow')}</option>
+                <option value="today">{t('quickTask.dueToday')}</option>
+                <option value="none">{t('quickTask.dueNone')}</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm text-zinc-400 mb-1" htmlFor="qt-priority">{t('quickTask.priority')}</label>
+              <select
+                id="qt-priority"
+                value={quickTask.default_priority}
+                onChange={(e) => {
+                  const value = Number(e.target.value)
+                  setQuickTask(prev => ({ ...prev, default_priority: value }))
+                  autoSaveSettings({ quick_task: { ...quickTask, default_priority: value } })
+                }}
+                className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white font-mono text-sm focus:outline-none focus:border-blue-500"
+              >
+                {[1, 2, 3, 4, 5].map(level => (
+                  <option key={level} value={level}>{level}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm text-zinc-400 mb-1" htmlFor="qt-estimate">{t('quickTask.estimate')}</label>
+              <input
+                id="qt-estimate"
+                type="number"
+                min="1"
+                value={quickTask.default_estimate_minutes ?? ''}
+                placeholder={t('quickTask.estimateNone')}
+                onChange={(e) => {
+                  const value = e.target.value === '' ? null : Number(e.target.value)
+                  setQuickTask(prev => ({ ...prev, default_estimate_minutes: value }))
+                  autoSaveSettings({ quick_task: { ...quickTask, default_estimate_minutes: value } })
+                }}
+                className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white font-mono text-sm focus:outline-none focus:border-blue-500"
+              />
+              <p className="mt-1 text-xs text-zinc-500">{t('quickTask.estimateHint')}</p>
+            </div>
+
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={quickTask.inherit_filters}
+                onChange={(e) => {
+                  const value = e.target.checked
+                  setQuickTask(prev => ({ ...prev, inherit_filters: value }))
+                  autoSaveSettings({ quick_task: { ...quickTask, inherit_filters: value } })
+                }}
+                className="mt-1 accent-blue-500"
+              />
+              <span>
+                <span className="block text-sm text-white">{t('quickTask.inherit')}</span>
+                <span className="block text-xs text-zinc-500">{t('quickTask.inheritHint')}</span>
+              </span>
+            </label>
           </div>
         </section>
 

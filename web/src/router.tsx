@@ -2,6 +2,8 @@ import { lazy, Suspense } from 'react'
 import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom'
 import { useAuthContext } from './contexts/AuthContext'
 import { Layout } from './components/Layout'
+import { QuickAddModal } from './components/QuickAdd/QuickAddModal'
+import { useGlobalQuickAdd } from './hooks/useGlobalQuickAdd'
 import { FeedbackButton } from './components/FeedbackButton'
 import { PomodoroWidget } from './components/Pomodoro/PomodoroWidget'
 import { PomodoroToasts } from './components/Pomodoro/PomodoroToasts'
@@ -71,6 +73,7 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 
 // Layout with feedback button and Suspense
 function AppLayout() {
+  const quickAdd = useGlobalQuickAdd()
   return (
     <>
       <Layout>
@@ -81,6 +84,7 @@ function AppLayout() {
       <PomodoroWidget />
       <PomodoroToasts />
       <FeedbackButton />
+      <QuickAddModal open={quickAdd.open} onClose={quickAdd.close} />
     </>
   )
 }
