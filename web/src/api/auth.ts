@@ -27,6 +27,13 @@ export interface UserSettings {
   features?: Record<string, boolean>
   quiet_hours_start?: string
   quiet_hours_end?: string
+  quick_task?: {
+    default_due?: 'today' | 'tomorrow' | 'none'
+    default_priority?: number
+    default_estimate_minutes?: number | null
+    inherit_filters?: boolean
+    keys?: Partial<Record<'submit' | 'submit_expanded' | 'expand' | 'global_capture' | 'indent' | 'outdent', string>>
+  }
 }
 
 export interface AuthResponse {
