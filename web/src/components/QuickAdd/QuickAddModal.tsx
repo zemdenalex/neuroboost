@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { X } from 'lucide-react'
 import { QuickAddRow } from './QuickAddRow'
 import { createTask, createTasksBatch, type CreateTaskRequest } from '../../api/tasks'
+import { announceTasksChanged } from '../../lib/quickTask/tasksChanged'
 
 interface QuickAddModalProps {
   open: boolean
@@ -56,8 +57,18 @@ export function QuickAddModal({ open, onClose }: QuickAddModalProps) {
 
         <QuickAddRow
           autoFocus
-          onCreate={(request: CreateTaskRequest) => createTask(request)}
-          onCreateMany={requests => createTasksBatch(requests)}
+          onCreate={async (request: CreateTaskRequest) => {
+            const created = await createTask(request)
+            // Tell the Tasks page, if it is mounted behind this overlay.
+            // Without this the row appears only after a reload.
+            announceTasksChanged()
+            return created
+          }}
+          onCreateMany={async requests => {
+            const result = await createTasksBatch(requests)
+            announceTasksChanged()
+            return result
+          }}
           onOpenFull={() => {
             // The full editor lives on the Tasks page; go there rather than
             // duplicating the whole form inside this overlay.

@@ -35,10 +35,21 @@ export function parseBinding(binding: string): Binding | null {
 }
 
 /**
- * Global capture shortcut (Ctrl+K by default, configurable in Settings).
+ * Whether this binding must stand down while the user is typing.
  *
- * Skips the shortcut while focus is in a text field so it can never eat what
- * the user is typing — including the quick-add row itself.
+ * Only bare bindings do. A shortcut carrying Ctrl or Alt is not a keystroke
+ * anyone is trying to type, so it has nothing to steal — and blanket-skipping
+ * every text field made the default Ctrl+K look broken on /tasks, which
+ * auto-focuses the quick-add row and therefore always has focus in an input.
+ *
+ * Shift alone does not count as a modifier here: Shift+N is just "N".
+ */
+export function shouldSkipInTextField(binding: Binding): boolean {
+  return !binding.ctrl && !binding.alt
+}
+
+/**
+ * Global capture shortcut (Ctrl+K by default, configurable in Settings).
  */
 export function useGlobalQuickAdd() {
   const { user } = useAuthContext()
@@ -51,7 +62,8 @@ export function useGlobalQuickAdd() {
     if (!binding) return
     const onKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null
-      if (target && (TEXT_ENTRY.has(target.tagName) || target.isContentEditable)) return
+      const inText = !!target && (TEXT_ENTRY.has(target.tagName) || target.isContentEditable)
+      if (inText && shouldSkipInTextField(binding)) return
       if (e.ctrlKey !== binding.ctrl || e.altKey !== binding.alt || e.shiftKey !== binding.shift) return
       if (e.key.toLowerCase() !== binding.key) return
       e.preventDefault()

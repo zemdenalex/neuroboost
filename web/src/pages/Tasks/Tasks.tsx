@@ -1,4 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
+import { onTasksChanged } from '../../lib/quickTask/tasksChanged'
+import { sortWithinPriority } from '../../lib/quickTask/sortTasks'
 import { useTranslation } from 'react-i18next'
 import { createInFlightGuard } from '../../lib/inFlightGuard'
 import {
@@ -60,20 +62,27 @@ export default function Tasks() {
   // Anchor for Shift+click range selection — the last row clicked without Shift.
   const selectionAnchor = useRef<string | null>(null)
 
-  // Fetch tasks
+  // Fetch tasks, and refetch whenever something outside this page creates one
+  // (the global Ctrl+K modal). Reloading rather than splicing in the response
+  // keeps one source of truth: the modal can create several tasks at once.
   useEffect(() => {
-    const fetchTasks = async () => {
-      setLoading(true)
+    let cancelled = false
+    const fetchTasks = async (showSpinner: boolean) => {
+      if (showSpinner) setLoading(true)
       try {
         const data = await listTasks()
-        setTasks(data)
+        if (!cancelled) setTasks(data)
       } catch (error) {
         console.error('Failed to fetch tasks:', error)
       } finally {
-        setLoading(false)
+        if (showSpinner && !cancelled) setLoading(false)
       }
     }
-    fetchTasks()
+    fetchTasks(true)
+    // No spinner on the refetch: the list is already on screen and flashing it
+    // to a loading state would be more disruptive than the update itself.
+    const off = onTasksChanged(() => fetchTasks(false))
+    return () => { cancelled = true; off() }
   }, [])
 
   // A filter or search change hides rows; keeping them selected would let a
@@ -109,7 +118,13 @@ export default function Tasks() {
         groups.get(priority)!.push(task)
       }
     }
-    
+
+    // Order inside a group was previously whatever the API returned, which at
+    // fifty tasks a day meant a list that reshuffled under the reader.
+    for (const [priority, list] of groups) {
+      groups.set(priority, sortWithinPriority(list))
+    }
+
     return groups
   }, [filteredTasks])
 
