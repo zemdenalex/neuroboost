@@ -1,9 +1,9 @@
 package events
 
 import (
-	_ "time/tzdata" // embed the IANA tz database so LoadLocation works on any host/CI image
 	"testing"
 	"time"
+	_ "time/tzdata" // embed the IANA tz database so LoadLocation works on any host/CI image
 )
 
 func mkEventTZ(id string, start time.Time, dur time.Duration, rrule, tz string) Event {

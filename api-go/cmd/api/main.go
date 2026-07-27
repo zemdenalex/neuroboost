@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
 	"os"
@@ -25,6 +26,7 @@ import (
 	p "neuroboost/api-go/internal/patterns"
 	pl "neuroboost/api-go/internal/planning"
 	rfl "neuroboost/api-go/internal/reflections"
+	rem "neuroboost/api-go/internal/reminders"
 	t "neuroboost/api-go/internal/tasks"
 )
 
@@ -54,6 +56,13 @@ func main() {
 	rfl.InitDB(db)
 	pl.InitDB(db)
 	exp.InitDB(db)
+	rem.InitDB(db)
+
+	// The reminder worker runs for the life of the process: it needs both the
+	// pgx pool and the recurrence expander, so it cannot live in cron.
+	workerCtx, stopWorker := context.WithCancel(context.Background())
+	defer stopWorker()
+	go rem.StartWorker(workerCtx, log)
 
 	// Initialize router
 	r := chi.NewRouter()
