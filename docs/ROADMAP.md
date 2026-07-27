@@ -66,9 +66,47 @@ See `docs/pending-release-v0.4.10.md` for the full commit-level breakdown.
    so expect a normal merge (possible trivial ROADMAP conflict).
 4. Tag `v0.4.10` on `main` → production deploys
 
-## Next Sprint: v0.4.11 — Multi-day Events
+## Next Sprint: v0.4.11 — Usable-for-daily-use (chosen 2026-07-27)
 
-**Chosen 2026-07-19.** Fixing an actually-broken feature before adding new ones.
+**Приоритеты переставлены Денисом.** Причина дословно: приложением нельзя пользоваться, потому что
+«не могу быстро создать много задач → меня не уведомляют → девушке приходится дублировать всё
+руками». Multi-day drag (прежний план v0.4.11, ниже) уходит в backlog: он ломает существующую
+фичу, но не мешает начать пользоваться приложением каждый день.
+
+| # | Тема | Статус |
+|---|------|--------|
+| **P1** | Быстрое создание и ведение задач | ✅ **Собрано 2026-07-27**, 11/11 задач плана, тесты 200 → 239 |
+| **P2** | Бот и уведомления | ⬜ Следующее |
+| **P3** | Общие события и календари | ⬜ После P2 |
+
+### P1 — что построено
+
+Спека: `docs/superpowers/specs/2026-07-27-p1-task-quick-capture-design.md`
+План: `docs/superpowers/plans/2026-07-27-p1-task-quick-capture.md`
+
+**Ноль миграций** — `task.parent_id`, `tags[]`, `contexts[]` и `"user".settings JSONB` уже были
+в схеме с `000001`/`000005`. Отдельной сущности «список задач» нет: список = задача с детьми.
+
+- Quick-add строка на `/tasks`, автофокус, `Enter` создаёт и **не уводит фокус**
+- Уровни полей 0→1→2 по `Ctrl+E`; `Enter` сабмитит только из title, из прочих полей — `Ctrl+Enter`
+- Дерево через `Alt+→` / `Alt+←` (**не `Tab`** — это keyboard trap, WCAG 2.1.2)
+- `POST /api/tasks/batch` с **частичным успехом** (валидные строки создаются, битые возвращаются
+  с индексом); фронт использует его для вставки нескольких строк из буфера
+- Закрытие в один клик с Undo-тостом; Shift+клик → массовое «Закрыть» / «На завтра»
+- Секция Settings: дефолтные срок, приоритет, оценка времени + «наследовать фильтры» (выкл.)
+- Глобальный `Ctrl+K` — тот же компонент в модалке
+
+**Известные ограничения P1** (проверено в браузере 2026-07-27):
+- `Ctrl+K` не срабатывает, пока фокус в текстовом поле — намеренно, чтобы не съедать набор
+- Задача, созданная через `Ctrl+K`, не появляется в списке `/tasks` без перезагрузки
+- В строке задачи два чекбокса: выделение и «выполнено» — вопрос дизайна, не решён
+- **T1 починен** — `getTasks` теперь конвертирует snake_case → camelCase (`web/src/api/toTask.ts`),
+  из-за чего перетаскивание задачи в календарь больше не ставит всем подряд 60 минут
+
+## Backlog: Multi-day Events (был v0.4.11)
+
+**Chosen 2026-07-19, superseded 2026-07-27** (см. выше — приоритеты P1/P2/P3). Анализ ниже
+остаётся верным и готовым к работе; изменился только порядок.
 Root cause established by code audit — this is a **contained coordinate-system fix, not a
 state-machine redesign**. The discriminated union in `weekgrid.types.ts:47-94` is sound; keep it.
 
@@ -199,7 +237,7 @@ Not in the old bug registry — found by reading code, all verified with file:li
 | ID | Bug | Severity | Detail |
 |----|-----|----------|--------|
 | **R1** | **Mutating any recurring-event instance returns 500** — *in progress* | **High** | `expandRecurrence` assigns synthetic IDs `"<parentUUID>:2026-07-21"` (`events/recurrence.go:152`). No handler strips the suffix (`handlers.go:187,259,291`), and `event.id` is a Postgres `UUID` — so the cast fails and returns 500 (not `ErrNoRows`). Drag, Shift+Arrow, edit-save or delete on any recurring instance fails and the calendar snaps back. **Recurring events are effectively display-only.** `AddExceptionHandler` exists but the frontend never calls it — decide the instance-mutation story (exception + detached event) during v0.4.11. |
-| **T1** | `getTasks` casts snake_case JSON to a camelCase type | Medium | Go emits `estimated_minutes`/`due_date` (`tasks/types.go:37,39`); `getTasks` (`web/src/api/index.ts:161-168`) casts with **no conversion**. So `task.estimatedMinutes` is always `undefined` → `scheduleTask` always defaults to 60 min (`api/index.ts:208`). Same for `dueDate` reads off that array. |
+| ~~**T1**~~ | ~~`getTasks` casts snake_case JSON to a camelCase type~~ — **ПОЧИНЕНО 2026-07-27** (`web/src/api/toTask.ts` + тесты) | ~~Medium~~ | Go emits `estimated_minutes`/`due_date` (`tasks/types.go:37,39`); `getTasks` (`web/src/api/index.ts:161-168`) casts with **no conversion**. So `task.estimatedMinutes` is always `undefined` → `scheduleTask` always defaults to 60 min (`api/index.ts:208`). Same for `dueDate` reads off that array. |
 | **A1** | Two same-named `moveEvent` functions hit different endpoints | Medium | `api/events.ts` → `PATCH /events/:id/move`; `api/index.ts:135-137` → generic `PATCH /events/:id`. The calendar never calls the dedicated `/move`+`/resize` endpoints, so any move-specific backend logic is silently bypassed. |
 | **A2** | Two `NbEvent` interfaces | Low | `types/index.ts:66` (full) vs `weekgrid.types.ts:4` (subset, missing `recurringEventId`/`reflections`). Structural typing hides it until WeekGrid needs `recurringEventId` — which R1's fix will require. |
 | **D1** | Dead module `web/src/hooks/useEvents.ts` | Low | Zero consumers. Delete with the §Dead Code batch. |
