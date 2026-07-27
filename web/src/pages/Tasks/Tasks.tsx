@@ -17,14 +17,20 @@ import {
   Filter,
   CalendarPlus,
 } from 'lucide-react'
+import { QuickAddRow } from '../../components/QuickAdd'
+import { showToast } from '../../components/ui/Toast'
+import { selectRange } from '../../lib/quickTask/selectRange'
+import { startOfLocalDay } from '../../lib/quickTask/localDay'
 import {
   listTasks,
   createTask,
+  createTasksBatch,
   updateTask,
   deleteTask,
   scheduleTask,
   Task,
   TaskStatus,
+  CreateTaskRequest,
   PRIORITY_LABELS,
   PRIORITY_COLORS,
   CONTEXT_ICONS,
@@ -50,6 +56,9 @@ export default function Tasks() {
   const [search, setSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState<TaskStatus | 'ALL'>('ALL')
   const [expandedGroups, setExpandedGroups] = useState<Set<number>>(new Set([1, 2, 3, 4, 5]))
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  // Anchor for Shift+click range selection — the last row clicked without Shift.
+  const selectionAnchor = useRef<string | null>(null)
 
   // Fetch tasks
   useEffect(() => {
@@ -66,6 +75,13 @@ export default function Tasks() {
     }
     fetchTasks()
   }, [])
+
+  // A filter or search change hides rows; keeping them selected would let a
+  // bulk action hit tasks Denis cannot see.
+  useEffect(() => {
+    setSelected(new Set())
+    selectionAnchor.current = null
+  }, [filterStatus, search])
 
   // Clear any stale editor error whenever the editor opens or closes, so a
   // previous failure never lingers on the next open.
@@ -110,13 +126,31 @@ export default function Tasks() {
     })
   }
 
-  const handleStatusToggle = async (task: Task) => {
-    const newStatus: TaskStatus = task.status === 'DONE' ? 'TODO' : 'DONE'
+  // Closing a task is the most repeated action of the day, so it is optimistic:
+  // the checkbox must not wait on the network. A failure rolls the row back.
+  const setStatus = async (task: Task, next: TaskStatus) => {
+    const previous = task.status
+    setTasks(prev => prev.map(t => (t.id === task.id ? { ...t, status: next } : t)))
     try {
-      const updated = await updateTask(task.id, { status: newStatus })
-      setTasks(prev => prev.map(t => t.id === updated.id ? updated : t))
+      const updated = await updateTask(task.id, { status: next })
+      setTasks(prev => prev.map(t => (t.id === updated.id ? updated : t)))
+      return true
     } catch (error) {
       console.error('Failed to update task:', error)
+      setTasks(prev => prev.map(t => (t.id === task.id ? { ...t, status: previous } : t)))
+      return false
+    }
+  }
+
+  const handleStatusToggle = async (task: Task) => {
+    const previous = task.status
+    const next: TaskStatus = previous === 'DONE' ? 'TODO' : 'DONE'
+    const ok = await setStatus(task, next)
+    if (ok && next === 'DONE') {
+      showToast(t('toast.closed', { title: task.title }), {
+        label: t('toast.undo'),
+        onClick: () => void setStatus({ ...task, status: next }, previous),
+      })
     }
   }
 
@@ -188,6 +222,13 @@ export default function Tasks() {
       try {
         await deleteTask(editingTask.id)
         setTasks(prev => prev.filter(t => t.id !== editingTask.id))
+        // A deleted id left in the selection makes the bulk bar count rows
+        // that no longer exist.
+        setSelected(prev => {
+          const next = new Set(prev)
+          next.delete(editingTask.id!)
+          return next
+        })
         setShowEditor(false)
         setEditingTask(null)
       } catch (error) {
@@ -195,6 +236,69 @@ export default function Tasks() {
         setEditorError(t('error.deleteFailed'))
       }
     }
+  }
+
+  // Quick-add path: no modal, no reload — the created task is prepended so the
+  // list reflects it before the next title is typed.
+  async function handleQuickCreate(request: CreateTaskRequest): Promise<Task> {
+    const created = await createTask(request)
+    setTasks(prev => [created, ...prev])
+    return created
+  }
+
+  // Multi-line paste: one request for the whole list, rows failing independently.
+  async function handleQuickCreateMany(requests: CreateTaskRequest[]) {
+    const result = await createTasksBatch(requests)
+    setTasks(prev => [...result.tasks, ...prev])
+    return result
+  }
+
+  // Rows in the order they are rendered, so a Shift+click range matches what
+  // is on screen rather than the order the data happens to be in.
+  const visibleIds = useMemo(
+    () => Array.from(tasksByPriority.values()).flat().map(task => task.id),
+    [tasksByPriority],
+  )
+
+  const handleRowSelect = (taskId: string, shiftKey: boolean) => {
+    setSelected(prev => {
+      const next = new Set(prev)
+      if (shiftKey && selectionAnchor.current) {
+        for (const id of selectRange(visibleIds, selectionAnchor.current, taskId)) next.add(id)
+        return next
+      }
+      if (next.has(taskId)) next.delete(taskId)
+      else next.add(taskId)
+      selectionAnchor.current = taskId
+      return next
+    })
+  }
+
+  const selectedTasks = () => tasks.filter(task => selected.has(task.id))
+
+  const handleBulkClose = async () => {
+    const batch = selectedTasks().filter(task => task.status !== 'DONE')
+    setSelected(new Set())
+    await Promise.all(batch.map(task => setStatus(task, 'DONE')))
+    if (batch.length > 0) showToast(t('toast.bulkClosed', { count: batch.length }))
+  }
+
+  const handleBulkTomorrow = async () => {
+    const batch = selectedTasks()
+    setSelected(new Set())
+    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone
+    const due = startOfLocalDay(new Date(), timeZone, 1).toISOString()
+    await Promise.all(
+      batch.map(async task => {
+        try {
+          const updated = await updateTask(task.id, { due_date: due })
+          setTasks(prev => prev.map(t => (t.id === updated.id ? updated : t)))
+        } catch (error) {
+          console.error('Failed to move task:', error)
+        }
+      }),
+    )
+    if (batch.length > 0) showToast(t('toast.bulkMoved', { count: batch.length }))
   }
 
   const stats = useMemo(() => ({
@@ -273,6 +377,41 @@ export default function Tasks() {
 
         {/* Task List */}
         <div className="flex-1 overflow-y-auto p-6 space-y-4">
+          {selected.size > 0 && (
+            <div className="flex items-center gap-3 rounded-lg border border-blue-900 bg-blue-950/40 px-4 py-2">
+              <span className="font-mono text-sm text-blue-200">{t('bulk.count', { count: selected.size })}</span>
+              <button
+                type="button"
+                onClick={() => void handleBulkClose()}
+                className="rounded border border-blue-800 px-3 py-1 font-mono text-sm text-blue-100 hover:border-blue-500"
+              >
+                {t('bulk.close')}
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleBulkTomorrow()}
+                className="rounded border border-blue-800 px-3 py-1 font-mono text-sm text-blue-100 hover:border-blue-500"
+              >
+                {t('bulk.tomorrow')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelected(new Set())}
+                className="ml-auto font-mono text-sm text-zinc-400 hover:text-zinc-100"
+              >
+                {t('bulk.clear')}
+              </button>
+            </div>
+          )}
+          <QuickAddRow
+            autoFocus
+            onCreate={handleQuickCreate}
+            onCreateMany={handleQuickCreateMany}
+            onOpenFull={(draft) => {
+              setEditingTask({ contexts: [], tags: [], ...draft })
+              setShowEditor(true)
+            }}
+          />
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="w-8 h-8 text-zinc-400 animate-spin" />
@@ -321,8 +460,17 @@ export default function Tasks() {
                       {priorityTasks.map(task => (
                         <div
                           key={task.id}
-                          className="flex items-center gap-3 px-4 py-3 border-b border-zinc-800/50 last:border-b-0 hover:bg-zinc-800/30 transition-colors group"
+                          className={`flex items-center gap-3 px-4 py-3 border-b border-zinc-800/50 last:border-b-0 transition-colors group ${selected.has(task.id) ? 'bg-blue-950/40' : 'hover:bg-zinc-800/30'}`}
                         >
+                          {/* Selection — Shift+click extends from the last plain click */}
+                          <input
+                            type="checkbox"
+                            checked={selected.has(task.id)}
+                            onChange={() => {}}
+                            onClick={(e) => handleRowSelect(task.id, e.shiftKey)}
+                            aria-label={t('bulk.select', { title: task.title })}
+                            className="shrink-0 accent-blue-500"
+                          />
                           {/* Status toggle */}
                           <button
                             data-hint="tasks.complete"
