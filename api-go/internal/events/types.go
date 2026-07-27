@@ -4,23 +4,27 @@ import "time"
 
 // Event represents a calendar event
 type Event struct {
-	ID          string     `json:"id"`
-	UserID      string     `json:"user_id"`
-	Title       string     `json:"title"`
-	Description *string    `json:"description,omitempty"`
-	StartsAt    time.Time  `json:"starts_at"`
-	EndsAt      time.Time  `json:"ends_at"`
-	AllDay      bool       `json:"all_day"`
-	Rrule       *string    `json:"rrule,omitempty"`
-	Timezone    string     `json:"timezone"`
-	Location    *string    `json:"location,omitempty"`
-	Color       *string    `json:"color,omitempty"`
-	Tags        []string   `json:"tags"`
-	TaskID      *string    `json:"task_id,omitempty"`
-	IsWorkEvent      bool       `json:"is_work_event"`
-	RecurringEventID *string    `json:"recurring_event_id,omitempty"`
-	CreatedAt        time.Time  `json:"created_at"`
-	UpdatedAt        time.Time  `json:"updated_at"`
+	ID          string    `json:"id"`
+	UserID      string    `json:"user_id"`
+	Title       string    `json:"title"`
+	Description *string   `json:"description,omitempty"`
+	StartsAt    time.Time `json:"starts_at"`
+	EndsAt      time.Time `json:"ends_at"`
+	AllDay      bool      `json:"all_day"`
+	Rrule       *string   `json:"rrule,omitempty"`
+	Timezone    string    `json:"timezone"`
+	Location    *string   `json:"location,omitempty"`
+	Color       *string   `json:"color,omitempty"`
+	Tags        []string  `json:"tags"`
+	// ReminderOffsets holds minutes-before-start for each reminder. Stored on
+	// the event rather than as pre-generated rows: a daily event with five
+	// offsets would otherwise be 1825 rows a year.
+	ReminderOffsets  []int     `json:"reminder_offsets"`
+	TaskID           *string   `json:"task_id,omitempty"`
+	IsWorkEvent      bool      `json:"is_work_event"`
+	RecurringEventID *string   `json:"recurring_event_id,omitempty"`
+	CreatedAt        time.Time `json:"created_at"`
+	UpdatedAt        time.Time `json:"updated_at"`
 }
 
 // CreateEventRequest represents the request to create an event
@@ -35,23 +39,28 @@ type CreateEventRequest struct {
 	Location    *string  `json:"location,omitempty"`
 	Color       *string  `json:"color,omitempty"`
 	Tags        []string `json:"tags,omitempty"`
-	TaskID      *string  `json:"task_id,omitempty"`
-	IsWorkEvent *bool    `json:"is_work_event,omitempty"`
+	// Pointer, not a bare slice: an absent field means "apply the user's
+	// default preset", an explicitly empty array means "deliberately no
+	// reminders". A []int cannot tell those apart.
+	ReminderOffsets *[]int  `json:"reminder_offsets,omitempty"`
+	TaskID          *string `json:"task_id,omitempty"`
+	IsWorkEvent     *bool   `json:"is_work_event,omitempty"`
 }
 
 // UpdateEventRequest represents the request to update an event
 type UpdateEventRequest struct {
-	Title       *string  `json:"title,omitempty"`
-	Description *string  `json:"description,omitempty"`
-	StartsAt    *string  `json:"starts_at,omitempty"`
-	EndsAt      *string  `json:"ends_at,omitempty"`
-	AllDay      *bool    `json:"all_day,omitempty"`
-	Rrule       *string  `json:"rrule,omitempty"`
-	Timezone    *string  `json:"timezone,omitempty"`
-	Location    *string  `json:"location,omitempty"`
-	Color       *string  `json:"color,omitempty"`
-	Tags        []string `json:"tags,omitempty"`
-	IsWorkEvent *bool    `json:"is_work_event,omitempty"`
+	Title           *string  `json:"title,omitempty"`
+	Description     *string  `json:"description,omitempty"`
+	StartsAt        *string  `json:"starts_at,omitempty"`
+	EndsAt          *string  `json:"ends_at,omitempty"`
+	AllDay          *bool    `json:"all_day,omitempty"`
+	Rrule           *string  `json:"rrule,omitempty"`
+	Timezone        *string  `json:"timezone,omitempty"`
+	Location        *string  `json:"location,omitempty"`
+	Color           *string  `json:"color,omitempty"`
+	Tags            []string `json:"tags,omitempty"`
+	ReminderOffsets *[]int   `json:"reminder_offsets,omitempty"`
+	IsWorkEvent     *bool    `json:"is_work_event,omitempty"`
 }
 
 // MoveEventRequest represents a drag-and-drop move operation

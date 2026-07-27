@@ -455,7 +455,8 @@ func listEvents(ctx context.Context, userID string, start, end time.Time) ([]Eve
 	rows, err := db.Pool.Query(ctx, `
 		SELECT id, user_id, title, description, starts_at, ends_at, all_day, rrule,
 		       COALESCE(timezone, 'Europe/Moscow'), location, color, COALESCE(tags, '{}'),
-		       task_id, COALESCE(is_work_event, true), created_at, updated_at
+		       task_id, COALESCE(is_work_event, true), created_at, updated_at,
+		          COALESCE(reminder_offsets, '{}')
 		FROM event
 		WHERE user_id = $1
 		  AND (
@@ -476,7 +477,7 @@ func listEvents(ctx context.Context, userID string, start, end time.Time) ([]Eve
 		err := rows.Scan(
 			&e.ID, &e.UserID, &e.Title, &e.Description, &e.StartsAt, &e.EndsAt,
 			&e.AllDay, &e.Rrule, &e.Timezone, &e.Location, &e.Color, &tags,
-			&e.TaskID, &e.IsWorkEvent, &e.CreatedAt, &e.UpdatedAt,
+			&e.TaskID, &e.IsWorkEvent, &e.CreatedAt, &e.UpdatedAt, &e.ReminderOffsets,
 		)
 		if err != nil {
 			return nil, err
@@ -496,16 +497,25 @@ func createEvent(ctx context.Context, userID string, req CreateEventRequest, sta
 	var e Event
 	var resultTags []string
 
+	// An absent field is an empty list for now. Applying the user's default
+	// reminder preset here is deliberately deferred until the settings editor
+	// exists — see the plan's self-review.
+	reminderOffsets := []int{}
+	if req.ReminderOffsets != nil {
+		reminderOffsets = *req.ReminderOffsets
+	}
+
 	err := db.Pool.QueryRow(ctx, `
-		INSERT INTO event (user_id, title, description, starts_at, ends_at, all_day, rrule, timezone, location, color, tags, task_id, is_work_event)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+		INSERT INTO event (user_id, title, description, starts_at, ends_at, all_day, rrule, timezone, location, color, tags, task_id, is_work_event, reminder_offsets)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
 		RETURNING id, user_id, title, description, starts_at, ends_at, all_day, rrule, 
 		          COALESCE(timezone, 'Europe/Moscow'), location, color, COALESCE(tags, '{}'), 
-		          task_id, COALESCE(is_work_event, true), created_at, updated_at
-	`, userID, req.Title, req.Description, startsAt, endsAt, req.AllDay, req.Rrule, timezone, req.Location, req.Color, tags, req.TaskID, isWorkEvent).Scan(
+		          task_id, COALESCE(is_work_event, true), created_at, updated_at,
+		          COALESCE(reminder_offsets, '{}')
+	`, userID, req.Title, req.Description, startsAt, endsAt, req.AllDay, req.Rrule, timezone, req.Location, req.Color, tags, req.TaskID, isWorkEvent, reminderOffsets).Scan(
 		&e.ID, &e.UserID, &e.Title, &e.Description, &e.StartsAt, &e.EndsAt,
 		&e.AllDay, &e.Rrule, &e.Timezone, &e.Location, &e.Color, &resultTags,
-		&e.TaskID, &e.IsWorkEvent, &e.CreatedAt, &e.UpdatedAt,
+		&e.TaskID, &e.IsWorkEvent, &e.CreatedAt, &e.UpdatedAt, &e.ReminderOffsets,
 	)
 
 	if err != nil {
@@ -523,13 +533,14 @@ func getEvent(ctx context.Context, userID, eventID string) (*Event, error) {
 	err := db.Pool.QueryRow(ctx, `
 		SELECT id, user_id, title, description, starts_at, ends_at, all_day, rrule, 
 		       COALESCE(timezone, 'Europe/Moscow'), location, color, COALESCE(tags, '{}'), 
-		       task_id, COALESCE(is_work_event, true), created_at, updated_at
+		       task_id, COALESCE(is_work_event, true), created_at, updated_at,
+		          COALESCE(reminder_offsets, '{}')
 		FROM event
 		WHERE id = $1 AND user_id = $2
 	`, eventID, userID).Scan(
 		&e.ID, &e.UserID, &e.Title, &e.Description, &e.StartsAt, &e.EndsAt,
 		&e.AllDay, &e.Rrule, &e.Timezone, &e.Location, &e.Color, &tags,
-		&e.TaskID, &e.IsWorkEvent, &e.CreatedAt, &e.UpdatedAt,
+		&e.TaskID, &e.IsWorkEvent, &e.CreatedAt, &e.UpdatedAt, &e.ReminderOffsets,
 	)
 
 	if err != nil {
@@ -604,6 +615,11 @@ func updateEvent(ctx context.Context, userID, eventID string, req UpdateEventReq
 		args = append(args, req.Tags)
 		argNum++
 	}
+	if req.ReminderOffsets != nil {
+		updates = append(updates, fmt.Sprintf("reminder_offsets = $%d", argNum))
+		args = append(args, *req.ReminderOffsets)
+		argNum++
+	}
 	if req.IsWorkEvent != nil {
 		updates = append(updates, fmt.Sprintf("is_work_event = $%d", argNum))
 		args = append(args, *req.IsWorkEvent)
@@ -622,7 +638,8 @@ func updateEvent(ctx context.Context, userID, eventID string, req UpdateEventReq
 		WHERE id = $%d AND user_id = $%d
 		RETURNING id, user_id, title, description, starts_at, ends_at, all_day, rrule, 
 		          COALESCE(timezone, 'Europe/Moscow'), location, color, COALESCE(tags, '{}'), 
-		          task_id, COALESCE(is_work_event, true), created_at, updated_at
+		          task_id, COALESCE(is_work_event, true), created_at, updated_at,
+		          COALESCE(reminder_offsets, '{}')
 	`, strings.Join(updates, ", "), argNum, argNum+1)
 
 	var e Event
@@ -631,7 +648,7 @@ func updateEvent(ctx context.Context, userID, eventID string, req UpdateEventReq
 	err := db.Pool.QueryRow(ctx, query, args...).Scan(
 		&e.ID, &e.UserID, &e.Title, &e.Description, &e.StartsAt, &e.EndsAt,
 		&e.AllDay, &e.Rrule, &e.Timezone, &e.Location, &e.Color, &tags,
-		&e.TaskID, &e.IsWorkEvent, &e.CreatedAt, &e.UpdatedAt,
+		&e.TaskID, &e.IsWorkEvent, &e.CreatedAt, &e.UpdatedAt, &e.ReminderOffsets,
 	)
 
 	if err != nil {
@@ -667,11 +684,12 @@ func moveEvent(ctx context.Context, userID, eventID string, startsAt, endsAt tim
 		WHERE id = $1 AND user_id = $2
 		RETURNING id, user_id, title, description, starts_at, ends_at, all_day, rrule, 
 		          COALESCE(timezone, 'Europe/Moscow'), location, color, COALESCE(tags, '{}'), 
-		          task_id, COALESCE(is_work_event, true), created_at, updated_at
+		          task_id, COALESCE(is_work_event, true), created_at, updated_at,
+		          COALESCE(reminder_offsets, '{}')
 	`, eventID, userID, startsAt, endsAt).Scan(
 		&e.ID, &e.UserID, &e.Title, &e.Description, &e.StartsAt, &e.EndsAt,
 		&e.AllDay, &e.Rrule, &e.Timezone, &e.Location, &e.Color, &tags,
-		&e.TaskID, &e.IsWorkEvent, &e.CreatedAt, &e.UpdatedAt,
+		&e.TaskID, &e.IsWorkEvent, &e.CreatedAt, &e.UpdatedAt, &e.ReminderOffsets,
 	)
 
 	if err != nil {
@@ -691,11 +709,12 @@ func resizeEvent(ctx context.Context, userID, eventID string, endsAt time.Time) 
 		WHERE id = $1 AND user_id = $2
 		RETURNING id, user_id, title, description, starts_at, ends_at, all_day, rrule, 
 		          COALESCE(timezone, 'Europe/Moscow'), location, color, COALESCE(tags, '{}'), 
-		          task_id, COALESCE(is_work_event, true), created_at, updated_at
+		          task_id, COALESCE(is_work_event, true), created_at, updated_at,
+		          COALESCE(reminder_offsets, '{}')
 	`, eventID, userID, endsAt).Scan(
 		&e.ID, &e.UserID, &e.Title, &e.Description, &e.StartsAt, &e.EndsAt,
 		&e.AllDay, &e.Rrule, &e.Timezone, &e.Location, &e.Color, &tags,
-		&e.TaskID, &e.IsWorkEvent, &e.CreatedAt, &e.UpdatedAt,
+		&e.TaskID, &e.IsWorkEvent, &e.CreatedAt, &e.UpdatedAt, &e.ReminderOffsets,
 	)
 
 	if err != nil {

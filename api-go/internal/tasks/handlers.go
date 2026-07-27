@@ -351,7 +351,8 @@ func listTasks(ctx context.Context, userID, status, category, taskContext string
 	query := `
 		SELECT id, user_id, title, description, status, category, priority,
 		       estimated_minutes, due_date, COALESCE(tags, '{}'), COALESCE(contexts, '{}'),
-		       energy, parent_id, completed_at, created_at, updated_at, actual_minutes
+		       energy, parent_id, completed_at, created_at, updated_at, actual_minutes,
+		          COALESCE(reminder_offsets, '{}')
 		FROM task
 		WHERE user_id = $1
 	`
@@ -392,6 +393,7 @@ func listTasks(ctx context.Context, userID, status, category, taskContext string
 			&t.ID, &t.UserID, &t.Title, &t.Description, &t.Status, &t.Category,
 			&t.Priority, &t.EstimatedMinutes, &t.DueDate, &tags, &contexts,
 			&t.Energy, &t.ParentID, &t.CompletedAt, &t.CreatedAt, &t.UpdatedAt, &t.ActualMinutes,
+			&t.ReminderOffsets,
 		)
 		if err != nil {
 			return nil, err
@@ -412,16 +414,25 @@ func createTask(ctx context.Context, userID string, req CreateTaskRequest, statu
 	var t Task
 	var resultTags, resultContexts []string
 
+	// Absent means an empty list. Applying the user's default reminder preset
+	// is deferred until the settings editor exists — see the plan's self-review.
+	reminderOffsets := []int{}
+	if req.ReminderOffsets != nil {
+		reminderOffsets = *req.ReminderOffsets
+	}
+
 	err := db.Pool.QueryRow(ctx, `
-		INSERT INTO task (user_id, title, description, status, category, priority, estimated_minutes, due_date, tags, contexts, energy, parent_id)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+		INSERT INTO task (user_id, title, description, status, category, priority, estimated_minutes, due_date, tags, contexts, energy, parent_id, reminder_offsets)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
 		RETURNING id, user_id, title, description, status, category, priority,
 		          estimated_minutes, due_date, COALESCE(tags, '{}'), COALESCE(contexts, '{}'),
-		          energy, parent_id, completed_at, created_at, updated_at, actual_minutes
-	`, userID, req.Title, req.Description, status, req.Category, priority, req.EstimatedMinutes, dueDate, tags, contexts, req.Energy, req.ParentID).Scan(
+		          energy, parent_id, completed_at, created_at, updated_at, actual_minutes,
+		          COALESCE(reminder_offsets, '{}')
+	`, userID, req.Title, req.Description, status, req.Category, priority, req.EstimatedMinutes, dueDate, tags, contexts, req.Energy, req.ParentID, reminderOffsets).Scan(
 		&t.ID, &t.UserID, &t.Title, &t.Description, &t.Status, &t.Category,
 		&t.Priority, &t.EstimatedMinutes, &t.DueDate, &resultTags, &resultContexts,
 		&t.Energy, &t.ParentID, &t.CompletedAt, &t.CreatedAt, &t.UpdatedAt, &t.ActualMinutes,
+		&t.ReminderOffsets,
 	)
 
 	if err != nil {
@@ -440,13 +451,15 @@ func getTask(ctx context.Context, userID, taskID string) (*Task, error) {
 	err := db.Pool.QueryRow(ctx, `
 		SELECT id, user_id, title, description, status, category, priority,
 		       estimated_minutes, due_date, COALESCE(tags, '{}'), COALESCE(contexts, '{}'),
-		       energy, parent_id, completed_at, created_at, updated_at, actual_minutes
+		       energy, parent_id, completed_at, created_at, updated_at, actual_minutes,
+		          COALESCE(reminder_offsets, '{}')
 		FROM task
 		WHERE id = $1 AND user_id = $2
 	`, taskID, userID).Scan(
 		&t.ID, &t.UserID, &t.Title, &t.Description, &t.Status, &t.Category,
 		&t.Priority, &t.EstimatedMinutes, &t.DueDate, &tags, &contexts,
 		&t.Energy, &t.ParentID, &t.CompletedAt, &t.CreatedAt, &t.UpdatedAt, &t.ActualMinutes,
+		&t.ReminderOffsets,
 	)
 
 	if err != nil {
@@ -530,6 +543,11 @@ func updateTask(ctx context.Context, userID, taskID string, req UpdateTaskReques
 		args = append(args, *req.Energy)
 		argNum++
 	}
+	if req.ReminderOffsets != nil {
+		updates = append(updates, fmt.Sprintf("reminder_offsets = $%d", argNum))
+		args = append(args, *req.ReminderOffsets)
+		argNum++
+	}
 	if req.ParentID != nil {
 		updates = append(updates, fmt.Sprintf("parent_id = $%d", argNum))
 		args = append(args, *req.ParentID)
@@ -548,7 +566,8 @@ func updateTask(ctx context.Context, userID, taskID string, req UpdateTaskReques
 		WHERE id = $%d AND user_id = $%d
 		RETURNING id, user_id, title, description, status, category, priority,
 		          estimated_minutes, due_date, COALESCE(tags, '{}'), COALESCE(contexts, '{}'),
-		          energy, parent_id, completed_at, created_at, updated_at, actual_minutes
+		          energy, parent_id, completed_at, created_at, updated_at, actual_minutes,
+		          COALESCE(reminder_offsets, '{}')
 	`, strings.Join(updates, ", "), argNum, argNum+1)
 
 	var t Task
@@ -558,6 +577,7 @@ func updateTask(ctx context.Context, userID, taskID string, req UpdateTaskReques
 		&t.ID, &t.UserID, &t.Title, &t.Description, &t.Status, &t.Category,
 		&t.Priority, &t.EstimatedMinutes, &t.DueDate, &tags, &contexts,
 		&t.Energy, &t.ParentID, &t.CompletedAt, &t.CreatedAt, &t.UpdatedAt, &t.ActualMinutes,
+		&t.ReminderOffsets,
 	)
 
 	if err != nil {
@@ -641,11 +661,13 @@ func logTaskTime(ctx context.Context, userID, taskID string, delta int) (*Task, 
 		WHERE id = $2 AND user_id = $3
 		RETURNING id, user_id, title, description, status, category, priority,
 		          estimated_minutes, due_date, COALESCE(tags, '{}'), COALESCE(contexts, '{}'),
-		          energy, parent_id, completed_at, created_at, updated_at, actual_minutes
+		          energy, parent_id, completed_at, created_at, updated_at, actual_minutes,
+		          COALESCE(reminder_offsets, '{}')
 	`, delta, taskID, userID).Scan(
 		&t.ID, &t.UserID, &t.Title, &t.Description, &t.Status, &t.Category,
 		&t.Priority, &t.EstimatedMinutes, &t.DueDate, &tags, &contexts,
 		&t.Energy, &t.ParentID, &t.CompletedAt, &t.CreatedAt, &t.UpdatedAt, &t.ActualMinutes,
+		&t.ReminderOffsets,
 	)
 	if err != nil {
 		return nil, err

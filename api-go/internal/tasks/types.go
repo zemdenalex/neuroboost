@@ -41,9 +41,11 @@ type Task struct {
 	Contexts         []string      `json:"contexts"`
 	Energy           *int          `json:"energy,omitempty"`
 	ParentID         *string       `json:"parent_id,omitempty"`
-	CompletedAt      *time.Time    `json:"completed_at,omitempty"`
-	CreatedAt        time.Time     `json:"created_at"`
-	UpdatedAt        time.Time     `json:"updated_at"`
+	// ReminderOffsets holds minutes-before-due_date for each reminder.
+	ReminderOffsets []int      `json:"reminder_offsets"`
+	CompletedAt     *time.Time `json:"completed_at,omitempty"`
+	CreatedAt       time.Time  `json:"created_at"`
+	UpdatedAt       time.Time  `json:"updated_at"`
 }
 
 // CreateTaskRequest represents the request to create a task
@@ -59,6 +61,10 @@ type CreateTaskRequest struct {
 	Contexts         []string      `json:"contexts,omitempty"`
 	Energy           *int          `json:"energy,omitempty"`
 	ParentID         *string       `json:"parent_id,omitempty"`
+	// Pointer, not a bare slice: an absent field means "apply the user's
+	// default preset", an explicitly empty array means "deliberately no
+	// reminders".
+	ReminderOffsets *[]int `json:"reminder_offsets,omitempty"`
 }
 
 // BatchCreateRequest creates many tasks in one round-trip, so pasting a list
@@ -99,6 +105,7 @@ type UpdateTaskRequest struct {
 	Contexts         []string      `json:"contexts,omitempty"`
 	Energy           *int          `json:"energy,omitempty"`
 	ParentID         *string       `json:"parent_id,omitempty"`
+	ReminderOffsets  *[]int        `json:"reminder_offsets,omitempty"`
 }
 
 // LogTimeRequest adds (or, with a negative value, removes) focused minutes
