@@ -5,6 +5,7 @@ import { AdvancedFields } from './AdvancedFields';
 import { RepeatFields } from './RepeatFields';
 import { ReflectionFields } from './ReflectionFields';
 import { useEditorForm } from './useEditorForm';
+import { useReminderSettings } from '../../../hooks/useReminderSettings';
 import type { EditorProps } from './editor.types';
 
 export function EventEditor({ 
@@ -18,6 +19,7 @@ export function EventEditor({
 }: EditorProps) {
   const { t } = useTranslation('calendar');
   const { t: tc } = useTranslation('common');
+  const reminderSettings = useReminderSettings();
   const { state, actions, isEditing, hasReflection, canSave } = useEditorForm(
     draft, range, timezone, onCreated, onPatched, onDelete
   );
@@ -78,10 +80,11 @@ export function EventEditor({
           <>
             <AdvancedFields
               isAllDay={state.isAllDay}
-              reminderMinutes={state.reminderMinutes}
+              reminderOffsets={state.reminderOffsets}
+              presets={reminderSettings.presets}
               color={state.color}
               onAllDayChange={actions.setIsAllDay}
-              onReminderChange={actions.setReminderMinutes}
+              onReminderOffsetsChange={actions.setReminderOffsets}
               onColorChange={actions.setColor}
             />
             <RepeatFields

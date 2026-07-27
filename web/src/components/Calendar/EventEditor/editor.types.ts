@@ -33,7 +33,7 @@ export interface EditorState {
   tags: string;
   isAllDay: boolean;
   color: string;
-  reminderMinutes: number;
+  reminderOffsets: number[];
   startTimeInput: string;
   endTimeInput: string;
   startDateLocal: string;
@@ -77,18 +77,13 @@ export interface CreateEventBody {
   color?: string;
   timezone?: string;
   rrule?: string;
-  reminders?: Array<{ minutesBefore: number; channel: 'TELEGRAM' | 'WEB' }>;
+  /**
+   * Minutes before start, one entry per reminder. Replaced a `reminders`
+   * array of {minutesBefore, channel} objects that the Go API never declared
+   * and therefore silently discarded.
+   */
+  reminderOffsets?: number[];
 }
-
-export const REMINDER_OPTIONS = [
-  { value: 0, label: 'None' },
-  { value: 1, label: '1 min' },
-  { value: 3, label: '3 min' },
-  { value: 5, label: '5 min' },
-  { value: 10, label: '10 min' },
-  { value: 30, label: '30 min' },
-  { value: 60, label: '1 hour' },
-] as const;
 
 export const DEFAULT_REFLECTION: ReflectionState = {
   focus: 7,

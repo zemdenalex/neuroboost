@@ -1,11 +1,38 @@
-package reminders
+// Package usersettings parses the user's settings JSONB blob.
+//
+// It is a leaf package on purpose: events, tasks and reminders all need to
+// read reminder defaults, and reminders already imports events, so putting
+// this anywhere else would create an import cycle.
+package usersettings
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"strconv"
+	"strings"
+)
 
-// Settings is the `reminders` section of the "user".settings JSONB blob.
+// ParseHHMM turns "08:00" into minutes since local midnight. ok=false for
+// anything unparseable — the settings blob is user-writable.
+func ParseHHMM(v string) (int, bool) {
+	parts := strings.Split(strings.TrimSpace(v), ":")
+	if len(parts) != 2 {
+		return 0, false
+	}
+	h, err := strconv.Atoi(parts[0])
+	if err != nil || h < 0 || h > 23 {
+		return 0, false
+	}
+	m, err := strconv.Atoi(parts[1])
+	if err != nil || m < 0 || m > 59 {
+		return 0, false
+	}
+	return h*60 + m, true
+}
+
+// Reminders is the `reminders` section of the "user".settings JSONB blob.
 // No migration is needed for any of this — settings has been JSONB since
 // migration 000005, the same trick P1 used for quick-task defaults.
-type Settings struct {
+type Reminders struct {
 	Presets             map[string][]int
 	DefaultEventPreset  string
 	DefaultTaskPreset   string
@@ -17,8 +44,8 @@ type Settings struct {
 }
 
 // DefaultSettings is what a user who has never opened the settings page gets.
-func DefaultSettings() Settings {
-	return Settings{
+func DefaultReminders() Reminders {
+	return Reminders{
 		Presets: map[string][]int{
 			"важное":  {43200, 10080, 4320, 1440, 60},
 			"обычное": {1440, 60},
@@ -50,8 +77,8 @@ type rawSettings struct {
 
 // ParseSettings never fails. The blob is user-writable and a scan that gave up
 // on one malformed profile would stop reminders for that user silently.
-func ParseSettings(raw []byte) Settings {
-	s := DefaultSettings()
+func ParseReminders(raw []byte) Reminders {
+	s := DefaultReminders()
 	if len(raw) == 0 {
 		return s
 	}
@@ -89,7 +116,7 @@ func ParseSettings(raw []byte) Settings {
 		s.DefaultTaskPreset = *r.DefaultTaskPreset
 	}
 	if r.DigestAt != nil {
-		if _, ok := parseHHMM(*r.DigestAt); ok {
+		if _, ok := ParseHHMM(*r.DigestAt); ok {
 			s.DigestAt = *r.DigestAt
 		}
 	}
@@ -104,7 +131,7 @@ func ParseSettings(raw []byte) Settings {
 
 // applyLooseTop salvages the top-level quiet-hours fields when the strict
 // unmarshal failed somewhere inside `reminders`.
-func applyLooseTop(s *Settings, fields map[string]json.RawMessage) {
+func applyLooseTop(s *Reminders, fields map[string]json.RawMessage) {
 	if v, ok := fields["quiet_hours_start"]; ok {
 		var at string
 		if json.Unmarshal(v, &at) == nil {
@@ -121,7 +148,7 @@ func applyLooseTop(s *Settings, fields map[string]json.RawMessage) {
 
 // applyLooseReminders salvages individually-valid fields from a reminders
 // object whose strict unmarshal failed.
-func applyLooseReminders(s *Settings, rem json.RawMessage) {
+func applyLooseReminders(s *Reminders, rem json.RawMessage) {
 	var fields map[string]json.RawMessage
 	if json.Unmarshal(rem, &fields) != nil {
 		return
@@ -147,7 +174,7 @@ func applyLooseReminders(s *Settings, rem json.RawMessage) {
 	if v, ok := fields["digest_at"]; ok {
 		var at string
 		if json.Unmarshal(v, &at) == nil {
-			if _, valid := parseHHMM(at); valid {
+			if _, valid := ParseHHMM(at); valid {
 				s.DigestAt = at
 			}
 		}
@@ -169,7 +196,7 @@ func applyLooseReminders(s *Settings, rem json.RawMessage) {
 // OffsetsForPreset resolves a preset name to its offsets. An unknown name
 // yields an empty slice, never nil, so callers can range over it and so
 // "unknown preset" behaves exactly like the "без" preset.
-func OffsetsForPreset(s Settings, name string) []int {
+func OffsetsForPreset(s Reminders, name string) []int {
 	if offsets, ok := s.Presets[name]; ok && offsets != nil {
 		return offsets
 	}

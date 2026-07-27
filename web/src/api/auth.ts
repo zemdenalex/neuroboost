@@ -34,6 +34,20 @@ export interface UserSettings {
     inherit_filters?: boolean
     keys?: Partial<Record<'submit' | 'submit_expanded' | 'expand' | 'global_capture' | 'indent' | 'outdent', string>>
   }
+  /**
+   * Mirrors the Go `reminders` settings section. quiet_hours_start/end above
+   * finally do something now: a reminder landing in that window is delayed to
+   * the end of it, unless it has 15 minutes' notice or less, in which case it
+   * is skipped — delaying that one would deliver it after the event.
+   */
+  reminders?: {
+    presets?: Record<string, number[]>
+    default_event_preset?: string
+    default_task_preset?: string
+    digest_at?: string
+    digest_enabled?: boolean
+    quiet_hours_respected?: boolean
+  }
 }
 
 export interface AuthResponse {

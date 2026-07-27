@@ -1,31 +1,30 @@
 import { useTranslation } from 'react-i18next';
-import { REMINDER_OPTIONS } from './editor.types';
+import { ReminderOffsets } from '../../ReminderOffsets/ReminderOffsets';
+import type { ReminderPresets } from '../../../lib/reminders/offsets';
 
 interface AdvancedFieldsProps {
   isAllDay: boolean;
-  reminderMinutes: number;
+  /**
+   * Minutes before start, one entry per reminder. This replaced a single
+   * `reminderMinutes` dropdown that sent a `reminders` array the Go API never
+   * declared — the field was silently discarded, so that control had never
+   * scheduled anything.
+   */
+  reminderOffsets: number[];
+  presets: ReminderPresets;
   color: string;
   onAllDayChange: (value: boolean) => void;
-  onReminderChange: (value: number) => void;
+  onReminderOffsetsChange: (value: number[]) => void;
   onColorChange: (value: string) => void;
 }
 
-const REMINDER_KEYS: Record<number, string> = {
-  0: 'advanced.reminderOptions.none',
-  1: 'advanced.reminderOptions.1min',
-  3: 'advanced.reminderOptions.3min',
-  5: 'advanced.reminderOptions.5min',
-  10: 'advanced.reminderOptions.10min',
-  30: 'advanced.reminderOptions.30min',
-  60: 'advanced.reminderOptions.1hour',
-};
-
 export function AdvancedFields({
   isAllDay,
-  reminderMinutes,
+  reminderOffsets,
+  presets,
   color,
   onAllDayChange,
-  onReminderChange,
+  onReminderOffsetsChange,
   onColorChange,
 }: AdvancedFieldsProps) {
   const { t } = useTranslation('calendar');
@@ -43,21 +42,13 @@ export function AdvancedFields({
           <span className="text-zinc-300">{t('advanced.allDay')}</span>
         </label>
 
-        <div className="flex items-center gap-2 text-sm">
-          <label className="text-zinc-400">{t('advanced.reminder')}</label>
-          <select
-            value={reminderMinutes}
-            onChange={(e) => onReminderChange(Number(e.target.value))}
-            className="bg-zinc-800 border border-zinc-600 rounded px-2 py-1 text-white font-mono text-sm focus:outline-none focus:border-zinc-400"
-          >
-            {REMINDER_OPTIONS.map(opt => (
-              <option key={opt.value} value={opt.value}>
-                {t(REMINDER_KEYS[opt.value] ?? opt.label)}
-              </option>
-            ))}
-          </select>
-        </div>
       </div>
+
+      <ReminderOffsets
+        value={reminderOffsets}
+        onChange={onReminderOffsetsChange}
+        presets={presets}
+      />
 
       <div>
         <label className="block text-xs text-zinc-400 mb-1">{t('advanced.color')}</label>

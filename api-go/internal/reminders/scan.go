@@ -7,6 +7,7 @@ import (
 
 	"neuroboost/api-go/internal/database"
 	"neuroboost/api-go/internal/events"
+	"neuroboost/api-go/internal/usersettings"
 )
 
 var db *database.DB
@@ -58,7 +59,7 @@ func Scan(ctx context.Context, from, to time.Time, log *slog.Logger) (int, error
 		if err != nil {
 			loc = time.UTC
 		}
-		st := ParseSettings(u.settings)
+		st := usersettings.ParseReminders(u.settings)
 
 		n, err := scanEvents(ctx, u, st, loc, from, to)
 		if err != nil {
@@ -89,7 +90,7 @@ func Scan(ctx context.Context, from, to time.Time, log *slog.Logger) (int, error
 	return inserted, nil
 }
 
-func scanEvents(ctx context.Context, u scanUser, st Settings, loc *time.Location, from, to time.Time) (int, error) {
+func scanEvents(ctx context.Context, u scanUser, st usersettings.Reminders, loc *time.Location, from, to time.Time) (int, error) {
 	// Look ahead by the largest offset in use: an occurrence up to a month
 	// away can have a reminder due right now.
 	horizon := to.Add(maxOffsetMinutes * time.Minute)
@@ -175,7 +176,7 @@ func fetchSkippedOccurrences(ctx context.Context, userID, eventID string) []time
 	return out
 }
 
-func scanTasks(ctx context.Context, u scanUser, st Settings, loc *time.Location, from, to time.Time) (int, error) {
+func scanTasks(ctx context.Context, u scanUser, st usersettings.Reminders, loc *time.Location, from, to time.Time) (int, error) {
 	horizon := to.Add(maxOffsetMinutes * time.Minute)
 
 	rows, err := db.Pool.Query(ctx, `

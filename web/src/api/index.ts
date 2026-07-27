@@ -82,7 +82,11 @@ export interface CreateEventBody {
   color?: string;
   timezone?: string;
   rrule?: string;
-  reminders?: Array<{ minutesBefore: number; channel: 'TELEGRAM' | 'WEB' }>;
+  /**
+   * Minutes before start, one per reminder. Omitting the field means "apply my
+   * default preset" on the backend; an explicit [] means "no reminders".
+   */
+  reminderOffsets?: number[];
 }
 
 /** Create event from camelCase body, return NbEvent */
@@ -98,7 +102,7 @@ export async function createEvent(body: CreateEventBody): Promise<NbEvent> {
     color: body.color,
     timezone: body.timezone,
     rrule: body.rrule,
-    reminders: body.reminders,
+    reminder_offsets: body.reminderOffsets,
   };
   const response = await api.post<{ event: ApiEvent } | ApiEvent>('/events', apiBody);
   const event = 'event' in (response as Record<string, unknown>)
@@ -120,6 +124,9 @@ export async function updateEvent(id: string, updates: Partial<CreateEventBody>)
   if (updates.color !== undefined) apiBody.color = updates.color;
   if (updates.timezone !== undefined) apiBody.timezone = updates.timezone;
   if (updates.rrule !== undefined) apiBody.rrule = updates.rrule;
+  // An explicit [] must survive: it means "no reminders", which is different
+  // from omitting the key (leave whatever is stored alone).
+  if (updates.reminderOffsets !== undefined) apiBody.reminder_offsets = updates.reminderOffsets;
 
   const response = await api.patch<{ event: ApiEvent } | ApiEvent>(`/events/${id}`, apiBody);
   const event = 'event' in (response as Record<string, unknown>)

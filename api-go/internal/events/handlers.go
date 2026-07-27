@@ -13,6 +13,7 @@ import (
 
 	"neuroboost/api-go/internal/database"
 	"neuroboost/api-go/internal/middleware"
+	"neuroboost/api-go/internal/usersettings"
 	"neuroboost/api-go/internal/util"
 )
 
@@ -497,12 +498,15 @@ func createEvent(ctx context.Context, userID string, req CreateEventRequest, sta
 	var e Event
 	var resultTags []string
 
-	// An absent field is an empty list for now. Applying the user's default
-	// reminder preset here is deliberately deferred until the settings editor
-	// exists — see the plan's self-review.
+	// Absent means "apply my default preset"; an explicitly empty array means
+	// "deliberately no reminders". The backend resolves the preset rather than
+	// the frontend so an event created from the bot or an import gets
+	// reminders too.
 	reminderOffsets := []int{}
 	if req.ReminderOffsets != nil {
 		reminderOffsets = *req.ReminderOffsets
+	} else {
+		reminderOffsets = usersettings.DefaultEventOffsets(ctx, userID)
 	}
 
 	err := db.Pool.QueryRow(ctx, `

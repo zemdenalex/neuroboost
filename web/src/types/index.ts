@@ -57,6 +57,7 @@ export interface ApiEvent {
   task_id?: string | null;
   is_work_event?: boolean;
   recurring_event_id?: string;
+  reminder_offsets?: number[];
   created_at?: string;
   updated_at?: string;
   reflections?: ApiReflection[];
@@ -79,6 +80,8 @@ export interface NbEvent {
   taskId?: string | null;
   isWorkEvent?: boolean;
   recurringEventId?: string;
+  /** Minutes before start, one entry per reminder. */
+  reminderOffsets?: number[];
   createdAt?: string;
   updatedAt?: string;
   reflections?: Reflection[];
@@ -102,6 +105,7 @@ export function toNbEvent(api: ApiEvent): NbEvent {
     taskId: api.task_id,
     isWorkEvent: api.is_work_event,
     recurringEventId: api.recurring_event_id,
+    reminderOffsets: api.reminder_offsets || [],
     createdAt: api.created_at,
     updatedAt: api.updated_at,
     reflections: api.reflections?.map(r => ({

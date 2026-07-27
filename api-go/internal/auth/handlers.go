@@ -420,7 +420,7 @@ func (h *Handler) findUserByTgID(ctx context.Context, tgID int64) (*User, error)
 	if isAdmin != nil {
 		user.IsAdmin = *isAdmin
 	}
-	
+
 	// Parse settings JSON
 	if len(settingsJSON) > 0 {
 		json.Unmarshal(settingsJSON, &user.Settings)
@@ -462,7 +462,7 @@ func (h *Handler) findUserByEmail(ctx context.Context, email string) (*User, err
 	if isAdmin != nil {
 		user.IsAdmin = *isAdmin
 	}
-	
+
 	if len(settingsJSON) > 0 {
 		json.Unmarshal(settingsJSON, &user.Settings)
 	}
@@ -503,7 +503,7 @@ func (h *Handler) findUserWithPasswordByEmail(ctx context.Context, email string)
 	if isAdmin != nil {
 		user.IsAdmin = *isAdmin
 	}
-	
+
 	if len(settingsJSON) > 0 {
 		json.Unmarshal(settingsJSON, &user.Settings)
 	}
@@ -549,7 +549,7 @@ func (h *Handler) findUserByID(ctx context.Context, id string) (*User, error) {
 	if isAdmin != nil {
 		user.IsAdmin = *isAdmin
 	}
-	
+
 	if len(settingsJSON) > 0 {
 		json.Unmarshal(settingsJSON, &user.Settings)
 	}

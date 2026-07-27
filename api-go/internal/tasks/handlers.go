@@ -13,6 +13,7 @@ import (
 
 	"neuroboost/api-go/internal/database"
 	"neuroboost/api-go/internal/middleware"
+	"neuroboost/api-go/internal/usersettings"
 	"neuroboost/api-go/internal/util"
 )
 
@@ -414,11 +415,14 @@ func createTask(ctx context.Context, userID string, req CreateTaskRequest, statu
 	var t Task
 	var resultTags, resultContexts []string
 
-	// Absent means an empty list. Applying the user's default reminder preset
-	// is deferred until the settings editor exists — see the plan's self-review.
+	// Absent means "apply my default preset"; an explicitly empty array means
+	// "deliberately no reminders". This is what puts quick-add tasks into the
+	// notification path at all — quick-add sends only a title.
 	reminderOffsets := []int{}
 	if req.ReminderOffsets != nil {
 		reminderOffsets = *req.ReminderOffsets
+	} else {
+		reminderOffsets = usersettings.DefaultTaskOffsets(ctx, userID)
 	}
 
 	err := db.Pool.QueryRow(ctx, `

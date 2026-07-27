@@ -5,7 +5,9 @@ import (
 	"time"
 )
 
-func evAt(start, end time.Time) EventRow { return EventRow{ID: "e", Title: "t", StartsAt: start, EndsAt: end} }
+func evAt(start, end time.Time) EventRow {
+	return EventRow{ID: "e", Title: "t", StartsAt: start, EndsAt: end}
+}
 
 func TestValidateImportEvent(t *testing.T) {
 	base := time.Date(2026, 6, 17, 9, 0, 0, 0, time.UTC)

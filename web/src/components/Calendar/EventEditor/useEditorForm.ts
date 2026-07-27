@@ -21,7 +21,7 @@ export type RepeatEndType = 'never' | 'count' | 'date';
 
 export interface EditorFormState {
   title: string; description: string; location: string; tags: string; isAllDay: boolean;
-  color: string; reminderMinutes: number; startTimeInput: string; endTimeInput: string;
+  color: string; reminderOffsets: number[]; startTimeInput: string; endTimeInput: string;
   startDateLocal: string; endDateLocal: string; validation: TimeValidation;
   showAdvanced: boolean; showReflection: boolean; isDeleting: boolean; reflection: ReflectionState;
   repeatType: RepeatType; repeatEndType: RepeatEndType; repeatCount: number; repeatUntil: string;
@@ -30,7 +30,7 @@ export interface EditorFormState {
 export interface EditorFormActions {
   setTitle: (v: string) => void; setDescription: (v: string) => void; setLocation: (v: string) => void;
   setTags: (v: string) => void; setIsAllDay: (v: boolean) => void; setColor: (v: string) => void;
-  setReminderMinutes: (v: number) => void; setStartDateLocal: (v: string) => void;
+  setReminderOffsets: (v: number[]) => void; setStartDateLocal: (v: string) => void;
   setEndDateLocal: (v: string) => void; setShowAdvanced: (v: boolean) => void;
   setShowReflection: (v: boolean) => void;
   handleTimeChange: (value: string, parsed: string | null, isStart: boolean) => void;
@@ -54,7 +54,10 @@ export function useEditorForm(
   const [tags, setTags] = useState('');
   const [isAllDay, setIsAllDay] = useState(false);
   const [color, setColor] = useState('');
-  const [reminderMinutes, setReminderMinutes] = useState(5);
+  // Empty until a draft loads or the user picks. Omitting the key on create
+  // would ask the backend for its default preset; sending [] would mean
+  // "none". We send what the control shows, so the two never disagree.
+  const [reminderOffsets, setReminderOffsets] = useState<number[]>([]);
   const [startTimeInput, setStartTimeInput] = useState('');
   const [endTimeInput, setEndTimeInput] = useState('');
   const [startDateLocal, setStartDateLocal] = useState('');
@@ -81,6 +84,7 @@ export function useEditorForm(
       setTags(draft.tags?.join(', ') || '');
       setIsAllDay(!!draft.allDay);
       setColor(draft.color || '');
+      setReminderOffsets(draft.reminderOffsets ?? []);
       
       const start = utcToLocalDateTime(new Date(draft.startsAt), timezone);
       const end = utcToLocalDateTime(new Date(draft.endsAt), timezone);
@@ -167,7 +171,6 @@ export function useEditorForm(
     if (!title.trim() || !validation.dateRangeValid) return;
     
     const tagsArray = tags.split(',').map(t => t.trim()).filter(Boolean);
-    const reminders = reminderMinutes > 0 ? [{ minutesBefore: reminderMinutes, channel: 'TELEGRAM' as const }] : [];
     const adjustedEndDate = getAdjustedEndDate(startDateLocal, endDateLocal, validation.startParsed, validation.endParsed);
     
     const body: CreateEventBody = {
@@ -180,7 +183,7 @@ export function useEditorForm(
       tags: tagsArray.length ? tagsArray : undefined,
       color: color.trim() || undefined,
       timezone,
-      reminders: reminders.length ? reminders : undefined,
+      reminderOffsets,
     };
 
     // Build RRULE string from repeat fields
@@ -216,7 +219,7 @@ export function useEditorForm(
       console.error('Failed to save event:', error);
       alert('Failed to save event: ' + (error instanceof Error ? error.message : 'Unknown error'));
     }
-  }, [title, validation, tags, reminderMinutes, startDateLocal, endDateLocal, timezone, isAllDay, description, location, color, isEditing, draft, showReflection, reflection, repeatType, repeatEndType, repeatCount, repeatUntil, onPatched, onCreated]);
+  }, [title, validation, tags, reminderOffsets, startDateLocal, endDateLocal, timezone, isAllDay, description, location, color, isEditing, draft, showReflection, reflection, repeatType, repeatEndType, repeatCount, repeatUntil, onPatched, onCreated]);
 
   const handleDelete = useCallback(async () => {
     if (!draft || !confirm(`Delete "${draft.title}"?`)) return;
@@ -234,8 +237,8 @@ export function useEditorForm(
   const canSave = !!(title.trim() && (isAllDay || (validation.start && validation.end && validation.dateRangeValid)));
 
   return {
-    state: { title, description, location, tags, isAllDay, color, reminderMinutes, startTimeInput, endTimeInput, startDateLocal, endDateLocal, validation, showAdvanced, showReflection, isDeleting, reflection, repeatType, repeatEndType, repeatCount, repeatUntil },
-    actions: { setTitle, setDescription, setLocation, setTags, setIsAllDay, setColor, setReminderMinutes, setStartDateLocal, setEndDateLocal, setShowAdvanced, setShowReflection, handleTimeChange, handleReflectionChange, handleSave, handleDelete, setRepeatType, setRepeatEndType, setRepeatCount, setRepeatUntil },
+    state: { title, description, location, tags, isAllDay, color, reminderOffsets, startTimeInput, endTimeInput, startDateLocal, endDateLocal, validation, showAdvanced, showReflection, isDeleting, reflection, repeatType, repeatEndType, repeatCount, repeatUntil },
+    actions: { setTitle, setDescription, setLocation, setTags, setIsAllDay, setColor, setReminderOffsets, setStartDateLocal, setEndDateLocal, setShowAdvanced, setShowReflection, handleTimeChange, handleReflectionChange, handleSave, handleDelete, setRepeatType, setRepeatEndType, setRepeatCount, setRepeatUntil },
     isEditing,
     hasReflection,
     canSave,

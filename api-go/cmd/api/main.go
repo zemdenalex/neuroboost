@@ -28,6 +28,7 @@ import (
 	rfl "neuroboost/api-go/internal/reflections"
 	rem "neuroboost/api-go/internal/reminders"
 	t "neuroboost/api-go/internal/tasks"
+	"neuroboost/api-go/internal/usersettings"
 )
 
 func main() {
@@ -56,6 +57,7 @@ func main() {
 	rfl.InitDB(db)
 	pl.InitDB(db)
 	exp.InitDB(db)
+	usersettings.InitDB(db)
 	rem.InitDB(db)
 	rem.InitService(log)
 

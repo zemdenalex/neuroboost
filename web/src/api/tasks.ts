@@ -35,6 +35,11 @@ export interface CreateTaskRequest {
   contexts?: string[]
   energy?: number
   parent_id?: string
+  /**
+   * Minutes before due_date, one entry per reminder. Omitting the field asks
+   * the backend for the user's default preset; an explicit [] means none.
+   */
+  reminder_offsets?: number[]
 }
 
 export interface UpdateTaskRequest {
@@ -49,6 +54,7 @@ export interface UpdateTaskRequest {
   contexts?: string[]
   energy?: number
   parent_id?: string
+  reminder_offsets?: number[]
 }
 
 export interface ScheduleTaskRequest {

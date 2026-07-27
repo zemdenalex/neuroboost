@@ -2,6 +2,8 @@ import { useTranslation } from 'react-i18next'
 import type { CreateTaskRequest } from '../../api/tasks'
 import { PRIORITY_LABELS } from '../../lib/priority'
 import { toDateTimeLocalValue, fromDateTimeLocalValue } from '../../lib/datetime/dateTimeLocal'
+import { ReminderOffsets } from '../ReminderOffsets/ReminderOffsets'
+import { useReminderSettings } from '../../hooks/useReminderSettings'
 
 interface QuickAddFieldsProps {
   level: 1 | 2
@@ -20,6 +22,7 @@ const FIELD_CLASS =
  * one of these controls, and only Ctrl+Enter (handled by the row) submits.
  */
 export function QuickAddFields({ level, draft, onChange }: QuickAddFieldsProps) {
+  const reminderSettings = useReminderSettings()
   const { t } = useTranslation('tasks')
 
   return (
@@ -72,6 +75,20 @@ export function QuickAddFields({ level, draft, onChange }: QuickAddFieldsProps) 
           className={FIELD_CLASS}
         />
       </div>
+
+      {level === 2 && (
+        <div className="sm:col-span-2">
+          {/* Reminders count back from due_date, so without one there is
+              nothing to count from — the control says so rather than
+              silently accepting offsets that could never fire. */}
+          <ReminderOffsets
+            value={draft.reminder_offsets ?? []}
+            onChange={offsets => onChange({ reminder_offsets: offsets })}
+            presets={reminderSettings.presets}
+            disabled={!draft.due_date}
+          />
+        </div>
+      )}
 
       {level === 2 && (
         <div className="sm:col-span-2">

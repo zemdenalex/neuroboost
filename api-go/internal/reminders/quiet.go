@@ -1,9 +1,9 @@
 package reminders
 
 import (
-	"strconv"
-	"strings"
 	"time"
+
+	"neuroboost/api-go/internal/usersettings"
 )
 
 // quietGraceMinutes: a reminder with this much notice or less is dropped
@@ -11,29 +11,11 @@ import (
 // quiet hours would deliver it after the thing it warns about.
 const quietGraceMinutes = 15
 
-// parseHHMM turns "08:00" into minutes since local midnight. ok=false for
-// anything unparseable — the settings blob is user-writable.
-func parseHHMM(v string) (int, bool) {
-	parts := strings.Split(strings.TrimSpace(v), ":")
-	if len(parts) != 2 {
-		return 0, false
-	}
-	h, err := strconv.Atoi(parts[0])
-	if err != nil || h < 0 || h > 23 {
-		return 0, false
-	}
-	m, err := strconv.Atoi(parts[1])
-	if err != nil || m < 0 || m > 59 {
-		return 0, false
-	}
-	return h*60 + m, true
-}
-
 // ShiftForQuietHours reports when a reminder should actually be delivered.
 // The second return value is false when the reminder should be dropped.
 func ShiftForQuietHours(remindAt time.Time, minutesBefore int, quietStart, quietEnd string, loc *time.Location) (time.Time, bool) {
-	startMin, okStart := parseHHMM(quietStart)
-	endMin, okEnd := parseHHMM(quietEnd)
+	startMin, okStart := usersettings.ParseHHMM(quietStart)
+	endMin, okEnd := usersettings.ParseHHMM(quietEnd)
 	if !okStart || !okEnd || startMin == endMin {
 		return remindAt, true // quiet hours not configured
 	}
@@ -71,7 +53,7 @@ func ShiftForQuietHours(remindAt time.Time, minutesBefore int, quietStart, quiet
 // reminder.occurrence_start so the unique index dedupes per local day rather
 // than per UTC day.
 func DigestDue(windowStart, windowEnd time.Time, digestAt string, loc *time.Location) (time.Time, bool) {
-	atMin, ok := parseHHMM(digestAt)
+	atMin, ok := usersettings.ParseHHMM(digestAt)
 	if !ok {
 		return time.Time{}, false
 	}

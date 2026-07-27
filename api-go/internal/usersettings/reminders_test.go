@@ -1,9 +1,9 @@
-package reminders
+package usersettings
 
 import "testing"
 
 func TestParseSettingsDefaultsOnEmptyBlob(t *testing.T) {
-	s := ParseSettings(nil)
+	s := ParseReminders(nil)
 	if s.DigestAt != "08:00" {
 		t.Errorf("DigestAt = %q, want 08:00", s.DigestAt)
 	}
@@ -28,7 +28,7 @@ func TestParseSettingsReadsAFullBlob(t *testing.T) {
 			"quiet_hours_respected": false
 		}
 	}`)
-	s := ParseSettings(raw)
+	s := ParseReminders(raw)
 	if s.DigestAt != "09:15" {
 		t.Errorf("DigestAt = %q", s.DigestAt)
 	}
@@ -51,7 +51,7 @@ func TestParseSettingsReadsAFullBlob(t *testing.T) {
 func TestParseSettingsGarbageFallsBackPerField(t *testing.T) {
 	// The settings blob is user-writable. A broken digest_at must not take
 	// the presets down with it.
-	s := ParseSettings([]byte(`{"reminders":{"digest_at":12345,"presets":{"важное":[60]}}}`))
+	s := ParseReminders([]byte(`{"reminders":{"digest_at":12345,"presets":{"важное":[60]}}}`))
 	if s.DigestAt != "08:00" {
 		t.Errorf("bad digest_at should fall back, got %q", s.DigestAt)
 	}
@@ -61,14 +61,14 @@ func TestParseSettingsGarbageFallsBackPerField(t *testing.T) {
 }
 
 func TestParseSettingsRejectsUnparseableDigestTime(t *testing.T) {
-	s := ParseSettings([]byte(`{"reminders":{"digest_at":"25:99"}}`))
+	s := ParseReminders([]byte(`{"reminders":{"digest_at":"25:99"}}`))
 	if s.DigestAt != "08:00" {
 		t.Errorf("out-of-range digest_at should fall back, got %q", s.DigestAt)
 	}
 }
 
 func TestParseSettingsMalformedJSONIsNotFatal(t *testing.T) {
-	s := ParseSettings([]byte(`{not json at all`))
+	s := ParseReminders([]byte(`{not json at all`))
 	if s.DigestAt != "08:00" {
 		t.Errorf("malformed JSON should yield defaults, got %q", s.DigestAt)
 	}
@@ -77,7 +77,7 @@ func TestParseSettingsMalformedJSONIsNotFatal(t *testing.T) {
 func TestOffsetsForUnknownPresetIsEmptyNotNil(t *testing.T) {
 	// The scan ranges over this; nil would work in Go but an explicit empty
 	// slice keeps the "no reminders" case identical to the "без" preset.
-	got := OffsetsForPreset(ParseSettings(nil), "does-not-exist")
+	got := OffsetsForPreset(ParseReminders(nil), "does-not-exist")
 	if got == nil || len(got) != 0 {
 		t.Errorf("unknown preset = %v, want empty non-nil", got)
 	}
