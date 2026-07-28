@@ -281,7 +281,7 @@ Not in the old bug registry — found by reading code, all verified with file:li
 
 | ID | Bug | Severity | Detail |
 |----|-----|----------|--------|
-| **R1** | **Mutating any recurring-event instance returns 500** — *in progress* | **High** | `expandRecurrence` assigns synthetic IDs `"<parentUUID>:2026-07-21"` (`events/recurrence.go:152`). No handler strips the suffix (`handlers.go:187,259,291`), and `event.id` is a Postgres `UUID` — so the cast fails and returns 500 (not `ErrNoRows`). Drag, Shift+Arrow, edit-save or delete on any recurring instance fails and the calendar snaps back. **Recurring events are effectively display-only.** `AddExceptionHandler` exists but the frontend never calls it — decide the instance-mutation story (exception + detached event) during v0.4.11. |
+| ~~**R1**~~ | ~~**Mutating any recurring-event instance returns 500**~~ — **ПОЧИНЕНО 2026-07-28** | **High** | `expandRecurrence` assigns synthetic IDs `"<parentUUID>:2026-07-21"` (`events/recurrence.go:152`). No handler strips the suffix (`handlers.go:187,259,291`), and `event.id` is a Postgres `UUID` — so the cast fails and returns 500 (not `ErrNoRows`). Drag, Shift+Arrow, edit-save or delete on any recurring instance fails and the calendar snaps back. **Recurring events are effectively display-only.** `AddExceptionHandler` exists but the frontend never calls it — decide the instance-mutation story (exception + detached event) during v0.4.11. |
 | ~~**T1**~~ | ~~`getTasks` casts snake_case JSON to a camelCase type~~ — **ПОЧИНЕНО 2026-07-27** (`web/src/api/toTask.ts` + тесты) | ~~Medium~~ | Go emits `estimated_minutes`/`due_date` (`tasks/types.go:37,39`); `getTasks` (`web/src/api/index.ts:161-168`) casts with **no conversion**. So `task.estimatedMinutes` is always `undefined` → `scheduleTask` always defaults to 60 min (`api/index.ts:208`). Same for `dueDate` reads off that array. |
 | **A1** | Two same-named `moveEvent` functions hit different endpoints | Medium | `api/events.ts` → `PATCH /events/:id/move`; `api/index.ts:135-137` → generic `PATCH /events/:id`. The calendar never calls the dedicated `/move`+`/resize` endpoints, so any move-specific backend logic is silently bypassed. |
 | **A2** | Two `NbEvent` interfaces | Low | `types/index.ts:66` (full) vs `weekgrid.types.ts:4` (subset, missing `recurringEventId`/`reflections`). Structural typing hides it until WeekGrid needs `recurringEventId` — which R1's fix will require. |
@@ -302,17 +302,41 @@ so a third option can be added later without redesign.
   falls back to `occurrence`** — the narrowest change. Defaulting to `series` would let a
   dropped parameter silently rewrite every occurrence, which the user cannot undo.
 
+**Статус: собрано 2026-07-28** (backend `b3b788d`, frontend `8eee743`), на `develop`,
+**не запушено** — Денис в этот момент проходил staging-чеклист, а `develop` авто-деплоится
+на staging.
+
 **Progress:**
 - ✅ `parseInstanceID` — splits `"<uuid>:<YYYY-MM-DD>"`, round-trip tested against
   `expandRecurrence`'s real output so the formats cannot drift
 - ✅ `resolveMutation` — maps raw ID + scope to (target row, occurrence, mode)
 - ✅ `DeleteHandler` — "this event" writes a skip exception; "all events" deletes the series
-- ⬜ `UpdateHandler` / `MoveHandler` / `ResizeHandler` — the occurrence path needs
-  exception + **detached replacement event** (`addException` already takes a
-  `replacement_event_id`); the series path updates the parent row
-- ⬜ Frontend: the dialog, the `scope` parameter on every mutation call, Settings toggle
-- ⬜ `web/src/api` has **two** `moveEvent` functions (see A1) — make sure the one the calendar
-  actually calls is the one that gains `scope`
+- ✅ `UpdateHandler` / `MoveHandler` / `ResizeHandler` — occurrence путь пишет detached
+  replacement + exception **в одной транзакции** (`events/occurrence.go`); series путь
+  двигает родителя **дельтой**, а не абсолютным временем
+- ✅ Frontend: диалог, `scope` на всех мутациях, переключатель в Settings
+  (`lib/recurrence/scope.ts`, `components/Calendar/useRecurringScope.tsx`)
+- ✅ A1 не мешает: календарь ходит через `api/index.ts`, `scope` добавлен именно туда;
+  `api/events.ts` не трогали — им пользуется только Pomodoro, а те события не повторяются
+
+**Что проверено живьём** (локальный стек, API + Postgres):
+| Сценарий | Результат |
+|---|---|
+| DELETE одного повтора | 🟢 исчезает из списка, остальные на месте |
+| PATCH `scope=occurrence` (заголовок + время) | 🟢 замена появляется, дубля нет |
+| reminder_offsets у замены | 🟢 копируются с родителя, а не из дефолтного пресета |
+| MOVE `scope=series` с **третьего** повтора | 🟢 все повторы сдвинулись, дата серии не переехала |
+| Секция Settings, ru + en | 🟢 все ключи резолвятся |
+
+🟡 **Сам диалог в браузере не прожат.** React-харнесса для компонентов в проекте нет, а
+синтетический клик по событию не открывает редактор даже для обычного события — то есть это
+ограничение автоматизации, не регрессия. Ключи i18n проверены отдельно (8/8 в ru и en).
+Прожать руками: перенос повтора мышью, Save из редактора, Delete, «Запомнить выбор», Отмена.
+
+⚠️ **Известное ограничение:** отменённый drag перерисовывает сетку через reload — событие
+на мгновение остаётся там, куда его бросили, и возвращается после ответа сервера. Оптимистичного
+локального состояния у WeekGrid нет; чинится вместе с MD1/MD2, где ту же область всё равно
+переписывать.
 
 ### Dead code — verified safe to delete
 `api-go/internal/auth/telegram.go` `VerifyTelegramAuth` (zero callers; live path is the private
