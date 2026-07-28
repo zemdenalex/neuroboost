@@ -149,3 +149,6 @@ private/
 
 # Brainstorming companion
 .superpowers/
+
+# Playwright MCP session artifacts
+.playwright-mcp/
