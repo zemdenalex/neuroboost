@@ -33,8 +33,12 @@ func resolveMutation(rawID, scope string) (targetID string, occurrence time.Time
 		return parentID, time.Time{}, mutatePlain
 	}
 
+	// The occurrence is returned for the series scope too. Deleting a series does
+	// not need it, but every *time* change does: "all events" shifts the parent by
+	// the delta between the edited occurrence and its new time, which is
+	// uncomputable without knowing which occurrence was edited.
 	if scope == scopeSeries {
-		return parentID, time.Time{}, mutateSeries
+		return parentID, occ, mutateSeries
 	}
 
 	return parentID, occ, mutateOccurrence

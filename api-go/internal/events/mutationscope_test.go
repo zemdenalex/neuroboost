@@ -44,11 +44,15 @@ func TestResolveMutation(t *testing.T) {
 			wantMode:       mutateOccurrence,
 		},
 		{
-			name:       "instance with series scope edits the whole series",
-			rawID:      parent + ":2026-07-21",
-			scope:      "series",
-			wantTarget: parent,
-			wantMode:   mutateSeries,
+			// The occurrence must survive the series scope: a time change on
+			// "all events" is a delta measured from the occurrence that was edited,
+			// so zeroing it here makes every series-scoped move unresolvable.
+			name:           "instance with series scope edits the whole series but keeps the date",
+			rawID:          parent + ":2026-07-21",
+			scope:          "series",
+			wantTarget:     parent,
+			wantOccurrence: occ,
+			wantMode:       mutateSeries,
 		},
 		{
 			// The destructive default would be series. An absent or unrecognised

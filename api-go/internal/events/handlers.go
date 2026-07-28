@@ -197,11 +197,81 @@ func UpdateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Validate the effective time window when either bound changes — the update
-	// path must not be able to persist a zero-length or inverted event (the other
-	// mutation paths all guard this).
-	if req.StartsAt != nil || req.EndsAt != nil {
-		existing, err := getEvent(r.Context(), userID, eventID)
+	// Parse the requested bounds once; both the plain and the recurring paths
+	// need them, and a malformed value is a 400 either way.
+	var newStart, newEnd *time.Time
+	if req.StartsAt != nil {
+		t, err := time.Parse(time.RFC3339, *req.StartsAt)
+		if err != nil {
+			util.RespondError(w, http.StatusBadRequest, "INVALID_START", "Invalid start date format")
+			return
+		}
+		newStart = &t
+	}
+	if req.EndsAt != nil {
+		t, err := time.Parse(time.RFC3339, *req.EndsAt)
+		if err != nil {
+			util.RespondError(w, http.StatusBadRequest, "INVALID_END", "Invalid end date format")
+			return
+		}
+		newEnd = &t
+	}
+
+	targetID, occDate, mode := resolveMutation(eventID, r.URL.Query().Get("scope"))
+
+	if mode != mutatePlain {
+		parent, occStart, occEnd, err := loadOccurrence(r.Context(), userID, targetID, occDate)
+		if err != nil {
+			if err == pgx.ErrNoRows || err == errNoSuchOccurrence {
+				util.RespondError(w, http.StatusNotFound, "NOT_FOUND", "Event not found")
+				return
+			}
+			util.RespondError(w, http.StatusInternalServerError, "UPDATE_ERROR", "Failed to update event")
+			return
+		}
+
+		if mode == mutateOccurrence {
+			// Bounds the request left alone stay on the occurrence's own times —
+			// validating against the parent would compare a September occurrence
+			// with the series' July start.
+			startsAt, endsAt := occStart, occEnd
+			if newStart != nil {
+				startsAt = *newStart
+			}
+			if newEnd != nil {
+				endsAt = *newEnd
+			}
+			if err := validateTimeRange(startsAt, endsAt); err != nil {
+				util.RespondError(w, http.StatusBadRequest, "INVALID_RANGE", "End time must be after start time")
+				return
+			}
+
+			replacement, err := detachOccurrence(r.Context(), userID,
+				mergeOccurrence(*parent, startsAt, endsAt, req), targetID, occStart)
+			if err != nil {
+				util.RespondError(w, http.StatusInternalServerError, "UPDATE_ERROR", "Failed to update occurrence")
+				return
+			}
+			util.RespondJSON(w, http.StatusOK, replacement)
+			return
+		}
+
+		// Series: a time change is a delta on every occurrence, not an absolute
+		// rewrite that would re-anchor the series to the edited date.
+		if newStart != nil || newEnd != nil {
+			startsAt, endsAt := applySeriesDelta(parent.StartsAt, parent.EndsAt, occStart, occEnd, newStart, newEnd)
+			if err := validateTimeRange(startsAt, endsAt); err != nil {
+				util.RespondError(w, http.StatusBadRequest, "INVALID_RANGE", "End time must be after start time")
+				return
+			}
+			s, e := startsAt.Format(time.RFC3339), endsAt.Format(time.RFC3339)
+			req.StartsAt, req.EndsAt = &s, &e
+		}
+	} else if newStart != nil || newEnd != nil {
+		// Validate the effective time window when either bound changes — the update
+		// path must not be able to persist a zero-length or inverted event (the other
+		// mutation paths all guard this).
+		existing, err := getEvent(r.Context(), userID, targetID)
 		if err != nil {
 			if err == pgx.ErrNoRows {
 				util.RespondError(w, http.StatusNotFound, "NOT_FOUND", "Event not found")
@@ -211,19 +281,11 @@ func UpdateHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		startsAt, endsAt := existing.StartsAt, existing.EndsAt
-		if req.StartsAt != nil {
-			startsAt, err = time.Parse(time.RFC3339, *req.StartsAt)
-			if err != nil {
-				util.RespondError(w, http.StatusBadRequest, "INVALID_START", "Invalid start date format")
-				return
-			}
+		if newStart != nil {
+			startsAt = *newStart
 		}
-		if req.EndsAt != nil {
-			endsAt, err = time.Parse(time.RFC3339, *req.EndsAt)
-			if err != nil {
-				util.RespondError(w, http.StatusBadRequest, "INVALID_END", "Invalid end date format")
-				return
-			}
+		if newEnd != nil {
+			endsAt = *newEnd
 		}
 		if err := validateTimeRange(startsAt, endsAt); err != nil {
 			util.RespondError(w, http.StatusBadRequest, "INVALID_RANGE", "End time must be after start time")
@@ -231,7 +293,7 @@ func UpdateHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	event, err := updateEvent(r.Context(), userID, eventID, req)
+	event, err := updateEvent(r.Context(), userID, targetID, req)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			util.RespondError(w, http.StatusNotFound, "NOT_FOUND", "Event not found")
@@ -333,7 +395,38 @@ func MoveHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	event, err := moveEvent(r.Context(), userID, eventID, startsAt, endsAt)
+	targetID, occDate, mode := resolveMutation(eventID, r.URL.Query().Get("scope"))
+
+	if mode != mutatePlain {
+		parent, occStart, occEnd, err := loadOccurrence(r.Context(), userID, targetID, occDate)
+		if err != nil {
+			if err == pgx.ErrNoRows || err == errNoSuchOccurrence {
+				util.RespondError(w, http.StatusNotFound, "NOT_FOUND", "Event not found")
+				return
+			}
+			util.RespondError(w, http.StatusInternalServerError, "MOVE_ERROR", "Failed to move event")
+			return
+		}
+
+		if mode == mutateOccurrence {
+			replacement, err := detachOccurrence(r.Context(), userID,
+				mergeOccurrence(*parent, startsAt, endsAt, UpdateEventRequest{}), targetID, occStart)
+			if err != nil {
+				util.RespondError(w, http.StatusInternalServerError, "MOVE_ERROR", "Failed to move occurrence")
+				return
+			}
+			util.RespondJSON(w, http.StatusOK, replacement)
+			return
+		}
+
+		startsAt, endsAt = applySeriesDelta(parent.StartsAt, parent.EndsAt, occStart, occEnd, &startsAt, &endsAt)
+		if err := validateTimeRange(startsAt, endsAt); err != nil {
+			util.RespondError(w, http.StatusBadRequest, "INVALID_RANGE", "End time must be after start time")
+			return
+		}
+	}
+
+	event, err := moveEvent(r.Context(), userID, targetID, startsAt, endsAt)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			util.RespondError(w, http.StatusNotFound, "NOT_FOUND", "Event not found")
@@ -377,27 +470,65 @@ func ResizeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Query the event's current start time to validate the new end time
-	var startsAt time.Time
-	err = db.Pool.QueryRow(r.Context(),
-		`SELECT starts_at FROM event WHERE id = $1 AND user_id = $2`,
-		eventID, userID,
-	).Scan(&startsAt)
-	if err != nil {
-		if err == pgx.ErrNoRows {
-			util.RespondError(w, http.StatusNotFound, "NOT_FOUND", "Event not found")
+	targetID, occDate, mode := resolveMutation(eventID, r.URL.Query().Get("scope"))
+
+	if mode != mutatePlain {
+		parent, occStart, occEnd, err := loadOccurrence(r.Context(), userID, targetID, occDate)
+		if err != nil {
+			if err == pgx.ErrNoRows || err == errNoSuchOccurrence {
+				util.RespondError(w, http.StatusNotFound, "NOT_FOUND", "Event not found")
+				return
+			}
+			util.RespondError(w, http.StatusInternalServerError, "RESIZE_ERROR", "Failed to resize event")
 			return
 		}
-		util.RespondError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to fetch event")
-		return
+
+		if mode == mutateOccurrence {
+			// Validated against the occurrence's own start, not the parent's — the
+			// parent's start is the *first* occurrence and says nothing about this one.
+			if err := validateTimeRange(occStart, endsAt); err != nil {
+				util.RespondError(w, http.StatusBadRequest, "INVALID_RANGE", "End time must be after start time")
+				return
+			}
+			replacement, err := detachOccurrence(r.Context(), userID,
+				mergeOccurrence(*parent, occStart, endsAt, UpdateEventRequest{}), targetID, occStart)
+			if err != nil {
+				util.RespondError(w, http.StatusInternalServerError, "RESIZE_ERROR", "Failed to resize occurrence")
+				return
+			}
+			util.RespondJSON(w, http.StatusOK, replacement)
+			return
+		}
+
+		_, seriesEnd := applySeriesDelta(parent.StartsAt, parent.EndsAt, occStart, occEnd, nil, &endsAt)
+		if err := validateTimeRange(parent.StartsAt, seriesEnd); err != nil {
+			util.RespondError(w, http.StatusBadRequest, "INVALID_RANGE", "End time must be after start time")
+			return
+		}
+		endsAt = seriesEnd
+	} else {
+		// Query the event's current start time to validate the new end time
+		var startsAt time.Time
+		err = db.Pool.QueryRow(r.Context(),
+			`SELECT starts_at FROM event WHERE id = $1 AND user_id = $2`,
+			targetID, userID,
+		).Scan(&startsAt)
+		if err != nil {
+			if err == pgx.ErrNoRows {
+				util.RespondError(w, http.StatusNotFound, "NOT_FOUND", "Event not found")
+				return
+			}
+			util.RespondError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to fetch event")
+			return
+		}
+
+		if err := validateTimeRange(startsAt, endsAt); err != nil {
+			util.RespondError(w, http.StatusBadRequest, "INVALID_RANGE", "End time must be after start time")
+			return
+		}
 	}
 
-	if err := validateTimeRange(startsAt, endsAt); err != nil {
-		util.RespondError(w, http.StatusBadRequest, "INVALID_RANGE", "End time must be after start time")
-		return
-	}
-
-	event, err := resizeEvent(r.Context(), userID, eventID, endsAt)
+	event, err := resizeEvent(r.Context(), userID, targetID, endsAt)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			util.RespondError(w, http.StatusNotFound, "NOT_FOUND", "Event not found")
