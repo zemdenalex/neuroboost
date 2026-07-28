@@ -5,6 +5,7 @@ import { WeekGrid } from '../../components/Calendar/WeekGrid';
 import { TaskSidebar } from '../../components/TaskSidebar';
 import { MobileTaskPanel } from '../../components/TaskSidebar/MobileTaskPanel';
 import { EventEditor } from '../../components/Calendar/EventEditor';
+import { useRecurringScope } from '../../components/Calendar/useRecurringScope';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { computeWeekRange } from '../../lib/calendar/weekRange';
 import { createTask } from '../../api';
@@ -22,6 +23,7 @@ export function Calendar() {
   const { t } = useTranslation('calendar');
   const { user } = useAuthContext();
   const timezone = user?.timezone || 'Europe/Moscow';
+  const { withScope, dialog: recurringScopeDialog } = useRecurringScope();
   const [events, setEvents] = useState<NbEvent[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
@@ -83,23 +85,26 @@ export function Calendar() {
 
   const handleMoveOrResize = useCallback(async (data: { id: string; startsAt: string; endsAt: string }) => {
     try {
-      await moveEvent(data.id, data.startsAt, data.endsAt);
+      await withScope(data.id, 'move', scope => moveEvent(data.id, data.startsAt, data.endsAt, scope).then(() => undefined));
+      // Reloaded even when the dialog was cancelled: the grid has already drawn
+      // the event at its dropped position, and only a reload puts it back.
       await loadEvents();
     } catch (error) {
       console.error('Failed to move/resize event:', error);
+      await loadEvents();
     }
-  }, [loadEvents]);
+  }, [loadEvents, withScope]);
 
   const handleDelete = useCallback(async (id: string) => {
     try {
-      await deleteEvent(id);
+      await withScope(id, 'delete', scope => deleteEvent(id, scope));
       await loadEvents();
       setEditorOpen(false);
     } catch (error) {
       console.error('Failed to delete event:', error);
       throw error;
     }
-  }, [loadEvents]);
+  }, [loadEvents, withScope]);
 
   const handleTaskDrop = useCallback(async (task: { id: string; estimatedMinutes?: number }, startTime: Date) => {
     try {
@@ -243,9 +248,17 @@ export function Calendar() {
             onCreated={handleEditorCreated}
             onPatched={handleEditorPatched}
             onDelete={handleDelete}
+            withScope={withScope}
           />
         </div>
       )}
+
+      {/*
+        A sibling of the editor overlay, never a child: nested backdrops would
+        make a click on this dialog's backdrop bubble up and close the editor
+        underneath it, losing the edit the user is being asked about.
+      */}
+      {recurringScopeDialog}
 
       {/* Quick task creation modal */}
       {quickTaskOpen && (

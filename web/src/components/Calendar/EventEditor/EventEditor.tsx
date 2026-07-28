@@ -15,13 +15,14 @@ export function EventEditor({
   onClose, 
   onCreated, 
   onPatched, 
-  onDelete 
+  onDelete,
+  withScope
 }: EditorProps) {
   const { t } = useTranslation('calendar');
   const { t: tc } = useTranslation('common');
   const reminderSettings = useReminderSettings();
   const { state, actions, isEditing, hasReflection, canSave } = useEditorForm(
-    draft, range, timezone, onCreated, onPatched, onDelete
+    draft, range, timezone, onCreated, onPatched, onDelete, withScope
   );
 
   return (

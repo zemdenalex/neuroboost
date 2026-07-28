@@ -46,7 +46,8 @@ export function useEditorForm(
   timezone: string,
   onCreated: () => void,
   onPatched: () => void,
-  onDelete: (id: string) => Promise<void>
+  onDelete: (id: string) => Promise<void>,
+  withScope: EditorProps['withScope']
 ): { state: EditorFormState; actions: EditorFormActions; isEditing: boolean; hasReflection: boolean; canSave: boolean } {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -196,19 +197,24 @@ export function useEditorForm(
 
     try {
       if (isEditing && draft) {
-        await updateEvent(draft.id, body);
+        await withScope(draft.id, 'edit', async scope => {
+          const saved = await updateEvent(draft.id, body, scope);
 
-        if (showReflection) {
-          const reflectionBody: ReflectionBody = {
-            focus: reflection.focus,
-            energy: reflection.energy,
-            mood: reflection.mood,
-            note: reflection.note.trim() || undefined,
-            wasCompleted: true,
-            wasOnTime: true,
-          };
-          await saveReflection(draft.id, reflectionBody);
-        }
+          if (showReflection) {
+            const reflectionBody: ReflectionBody = {
+              focus: reflection.focus,
+              energy: reflection.energy,
+              mood: reflection.mood,
+              note: reflection.note.trim() || undefined,
+              wasCompleted: true,
+              wasOnTime: true,
+            };
+            // The saved event's id, not the draft's: editing one occurrence
+            // detaches it into a new row, and the reflection belongs to that row.
+            // Posting to the synthetic "<uuid>:<date>" id would 500 outright.
+            await saveReflection(saved.id, reflectionBody);
+          }
+        });
 
         onPatched();
       } else {
@@ -219,7 +225,7 @@ export function useEditorForm(
       console.error('Failed to save event:', error);
       alert('Failed to save event: ' + (error instanceof Error ? error.message : 'Unknown error'));
     }
-  }, [title, validation, tags, reminderOffsets, startDateLocal, endDateLocal, timezone, isAllDay, description, location, color, isEditing, draft, showReflection, reflection, repeatType, repeatEndType, repeatCount, repeatUntil, onPatched, onCreated]);
+  }, [title, validation, tags, reminderOffsets, startDateLocal, endDateLocal, timezone, isAllDay, description, location, color, isEditing, draft, showReflection, reflection, repeatType, repeatEndType, repeatCount, repeatUntil, onPatched, onCreated, withScope]);
 
   const handleDelete = useCallback(async () => {
     if (!draft || !confirm(`Delete "${draft.title}"?`)) return;

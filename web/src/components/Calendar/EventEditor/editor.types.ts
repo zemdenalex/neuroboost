@@ -1,4 +1,6 @@
 import type { NbEvent } from '../../../types';
+import type { MutationScope } from '../../../lib/recurrence/scope';
+import type { RecurringAction } from '../RecurringScopeDialog';
 
 export interface EditorProps {
   /** Time range for new event creation (null when editing) */
@@ -15,6 +17,16 @@ export interface EditorProps {
   onPatched: () => void;
   /** Delete event by ID */
   onDelete: (id: string) => Promise<void>;
+  /**
+   * Runs a mutation, first asking "this event / all events" when the ID names a
+   * recurring instance. Owned by the calendar page so the editor, the drag layer
+   * and delete all share one dialog and one remembered answer.
+   */
+  withScope: (
+    id: string,
+    action: RecurringAction,
+    run: (scope?: MutationScope) => Promise<void>,
+  ) => Promise<void>;
 }
 
 export interface TimeValidation {

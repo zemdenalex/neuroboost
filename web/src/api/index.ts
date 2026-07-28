@@ -1,4 +1,5 @@
 import { toTask, type RawTask } from './toTask';
+import { scopeQuery, type MutationScope } from '../lib/recurrence/scope';
 
 // HTTP client & token management
 export {
@@ -112,7 +113,7 @@ export async function createEvent(body: CreateEventBody): Promise<NbEvent> {
 }
 
 /** Update event from camelCase body, return NbEvent */
-export async function updateEvent(id: string, updates: Partial<CreateEventBody>): Promise<NbEvent> {
+export async function updateEvent(id: string, updates: Partial<CreateEventBody>, scope?: MutationScope): Promise<NbEvent> {
   const apiBody: Record<string, unknown> = {};
   if (updates.title !== undefined) apiBody.title = updates.title;
   if (updates.startsAt !== undefined) apiBody.starts_at = updates.startsAt;
@@ -128,7 +129,7 @@ export async function updateEvent(id: string, updates: Partial<CreateEventBody>)
   // from omitting the key (leave whatever is stored alone).
   if (updates.reminderOffsets !== undefined) apiBody.reminder_offsets = updates.reminderOffsets;
 
-  const response = await api.patch<{ event: ApiEvent } | ApiEvent>(`/events/${id}`, apiBody);
+  const response = await api.patch<{ event: ApiEvent } | ApiEvent>(`/events/${id}${scopeQuery(scope)}`, apiBody);
   const event = 'event' in (response as Record<string, unknown>)
     ? (response as { event: ApiEvent }).event
     : response as ApiEvent;
@@ -136,13 +137,13 @@ export async function updateEvent(id: string, updates: Partial<CreateEventBody>)
 }
 
 /** Delete an event */
-export async function deleteEvent(id: string): Promise<void> {
-  await api.delete(`/events/${id}`);
+export async function deleteEvent(id: string, scope?: MutationScope): Promise<void> {
+  await api.delete(`/events/${id}${scopeQuery(scope)}`);
 }
 
 /** Move event by camelCase times */
-export async function moveEvent(id: string, startsAt: string, endsAt: string): Promise<NbEvent> {
-  return updateEvent(id, { startsAt, endsAt });
+export async function moveEvent(id: string, startsAt: string, endsAt: string, scope?: MutationScope): Promise<NbEvent> {
+  return updateEvent(id, { startsAt, endsAt }, scope);
 }
 
 export interface ReflectionBody {

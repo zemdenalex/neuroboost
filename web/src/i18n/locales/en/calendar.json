@@ -63,6 +63,18 @@
   "allDay": "all-day",
   "today": "Today",
   "quickCreate": "Quick",
-  "helpMobile": "Tap: select \u2022 Long-press: create \u2022 Drag: move \u2022 Esc: cancel",
-  "helpDesktop": "Click: select \u2022 Double-click: edit \u2022 Drag: create/move \u2022 Esc: cancel"
+  "helpMobile": "Tap: select • Long-press: create • Drag: move • Esc: cancel",
+  "helpDesktop": "Click: select • Double-click: edit • Drag: create/move • Esc: cancel",
+  "recurringScope": {
+    "title": {
+      "edit": "Edit repeating event",
+      "move": "Move repeating event",
+      "delete": "Delete repeating event"
+    },
+    "explain": "This event repeats. Apply the change to just this one, or to every occurrence?",
+    "thisEvent": "This event",
+    "allEvents": "All events",
+    "remember": "Remember my choice",
+    "cancel": "Cancel"
+  }
 }

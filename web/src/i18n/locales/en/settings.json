@@ -69,5 +69,13 @@
     "estimateHint": "Leave empty to create tasks without an estimate. Comparing this against logged time later shows how well you size your tasks.",
     "inherit": "Inherit the page's active filters",
     "inheritHint": "A new task picks up the tags and context you are currently filtering by, instead of the defaults above."
+  },
+  "recurringScope": {
+    "title": "Repeating events",
+    "label": "When I change a repeating event",
+    "ask": "Ask me every time",
+    "occurrence": "Always change just that one",
+    "series": "Always change every occurrence",
+    "hint": "Applies to moving, editing and deleting alike."
   }
 }

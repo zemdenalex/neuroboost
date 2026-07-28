@@ -8,9 +8,10 @@ import { useMediaQuery } from '../../hooks/useMediaQuery'
 import { showToast } from '../../components/ui/Toast'
 import type { UserSettings } from '../../api/auth'
 import { resolveQuickTaskSettings, type QuickTaskSettings } from '../../lib/quickTask/settings'
+import { resolveRememberedScope, type RememberedScope } from '../../lib/recurrence/scope'
 import { resolveReminderSettings, type ReminderSettings } from '../../lib/reminders/offsets'
 import { ReminderOffsets } from '../../components/ReminderOffsets/ReminderOffsets'
-import { AlertTriangle, Bell, Clock, Database, Globe, LayoutGrid, Lightbulb, LogOut, Maximize, Sliders, Smartphone, Zap } from 'lucide-react'
+import { AlertTriangle, Bell, Clock, Database, Globe, LayoutGrid, Lightbulb, LogOut, Maximize, Repeat, Sliders, Smartphone, Zap } from 'lucide-react'
 import { getHintStyle, setHintStyle as persistHintStyle, type HintStyle } from '../../lib/onboarding/hintStyle'
 
 type HeaderVariant = 'horizontal' | 'vertical'
@@ -39,6 +40,7 @@ export default function Settings() {
   const navigate = useNavigate()
   const { user, logout, updateSettings, updateProfile } = useAuthContext()
   const [quickTask, setQuickTask] = useState<QuickTaskSettings>(() => resolveQuickTaskSettings(user?.settings))
+  const [recurringScope, setRecurringScope] = useState<RememberedScope>(() => resolveRememberedScope(user?.settings))
   const [reminders, setReminders] = useState<ReminderSettings>(() => resolveReminderSettings(user?.settings))
   const isMobile = useMediaQuery('(max-width: 767px)')
   const [showConfirmLogout, setShowConfirmLogout] = useState(false)
@@ -420,6 +422,33 @@ export default function Settings() {
               </button>
             </div>
           </div>
+        </section>
+
+        {/* Recurring-event scope */}
+        <section className="bg-zinc-900 border border-zinc-800 rounded-lg p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <Repeat className="w-5 h-5 text-zinc-400" />
+            <h2 className="text-lg font-mono font-semibold text-white">{t('recurringScope.title')}</h2>
+          </div>
+
+          <label className="block text-sm text-zinc-400 mb-1" htmlFor="recurring-scope">
+            {t('recurringScope.label')}
+          </label>
+          <select
+            id="recurring-scope"
+            value={recurringScope}
+            onChange={e => {
+              const value = e.target.value as RememberedScope
+              setRecurringScope(value)
+              autoSaveSettings({ recurring_scope: value } as Partial<UserSettings>)
+            }}
+            className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-white font-mono text-sm focus:outline-none focus:border-blue-500"
+          >
+            <option value="ask">{t('recurringScope.ask')}</option>
+            <option value="occurrence">{t('recurringScope.occurrence')}</option>
+            <option value="series">{t('recurringScope.series')}</option>
+          </select>
+          <p className="mt-2 text-xs text-zinc-500">{t('recurringScope.hint')}</p>
         </section>
 
         {/* Quick task defaults */}
