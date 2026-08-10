@@ -238,3 +238,68 @@ describe('handleDragComplete — resize (MD1/MD2)', () => {
     });
   });
 });
+
+// ---------------------------------------------------------------------------
+// A click that never moved.
+//
+// CLAUDE.md's Known Broken section claimed "порога движения нет — простой клик
+// по зоне resize схлопывает событие". Half of that is true: resize really has
+// no movement threshold, unlike move, which stays `pending` until the cursor
+// travels 5px (useWeekGridDrag.ts). The collapse half is not — it described the
+// older min/max-swapping version, replaced by clamping against MIN_SLOT.
+//
+// These pin the current behaviour so the claim can be corrected with evidence
+// rather than by reading, and so a future refactor cannot quietly reintroduce
+// the collapse.
+// ---------------------------------------------------------------------------
+
+describe('handleDragComplete — resize that never moved', () => {
+  it('leaves a same-day event exactly where it was when the end handle is only clicked', () => {
+    // curMin starts at the event's own end, so a click commits cursor == edge.
+    const { onMoveOrResize } = runDrag({
+      kind: 'resize-end',
+      dayUtc0: MON,
+      id: 'e1',
+      otherEndMin: min(9),
+      curMin: min(10),
+    });
+
+    expect(onMoveOrResize).toHaveBeenCalledWith({
+      id: 'e1',
+      startsAt: iso(at(MON, 9)),
+      endsAt: iso(at(MON, 10)),
+    });
+  });
+
+  it('leaves a same-day event exactly where it was when the start handle is only clicked', () => {
+    const { onMoveOrResize } = runDrag({
+      kind: 'resize-start',
+      dayUtc0: MON,
+      id: 'e1',
+      otherEndMin: min(10),
+      curMin: min(9),
+    });
+
+    expect(onMoveOrResize).toHaveBeenCalledWith({
+      id: 'e1',
+      startsAt: iso(at(MON, 9)),
+      endsAt: iso(at(MON, 10)),
+    });
+  });
+
+  it('never collapses an event below the minimum slot, even dragging past the anchor', () => {
+    // The old min/max swap moved the endpoint the user was not holding; the
+    // clamp keeps the held endpoint honest and the event alive.
+    const { onMoveOrResize } = runDrag({
+      kind: 'resize-end',
+      dayUtc0: MON,
+      id: 'e1',
+      otherEndMin: min(9),
+      curMin: min(7),
+    });
+
+    const call = onMoveOrResize.mock.calls[0][0];
+    expect(new Date(call.startsAt).getTime()).toBe(at(MON, 9));
+    expect(new Date(call.endsAt).getTime()).toBeGreaterThan(at(MON, 9));
+  });
+});
