@@ -12,6 +12,7 @@ sources:
   - file: "web/playwright.config.ts"
 stakes: medium
 links:
+  - relates-to: learning-md2-lived-in-untested-producers
   - relates-to: learning-native-confirm-hides-the-r1-dialog
   - relates-to: learning-checkbox-in-a-plan-is-a-claim-not-evidence
   - relates-to: entity-server-topology

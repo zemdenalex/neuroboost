@@ -81,3 +81,5 @@ Transcript analyzed: 3602 lines, 41 file reads, numerous tool writes. Conclusion
 ## [2026-08-10] ingest | learning-native-confirm-hides-the-r1-dialog — R1 прожат в браузере впервые; два ложных диагноза (onboarding-оверлей, native confirm)
 
 ## [2026-08-10] verify | learning-digest-sent-empty-text — настоящий дайджест 08:00 ушёл SENT 04:59:46Z; ночной луп завершён
+
+## [2026-08-10] ingest | learning-md2-lived-in-untested-producers — MD2 починен (aec55e3), проверен перетаскиванием мыши (31643f4)

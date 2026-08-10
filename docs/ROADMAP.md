@@ -188,8 +188,18 @@ which cannot represent a range crossing midnight. `utcToLocalMinutes`
 
 ### Fix plan (~150–200 lines across 4 files)
 
-1. **Write `dragHandlers.test.ts` first** — `handleDragComplete` is pure and has **zero** tests
-   today, which is exactly where these bugs live. The scenarios above become the regression cases.
+> 🔴 **Обновлено 10.08. Шаги 1–3 сделаны, MD2 закрыт** (`aec55e3`, `31643f4`). Шаг 1 в исходном
+> виде **вводил в заблуждение**: `handleDragComplete` уже был написан правильно и к 10.08 имел
+> 13 тестов, а дефект жил в **продюсерах** (`startResizeStart/End`, `onMove`), у которых
+> покрытия не было вовсе. Тест на обработчик проходил бы в момент написания. Разбор —
+> узел графа `learning-md2-lived-in-untested-producers`.
+>
+> Осталось: **MD1** (шаг 2 в части X курсора) и шаги 4–7. MD1 намеренно не делается до
+> шага 7: без обобщённого ghost неаккуратное вертикальное движение утащит событие в соседние
+> сутки — баг хуже исправляемого.
+
+1. ~~**Write `dragHandlers.test.ts` first**~~ — сделано; см. поправку выше о том, почему этого
+   было недостаточно.
 2. Resize states carry absolute `startMs`/`endMs` (as `DragMove.originalStartMs/EndMs` already
    does); `onMove` computes `cursorAbsMs = targetDayUtc0 + curMin*60000` for **all** kinds.
 3. `handleResizeComplete`: **clamp, don't min/max-swap** — resize-end → `newEnd = max(cursorAbs,
