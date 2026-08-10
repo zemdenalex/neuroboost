@@ -63,3 +63,5 @@ learning-a-check-outside-the-checklist-never-runs.
 **Навыки на следующую сессию:** `/loop` с промптом выше — основное. Для P3 —
 `superpowers:brainstorming` → `superpowers:writing-plans`. Для правок UI — прогон
 `corepack pnpm e2e` обязателен наравне с typecheck/build.
+
+## [2026-08-10 04:23] consolidate | START — 1 to consolidate, 0 skipped (too large)
