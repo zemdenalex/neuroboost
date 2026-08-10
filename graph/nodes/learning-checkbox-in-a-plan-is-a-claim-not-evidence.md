@@ -11,6 +11,7 @@ sources:
   - file: "docs/DOCS-MAP.md §0"
 links:
   - relates-to: entity-neuroboost-docs-map
+  - remedied-by: entity-e2e-playwright-harness
 ---
 **Summary:** Состояние работы в этом проекте нельзя читать по `- [x]` — оно врёт в обе стороны.
 

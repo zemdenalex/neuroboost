@@ -6,7 +6,7 @@ status: verified
 verified_by: session-88767014
 verified_at: 2026-08-10
 tags: [neuroboost, infra, deploy, telegram, nivium]
-weight: { importance: 5, connectivity: 4, access: 2, last_accessed: 2026-08-10 }
+weight: { importance: 5, connectivity: 7, access: 3, last_accessed: 2026-08-10 }
 sources:
   - command: "ssh root@62.76.228.106 'docker ps --format {{.Names}}'"
   - command: "ssh -i ~/.ssh/ufo_servers root@185.214.10.107 'curl -o /dev/null -w %{http_code} https://api.telegram.org/'"
@@ -17,7 +17,6 @@ links:
   - relates-to: blocker-ssh-key-mismatch-deployment
   - relates-to: preference-rotate-after-it-works
 ---
-
 **Всё проверено живьём 10.08 ~03:40–03:45.** Значения — команды, а не пересказ.
 
 ## Сервер приложения — `root@62.76.228.106`
