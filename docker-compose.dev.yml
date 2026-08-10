@@ -72,6 +72,15 @@ services:
     build:
       context: ./bot
     container_name: neuroboost-dev-bot
+    # Not started by `up -d`. The staging bot runs off-site (nl-2, Netherlands)
+    # because Telegram is unreachable from this host; a second container here
+    # would long-poll getUpdates on the SAME token, and Telegram hands each
+    # update to exactly one consumer — delivery would flap rather than fail,
+    # which is harder to notice. Stopping it by hand is not durable: deploy-dev
+    # runs `down --remove-orphans && up -d` on every push to develop and would
+    # bring it straight back. Run it here only if the bot ever moves back:
+    #   docker compose -f docker-compose.dev.yml --profile local-bot up -d bot
+    profiles: [local-bot]
     environment:
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
       - API_BASE=http://api:8080
