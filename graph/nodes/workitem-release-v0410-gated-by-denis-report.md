@@ -18,7 +18,7 @@ links:
   - relates-to: learning-merge-to-main-is-the-release
   - relates-to: workitem-p2-notifications-last-mile
 ---
-**Summary:** PR #9 (`develop` → `main`, **108** коммитов на 10.08) открыт и НЕ смёржен; мерж и
+**Summary:** PR #9 (`develop` → `main`, **124** коммитов на 10.08 08:00 — пересчитывать `git rev-list --count main..develop`, число росло всю ночь) открыт и НЕ смёржен; мерж и
 есть релиз, поэтому это единственная точка, где нужен явный «да» Дениса.
 
 ⚠ Числа в самих документах меньше (99 в staging-check, ~71 в CLAUDE.md до правки) — считать
