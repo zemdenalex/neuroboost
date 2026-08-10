@@ -153,3 +153,8 @@ private/
 # Playwright MCP session artifacts
 .playwright-mcp/
 graph/.pending/
+
+# Playwright visual-verification artifacts
+web/e2e-results/
+web/playwright-report/
+web/blob-report/
