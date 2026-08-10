@@ -77,3 +77,5 @@ Transcript analyzed: 3602 lines, 41 file reads, numerous tool writes. Conclusion
 ## [2026-08-10] ingest | learning-digest-sent-empty-text, learning-compose-profile-hides-running-container — дайджест уходил пустым (FAILED каждое утро); profiles скрывает сервис от down
 
 ## [2026-08-10] ingest | workitem-bot-authtoken-never-set — реализовано (e5675a4), закрытие ждёт слова Дениса
+
+## [2026-08-10] ingest | learning-native-confirm-hides-the-r1-dialog — R1 прожат в браузере впервые; два ложных диагноза (onboarding-оверлей, native confirm)
