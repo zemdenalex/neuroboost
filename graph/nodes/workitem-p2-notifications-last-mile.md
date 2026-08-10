@@ -4,7 +4,7 @@ title: P2 «уведомления приходят» — упирается в 
 type: work-item
 status: open
 tags: [neuroboost, notifications, telegram, deploy, blocked]
-weight: { importance: 5, connectivity: 16, access: 2, last_accessed: 2026-08-10 }
+weight: { importance: 5, connectivity: 17, access: 3, last_accessed: 2026-08-10 }
 created: 2026-08-10
 sources:
   - file: "docs/ROADMAP.md — секция «P2 — что построено»"
@@ -21,6 +21,8 @@ links:
   - relates-to: workitem-p3-shared-events
   - relates-to: learning-null-key-passes-a-unique-index
   - relates-to: learning-goroutine-panic-takes-the-whole-api
+  - worked-by: workitem-night-loop-2026-08-10
+  - relates-to: entity-server-topology
 ---
 **Summary:** Собрано 8 шагов из 10 (не 9, как говорил ROADMAP до 10.08), staging обновлён; но
 уведомление физически не доедет до Telegram, пока не заданы `SERVICE_TOKEN` и бот не переехал

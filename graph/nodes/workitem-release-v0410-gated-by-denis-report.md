@@ -4,7 +4,7 @@ title: Релиз v0.4.10 — PR #9 открыт, мерж = релиз, ждё�
 type: work-item
 status: open
 tags: [neuroboost, release, ci, blocked-on-denis]
-weight: { importance: 5, connectivity: 3, access: 1, last_accessed: 2026-08-10 }
+weight: { importance: 5, connectivity: 6, access: 2, last_accessed: 2026-08-10 }
 created: 2026-08-10
 sources:
   - file: ".remember/handoff-2026-07-28.md"

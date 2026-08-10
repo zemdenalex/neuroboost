@@ -30,3 +30,36 @@ lint … so subagents can quickly see what doc is what». Пять субаге�
 Читать первыми: entity-neuroboost-docs-map, workitem-release-v0410-gated-by-denis-report,
 workitem-bot-authtoken-never-set, learning-merge-to-main-is-the-release.
 Ночной луп: промпт в `.remember/night-loop-2026-08-10.md`.
+
+## [2026-08-10] recall | workitem-p2-notifications-last-mile, workitem-release-v0410-gated-by-denis-report, blocker-ssh-key-mismatch-deployment, memory-split-claude-graph-remember, learning-merge-to-main-is-the-release, learning-checkbox-in-a-plan-is-a-claim-not-evidence, entity-neuroboost-docs-map, workitem-p3-shared-events
+
+## [2026-08-10 04:20] Сессия: подготовка ночного лупа
+
+**Сделано.** Написан промпт ночного автономного лупа — `.remember/night-loop-2026-08-10.md`,
+542 строки, самодостаточный для свежей сессии. Цель Дениса дословно: начать пользоваться
+приложением утром, «especially fix the telegram bots».
+
+Диагностика Telegram **закрыта живьём**, луп начинает с починки: настоящий сервер найден
+(`root@62.76.228.106`, обе среды на нём, ключ-авторизация работает), `SERVICE_TOKEN` пуст
+в обоих `.env`, бот падает с `i/o timeout` на `api.telegram.org`. Хост для переезда бота —
+`nl-2` (Нидерланды), проверен: Telegram отдаёт 302, Docker есть, load 0.01.
+
+Поставлен визуальный харнесс: `@playwright/test` в `web/`, два вьюпорта (1440×900 и 375×667),
+**6/6 зелёные против staging**. Он сразу окупился — показал, что `/` это маркетинговый
+лендинг, а не логин.
+
+Граф: 14 → 19 узлов. Узел `blocker-ssh-key-mismatch-deployment` был **фактически неверен**
+(звал чинить хост, где NeuroBoost никогда не жил) — переписан.
+
+**Открыто.** Луп **не запущен**, запускает Денис. 9 коммитов не запушены (5 R1 + 4 этой
+сессии). Релиз v0.4.10 по-прежнему ждёт отчёта Дениса по staging-чеклисту — мерж есть
+деплой. 7 узлов в очереди `promote` ждут его слова. Один узел-сирота от PM-сессии:
+`peer-project-lessons-for-ci-and-testing`.
+
+**Читать первыми:** workitem-night-loop-2026-08-10, entity-server-topology,
+entity-e2e-playwright-harness, workitem-p2-notifications-last-mile,
+learning-a-check-outside-the-checklist-never-runs.
+
+**Навыки на следующую сессию:** `/loop` с промптом выше — основное. Для P3 —
+`superpowers:brainstorming` → `superpowers:writing-plans`. Для правок UI — прогон
+`corepack pnpm e2e` обязателен наравне с typecheck/build.

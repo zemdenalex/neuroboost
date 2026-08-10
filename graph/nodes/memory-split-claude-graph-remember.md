@@ -6,7 +6,7 @@ status: proposed
 proposed_by: consolidator
 proposed_at: 2026-08-10
 tags: [neuroboost, memory-management, project-structure]
-weight: { importance: 4, connectivity: 2, access: 2, last_accessed: 2026-08-10 }
+weight: { importance: 4, connectivity: 2, access: 3, last_accessed: 2026-08-10 }
 sources:
   - file: ".remember/night-loop-2026-08-10.md lines 25–36"
 stakes: high

@@ -4,7 +4,7 @@ title: Карта документов — docs/DOCS-MAP.md: что читать
 type: entity
 status: verified
 tags: [neuroboost, docs, navigation, onboarding-agent]
-weight: { importance: 5, connectivity: 4, access: 1, last_accessed: 2026-08-10 }
+weight: { importance: 5, connectivity: 4, access: 2, last_accessed: 2026-08-10 }
 created: 2026-08-10
 sources:
   - file: "docs/DOCS-MAP.md"

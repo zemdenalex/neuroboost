@@ -4,7 +4,7 @@ title: Галочка в плане — заявка автора, а не св�
 type: learning
 status: verified
 tags: [neuroboost, docs, verification, superpowers-plans]
-weight: { importance: 4, connectivity: 3, access: 1, last_accessed: 2026-08-10 }
+weight: { importance: 4, connectivity: 5, access: 2, last_accessed: 2026-08-10 }
 created: 2026-08-10
 sources:
   - file: "docs/superpowers/plans/2026-04-23-v0.4.9-polish.md — Task 7.4"

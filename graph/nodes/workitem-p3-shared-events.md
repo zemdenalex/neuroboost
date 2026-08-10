@@ -4,7 +4,7 @@ title: P3 «общие события» — решено только одно: 
 type: work-item
 status: open
 tags: [neuroboost, p3, shared-events, design-needed]
-weight: { importance: 3, connectivity: 2, access: 1, last_accessed: 2026-08-10 }
+weight: { importance: 3, connectivity: 3, access: 2, last_accessed: 2026-08-10 }
 created: 2026-08-10
 sources:
   - file: "docs/ROADMAP.md — «Next Sprint: P1/P2/P3»"

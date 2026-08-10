@@ -6,7 +6,7 @@ status: verified
 verified_by: session-88767014
 verified_at: 2026-08-10
 tags: [neuroboost, deploy, ssh, security, resolved]
-weight: { importance: 3, connectivity: 3, access: 3, last_accessed: 2026-08-10 }
+weight: { importance: 3, connectivity: 3, access: 4, last_accessed: 2026-08-10 }
 sources:
   - file: ".remember/night-loop-2026-08-10.md §4"
   - command: "ssh -o BatchMode=yes root@62.76.228.106 'docker ps'"
