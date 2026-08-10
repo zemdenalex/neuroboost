@@ -142,6 +142,28 @@ func (c *Client) do(req *http.Request, result any) error {
 	return json.NewDecoder(resp.Body).Decode(result)
 }
 
+// TelegramLogin exchanges a signed Login Widget payload for a JWT.
+//
+// The payload is built and signed by internal/auth; this only carries it. The
+// endpoint is the same one the web widget posts to, so the bot gets an ordinary
+// user session rather than a privileged one — and lands on the account the
+// tg_id is already attached to, instead of creating a parallel one.
+func (c *Client) TelegramLogin(payload any) (string, int64, error) {
+	var resp struct {
+		Data struct {
+			Token     string `json:"token"`
+			ExpiresAt int64  `json:"expires_at"`
+		} `json:"data"`
+	}
+	if err := c.post("/api/auth/telegram", "", payload, &resp); err != nil {
+		return "", 0, err
+	}
+	if resp.Data.Token == "" {
+		return "", 0, fmt.Errorf("login succeeded but returned no token")
+	}
+	return resp.Data.Token, resp.Data.ExpiresAt, nil
+}
+
 func (c *Client) GetEvents(token string, start, end string) ([]Event, error) {
 	var resp struct {
 		Data []Event `json:"data"`

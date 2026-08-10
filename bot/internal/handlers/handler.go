@@ -1,12 +1,14 @@
 package handlers
 
 import (
+	"log"
 	"strings"
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 
 	"github.com/zemdenalex/neuroboost-bot/internal/api"
+	"github.com/zemdenalex/neuroboost-bot/internal/auth"
 	"github.com/zemdenalex/neuroboost-bot/internal/config"
 	"github.com/zemdenalex/neuroboost-bot/internal/state"
 )
@@ -22,8 +24,52 @@ func New(bot *tgbotapi.BotAPI, apiClient *api.Client, store *state.Store, cfg co
 	return &Handler{bot: bot, api: apiClient, store: store, cfg: cfg}
 }
 
+// authRefreshWindow re-logs in slightly before expiry, so a command issued at
+// the boundary does not fail on a token that dies mid-request.
+const authRefreshWindow = 2 * time.Minute
+
+// ensureAuth gives this chat a JWT before any handler tries to use one.
+//
+// Until now nothing ever assigned UserState.AuthToken: it was read in seven
+// places and written in none, so every /today and every task command went to
+// the API with an empty Authorization header and came back unauthorised. The
+// bot half of the product was dead while looking healthy.
+//
+// Returns false when the user cannot be identified or the API rejects the
+// login — callers must not proceed, or they will produce the same silent
+// unauthorised call this exists to prevent.
+func (h *Handler) ensureAuth(chatID int64, from *tgbotapi.User) bool {
+	if from == nil {
+		// Channel posts and some service messages carry no sender; there is no
+		// identity to log in as.
+		h.sendText(chatID, "⚠️ Can't identify you from this chat. Message the bot directly.")
+		return false
+	}
+
+	us := h.store.GetOrCreate(chatID)
+	if us.AuthToken != "" && time.Now().Add(authRefreshWindow).Unix() < us.AuthExpiresAt {
+		return true
+	}
+
+	payload := auth.BuildLoginRequest(h.cfg.TelegramToken, from.ID,
+		from.FirstName, from.LastName, from.UserName, "", time.Now().Unix())
+
+	token, expiresAt, err := h.api.TelegramLogin(payload)
+	if err != nil {
+		log.Printf("auth: login for chat %d failed: %v", chatID, err)
+		h.sendText(chatID, "⚠️ Couldn't sign you in. Try again in a minute.")
+		return false
+	}
+
+	h.store.SetAuth(chatID, token, expiresAt)
+	return true
+}
+
 func (h *Handler) HandleMessage(msg *tgbotapi.Message) {
 	chatID := msg.Chat.ID
+	if !h.ensureAuth(chatID, msg.From) {
+		return
+	}
 	us := h.store.GetOrCreate(chatID)
 
 	if us.CurrentFlow != "" {
@@ -66,6 +112,10 @@ func (h *Handler) HandleCallback(cb *tgbotapi.CallbackQuery) {
 	data := cb.Data
 
 	h.bot.Send(tgbotapi.NewCallback(cb.ID, ""))
+
+	if !h.ensureAuth(chatID, cb.From) {
+		return
+	}
 
 	switch {
 	case data == "main_menu":
