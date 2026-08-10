@@ -87,18 +87,35 @@ export async function mintSession(): Promise<Session> {
   }
 }
 
+// Onboarding flags, from web/src/lib/onboarding/onboardingFlag.ts. The welcome
+// card is a full-screen overlay on a fresh account and it intercepts every
+// click on the calendar underneath — the first run of the recurring-scope spec
+// failed on exactly that, and only the failure screenshot said why.
+//
+// Seeded rather than clicked away: a click is a race against the overlay's own
+// mount, and dismissing it is not what these specs are about.
+export const WELCOME_SEEN_KEY = 'neuroboost-onboarding-welcome-seen'
+export const CHECKLIST_DISMISSED_KEY = 'neuroboost-onboarding-checklist-dismissed'
+
 /**
  * Seeds the session before any page script runs. AuthContext reads localStorage
  * on mount, so writing it after navigation would lose the race and bounce the
  * test to /login — which looks identical to a bad token.
  */
-export async function applySession(page: Page, session: Session) {
+export async function applySession(page: Page, session: Session, { skipOnboarding = true } = {}) {
   await page.addInitScript(
-    ({ token, expiresAt, tokenKey, expiryKey }) => {
+    ({ token, expiresAt, tokenKey, expiryKey, onboardingKeys }) => {
       localStorage.setItem(tokenKey, token)
       localStorage.setItem(expiryKey, String(expiresAt))
+      for (const k of onboardingKeys) localStorage.setItem(k, 'true')
     },
-    { token: session.token, expiresAt: session.expiresAt, tokenKey: TOKEN_KEY, expiryKey: TOKEN_EXPIRY_KEY }
+    {
+      token: session.token,
+      expiresAt: session.expiresAt,
+      tokenKey: TOKEN_KEY,
+      expiryKey: TOKEN_EXPIRY_KEY,
+      onboardingKeys: skipOnboarding ? [WELCOME_SEEN_KEY, CHECKLIST_DISMISSED_KEY] : [],
+    }
   )
 }
 
