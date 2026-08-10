@@ -1,6 +1,7 @@
-import { HOUR_PX, MIN_SLOT_MIN, GHOST_COLORS } from './weekgrid.constants';
+import { HOUR_PX, MIN_SLOT_MIN, GHOST_COLORS, DAY_MS } from './weekgrid.constants';
 import { minsToTop, formatMinutesToTime } from './weekgrid.utils';
 import type { DragState } from './weekgrid.types';
+import { resizeGhostForColumn } from './resizeCoords';
 
 interface GhostPreviewProps {
   drag: DragState;
@@ -51,10 +52,22 @@ export function GhostPreview({ drag, dayUtc0, isMobile }: GhostPreviewProps) {
     );
   }
   
-  // Resize ghost
-  if ((drag.kind === 'resize-start' || drag.kind === 'resize-end') && drag.dayUtc0 === dayUtc0) {
-    const startMin = Math.min(drag.curMin, drag.otherEndMin);
-    const endMin = Math.max(drag.curMin, drag.otherEndMin);
+  // Resize ghost.
+  //
+  // Absolute coordinates when the state carries them, so a range crossing
+  // midnight draws on every column it covers instead of one nonsense box on the
+  // start column. Falls back to the day-relative pair for any state that still
+  // lacks them.
+  if (drag.kind === 'resize-start' || drag.kind === 'resize-end') {
+    const slice =
+      drag.anchorMs !== undefined && drag.cursorMs !== undefined
+        ? resizeGhostForColumn(drag.anchorMs, drag.cursorMs, dayUtc0, DAY_MS)
+        : drag.dayUtc0 === dayUtc0
+          ? { startMin: Math.min(drag.curMin, drag.otherEndMin), endMin: Math.max(drag.curMin, drag.otherEndMin) }
+          : null;
+    if (!slice) return null;
+
+    const { startMin, endMin } = slice;
     const top = Math.max(0, minsToTop(startMin));
     const height = Math.max(minsToTop(MIN_SLOT_MIN), Math.min(minsToTop(endMin - startMin), maxTop - top));
     

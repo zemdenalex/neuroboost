@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { DAY_MS, ALL_DAY_HEIGHT, DAY_HEADER_HEIGHT, EDGE_THRESHOLD } from './weekgrid.constants';
 import { topToMins, snapMin, clampMins, utcToLocalMinutes } from './weekgrid.utils';
+import { buildResizeState, resizeCursorMs } from './resizeCoords';
 import type { DragState, DragMeta, DayInfo, ProcessedEvent, WeekGridCallbacks } from './weekgrid.types';
 import { useAutoScroll } from './useAutoScroll';
 import { handleDragComplete } from './dragHandlers';
@@ -40,15 +41,11 @@ export function useWeekGridDrag({
   }, [timezone]);
 
   const startResizeStart = useCallback((day: DayInfo, event: ProcessedEvent) => {
-    const startMin = utcToLocalMinutes(event.startsAt, timezone);
-    const endMin = utcToLocalMinutes(event.endsAt, timezone);
-    setDrag({ kind: 'resize-start', dayUtc0: day.dayUtc0, id: event.id, otherEndMin: endMin, curMin: startMin });
+    setDrag(buildResizeState('resize-start', day.dayUtc0, event, timezone));
   }, [timezone]);
 
   const startResizeEnd = useCallback((day: DayInfo, event: ProcessedEvent) => {
-    const startMin = utcToLocalMinutes(event.startsAt, timezone);
-    const endMin = utcToLocalMinutes(event.endsAt, timezone);
-    setDrag({ kind: 'resize-end', dayUtc0: day.dayUtc0, id: event.id, otherEndMin: startMin, curMin: endMin });
+    setDrag(buildResizeState('resize-end', day.dayUtc0, event, timezone));
   }, [timezone]);
 
   const cancelDrag = useCallback(() => { setDrag(null); stopAutoScroll(); }, [stopAutoScroll]);
@@ -103,7 +100,15 @@ export function useWeekGridDrag({
           // Single-day: follow cursor for both day and time
           return { ...prev, targetDayUtc0, offsetMin: curMin };
         }
-        if (prev.kind === 'resize-start' || prev.kind === 'resize-end') return { ...prev, curMin };
+        if (prev.kind === 'resize-start' || prev.kind === 'resize-end') {
+          // curMin drives the ghost, cursorMs drives the commit. Both come from
+          // the column the drag STARTED on, not from targetDayUtc0: the resize
+          // ghost renders on that one column only (GhostPreview.tsx), so
+          // following the cursor's X would commit a move the user never saw.
+          // Carrying the X into resize is MD1 and needs the ghost generalised
+          // first.
+          return { ...prev, curMin, cursorMs: resizeCursorMs(prev.dayUtc0, curMin) };
+        }
         return prev;
       });
     };
