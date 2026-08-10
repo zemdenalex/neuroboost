@@ -1,33 +1,49 @@
 # NeuroBoost
 
-Calendar-first productivity app for neurodivergent users. Go backend + React/TypeScript frontend + PostgreSQL. "The calendar is truth; tasks exist to support scheduling and reflection."
+Calendar-first productivity app for neurodivergent users. Go backend + React/TypeScript frontend +
+PostgreSQL + Telegram bot. "The calendar is truth; tasks exist to support scheduling and reflection."
 
 **Live:** https://neuroboost.website · **Staging:** https://dev.neuroboost.website
-**Released:** v0.4.9 (tagged 2026-04-24 on `main`) · **Unreleased:** v0.4.10 on `develop`
+**Released:** `v0.4.9` · **Unreleased:** всё, что после, — на `develop`
 
-> ⚠️ **Read before anything else** (verified by a full audit on 2026-07-19):
-> - **Active development is on `develop`**, ~71 commits ahead of `main` (147 files, +6173/−962),
->   including *all* tests and migration `000009`. A fresh checkout lands on `main` and is missing
->   them. **Check out `develop` before reading code.**
-> - **`docs/ROADMAP.md` is the status source of truth.** `docs/NeuroBoost_v0_4_0_Feature_List.md`
->   is a historical planning artifact from Dec 2025 — its per-row statuses are wrong across the
->   board (it marks shipped features as 📋 planned). Never read status from it.
-> - **Event recurrence (RRULE) is BUILT** — `api-go/internal/events/recurrence.go`
->   (`parseRRule` / `expandRecurrence` / `buildRRule`, exceptions via the `event_exception`
->   table). **Reuse it, do not rewrite it.** Tasks have no recurrence — that is the real gap.
-> - **Counts drift. Count the filesystem, never trust a doc line** — including this one.
-> - This project has **no `graph/`**, deliberately. Durable notes live here and in `.remember/`
->   (`loop-state.md` holds the running backlog from prior development loops).
+> ⚠️ **Прочитать до всего остального:**
+> - **Работа идёт на `develop`**, далеко впереди `main`. Свежий клон приземляется на `main` и не
+>   видит ни тестов, ни последних миграций. **`git checkout develop` до чтения кода.**
+> - **`develop` авто-деплоится на staging, а push в `main` — это ПРОДАКШЕН** (`ci.yml`, job
+>   `deploy`, `if: github.ref == 'refs/heads/main'`). Тег ставится постфактум и ничего не
+>   запускает. Значит **мерж PR = релиз**, и он делается только по явному «да» Дениса.
+> - 🔴 **Ни одно число из документа не переносить — пересчитывать.** Каждый счётчик в этом
+>   репозитории протухал минимум дважды. Команды — в §Счётчики.
+> - 🔴 **Галочка `- [x]` в `docs/superpowers/plans/` ничего не доказывает.** Есть планы, где всё
+>   пусто при собранном коде, и план, где галочки проставлены до прогона тестов. Свидетельство —
+>   `git log`, файл на диске, роут в `main.go`, прогнанный тест.
+
+## Первоисточники
+
+**Карта всех документов проекта: `docs/DOCS-MAP.md`** — что живо, что архив, что врёт активно, и
+что в каждом есть такого, чего нет в коде. Открывать её до того, как читать любой документ старше
+недели.
+
+🔴 **Источники истины** (свой вариант не изобретать):
+- Статус работы — `docs/ROADMAP.md` (⚠ его собственная шапка-дата отстаёт от тела)
+- Текущий чеклист приёмки Дениса — `docs/staging-check-v0.4.10.md`
+- Требования P1/P2 — `docs/superpowers/specs/2026-07-27-p1-task-quick-capture-design.md` и
+  `docs/superpowers/specs/2026-07-27-p2-notifications-design.md`
+- Последнее состояние работы — `.remember/handoff-2026-07-28.md`
+
+🔴 **Активно врут** — `README.md` (`### Next` зовёт делать замороженное), `PROGRESS.md`,
+`DEPLOY.md`, `docs/NeuroBoost_v0_4_0_Feature_List.md`. Вердикты по каждому — `DOCS-MAP.md` §3.
 
 ## Tech Stack
 
 | Layer | Stack |
 |-------|-------|
-| Backend | Go 1.22, chi router, pgx/v5, JWT auth |
+| Backend | Go 1.22, chi router, pgx/v5, JWT auth — модуль `api-go/` |
+| Bot | Go, `go-telegram-bot-api` — **отдельный модуль `bot/`**, см. ниже |
 | Frontend | React 18, TypeScript, Vite 5.4, Tailwind CSS 3.4, pnpm 10.12.0 |
-| Database | PostgreSQL 16, golang-migrate (**9** migrations on `develop`, 8 on `main`) |
-| Testing | Go: 4 packages with tests · Frontend: Vitest + jsdom, **190 tests / 26 files** |
-| Infra | Docker Compose, Nginx, GitHub Actions CI, auto-deploy per branch |
+| Database | PostgreSQL 16, golang-migrate |
+| Testing | Go: `go test ./...` в каждом модуле · Frontend: Vitest + jsdom |
+| Infra | Docker Compose, Nginx, GitHub Actions CI, авто-деплой по ветке |
 
 ## Commands
 
@@ -36,108 +52,152 @@ Calendar-first productivity app for neurodivergent users. Go backend + React/Typ
 docker compose up -d
 docker compose logs -f api
 
-# Backend  (both MUST pass before backend work is done)
-cd api-go && go build ./...
-cd api-go && go test ./...
+# Backend — ДВА модуля, две команды. `go build ./...` из api-go в bot/ НЕ заходит.
+cd api-go && go build ./... && go vet ./... && go test ./...
+cd bot    && go build ./... && go vet ./... && go test ./...
 
-# Frontend (all three MUST pass before frontend work is done)
+# Frontend (все три MUST pass до «готово»)
 cd web && pnpm typecheck
 cd web && pnpm test --run
 cd web && pnpm build
-cd web && pnpm dev          # port 5173
+cd web && pnpm dev          # порт 5173
 
-# Migrations auto-run on API start. Manual:
+# Миграции применяются автоматически на старте API. Вручную:
 migrate -path api-go/migrations -database "$DATABASE_URL" up
 ```
 
-**pnpm not found?** This repo pins pnpm via the `packageManager` field. Run `corepack enable`
-once — it activates the correct version (10.12.0) automatically. Do not `npm i -g pnpm`.
+**pnpm не найден?** Версия закреплена полем `packageManager`. Один раз `corepack enable` — он
+активирует нужную (10.12.0). Не ставить `npm i -g pnpm`.
+
+**Локальный запуск фронта** — только из реального пути `C:\E_Drive\…`, не из `E:\…`, иначе
+junction ломает резолв `main.tsx`. Порт ровно 5173 и открывать ровно `http://localhost:5173` —
+CORS в `main.go` whitelist'ит только эту строку, с `127.0.0.1` preflight падает.
+
+## Счётчики — считать, а не читать
+
+```bash
+ls api-go/migrations/*.up.sql | wc -l          # сколько миграций (и какая следующая)
+git rev-list --count main..develop             # насколько develop впереди прода
+git rev-list --count origin/develop..develop   # сколько НЕ запушено
+git merge-base --is-ancestor main develop      # успех = fast-forward, иначе обычный мерж
+git tag | tail -3                              # что реально выпущено
+cd web && pnpm test --run                      # сколько тестов на самом деле
+```
+
+Таблица «что написано в документах против факта на 10.08.2026» — `docs/DOCS-MAP.md` §4.
 
 ## Architecture
 
-- **Backend entry:** `api-go/cmd/api/main.go` — **46** routes
-- **Handler pattern:** `internal/{module}/handlers.go` + `types.go`. Some use `NewHandler(db, cfg)`,
-  others `InitDB(db)` + exported functions
+- **Backend entry:** `api-go/cmd/api/main.go` — регистрация всех роутов там же
+- **Handler pattern:** `internal/{module}/handlers.go` + `types.go`. Часть модулей на
+  `NewHandler(db, cfg)`, часть на `InitDB(db)` + экспортируемые функции
+- **Ответы:** `util.RespondJSON(w, status, data)` / `util.RespondError(w, status, code, message)`
+  (`internal/util/response.go`). Заглушка — `util.Write501`
+- **Пользователь из запроса:** `middleware.UserIDFromContext(r.Context())`
+- **Настройки пользователя:** leaf-пакет `internal/usersettings` — он нужен `events`, `tasks` и
+  `reminders`, а `reminders` уже импортирует `events`; иначе import cycle
 - **Frontend entry:** `web/src/App.tsx` → `web/src/router.tsx` (React Router v6)
-- **API client:** `web/src/api/client.ts` with `api.get/post/patch/delete`
-- **Auth state:** `web/src/contexts/AuthContext.tsx`
-- **Real 501 stubs — only these three:** `needs`, `opportunities`, `patterns`.
-  `planning` and `reflections` are **fully implemented** (zero 501s in either).
+- **API-клиент:** `web/src/api/client.ts` — `api.get/post/patch/delete`
+- **Auth state:** `web/src/contexts/AuthContext.tsx`, хук называется **`useAuthContext()`**
+- **501-заглушки — ровно три:** `needs`, `opportunities`, `patterns`. `planning` и `reflections`
+  реализованы полностью (ноль вхождений `501`)
 
-See @docs/ROADMAP.md for current status and what's next.
-See @docs/CODEBASE_MAP.md for architecture detail (⚠️ last mapped 2026-01-21 — predates
-v0.4.4→v0.4.10; treat its module inventory as indicative, not current).
+Диаграммы потоков и «рецепты» (как добавить endpoint / страницу / миграцию) — `docs/CODEBASE_MAP.md`.
+🔴 Его **инвентарь** устарел (карта от 2026-01-21): числа миграций, состав `auth/`, отсутствие
+`bot/`, `planning`/`reflections` как заглушки — всё неверно. Диаграммы и конвенции — верны.
 
 ## Gotchas
 
-1. **`E:` is a Windows junction to `C:\E_Drive`.** Vite resolves real paths while Vitest globs
-   yield the junction path — every test file then fails to load. Handled by the Vitest-scoped
-   `resolve.preserveSymlinks` in `web/vite.config.ts`. **Do not enable that flag for builds** —
-   it breaks Rollup's resolution of pnpm's symlinked `node_modules`.
-2. **Token expiry mismatch:** stored as Unix seconds, compared with `Date.now()` (milliseconds)
-3. **Two parallel event API stacks** (this replaces the old "duplicate `toNbEvent()` in 3 places"
-   note — that was fixed; there is now exactly one, `web/src/types/index.ts:88`).
-   Raw snake_case `web/src/api/events.ts` vs camelCase `web/src/api/index.ts`. **Both export a
-   `moveEvent` that hits a different endpoint** — `PATCH /events/:id/move` vs generic
-   `PATCH /events/:id`. The calendar never calls the dedicated `/move` and `/resize` endpoints.
-   Check which stack you're importing from.
-4. **Priority inversion:** 1=Emergency, 5=If Possible (lower number = higher priority), 0=Buffer
-5. **Default timezone:** "Europe/Moscow" hardcoded in places — will need i18n
-6. **Legacy auth files:** `internal/auth/db.go` and `jwt.go` are unused by current handlers
-7. **Arrays default to `[]`:** never null from API
-8. **Week starts Monday** (ISO standard)
-9. **Health endpoint version is hardcoded** (`internal/status/handlers.go:44` → `"0.4.0"`) —
-   it cannot tell you which build is deployed
+1. **`E:` — junction на `C:\E_Drive`.** Vite резолвит реальные пути, Vitest отдаёт junction-путь —
+   и тогда ни один тест не загружается. Лечится Vitest-scoped `resolve.preserveSymlinks` в
+   `web/vite.config.ts`. **Не включать этот флаг для build** — ломает резолв символлинков
+   `node_modules` у Rollup.
+2. **Срок токена:** хранится в Unix-секундах, сравнивается с `Date.now()` (миллисекунды).
+3. **Два параллельных API-стека событий:** snake_case `web/src/api/events.ts` против camelCase
+   `web/src/api/index.ts`. **Оба экспортируют `moveEvent`, и они бьют в разные ручки** —
+   `PATCH /events/:id/move` против общего `PATCH /events/:id`. Календарь ходит только через
+   `api/index.ts`; `api/events.ts` использует Pomodoro. Проверяй, из какого стека импортируешь.
+4. **Инверсия приоритета:** 1 = Emergency, 5 = If Possible (меньше число — выше приоритет),
+   0 = Buffer.
+5. **Таймзона по умолчанию** «Europe/Moscow» местами захардкожена.
+6. **Массивы по умолчанию `[]`**, из API никогда не `null`.
+7. **Неделя начинается с понедельника** (ISO).
+8. **Версия в `/api/health` захардкожена** (`internal/status/handlers.go:44` → `"0.4.0"`) — по ней
+   нельзя понять, какой билд выкачен. Смотреть на поведение, не на строку версии.
+9. 🔴 **Всякая фоновая горутина обязана иметь `recover`.** Паника в горутине завершает процесс
+   целиком: тикер напоминаний ронял весь API раз в минуту на обычном событии.
+10. **`Tab` не используется для отступа** в дереве задач — это keyboard trap (WCAG 2.1.2), взяты
+    `Alt+→` / `Alt+←`.
+11. **Скан напоминаний пропускает пользователей без `tg_id`.** Для локальной проверки воркера:
+    `UPDATE "user" SET tg_id = 1 WHERE email = '…';`
+12. **Отрицательные смещения напоминаний — sentinel'ы, а не время:** `-1` snooze, `-2` дайджест.
+    Уникальный индекс требует `NULLS NOT DISTINCT` — с NULL в ключе дедупликация не работает
+    вовсе (дайджест уходил бы трижды за утро).
+13. **`docker compose restart` не перечитывает `.env`.** Правка переменной без
+    `up -d --force-recreate <service>` выглядит применённой и не применена — контейнер
+    продолжает жить со старым окружением. Стоило суток в Nivium, повторять не обязательно.
+14. 🔴 **Логи бота печатают его токен.** `docker logs neuroboost-bot` выводит URL вида
+    `https://api.telegram.org/bot<TOKEN>/getUpdates` — то есть **любое** чтение логов
+    отправляет секрет в транскрипт. Читать только через фильтр:
+    `docker logs … 2>&1 | sed -E 's/bot[0-9]+:[A-Za-z0-9_-]+/bot<REDACTED>/g'`.
+15. **Бот, вынесенный с машины API, теряет внутреннюю сеть.** `API_BASE` по умолчанию
+    `http://api:8080` — это docker-сеть. При переезде бота на отдельный хост адрес обязан
+    стать публичным, а `/api/svc/*` — доступным снаружи. И **старый контейнер бота надо
+    погасить**: два инстанса конкурируют за `getUpdates`, Telegram отдаёт апдейт одному,
+    и доставка начинает мигать через раз.
 
 ## Known Broken
 
-Verified by code audit 2026-07-19 — see `docs/ROADMAP.md` for detail and fix plans.
+Держать здесь только проверенное. Разбор с `file:line` — в `docs/ROADMAP.md`.
 
-- **MD1 / MD2 — multi-day event move & resize** (High). Root cause is a **coordinate system**
-  problem, not a broken state machine: resize states store time as minutes-within-one-day plus a
-  single `dayUtc0` (`weekgrid.types.ts:80-94`), which cannot represent a range crossing midnight.
-  `utcToLocalMinutes` (`timezone.utils.ts:38-43`) does `localMs % DAY_MS`, discarding the date.
-  Resize also ignores the cursor's X/day entirely (`useWeekGridDrag.ts:106`) and `min/max`-swaps
-  endpoints, so it silently moves the endpoint you weren't holding.
-  ⚠️ Resize has **no movement threshold** — a plain *click* on a multi-day event's resize zone
-  commits the collapse.
-- **Mutating any recurring-event instance returns 500** (High). `expandRecurrence` gives
-  instances synthetic IDs `"<parentUUID>:2026-07-21"` (`events/recurrence.go:152`); no handler
-  strips the suffix, so the UUID cast fails. Recurring events are effectively display-only. The
-  `/exceptions` endpoint is built but the frontend never calls it.
-- **`getTasks` returns snake_case cast to a camelCase type** (Medium). No conversion happens
-  (`web/src/api/index.ts:161-168`), so `task.estimatedMinutes` is always `undefined` and
-  scheduling a task always defaults to 60 minutes.
+- **MD1 / MD2 — move и resize многодневного события** (High). Корень — **система координат**, а не
+  сломанный state machine: состояния resize хранят время как минуты-внутри-суток + один `dayUtc0`
+  (`weekgrid.types.ts:80-94`), чем диапазон через полночь не выразить; `utcToLocalMinutes`
+  (`timezone.utils.ts:38-43`) делает `localMs % DAY_MS` и выбрасывает дату. Resize вдобавок
+  игнорирует X курсора (`useWeekGridDrag.ts:106`) и `min/max`-меняет концы местами, то есть двигает
+  не тот конец, за который держат. ⚠ Порога движения нет — **простой клик** по зоне resize
+  схлопывает событие.
+- 🔴 **Ассистент-бот не аутентифицируется**: `AuthToken` читается 7 раз в `bot/internal/`, не
+  присваивается нигде. Команды `/today` и задачи уходят в API с пустым токеном. Блокер отдельный
+  от `SERVICE_TOKEN` и от переезда бота — узел `workitem-bot-authtoken-never-set`.
+- 🟡 **Четырёх мобильных видов календаря нет** и не начинали (`MobileCalendar/` не существует),
+  хотя `v0.4.5` числится закрытым: их выкинул сам план на стадии планирования.
+
+✅ Починены и здесь больше не числятся: **R1** (мутация повторяющегося события возвращала 500) —
+28.07; **T1** (`getTasks` отдавал snake_case под camelCase-типом, из-за чего задача при
+перетаскивании всегда становилась 60-минутной) — 27.07, `web/src/api/toTask.ts`.
 
 ## Workflow
 
-1. **Explore** — read relevant files, understand context
-2. **Plan** — use plan mode for multi-file changes
-3. **Implement** — follow existing patterns (see `.claude/rules/`)
-4. **Verify** — frontend: `pnpm typecheck && pnpm test --run && pnpm build`; backend:
-   `go build ./... && go test ./...`
-5. **Commit** — descriptive message, never co-author Claude/Anthropic
+1. **Explore** — `graph/index.md` (инжектится сам), затем `docs/DOCS-MAP.md`, затем код
+2. **Plan** — plan mode для многофайловых правок
+3. **Implement** — по существующим образцам (`.claude/rules/`)
+4. **Verify** — frontend: `pnpm typecheck && pnpm test --run && pnpm build`; backend: **оба**
+   модуля, `api-go` и `bot`
+5. **Commit** — осмысленное сообщение, никогда не со-автор Claude/Anthropic
 
-**Branching:** implement on `develop` (auto-deploys to staging) → manual test → PR to `main` →
-tag on `main` → production deploys.
+**Ветки:** работа на `develop` (авто-деплой на staging) → ручная проверка → PR в `main` →
+🔴 **мерж = релиз прода** → тег на `main` постфактум.
 
 ## Rules
 
 ### ALWAYS
-- Read this file + relevant rules before working
-- Run the full verify step above before marking work done
-- Use parameterized queries with pgx — never string concatenation for SQL
-- Use existing API client (`api.get/post/patch/delete`) for frontend API calls
-- Use Lucide React for icons, Tailwind for styling
-- Surface assumptions before implementing
+- Прочитать этот файл и относящиеся правила до работы
+- Прогнать полную проверку выше до «готово»
+- Параметризованные запросы pgx — никогда не склейка строк для SQL
+- Фронтовые запросы — через существующий клиент (`api.get/post/patch/delete`)
+- Иконки Lucide React, стили Tailwind
+- Назвать допущения до реализации
 
 ### DO NOT
-- Edit `.env` files — use `.env.example` as reference
-- Use `any` in TypeScript
-- Add new dependencies without discussing first
-- Skip verification steps
-- Delete or modify existing migrations — create new ones
-- Hardcode secrets or credentials
+- Править `.env` — образец в `.env.example`
+- `any` в TypeScript
+- Добавлять зависимости без обсуждения
+- Пропускать шаги проверки
+- Удалять или менять существующие миграции — создавать новую
+- Хардкодить секреты
+- 🔴 Пушить `develop`, пока Денис проходит staging-чеклист руками — push пересобирает staging
+  посреди его прохода (его решение 28.07)
 
 ## Как заканчивать ход (правило Дениса, 2026-07-19)
 
@@ -170,3 +230,20 @@ tag on `main` → production deploys.
 **Язык по адресату:** разговор — English; документы для Дениса (handoff, план, разбор) — русский
 с английскими терминами (`push`, `migration`, `staging`); клиентские документы — русский;
 код, коммиты, ADR, идентификаторы — English.
+
+## Memory
+
+Текущее состояние проекта живёт в `graph/` (навык memory-graph), а не здесь. Этот файл держит
+только стабильные правила.
+
+- На старте сессии индекс графа уже инжектится в контекст. Отвечать по нему; тела узлов в
+  `graph/nodes/` открывать только когда нужна деталь. **Не** перечитывать этот файл и не
+  восстанавливать состояние по документам сверху вниз.
+- Узнал durable (решение, починку, факт, стоивший времени) — INGEST, узлом. Только то, чего нет
+  ни в репозитории, ни в графе. Узел `decision` или `preference` — только с моих собственных
+  слов, не с твоих предложений.
+- Если в `graph/.pending/` лежит транскрипт до сжатия — INGEST из него, потом удалить.
+- Перед концом сессии — HANDOFF графа (`/handoff`).
+
+`.remember/` остаётся сырым буфером сессий (handoff'ы, `loop-state.md`, промпты ночных лупов);
+граф — дистиллят из него.
