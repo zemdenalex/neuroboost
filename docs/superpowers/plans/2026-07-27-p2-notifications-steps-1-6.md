@@ -1,3 +1,5 @@
+<!-- паспорт: тип=план | статус=действует | строк=1872 | ~токенов=17508 | обновлён=по git -->
+
 # P2 Notifications (steps 1–6) Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.

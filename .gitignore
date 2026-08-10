@@ -152,3 +152,4 @@ private/
 
 # Playwright MCP session artifacts
 .playwright-mcp/
+graph/.pending/

@@ -22,11 +22,14 @@ Follow existing patterns:
 - Check neighboring handlers to match the pattern
 
 Response envelope: `{"data": ..., "error": "...", "meta": {...}}`
-Use `util.JSON(w, status, data)` and `util.Error(w, status, msg)` from `internal/util/response.go`.
+Use `util.RespondJSON(w, status, data)` and `util.RespondError(w, status, code, message)` from
+`internal/util/response.go`. Not-yet-built feature: `util.Write501(w, feature, endpoint)`.
+Authenticated user: `middleware.UserIDFromContext(r.Context())`.
 
 ### 2. Register Route
 
-Add the route in `api-go/cmd/api/main.go` (lines 54-124):
+Add the route in `api-go/cmd/api/main.go` (find the router groups by reading the file — line
+numbers drift):
 
 - Public routes go in the top-level router group
 - Protected routes go inside `r.Group(func(r chi.Router) { r.Use(middleware.JWT(...)) })`
@@ -59,7 +62,9 @@ Export from `web/src/api/index.ts`.
 ### 5. Frontend Types
 
 Add TypeScript interfaces in `web/src/types/`:
-- snake_case from API -> camelCase in frontend (conversion happens in API client)
+- 🔴 snake_case → camelCase conversion is **NOT** automatic. Write the converter next to the API
+  module (`web/src/api/toTask.ts` is the pattern) and cover it with a test. Casting the raw JSON
+  to a camelCase type compiles and silently yields `undefined` — that was bug T1.
 
 ### 6. Verify
 

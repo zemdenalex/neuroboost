@@ -1,5 +1,10 @@
 # PROGRESS
 
+> 🔴 **Снимок заморожен на 2026-07-19 и НЕ знает о переприоритизации 27.07** (P1 задачи ·
+> P2 уведомления · P3 общие события). Всё ниже про MD1/MD2 как «проблему номер один» —
+> устарело; они в backlog. Числа тоже протухли, пересчитывать по `CLAUDE.md` §Счётчики.
+> Актуальный статус — `docs/ROADMAP.md`, что чему верить — `docs/DOCS-MAP.md`.
+
 > **`docs/ROADMAP.md` is the status source of truth.** This file is a short, verified snapshot.
 > Last verified against the filesystem and a full test run: **2026-07-19** (branch `develop`).
 >

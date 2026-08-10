@@ -1,3 +1,5 @@
+<!-- паспорт: тип=документ | статус=архив | строк=339 | ~токенов=3035 | обновлён=по git -->
+
 # NeuroBoost v0.4.0 Feature List
 
 > ## ⚠️ HISTORICAL DOCUMENT — DO NOT READ STATUS FROM THIS FILE

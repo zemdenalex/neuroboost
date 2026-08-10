@@ -11,17 +11,20 @@ Follow this workflow when modifying the PostgreSQL schema.
 
 ### 1. Determine Next Migration Number
 
-Check existing migrations in `api-go/migrations/`:
-- Current latest: `000006_add_missing_columns`
-- Next number: `000007`
+🔴 **Read the number off the disk, never off this file.** Any number written here rots — it
+already did once (this skill said "next is `000007`" while `000010` was on disk).
+
+```bash
+ls api-go/migrations/*.up.sql | tail -1     # the latest; yours is that + 1
+```
 
 ### 2. Create Migration Files
 
-Create both up and down files:
+Create both up and down files, `NNNNNN` being the number you just read + 1:
 
 ```
-api-go/migrations/000007_description.up.sql
-api-go/migrations/000007_description.down.sql
+api-go/migrations/NNNNNN_description.up.sql
+api-go/migrations/NNNNNN_description.down.sql
 ```
 
 **Naming:** Use snake_case, descriptive: `add_`, `create_`, `alter_`, `drop_`

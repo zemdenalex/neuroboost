@@ -92,8 +92,16 @@ neuroboost/
 - ❌ Mobile calendar views (3-day, agenda, mini-month) — only swipe-day nav exists
 
 ### Next
-- 📋 Fix multi-day event move/resize
-- 📋 Eisenhower decision helper, Kanban rework — see [Roadmap](docs/ROADMAP.md)
+
+🔴 **Обновлено 2026-08-10.** Прежний список звал делать ровно то, что Денис 27.07.2026 отправил
+в backlog. Актуальный приоритет — три блокера ежедневного использования:
+
+- **P1** быстрое создание задач — ✅ собрано, не выпущено
+- **P2** уведомления в Telegram — 🟡 упирается в `SERVICE_TOKEN` и переезд бота на зарубежный хост
+- **P3** общие события — ⬜ спеки нет
+
+Отложены в backlog: multi-day move/resize (MD1/MD2), Eisenhower decision helper, Kanban rework.
+Статус — [Roadmap](docs/ROADMAP.md), карта документов — [DOCS-MAP](docs/DOCS-MAP.md).
 
 ---
 

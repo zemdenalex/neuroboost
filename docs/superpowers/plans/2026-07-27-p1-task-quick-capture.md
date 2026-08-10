@@ -1,3 +1,5 @@
+<!-- паспорт: тип=план | статус=выполнен | строк=1532 | ~токенов=13724 | обновлён=по git -->
+
 # P1 — Task Quick Capture Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.

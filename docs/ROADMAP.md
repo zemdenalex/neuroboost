@@ -1,6 +1,10 @@
+<!-- паспорт: тип=документ | статус=действует | строк=389 | ~токенов=6443 | обновлён=по git -->
+
 # NeuroBoost Roadmap
 
-> **Single source of truth for status and versioning.** Updated: 2026-07-19 (post-audit).
+> **Single source of truth for status and versioning.** Updated: **2026-08-10** (сверка с кодом;
+> тело правилось 27–28.07, а шапка до 10.08 всё ещё говорила «2026-07-19» — источник истины врал
+> о собственной дате).
 > Other docs lag; this one is maintained. `docs/NeuroBoost_v0_4_0_Feature_List.md` is a
 > historical planning artifact — do not read status from it.
 
@@ -38,7 +42,7 @@ Tags are created on `main` after merging tested `develop` code.
 |---------|-------|-----------------|--------|
 | **v0.4.4** | Calendar UX Fix | Fix click/select/resize/move model, task-to-calendar drag, performance, i18n day names | ✅ Tagged |
 | **v0.4.5** | Mobile Polish | 4 mobile calendar views (day/3-day/month/agenda), event editor responsive, fix nav overlaps | ✅ Tagged (partial — see M*) |
-| **v0.4.6** | Telegram Bot + MiniApp | Assistant bot commands, notification bot, MiniApp integration, Telegram WebApp auth | ✅ Tagged (bot blocked by proxy) |
+| **v0.4.6** | Telegram Bot | Assistant bot commands | ✅ Tagged (bot blocked by proxy) · 🔴 **MiniApp и Telegram-WebApp-auth НЕ сделаны** — проверено 10.08, ноль вхождений `initData`/`telegram-web-app`. Уведомления приехали отдельно, в июле (P2). 🔴 И сам ассистент-бот не ходит в API: `AuthToken` читается 7 раз, не присваивается нигде |
 | **v0.4.7** | New Pages & Tools | Home dashboard, planning page, reflections page, pomodoro timer, kanban board | ✅ Tagged |
 | **v0.4.8** | Settings & Cleanup | Global UI scale, feature toggles, export/import, bug cleanup | ✅ Tagged |
 | **v0.4.9** | Polish | Reflections migration, calendar null guard, Planning two-pane + TZ fix, Settings hybrid auto-save, mobile Telegram login, backup script | ✅ Tagged 2026-04-24 |
@@ -76,10 +80,10 @@ See `docs/pending-release-v0.4.10.md` for the full commit-level breakdown.
 | # | Тема | Статус |
 |---|------|--------|
 | **P1** | Быстрое создание и ведение задач | ✅ **Собрано 2026-07-27**, 11/11 задач плана, тесты 200 → 239 |
-| **P2** | Бот и уведомления | 🟡 **Шаги 1–9 из 10 собраны 2026-07-27**, на staging. Ждёт `SERVICE_TOKEN` и шаг 10 |
+| **P2** | Бот и уведомления | 🟡 **8 шагов из 10** (сверено с кодом 10.08). Ждёт `SERVICE_TOKEN`, шаг 7 и шаг 10 |
 | **P3** | Общие события и календари | ⬜ После P2 |
 
-### P2 — что построено (шаги 1–9)
+### P2 — что построено (шаги 1–6 + 8–9; шаг 7 пропущен)
 
 Спека: `docs/superpowers/specs/2026-07-27-p2-notifications-design.md`
 План: `docs/superpowers/plans/2026-07-27-p2-notifications-steps-1-6.md`
@@ -111,7 +115,15 @@ See `docs/pending-release-v0.4.10.md` for the full commit-level breakdown.
 - Разбор настроек вынесен в leaf-пакет `internal/usersettings` — он нужен и `events`,
   и `tasks`, и `reminders`, а `reminders` уже импортирует `events`, так что иначе был бы цикл.
 
+🔴 **Поправка 10.08: это 8 шагов из 10, а не 9.** Шаг 7 (кнопки и callback'и в уведомлении,
+snooze) **не построен** — под `/api/svc` в `cmd/api/main.go` только `notifications/pending` и
+`{id}/ack`, ручки `/notifications/action` нет, нотифаер шлёт plain text. Цифра «1–9» родилась из
+коммита `7c282c5 docs: P2 steps 8-9 shipped`: UI-шаги сделали вперёд седьмого, а документ записал
+это диапазоном.
+
 **Что осталось до «уведомления приходят»:**
+0. 🔴 **`bot.AuthToken` не присваивается нигде** — ассистент-бот не может ходить в API. Отдельный
+   блокер от двух нижних, узел графа `workitem-bot-authtoken-never-set`.
 1. 🔴 **`SERVICE_TOKEN`** (`openssl rand -hex 32`) — одинаковый на API и боте, в Tracker App.
    Без него `/api/svc` отдаёт 503, а нотифаер пишет «disabled» и выходит.
 2. Шаг 10 — переезд бота на зарубежный хост (как у Nivium). До него отправка из РФ падает.

@@ -11,10 +11,13 @@ You are a security-focused code reviewer for NeuroBoost, a Go + React + PostgreS
 
 ### Go Backend (api-go/)
 - **SQL injection:** All queries must use pgx parameterized queries (`$1`, `$2`), never string concatenation
-- **Auth middleware:** Protected routes must use JWT middleware, verify `middleware.GetUserID(r)` is checked
+- **Auth middleware:** Protected routes must use JWT middleware, verify
+  `middleware.UserIDFromContext(r.Context())` is checked
 - **Input validation:** Request bodies must be validated before use
 - **Error handling:** No stack traces or internal details in error responses
-- **Response format:** Must use `util.JSON()` / `util.Error()` envelope pattern
+- **Response format:** Must use `util.RespondJSON()` / `util.RespondError()` envelope pattern
+- **Goroutines:** every background goroutine needs `recover()` — a panic in one kills the process
+- **Two modules:** `bot/` is separate; a green `api-go` build says nothing about it
 
 ### React Frontend (web/)
 - **XSS:** No `dangerouslySetInnerHTML`, user input must be escaped
