@@ -78,7 +78,7 @@ func Scan(ctx context.Context, from, to time.Time, log *slog.Logger) (int, error
 
 		if st.DigestEnabled {
 			if day, ok := DigestDue(from, to, st.DigestAt, loc); ok {
-				n, err := insertDigest(ctx, u.id, day)
+				n, err := insertDigest(ctx, u.id, day, loc)
 				if err != nil {
 					log.Error("digest insert failed",
 						slog.String("user_id", u.id), slog.String("error", err.Error()))
@@ -260,15 +260,100 @@ const digestMinutesBefore = -2
 
 // insertDigest uses the user's local midnight as occurrence_start, so the
 // unique index means "one digest per user per local day".
-func insertDigest(ctx context.Context, userID string, localDay time.Time) (int, error) {
+//
+// 🔴 The message is composed here, and it must never be empty: this row used to
+// be written with '' and Telegram answers an empty send with
+// "Bad Request: message text is empty" — so every digest failed, every morning,
+// leaving only a FAILED row nobody read. Composing at insert time is also the
+// right moment: the scan writes this row when the digest is due, so the day's
+// contents are current rather than hours stale.
+func insertDigest(ctx context.Context, userID string, localDay time.Time, loc *time.Location) (int, error) {
+	message := DigestText(localDay, loc, digestEvents(ctx, userID, localDay), digestTasks(ctx, userID, localDay))
+
 	tag, err := db.Pool.Exec(ctx, `
 		INSERT INTO reminder (user_id, source_kind, occurrence_start, minutes_before,
 		                      remind_at, status, channel, message)
-		VALUES ($1, 'DIGEST', $2, $3, NOW(), 'PENDING', 'TELEGRAM', '')
+		VALUES ($1, 'DIGEST', $2, $3, NOW(), 'PENDING', 'TELEGRAM', $4)
 		ON CONFLICT DO NOTHING`,
-		userID, localDay, digestMinutesBefore)
+		userID, localDay, digestMinutesBefore, message)
 	if err != nil {
 		return 0, err
 	}
 	return int(tag.RowsAffected()), nil
+}
+
+// digestEvents collects what the user actually has on that local day,
+// recurring occurrences included.
+//
+// A query error yields an empty list rather than an error: a digest listing
+// only tasks is worth sending, whereas propagating the failure would abort the
+// whole scan and cost the user their per-event reminders too.
+func digestEvents(ctx context.Context, userID string, localDay time.Time) []DigestEvent {
+	dayStart := localDay
+	dayEnd := localDay.AddDate(0, 0, 1)
+
+	rows, err := db.Pool.Query(ctx, `
+		SELECT id, user_id, title, starts_at, ends_at, all_day, rrule,
+		       COALESCE(timezone, 'Europe/Moscow')
+		FROM event
+		WHERE user_id = $1
+		  AND ((rrule IS NOT NULL AND rrule != '') OR (starts_at < $3 AND ends_at > $2))`,
+		userID, dayStart, dayEnd)
+	if err != nil {
+		return nil
+	}
+	var candidates []events.Event
+	for rows.Next() {
+		var ev events.Event
+		if err := rows.Scan(&ev.ID, &ev.UserID, &ev.Title, &ev.StartsAt, &ev.EndsAt,
+			&ev.AllDay, &ev.Rrule, &ev.Timezone); err != nil {
+			rows.Close()
+			return nil
+		}
+		candidates = append(candidates, ev)
+	}
+	rows.Close()
+	if rows.Err() != nil {
+		return nil
+	}
+
+	var out []DigestEvent
+	for _, ev := range candidates {
+		duration := ev.EndsAt.Sub(ev.StartsAt)
+		exceptions := fetchSkippedOccurrences(ctx, userID, ev.ID)
+		for _, start := range events.OccurrencesInRange(ev, dayStart, dayEnd, exceptions) {
+			out = append(out, DigestEvent{
+				Title:    ev.Title,
+				StartsAt: start,
+				EndsAt:   start.Add(duration),
+				AllDay:   ev.AllDay,
+			})
+		}
+	}
+	return out
+}
+
+// digestTasks lists what is due that local day and still open.
+func digestTasks(ctx context.Context, userID string, localDay time.Time) []DigestTask {
+	rows, err := db.Pool.Query(ctx, `
+		SELECT title FROM task
+		WHERE user_id = $1
+		  AND due_date IS NOT NULL
+		  AND due_date >= $2 AND due_date < $3
+		  AND status NOT IN ('DONE', 'CANCELLED')
+		ORDER BY priority, due_date`,
+		userID, localDay, localDay.AddDate(0, 0, 1))
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
+
+	var out []DigestTask
+	for rows.Next() {
+		var t DigestTask
+		if rows.Scan(&t.Title) == nil {
+			out = append(out, t)
+		}
+	}
+	return out
 }
