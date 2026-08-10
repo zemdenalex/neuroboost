@@ -4,7 +4,7 @@ title: `bot/` — отдельный Go-модуль: `go build ./...` из `api
 type: learning
 status: verified
 tags: [neuroboost, go, telegram, ci, build]
-weight: { importance: 4, connectivity: 2, access: 1, last_accessed: 2026-08-10 }
+weight: { importance: 4, connectivity: 3, access: 2, last_accessed: 2026-08-10 }
 created: 2026-08-10
 sources:
   - file: "bot/go.mod (собственный модуль) · .github/workflows/ci.yml — шаг «Build and test bot»"
