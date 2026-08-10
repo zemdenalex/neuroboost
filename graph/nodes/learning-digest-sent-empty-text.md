@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-08-10
 tags: [neuroboost, telegram, reminders, silent-failure, digest]
-weight: { importance: 5, connectivity: 5, access: 1, last_accessed: 2026-08-10 }
+weight: { importance: 5, connectivity: 5, access: 2, last_accessed: 2026-08-10 }
 sources:
   - command: "docker logs neuroboost-dev-bot | grep notifier  # → send to 495598685 failed: Bad Request: message text is empty"
   - command: "api-go/internal/reminders/scan.go — insertDigest вставлял message = '' (до 52683de)"
@@ -50,3 +50,12 @@ occurrence_start, minutes_before)`, а вставка идёт `ON CONFLICT DO N
 задачи дня, обрезка под лимит Telegram 4096 символов с хвостом «… and N more».
 
 Проверено живьём 10.08 05:02 МСК — `SENT`, текст с двумя событиями и московским временем.
+
+## Настоящий дайджест — проверен 10.08 в 08:00, а не «оставлен на утро»
+
+`status = SENT`, `sent_at = 2026-08-10 04:59:46Z` (07:59:46 МСК), текст с двумя событиями дня
+и **московским** временем. `FAILED`-строк в журнале ноль.
+
+⚠️ Дайджест уходит **до минуты раньше** назначенного времени: окно скана `[now−2мин, now+1мин)`
+смотрит вперёд (`worker.go`), а `insertDigest` пишет `remind_at = NOW()`. В 08:00 это ушло в
+07:59:12. Не дефект, но секундной точности от него ждать нельзя.
