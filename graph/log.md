@@ -185,3 +185,42 @@ Transcript analyzed: 1665 lines, 8 user messages, 135 assistant messages. Sessio
 
 **Скиллы на следующую сессию:** `superpowers:subagent-driven-development` (срез 2 по тому же
 образцу), `superpowers:writing-plans` (плана на срез 2 ещё нет).
+
+## [2026-08-11 22:58] consolidate | START — 1 to consolidate, 0 skipped (too large)
+
+## [2026-08-11 22:59] consolidate | DONE — 0 new proposed (P3 slice 1 wrap-up, all discoveries already ingested)
+Transcript analyzed: 4484 lines, 288 assistant messages. Session completed P3 slice 1 implementation (12 tasks, 21 commits, 57/57 events visible via new membership-based access control). All technical findings already captured: entity-p3-slice1-calendar-foundation (scope and mechanism), learning-green-because-skipped-proves-nothing (CI nil-pointer catch), learning-plan-named-two-files-invariant-lived-in-eight (scope boundary discovery via guard test). Final messages confirm wrap-up handoff. No additional learnings or rule changes beyond code review feedback already embedded in existing patterns. No duplicates created.
+
+## [2026-08-11 23:00] consolidate | DONE — 1 ok, 0 failed, 0 skipped
+
+## [2026-08-12] recall | entity-p3-slice1-calendar-foundation, learning-green-because-skipped-proves-nothing, learning-plan-named-two-files-invariant-lived-in-eight, learning-merge-to-main-is-the-release
+
+**Сделано: P3 срез 2 собран, отревьюен и выпущен на staging.** Календари создаются,
+переименовываются и удаляются; список — в настройках. Восемь коммитов на `develop`
+(`9f5c3ef..2c09954` плюс `70c3b1d`, `90262c5`), четыре задачи по
+`superpowers:subagent-driven-development`, ревью после каждой.
+
+**Проверено исполнением, не отчётами ролей:** CI зелёный, `deploy-dev` прошёл, staging отвечает
+на `/api/calendars` **401, а не 404** · e2e против задеплоенного staging **26 passed / 4
+skipped** (было 24/4, регрессий нет) · фронт **358 тестов**, typecheck чистый · весь `api-go`
+зелёный против настоящего postgres:16 с `DATABASE_URL`.
+
+**Читать первым в следующей сессии:** `entity-p3-slice2-calendar-crud` — что теперь существует
+и чего срез намеренно не даёт. Затем
+`docs/superpowers/plans/2026-08-11-p3-slice2-inherited-debt.md` **§9-12** (дописано сегодня) —
+это входные условия среза 3, а не пожелания.
+
+🔴 **Главное для среза 3:** у общих календарей `calendar.owner_id` **write-only** — владелец
+читается только из `calendar_member`, а `store.go` ищет календари *по* `owner_id`. Передача
+владения разведёт два источника истины молча. Решить до написания приглашений.
+
+⚠ Срез 3 (приглашения) упирается в **предусловие**: слияние двух записей Дениса в прод-базе.
+Это операция над продовыми данными и его решение, не наше.
+
+**Открыто и ждёт Дениса:** тап по прод-боту · нажатие кнопки в уведомлении · мерж PR (= релиз
+прода, `main` не тронут, 195 коммитов впереди) · слияние личностей · **6 узлов в очереди
+promote** · ротация токена прод-бота · два дела из его вопроса 15:50 — прогон всего сайта и
+починка врущих документов (`README.md`, `PROGRESS.md`, `DEPLOY.md`, `NeuroBoost_v0_4_0_Feature_List.md`).
+
+**Скиллы на следующую сессию:** `superpowers:writing-plans` (плана на срез 3 нет),
+`superpowers:subagent-driven-development` (образец отработал дважды).

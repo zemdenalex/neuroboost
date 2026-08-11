@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-08-11
 tags: [neuroboost, testing, ci, go, p3]
-weight: { importance: 5, connectivity: 4, access: 1, last_accessed: 2026-08-11 }
+weight: { importance: 5, connectivity: 6, access: 2, last_accessed: 2026-08-12 }
 sources:
   - command: "gh run view --log-failed  # panic: nil pointer, calendars/store.go:26, export_test.go:87"
   - command: "cd api-go && go test ./...  # локально зелено: без DATABASE_URL те же тесты делают t.Skip"

@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-08-11
 tags: [neuroboost, p3, calendars, architecture, staging]
-weight: { importance: 5, connectivity: 6, access: 1, last_accessed: 2026-08-11 }
+weight: { importance: 5, connectivity: 7, access: 2, last_accessed: 2026-08-12 }
 sources:
   - command: "ssh root@62.76.228.106 psql -c \"select version, dirty from schema_migrations\"  # 12 | f"
   - command: "psql -c \"select count(*) from event e join calendar_member m on m.calendar_id=e.calendar_id and m.status='active'\"  # 57 из 57"

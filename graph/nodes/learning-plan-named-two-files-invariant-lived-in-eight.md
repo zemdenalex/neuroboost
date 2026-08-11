@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-08-11
 tags: [neuroboost, planning, testing, p3]
-weight: { importance: 5, connectivity: 4, access: 1, last_accessed: 2026-08-11 }
+weight: { importance: 5, connectivity: 3, access: 2, last_accessed: 2026-08-12 }
 sources:
   - command: "grep -rn 'INSERT INTO event\\|INSERT INTO task' --include=*.go internal/  # 8 мест, план знал про 2"
   - file: "docs/superpowers/plans/2026-08-11-p3-slice1-calendar-foundation.md — File Structure перечисляет events/handlers.go и tasks/handlers.go"

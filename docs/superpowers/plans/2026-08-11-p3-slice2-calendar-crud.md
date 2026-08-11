@@ -1,3 +1,5 @@
+<!-- паспорт: тип=план | статус=действует | строк=1170 | ~токенов=10242 | обновлён=по git -->
+
 # P3 срез 2 — CRUD календарей и список в UI
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development
