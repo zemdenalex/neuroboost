@@ -1,7 +1,7 @@
 import { HOUR_PX, MIN_SLOT_MIN, GHOST_COLORS, DAY_MS } from './weekgrid.constants';
 import { minsToTop, formatMinutesToTime } from './weekgrid.utils';
 import type { DragState } from './weekgrid.types';
-import { resizeGhostForColumn } from './resizeCoords';
+import { resizeGhostForColumn, resizeRangeMs } from './resizeCoords';
 
 interface GhostPreviewProps {
   drag: DragState;
@@ -58,13 +58,20 @@ export function GhostPreview({ drag, dayUtc0, isMobile }: GhostPreviewProps) {
   // midnight draws on every column it covers instead of one nonsense box on the
   // start column. Falls back to the day-relative pair for any state that still
   // lacks them.
+  //
+  // The range comes from resizeRangeMs — the same function the commit uses — so
+  // a drag that gets clamped (bottom edge pulled above the start) previews the
+  // clamped range rather than a range that will never be saved.
   if (drag.kind === 'resize-start' || drag.kind === 'resize-end') {
-    const slice =
-      drag.anchorMs !== undefined && drag.cursorMs !== undefined
-        ? resizeGhostForColumn(drag.anchorMs, drag.cursorMs, dayUtc0, DAY_MS)
-        : drag.dayUtc0 === dayUtc0
-          ? { startMin: Math.min(drag.curMin, drag.otherEndMin), endMin: Math.max(drag.curMin, drag.otherEndMin) }
-          : null;
+    let slice: { startMin: number; endMin: number } | null;
+    if (drag.anchorMs !== undefined && drag.cursorMs !== undefined) {
+      const [startMs, endMs] = resizeRangeMs(drag.kind, drag.anchorMs, drag.cursorMs);
+      slice = resizeGhostForColumn(startMs, endMs, dayUtc0, DAY_MS);
+    } else {
+      slice = drag.dayUtc0 === dayUtc0
+        ? { startMin: Math.min(drag.curMin, drag.otherEndMin), endMin: Math.max(drag.curMin, drag.otherEndMin) }
+        : null;
+    }
     if (!slice) return null;
 
     const { startMin, endMin } = slice;

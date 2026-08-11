@@ -101,13 +101,14 @@ export function useWeekGridDrag({
           return { ...prev, targetDayUtc0, offsetMin: curMin };
         }
         if (prev.kind === 'resize-start' || prev.kind === 'resize-end') {
-          // curMin drives the ghost, cursorMs drives the commit. Both come from
-          // the column the drag STARTED on, not from targetDayUtc0: the resize
-          // ghost renders on that one column only (GhostPreview.tsx), so
-          // following the cursor's X would commit a move the user never saw.
-          // Carrying the X into resize is MD1 and needs the ghost generalised
-          // first.
-          return { ...prev, curMin, cursorMs: resizeCursorMs(prev.dayUtc0, curMin) };
+          // cursorMs follows the column the cursor is OVER (targetDayUtc0), which
+          // is what lets an end be dragged into the neighbouring day (MD1).
+          //
+          // Safe because the ghost slices this same absolute range per column, so
+          // every day the commit touches is a day the user watched fill in.
+          // `curMin` stays day-relative — it only positions the dragged edge
+          // within its own column and feeds the pre-absolute fallback.
+          return { ...prev, curMin, cursorMs: resizeCursorMs(targetDayUtc0, curMin) };
         }
         return prev;
       });

@@ -1,11 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { resizeAnchorMs, resizeCursorMsAtStart, resizeCursorMs, buildResizeState, resizeGhostForColumn } from './resizeCoords';
+import { resizeAnchorMs, resizeCursorMsAtStart, resizeCursorMs, buildResizeState, resizeGhostForColumn, resizeRangeMs, MIN_SLOT_MS } from './resizeCoords';
 import { handleDragComplete } from './dragHandlers';
 import { DAY_MS } from './weekgrid.constants';
 import { vi } from 'vitest';
 
 // Mon 2026-07-20 00:00 UTC, matching dragHandlers.test.ts.
 const MON = Date.UTC(2026, 6, 20);
+const TUE = MON + DAY_MS;
 const WED = MON + 2 * DAY_MS;
 
 const at = (dayUtc0: number, h: number, m = 0) => dayUtc0 + (h * 60 + m) * 60_000;
@@ -203,5 +204,44 @@ describe('resizeGhostForColumn — preview must agree with the commit', () => {
   it('still describes an ordinary same-day resize', () => {
     expect(resizeGhostForColumn(at(MON, 9), at(MON, 11), MON, DAY_MS))
       .toEqual({ startMin: min(9), endMin: min(11) });
+  });
+});
+
+describe('resizeRangeMs — one range for both the ghost and the commit', () => {
+  it('lets the bottom edge run forward into the next day', () => {
+    // MD1: the cursor is over Tuesday's column, so cursorMs lands on Tuesday.
+    expect(resizeRangeMs('resize-end', at(MON, 22), at(TUE, 3)))
+      .toEqual([at(MON, 22), at(TUE, 3)]);
+  });
+
+  it('lets the top edge run backward into the previous day', () => {
+    expect(resizeRangeMs('resize-start', at(WED, 3), at(MON, 22)))
+      .toEqual([at(MON, 22), at(WED, 3)]);
+  });
+
+  it('never moves the anchor, whichever edge is held', () => {
+    expect(resizeRangeMs('resize-end', at(MON, 22), at(TUE, 3))[0]).toBe(at(MON, 22));
+    expect(resizeRangeMs('resize-start', at(WED, 3), at(MON, 22))[1]).toBe(at(WED, 3));
+  });
+
+  it('clamps a bottom edge dragged above the start instead of swapping ends', () => {
+    // Swapping would silently move the start — the endpoint the user is NOT
+    // holding. Clamping keeps the anchor and squashes to the minimum slot.
+    expect(resizeRangeMs('resize-end', at(MON, 22), at(MON, 8)))
+      .toEqual([at(MON, 22), at(MON, 22) + MIN_SLOT_MS]);
+  });
+
+  it('clamps a top edge dragged below the end the same way', () => {
+    expect(resizeRangeMs('resize-start', at(MON, 10), at(MON, 23)))
+      .toEqual([at(MON, 10) - MIN_SLOT_MS, at(MON, 10)]);
+  });
+
+  it('agrees with the ghost slicer it feeds', () => {
+    // The point of sharing the function: an inverted drag previews exactly the
+    // 15-minute range that will be saved, on the anchor's day and nowhere else.
+    const [startMs, endMs] = resizeRangeMs('resize-end', at(TUE, 3), at(MON, 22));
+    expect(resizeGhostForColumn(startMs, endMs, MON, DAY_MS)).toBeNull();
+    expect(resizeGhostForColumn(startMs, endMs, TUE, DAY_MS))
+      .toEqual({ startMin: min(3), endMin: min(3, 15) });
   });
 });

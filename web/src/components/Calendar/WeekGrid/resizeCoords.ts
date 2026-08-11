@@ -37,13 +37,40 @@ export function resizeCursorMsAtStart(kind: 'resize-start' | 'resize-end', event
  * (`getMidnightUtcMs` subtracts the zone offset), so adding minutes-since-local-
  * midnight yields a real instant — no second conversion, and none wanted.
  *
- * ⚠ `dayUtc0` is the column the drag STARTED on. Following the cursor's X to a
- * different column is MD1 and is deliberately not done here: the resize ghost
- * still renders on the start column only (`GhostPreview.tsx:55`), so a commit
- * that crossed columns would move an event the user never saw move.
+ * Pass the column the cursor is currently OVER, not the one the drag started
+ * on — that is what lets a resize reach the neighbouring day (MD1). It is safe
+ * because the ghost slices the same absolute range per column
+ * (`resizeGhostForColumn`), so every day the commit touches is a day the user
+ * watched fill in.
  */
 export function resizeCursorMs(dayUtc0: number, curMin: number): number {
   return dayUtc0 + curMin * 60_000
+}
+
+/** 15 minutes, the shortest event the grid will commit. */
+export const MIN_SLOT_MS = 15 * 60_000
+
+/**
+ * The range a resize means, in absolute UTC ms.
+ *
+ * 🔴 One function for both the ghost and the commit, on purpose. They used to
+ * disagree: the ghost drew `min/max` of the two endpoints while the commit
+ * clamped against the anchor, so dragging the bottom edge back above the start
+ * previewed a range that was never committed. Preview and commit disagreeing is
+ * exactly the defect MD2 was.
+ *
+ * The endpoint being held follows the cursor; the anchor never moves. A drag
+ * that would invert or squash the event is clamped to `MIN_SLOT_MS` rather than
+ * min/max-swapped — swapping silently moves the end the user is NOT holding.
+ */
+export function resizeRangeMs(
+  kind: 'resize-start' | 'resize-end',
+  anchorMs: number,
+  cursorMs: number,
+): [startMs: number, endMs: number] {
+  return kind === 'resize-end'
+    ? [anchorMs, Math.max(cursorMs, anchorMs + MIN_SLOT_MS)]
+    : [Math.min(cursorMs, anchorMs - MIN_SLOT_MS), anchorMs]
 }
 
 /**
@@ -54,9 +81,9 @@ export function resizeCursorMs(dayUtc0: number, curMin: number): number {
  * never populated, and nothing in the suite could notice because the hook has
  * no tests.
  *
- * The day-relative fields are still emitted. They drive the resize ghost
- * (`GhostPreview.tsx`), which remains single-column, and they keep the handler's
- * fallback meaningful for any caller that has not been migrated.
+ * The day-relative fields are still emitted: they position the dragged edge
+ * inside its own column and keep the handler's fallback meaningful for any
+ * caller that has not been migrated to absolute coordinates.
  */
 export function buildResizeState(
   kind: 'resize-start',

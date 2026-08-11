@@ -23,32 +23,7 @@ async function apiContext(token: string): Promise<APIRequestContext> {
   })
 }
 
-const DAY_MS = 24 * 3600 * 1000
-
-/**
- * Offset of an IANA zone at a given instant, in ms — the same trick the app's
- * timezone.utils uses.
- */
-function offsetMs(timeZone: string, at: Date): number {
-  const utc = new Date(at.toLocaleString('en-US', { timeZone: 'UTC' }))
-  const local = new Date(at.toLocaleString('en-US', { timeZone }))
-  return local.getTime() - utc.getTime()
-}
-
-/**
- * The UTC instant of the next LOCAL midnight, in the account's own zone.
- *
- * The grid lays out local days, not UTC days: a first attempt at this test used
- * UTC boundaries and produced an event that never crossed Moscow midnight, so
- * it rendered as one segment and the test failed for a reason that had nothing
- * to do with the fix.
- */
-function nextLocalMidnightUtc(timeZone: string): number {
-  const now = Date.now()
-  const off = offsetMs(timeZone, new Date(now))
-  const localMidnight = Math.floor((now + off) / DAY_MS) * DAY_MS + DAY_MS
-  return localMidnight - off
-}
+import { nextLocalMidnightUtc } from './fixtures/localTime'
 
 test.describe('multi-day resize', () => {
   // Desktop only, and not for convenience: at 375px the calendar shows a single

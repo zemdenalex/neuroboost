@@ -1,5 +1,6 @@
 import { DAY_MS, MIN_SLOT_MIN } from './weekgrid.constants';
 import { clampMins, snapMin } from './weekgrid.utils';
+import { resizeRangeMs } from './resizeCoords';
 import type { DragState, WeekGridCallbacks } from './weekgrid.types';
 
 type CreateCallback = WeekGridCallbacks['onCreate'];
@@ -89,20 +90,13 @@ function handleResizeComplete(
   drag: NonNullable<DragState> & { kind: 'resize-start' | 'resize-end' },
   onMoveOrResize: MoveCallback
 ): void {
-  const MIN_SLOT_MS = MIN_SLOT_MIN * 60000;
-
   // Prefer absolute UTC ms. The day-relative fallback cannot express a range
   // crossing midnight (MD1/MD2) but stays correct for same-day resizes.
   const anchorMs = drag.anchorMs ?? drag.dayUtc0 + drag.otherEndMin * 60000;
   const cursorMs = drag.cursorMs ?? drag.dayUtc0 + drag.curMin * 60000;
 
-  // The dragged endpoint follows the cursor; the anchor never moves. Clamp a
-  // too-short drag instead of min/max-swapping, which used to silently move
-  // whichever endpoint the user was not holding.
-  const [startMs, endMs] =
-    drag.kind === 'resize-end'
-      ? [anchorMs, Math.max(cursorMs, anchorMs + MIN_SLOT_MS)]
-      : [Math.min(cursorMs, anchorMs - MIN_SLOT_MS), anchorMs];
+  // Shared with the ghost, so what was previewed is what is committed.
+  const [startMs, endMs] = resizeRangeMs(drag.kind, anchorMs, cursorMs);
 
   onMoveOrResize({
     id: drag.id,
