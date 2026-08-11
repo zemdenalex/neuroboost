@@ -7,6 +7,7 @@ import { AllDaySection } from './AllDaySection';
 import { DayColumn } from './DayColumn';
 import { useWeekGridDrag } from './useWeekGridDrag';
 import { useKeyboardNav } from './useKeyboardNav';
+import { initialMobileDayOffset } from '../../../lib/calendar/mobileDayOffset';
 
 export function WeekGrid({
   events,
@@ -29,7 +30,10 @@ export function WeekGrid({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [touchStart, setTouchStart] = useState<TouchStart | null>(null);
   const [visibleDays, setVisibleDays] = useState(7);
-  const [mobileDayOffset, setMobileDayOffset] = useState(0);
+  // Today, not the week's Monday — see initialMobileDayOffset.
+  const [mobileDayOffset, setMobileDayOffset] = useState(
+    () => initialMobileDayOffset(currentWeekOffset, timezone)
+  );
   const isMobile = visibleDays < 7;
 
   // Calculate Monday timestamp
@@ -43,10 +47,11 @@ export function WeekGrid({
     ? mondayUtc0 + mobileDayOffset * DAY_MS
     : mondayUtc0;
 
-  // Reset mobileDayOffset when week changes
+  // Reset mobileDayOffset when the week changes. Returning to the current week
+  // lands on today; any other week has no "today" and opens on its Monday.
   useEffect(() => {
-    setMobileDayOffset(0);
-  }, [currentWeekOffset]);
+    setMobileDayOffset(initialMobileDayOffset(currentWeekOffset, timezone));
+  }, [currentWeekOffset, timezone]);
 
   // When mobileDayOffset goes beyond week boundary, advance the week and reset offset
   useEffect(() => {
