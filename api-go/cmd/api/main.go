@@ -104,6 +104,9 @@ func main() {
 		sr.Use(rem.ServiceTokenMiddleware(cfg.ServiceToken))
 		sr.Get("/notifications/pending", rem.PendingHandler)
 		sr.Post("/notifications/{id}/ack", rem.AckHandler)
+		// Button presses forwarded by the notifier. The user is identified by
+		// tg_id inside the body, checked against the reminder's owner.
+		sr.Post("/notifications/action", rem.ActionHandler)
 	})
 
 	// Protected routes (JWT required)

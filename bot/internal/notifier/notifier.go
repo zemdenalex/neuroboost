@@ -57,7 +57,14 @@ func deliverBatch(bot *tgbotapi.BotAPI, client *api.Client, serviceToken string)
 	}
 
 	for _, n := range pending {
-		_, sendErr := bot.Send(tgbotapi.NewMessage(n.TgID, n.Text))
+		msg := tgbotapi.NewMessage(n.TgID, n.Text)
+		// Buttons are best-effort: if the payload could not be kept inside
+		// Telegram's 64-byte callback_data cap, send the text alone rather than
+		// lose the notification to a rejected message.
+		if kb := Keyboard(n.SourceKind, n.ID); kb != nil && FitsCallbackLimit(EncodeCallback(codeSnooze, n.ID)) {
+			msg.ReplyMarkup = *kb
+		}
+		_, sendErr := bot.Send(msg)
 
 		delivered := sendErr == nil
 		reason := ""

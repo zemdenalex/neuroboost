@@ -263,3 +263,26 @@ func (c *Client) AckNotification(serviceToken, id string, delivered bool, sendEr
 	req.Header.Set("Content-Type", "application/json")
 	return c.do(req, nil)
 }
+
+// NotificationAction forwards a button press from a notification.
+//
+// The service token authenticates the bot; tg_id tells the API which person
+// pressed it, and the API checks that the reminder belongs to them. No user JWT
+// is involved — the presser exists to the bot only as a Telegram id.
+func (c *Client) NotificationAction(serviceToken string, tgID int64, reminderID, action string, minutes int) error {
+	payload := map[string]any{"tg_id": tgID, "reminder_id": reminderID, "action": action}
+	if minutes > 0 {
+		payload["minutes"] = minutes
+	}
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+	req, err := http.NewRequest("POST", c.base+"/api/svc/notifications/action", bytes.NewReader(body))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("X-Service-Token", serviceToken)
+	req.Header.Set("Content-Type", "application/json")
+	return c.do(req, nil)
+}

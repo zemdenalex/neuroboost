@@ -10,8 +10,44 @@ import (
 	"github.com/zemdenalex/neuroboost-bot/internal/api"
 	"github.com/zemdenalex/neuroboost-bot/internal/auth"
 	"github.com/zemdenalex/neuroboost-bot/internal/config"
+	"github.com/zemdenalex/neuroboost-bot/internal/notifier"
 	"github.com/zemdenalex/neuroboost-bot/internal/state"
 )
+
+// handleNotificationAction performs a button press from a reminder message.
+//
+// Runs on the service token rather than a user session: the API identifies the
+// person by the Telegram id that pressed the button and checks that the
+// reminder is theirs.
+func (h *Handler) handleNotificationAction(chatID int64, from *tgbotapi.User, action notifier.Callback) {
+	if from == nil {
+		h.sendText(chatID, "⚠️ Не понимаю, от кого это сообщение.")
+		return
+	}
+	if h.cfg.ServiceToken == "" {
+		// Nothing to fail loudly about in the chat: the buttons only exist
+		// because the notifier sent the message, which needs the same token.
+		log.Printf("notification action: SERVICE_TOKEN not set, ignoring %s", action.Action)
+		return
+	}
+
+	if err := h.api.NotificationAction(
+		h.cfg.ServiceToken, from.ID, action.ReminderID, action.Action, action.Minutes,
+	); err != nil {
+		log.Printf("notification action %s for %s failed: %v", action.Action, action.ReminderID, err)
+		h.sendText(chatID, "⚠️ Не получилось — попробуй ещё раз.")
+		return
+	}
+
+	switch action.Action {
+	case notifier.ActionSnooze:
+		h.sendText(chatID, "⏰ Напомню через 10 минут.")
+	case notifier.ActionDone:
+		h.sendText(chatID, "✅ Готово.")
+	case notifier.ActionAck:
+		h.sendText(chatID, "👌")
+	}
+}
 
 type Handler struct {
 	bot   *tgbotapi.BotAPI
@@ -112,6 +148,14 @@ func (h *Handler) HandleCallback(cb *tgbotapi.CallbackQuery) {
 	data := cb.Data
 
 	h.bot.Send(tgbotapi.NewCallback(cb.ID, ""))
+
+	// Notification buttons are handled BEFORE ensureAuth: they travel on the
+	// service token, not on a user JWT, so a failure to mint a user session must
+	// not stop someone snoozing a reminder.
+	if action, ok := notifier.ParseCallback(data); ok {
+		h.handleNotificationAction(chatID, cb.From, action)
+		return
+	}
 
 	if !h.ensureAuth(chatID, cb.From) {
 		return
