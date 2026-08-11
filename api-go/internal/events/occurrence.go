@@ -140,17 +140,26 @@ func detachOccurrence(ctx context.Context, userID string, e Event, parentID stri
 	}
 	defer tx.Rollback(ctx)
 
+	// The replacement stays on the series' own calendar, not the caller's
+	// personal one — otherwise detaching an occurrence from a shared calendar
+	// would move it into the editor's private calendar and it would vanish
+	// for everyone else who could see the series.
+	var calendarID string
+	if err := tx.QueryRow(ctx, `SELECT calendar_id FROM event WHERE id = $1`, parentID).Scan(&calendarID); err != nil {
+		return nil, err
+	}
+
 	var created Event
 	var tags []string
 	err = tx.QueryRow(ctx, `
-		INSERT INTO event (user_id, title, description, starts_at, ends_at, all_day, timezone,
+		INSERT INTO event (user_id, calendar_id, title, description, starts_at, ends_at, all_day, timezone,
 		                   location, color, tags, task_id, is_work_event, reminder_offsets)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
 		RETURNING id, user_id, title, description, starts_at, ends_at, all_day, rrule,
 		          COALESCE(timezone, 'Europe/Moscow'), location, color, COALESCE(tags, '{}'),
 		          task_id, COALESCE(is_work_event, true), created_at, updated_at,
 		          COALESCE(reminder_offsets, '{}')
-	`, userID, e.Title, e.Description, e.StartsAt, e.EndsAt, e.AllDay, e.Timezone,
+	`, userID, calendarID, e.Title, e.Description, e.StartsAt, e.EndsAt, e.AllDay, e.Timezone,
 		e.Location, e.Color, e.Tags, e.TaskID, e.IsWorkEvent, e.ReminderOffsets).Scan(
 		&created.ID, &created.UserID, &created.Title, &created.Description,
 		&created.StartsAt, &created.EndsAt, &created.AllDay, &created.Rrule,
