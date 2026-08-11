@@ -13,6 +13,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"neuroboost/api-go/internal/calendars"
 	"neuroboost/api-go/internal/database"
 	"neuroboost/api-go/internal/middleware"
 )
@@ -33,6 +34,10 @@ func setupTestDB(t *testing.T) (taskID, userID string, cleanup func()) {
 		t.Fatalf("connect: %v", err)
 	}
 	InitDB(d)
+	// Task access now goes through calendar membership (CalendarIDsFor), which
+	// reads the calendars package's own db pointer — set it here too, or any
+	// handler under test panics on a nil pool.
+	calendars.InitDB(d)
 	ctx := context.Background()
 
 	// Unique email avoids UNIQUE collisions if a prior run's cleanup was skipped.

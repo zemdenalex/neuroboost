@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"neuroboost/api-go/internal/calendars"
 	"neuroboost/api-go/internal/database"
 	"neuroboost/api-go/internal/middleware"
 )
@@ -29,6 +30,10 @@ func setupTestDB(t *testing.T) (userID string, cleanup func()) {
 		t.Fatalf("connect: %v", err)
 	}
 	InitDB(d)
+	// queryTasks now scopes access via calendar membership (CalendarIDsFor),
+	// not user_id directly — that lookup dereferences the calendars package's
+	// own db pointer, which only this call sets.
+	calendars.InitDB(d)
 	ctx := context.Background()
 
 	email := fmt.Sprintf("export-test-%d@example.com", time.Now().UnixNano())
