@@ -80,7 +80,9 @@ test.describe('task reminders', () => {
     ).toBeVisible({ timeout: 10_000 })
 
     await offsetInput.fill('30')
-    await authedPage.getByRole('button', { name: 'Add' }).click()
+    // Scoped to main: the mobile bottom navigation has its own "Add" button, so
+    // an unscoped name match is ambiguous at 375px.
+    await authedPage.getByRole('main').getByRole('button', { name: 'Add' }).click()
 
     // The chip appearing proves the control accepted it; the API check below
     // proves the editor actually sends it.
