@@ -39,6 +39,8 @@ import {
 } from '../../api/tasks'
 import { defaultScheduleSlot } from '../../lib/schedule/defaultScheduleSlot'
 import { toDateTimeLocalValue, fromDateTimeLocalValue } from '../../lib/datetime/dateTimeLocal'
+import { ReminderOffsets } from '../../components/ReminderOffsets/ReminderOffsets'
+import { useReminderSettings } from '../../hooks/useReminderSettings'
 
 export default function Tasks() {
   const { t } = useTranslation('tasks')
@@ -49,6 +51,7 @@ export default function Tasks() {
   const [editingTask, setEditingTask] = useState<Partial<Task> | null>(null)
   const [saving, setSaving] = useState(false)
   const [editorError, setEditorError] = useState<string | null>(null)
+  const reminderSettings = useReminderSettings()
   // Stable across renders so a synchronous double-click is blocked (a useState
   // flag would not update before the second click's handler reads it).
   const saveGuard = useRef(createInFlightGuard()).current
@@ -203,6 +206,7 @@ export default function Tasks() {
             estimated_minutes: editingTask.estimated_minutes,
             contexts: editingTask.contexts,
             tags: editingTask.tags,
+            reminder_offsets: editingTask.reminder_offsets,
           })
           setTasks(prev => prev.map(t => t.id === updated.id ? updated : t))
         } else {
@@ -215,6 +219,9 @@ export default function Tasks() {
             estimated_minutes: editingTask.estimated_minutes,
             contexts: editingTask.contexts ?? [],
             tags: editingTask.tags ?? [],
+            // Omitted entirely when untouched, so the backend applies the
+            // user's default preset. An explicit [] means "deliberately none".
+            reminder_offsets: editingTask.reminder_offsets,
           })
           setTasks(prev => [...prev, created])
         }
@@ -656,6 +663,21 @@ export default function Tasks() {
                   onChange={(e) => setEditingTask(prev => ({ ...prev!, estimated_minutes: Number(e.target.value) || undefined }))}
                   placeholder={t('form.estimatedPlaceholder')}
                   className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white font-mono focus:outline-none focus:border-blue-500"
+                />
+              </div>
+
+              {/* Reminders count back from due_date, so without one there is
+                  nothing to count from — the control says so rather than
+                  silently accepting offsets that could never fire. Same rule as
+                  quick-add's second level, which until now was the ONLY place a
+                  task's reminders could be set: once created, they could never
+                  be changed again. */}
+              <div>
+                <ReminderOffsets
+                  value={editingTask.reminder_offsets ?? []}
+                  onChange={offsets => setEditingTask(prev => ({ ...prev!, reminder_offsets: offsets }))}
+                  presets={reminderSettings.presets}
+                  disabled={!editingTask.due_date}
                 />
               </div>
 

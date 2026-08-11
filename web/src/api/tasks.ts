@@ -21,6 +21,13 @@ export interface Task {
   completed_at?: string
   created_at: string
   updated_at: string
+  /**
+   * Minutes before due_date to remind, e.g. [10, 60]. The API has returned this
+   * since migration 000010; the type omitted it, so the task editor could not
+   * read back what quick-add had set and a task's reminders could never be
+   * changed after creation.
+   */
+  reminder_offsets?: number[]
 }
 
 export interface CreateTaskRequest {
