@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-08-10
 tags: [neuroboost, telegram, reminders, silent-failure, digest]
-weight: { importance: 5, connectivity: 5, access: 2, last_accessed: 2026-08-10 }
+weight: { importance: 5, connectivity: 6, access: 2, last_accessed: 2026-08-11 }
 sources:
   - command: "docker logs neuroboost-dev-bot | grep notifier  # → send to 495598685 failed: Bad Request: message text is empty"
   - command: "api-go/internal/reminders/scan.go — insertDigest вставлял message = '' (до 52683de)"
@@ -40,8 +40,15 @@ occurrence_start, minutes_before)`, а вставка идёт `ON CONFLICT DO N
 **упавшая строка блокирует повтор на весь местный день**: строка `FAILED` за 10.08 не даёт
 вставить дайджест за 10.08 в 08:00.
 
-Поэтому после починки строку пришлось **удалить руками**. ⚠️ Ретрая `FAILED`-строк в
-системе нет вообще — отдельная недоделка, не чинилась.
+Поэтому после починки строку пришлось **удалить руками**.
+
+✅ **Вторая половина ловушки закрыта 11.08** (`50eda15`, миграция `000011`): `FAILED`-строка
+больше не терминальна — `PendingHandler` возвращает её в очередь через 5 минут, максимум
+3 попытки. Колонка `attempts` появилась именно ради границы: без неё пользователь,
+заблокировавший бота, давал бы один неудачный send в минуту вечно. Политика — чистая
+`ShouldRetry`, 4 теста. Проверено на staging тремя контролями: attempts=3 не возвращается ·
+attempts=1 со старым `sent_at` возвращается и захватывается · свежий отказ ждёт backoff.
+Подробности — [[learning-snooze-sentinel-not-null]] (соседняя работа того же захода).
 
 ## Что теперь
 
