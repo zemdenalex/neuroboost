@@ -207,6 +207,16 @@ describe('resizeGhostForColumn — preview must agree with the commit', () => {
   });
 });
 
+describe('buildResizeState marks a fresh resize as pending', () => {
+  it('starts pending, so a click cannot commit before the threshold is cleared', () => {
+    // The producer is the only place this can be set, and a producer with no
+    // test is where MD2 lived. Asserting the field exists at all is the point.
+    const event = { id: 'e1', startsAt: multiDay.startsAt, endsAt: multiDay.endsAt } as never;
+    expect(buildResizeState('resize-end', MON, event, 'UTC').pending).toBe(true);
+    expect(buildResizeState('resize-start', MON, event, 'UTC').pending).toBe(true);
+  });
+});
+
 describe('resizeRangeMs — one range for both the ghost and the commit', () => {
   it('lets the bottom edge run forward into the next day', () => {
     // MD1: the cursor is over Tuesday's column, so cursorMs lands on Tuesday.

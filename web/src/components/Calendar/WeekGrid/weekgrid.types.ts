@@ -98,6 +98,15 @@ interface ResizeAbsolute {
   anchorMs?: number;
   /** Absolute time the cursor currently maps to, including its day column. */
   cursorMs?: number;
+  /**
+   * True until the pointer has travelled past the drag threshold. A resize that
+   * never cleared it is a click, and a click must not commit: it used to send a
+   * PATCH with unchanged times, which on a repeating event also opened the
+   * "this occurrence / all occurrences" dialog out of nowhere.
+   */
+  pending?: boolean;
+  startX?: number;
+  startY?: number;
 }
 
 export interface DragResizeStart extends ResizeAbsolute {

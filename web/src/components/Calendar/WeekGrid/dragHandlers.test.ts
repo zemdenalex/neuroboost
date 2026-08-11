@@ -373,6 +373,11 @@ describe('handleDragComplete — resize (MD1/MD2)', () => {
 // the collapse.
 // ---------------------------------------------------------------------------
 
+// A click on a handle no longer REACHES this function: useWeekGridDrag now
+// holds a resize `pending` until the pointer clears DRAG_THRESHOLD_PX, exactly
+// as it already did for move (drag plan step 6). These cases stay because the
+// handler must remain harmless if it is ever called with an unmoved cursor —
+// the guard lives in the hook, and a second line of defence costs nothing.
 describe('handleDragComplete — resize that never moved', () => {
   it('leaves a same-day event exactly where it was when the end handle is only clicked', () => {
     // curMin starts at the event's own end, so a click commits cursor == edge.

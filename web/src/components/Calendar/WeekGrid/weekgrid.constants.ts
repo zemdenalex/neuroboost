@@ -5,6 +5,12 @@ export const ALL_DAY_HEIGHT = 80;
 export const DAY_HEADER_HEIGHT = 28;
 export const DAY_MS = 24 * 60 * 60 * 1000;
 
+/**
+ * Pointer travel before a mousedown counts as a drag rather than a click.
+ * Applies to move and to both resize directions.
+ */
+export const DRAG_THRESHOLD_PX = 5;
+
 // Auto-scroll settings
 export const EDGE_THRESHOLD = 24;
 export const SCROLL_SPEED = 8;

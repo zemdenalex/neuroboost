@@ -114,6 +114,8 @@ export function buildResizeState(
     curMin: kind === 'resize-end' ? endMin : startMin,
     anchorMs: resizeAnchorMs(kind, event),
     cursorMs: resizeCursorMsAtStart(kind, event),
+    // Clicks are not resizes — see DRAG_THRESHOLD_PX.
+    pending: true,
   } as DragResizeStart | DragResizeEnd
 }
 

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { DAY_MS, ALL_DAY_HEIGHT, DAY_HEADER_HEIGHT, EDGE_THRESHOLD, MIN_SLOT_MIN } from './weekgrid.constants';
+import { DAY_MS, ALL_DAY_HEIGHT, DAY_HEADER_HEIGHT, EDGE_THRESHOLD, MIN_SLOT_MIN, DRAG_THRESHOLD_PX } from './weekgrid.constants';
 import { topToMins, snapMin, clampMins, utcToLocalMinutes } from './weekgrid.utils';
 import { buildResizeState, resizeCursorMs } from './resizeCoords';
 import { moveGrabOffsetMs, moveRangeMs, columnForMs, minutesIntoColumn } from './moveCoords';
@@ -63,17 +63,19 @@ export function useWeekGridDrag({
     const onMove = (ev: MouseEvent) => {
       if (!dragMeta.current || !scrollRef.current || !containerRef.current) return;
 
-      // Drag threshold: 5px before activating move
-      if (drag && drag.kind === 'move' && drag.pending) {
+      // Drag threshold, for move AND both resizes. Resize had none, so a plain
+      // click on a handle committed a PATCH with unchanged times — harmless to
+      // the data, but on a repeating event it raised the scope dialog for no
+      // reason the user could see.
+      if (drag && drag.kind !== 'create' && drag.pending) {
         const startX = drag.startX ?? ev.clientX;
         const startY = drag.startY ?? ev.clientY;
         if (drag.startX === undefined) {
-          setDrag(prev => prev && prev.kind === 'move' ? { ...prev, startX: ev.clientX, startY: ev.clientY } : prev);
+          setDrag(prev => prev && prev.kind !== 'create' ? { ...prev, startX: ev.clientX, startY: ev.clientY } : prev);
           return;
         }
-        const dist = Math.hypot(ev.clientX - startX, ev.clientY - startY);
-        if (dist < 5) return;
-        setDrag(prev => prev && prev.kind === 'move' ? { ...prev, pending: false } : prev);
+        if (Math.hypot(ev.clientX - startX, ev.clientY - startY) < DRAG_THRESHOLD_PX) return;
+        setDrag(prev => prev && prev.kind !== 'create' ? { ...prev, pending: false } : prev);
       }
 
       const scrollRect = scrollRef.current.getBoundingClientRect();
@@ -145,7 +147,9 @@ export function useWeekGridDrag({
     };
 
     const onUp = () => {
-      if (drag && !(drag.kind === 'move' && drag.pending)) {
+      // A drag still pending never cleared the threshold: it was a click.
+      const stillPending = drag !== null && drag.kind !== 'create' && drag.pending === true;
+      if (drag && !stillPending) {
         stopAutoScroll();
         handleDragComplete(drag, callbacks.onCreate, callbacks.onMoveOrResize);
       }

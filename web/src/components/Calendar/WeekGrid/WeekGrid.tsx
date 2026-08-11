@@ -157,11 +157,26 @@ export function WeekGrid({
   const handleAllDayDragStart = useCallback((dayUtc0: number, eventId?: string) => {
     const day = days.find(d => d.dayUtc0 === dayUtc0);
     if (!day) return;
+
+    // 🔴 Without this the drag is dead on arrival: onMove returns immediately
+    // while dragMeta is null, and nothing else on the all-day row ever set it.
+    // So the FIRST all-day drag of a session did nothing at all, and later ones
+    // only worked because a timed drag had left its own dragMeta behind.
+    //
+    // An all-day move commits whole days and ignores the Y coordinate, so the
+    // grid's own top is a good enough origin — it exists to make the guard pass
+    // and to keep auto-scroll arithmetic sane.
+    dragMeta.current = {
+      colTop: containerRef.current?.getBoundingClientRect().top ?? 0,
+      scrollStart: scrollRef.current?.scrollTop ?? 0,
+      allDayTop: ALL_DAY_HEIGHT,
+    };
+
     if (eventId) {
       const event = allDayEvents.find(e => e.id === eventId);
       if (event) startMove(day, event);
     } else startCreate(day, 0, true);
-  }, [days, allDayEvents, startCreate, startMove]);
+  }, [days, allDayEvents, startCreate, startMove, dragMeta, containerRef, scrollRef]);
   
   const handleQuickCreate = useCallback(() => {
     const start = new Date(), end = new Date(start.getTime() + 3600000);
