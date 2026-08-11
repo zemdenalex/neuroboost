@@ -334,6 +334,10 @@ func DeleteHandler(w http.ResponseWriter, r *http.Request) {
 	if mode == mutateOccurrence {
 		// Skip this one occurrence; the series itself is untouched.
 		if _, err := addException(r.Context(), userID, targetID, occurrence, true, nil); err != nil {
+			if err == pgx.ErrNoRows {
+				util.RespondError(w, http.StatusNotFound, "NOT_FOUND", "Event not found")
+				return
+			}
 			util.RespondError(w, http.StatusInternalServerError, "DELETE_ERROR", "Failed to delete occurrence")
 			return
 		}
@@ -581,6 +585,10 @@ func AddExceptionHandler(w http.ResponseWriter, r *http.Request) {
 
 	exception, err := addException(r.Context(), userID, eventID, occurrence, req.Skipped, req.ReplacementEventID)
 	if err != nil {
+		if err == pgx.ErrNoRows {
+			util.RespondError(w, http.StatusNotFound, "NOT_FOUND", "Event not found")
+			return
+		}
 		util.RespondError(w, http.StatusInternalServerError, "EXCEPTION_ERROR", "Failed to add exception")
 		return
 	}
@@ -907,6 +915,14 @@ func resizeEvent(ctx context.Context, userID, eventID string, endsAt time.Time) 
 }
 
 func addException(ctx context.Context, userID, eventID string, occurrence time.Time, skipped bool, replacementID *string) (*EventException, error) {
+	// Writing an exception needs the same access as reading the event it
+	// targets — getEvent already resolves that against calendar membership
+	// and returns pgx.ErrNoRows for "doesn't exist" and "not yours to see"
+	// alike, which callers already treat as 404.
+	if _, err := getEvent(ctx, userID, eventID); err != nil {
+		return nil, err
+	}
+
 	var ex EventException
 
 	err := db.Pool.QueryRow(ctx, `

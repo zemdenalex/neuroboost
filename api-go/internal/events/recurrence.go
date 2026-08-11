@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"neuroboost/api-go/internal/calendars"
 )
 
 // RecurrenceRule represents a parsed RRULE for event recurrence
@@ -217,11 +219,24 @@ func isException(occurrence time.Time, exceptions []time.Time) bool {
 	return false
 }
 
-// fetchExceptions retrieves skipped exception dates for a recurring event
+// fetchExceptions retrieves skipped exception dates for a recurring event.
+//
+// Scoped by calendar membership, not by who wrote the exception: exceptions
+// are shared series state, same as the event itself. Filtering by user_id
+// here made a skip written by one calendar member invisible to every other
+// member — they would see an occurrence that was, in fact, already deleted.
 func fetchExceptions(ctx context.Context, userID, eventID string) []time.Time {
+	calIDs, err := calendars.CalendarIDsFor(ctx, userID)
+	if err != nil {
+		return nil
+	}
+
 	rows, err := db.Pool.Query(ctx,
-		`SELECT occurrence FROM event_exception WHERE user_id = $1 AND event_id = $2 AND skipped = true`,
-		userID, eventID)
+		`SELECT ee.occurrence
+		 FROM event_exception ee
+		 JOIN event e ON e.id = ee.event_id
+		 WHERE e.calendar_id = ANY($1) AND ee.event_id = $2 AND ee.skipped = true`,
+		calIDs, eventID)
 	if err != nil {
 		return nil
 	}
