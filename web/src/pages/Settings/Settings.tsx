@@ -11,6 +11,7 @@ import { resolveQuickTaskSettings, type QuickTaskSettings } from '../../lib/quic
 import { resolveRememberedScope, type RememberedScope } from '../../lib/recurrence/scope'
 import { resolveReminderSettings, type ReminderSettings } from '../../lib/reminders/offsets'
 import { ReminderOffsets } from '../../components/ReminderOffsets/ReminderOffsets'
+import { CalendarsSection } from '../../components/Calendars/CalendarsSection'
 import { AlertTriangle, Bell, Clock, Database, Globe, LayoutGrid, Lightbulb, LogOut, Maximize, Repeat, Sliders, Smartphone, Zap } from 'lucide-react'
 import { getHintStyle, setHintStyle as persistHintStyle, type HintStyle } from '../../lib/onboarding/hintStyle'
 
@@ -646,6 +647,8 @@ export default function Settings() {
             </div>
           </div>
         </section>
+
+        <CalendarsSection />
 
         {/* Work Hours */}
         <section className="bg-zinc-900 border border-zinc-800 rounded-lg p-5">

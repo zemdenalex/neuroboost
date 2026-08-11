@@ -1,5 +1,25 @@
 const API_BASE = (import.meta.env?.VITE_API_URL ?? '/api').replace(/\/$/, '');
 
+/**
+ * Thrown by `request()` on any non-2xx / non-204 response. Extends Error so every
+ * existing `catch (err) { ... err.message ... }` call site keeps working unchanged
+ * (`instanceof Error` and `.message` both still hold) — this is a superset, not a
+ * replacement. `code` and `raw` let a caller that cares (e.g. calendar delete,
+ * which needs the CALENDAR_NOT_EMPTY counts) narrow with `instanceof ApiError`
+ * instead of losing that data to string coercion.
+ */
+export class ApiError extends Error {
+  code?: string;
+  raw: unknown;
+
+  constructor(message: string, code: string | undefined, raw: unknown) {
+    super(message);
+    this.name = 'ApiError';
+    this.code = code;
+    this.raw = raw;
+  }
+}
+
 // Token storage keys
 const TOKEN_KEY = 'nb_token';
 const TOKEN_EXPIRY_KEY = 'nb_token_expiry';
@@ -88,7 +108,8 @@ async function request<T>(
       (typeof payload?.error === 'string' ? payload.error : null) ??
       'Request failed';
 
-    throw new Error(typeof msg === 'string' ? msg : JSON.stringify(msg));
+    const code = typeof payload?.error?.code === 'string' ? payload.error.code : undefined;
+    throw new ApiError(typeof msg === 'string' ? msg : JSON.stringify(msg), code, payload?.error);
   }
 
   if (payload && typeof payload === 'object' && 'data' in payload) {

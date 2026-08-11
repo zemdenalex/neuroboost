@@ -77,5 +77,22 @@
     "occurrence": "Always change just that one",
     "series": "Always change every occurrence",
     "hint": "Applies to moving, editing and deleting alike."
+  },
+  "calendars": {
+    "title": "Calendars",
+    "loading": "Loading…",
+    "loadFailed": "Failed to load calendars",
+    "personalBadge": "Personal",
+    "rename": "Rename",
+    "delete": "Delete",
+    "save": "Save",
+    "cancel": "Cancel",
+    "createPlaceholder": "New calendar name",
+    "create": "Create shared calendar",
+    "createFailed": "Failed to create calendar",
+    "renameFailed": "Failed to rename calendar",
+    "deleteFailed": "Failed to delete calendar",
+    "isPersonal": "The personal calendar cannot be deleted",
+    "notEmpty": "This calendar has {{events}} events and {{tasks}} tasks — move them first"
   }
 }
