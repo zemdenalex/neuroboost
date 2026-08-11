@@ -26,6 +26,14 @@ var sqlKeywordRe = regexp.MustCompile(`\b(SELECT|INSERT|UPDATE|DELETE)\b`)
 // the digit after `$` is deliberately not part of the pattern.
 var userIDFilterRe = regexp.MustCompile(`user_id\s*=\s*\$`)
 
+// tableRefRe matches a SQL block that operates on the event or task table —
+// `FROM event`, `UPDATE event`, `JOIN event`, and the task equivalents.
+// `DELETE FROM event` is covered by the `FROM` case already. `\b` after the
+// table name is load-bearing: it is what keeps `event_exception`,
+// `task_dependency`, and `task_requirement` — different tables, legitimately
+// scoped by user_id or anything else — from matching `event`/`task`.
+var tableRefRe = regexp.MustCompile(`\b(?:FROM|UPDATE|JOIN)\s+(event|task)\b`)
+
 // minSQLBlocksScanned is today's actual count of SQL-shaped backtick strings
 // under api-go/internal (67, measured 2026-08-11), given headroom. It exists
 // so that if a query ever moves out of a backtick string — into a named
@@ -64,39 +72,24 @@ func walkGoFiles(t *testing.T, fn func(path, src string)) {
 	}
 }
 
-// userIDFilterAllowed reports whether a SQL block that filters by user_id is
-// legitimately allowed to. Kept deliberately narrow — one entry per reason,
-// not one entry per file — so a new violation in an already-forgiven file
-// still gets caught.
-func userIDFilterAllowed(block string) (ok bool, why string) {
-	// calendar_member IS the membership table calendars.CalendarIDsFor reads
-	// to answer "which calendars can this user see" — there is no calendar_id
-	// to scope it by, filtering by user_id here is the whole point of the query.
-	if strings.Contains(block, "calendar_member") {
-		return true, "calendar_member: this is the membership lookup itself"
-	}
-	// The "user" table is the account row itself, not calendar-scoped data —
-	// events and tasks live in calendars, a person does not.
-	if strings.Contains(block, `"user"`) {
-		return true, `"user" table: the account row itself, not calendar-scoped data`
-	}
-	return false, ""
-}
-
 // 🔴 Одно забытое место = чужие данные в чужом браузере, и откатить это нельзя:
 // показанное однажды показано. Поэтому запрет проверяется механически, а не
 // вниманием ревьюера.
 //
-// Ищется буквально `user_id = $` — то есть ограничение ВЫБОРКИ по автору.
-// INSERT, который пишет user_id как колонку авторства, под шаблон не попадает
-// и остаётся разрешённым (userIDFilterRe requires `=`, INSERT column lists
-// don't have one).
+// The rule is narrower than "no query filters by user_id" — that would also
+// flag planning/reflections/reminders' own tables, and their own tables are
+// legitimately personal (out of P3 slice 1's scope; the spec's "Что НЕ
+// входит" section says so explicitly). The actual rule: a query that reads
+// or writes the event or task table may not gate that access on user_id —
+// access to those two tables specifically comes from calendar membership.
+// A block is forbidden only when it BOTH references event/task (tableRefRe)
+// AND filters by user_id (userIDFilterRe). No allow-list is needed with this
+// narrower rule: calendar_member and "user" table queries never match
+// tableRefRe in the first place, since neither name is "event" or "task".
 //
 // Recursive over api-go/internal, not a fixed file list: a hardcoded list of
 // two files is structurally blind to every other file, including the two
-// this same fix round found (recurrence.go, occurrence.go). The allow-list
-// above is what keeps it from also flagging the one place user_id-filtering
-// is correct.
+// this same fix round found (recurrence.go, occurrence.go).
 func TestHandlersDoNotScopeQueriesByUserID(t *testing.T) {
 	scanned := 0
 
@@ -108,15 +101,12 @@ func TestHandlersDoNotScopeQueriesByUserID(t *testing.T) {
 			}
 			scanned++
 
-			if !userIDFilterRe.MatchString(block) {
-				continue
-			}
-			if ok, _ := userIDFilterAllowed(block); ok {
+			if !tableRefRe.MatchString(block) || !userIDFilterRe.MatchString(block) {
 				continue
 			}
 			t.Errorf(
-				"%s scopes a query by user_id = $. Access comes from calendar membership: "+
-					"use calendars.CalendarIDsFor and `calendar_id = ANY($n)`.\n\tquery: %s",
+				"%s scopes an event/task query by user_id = $. Access comes from calendar "+
+					"membership: use calendars.CalendarIDsFor and `calendar_id = ANY($n)`.\n\tquery: %s",
 				path, strings.TrimSpace(block))
 		}
 	})
