@@ -134,6 +134,24 @@ func PendingHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Requeue failed deliveries that have not exhausted their attempts. A FAILED
+	// row used to be terminal, and because idx_reminder_dedupe stops the scan
+	// re-creating an identical row, one failure lost that reminder for the whole
+	// local day. The attempt cap is what keeps this from retrying forever for a
+	// user who has blocked the bot. Policy lives in ShouldRetry, which is tested.
+	if _, err := db.Pool.Exec(ctx, `
+		UPDATE reminder SET status = 'PENDING'
+		WHERE status = 'FAILED'
+		  AND attempts < $1
+		  AND sent_at IS NOT NULL
+		  AND sent_at <= NOW() - make_interval(mins => $2)`,
+		MaxDeliveryAttempts, int(RetryBackoff.Minutes())); err != nil {
+		if svcLog != nil {
+			svcLog.Error("failed to requeue failed reminders", slog.String("error", err.Error()))
+		}
+		// Not fatal: the batch below is still worth serving.
+	}
+
 	// Claim and return in one statement so two notifier instances cannot claim
 	// the same row.
 	//
@@ -209,13 +227,18 @@ func AckHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	status := "FAILED"
+	// A failure bumps attempts; a success does not touch it. The counter is what
+	// bounds the requeue in PendingHandler, so it must only ever count real
+	// delivery attempts.
+	var err error
 	if req.Delivered {
-		status = "SENT"
+		_, err = db.Pool.Exec(r.Context(),
+			`UPDATE reminder SET status = 'SENT', sent_at = NOW() WHERE id = $1`, id)
+	} else {
+		_, err = db.Pool.Exec(r.Context(),
+			`UPDATE reminder SET status = 'FAILED', sent_at = NOW(), attempts = attempts + 1 WHERE id = $1`, id)
 	}
-	if _, err := db.Pool.Exec(r.Context(),
-		`UPDATE reminder SET status = $1, sent_at = NOW() WHERE id = $2`,
-		status, id); err != nil {
+	if err != nil {
 		util.RespondError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to record delivery")
 		return
 	}
