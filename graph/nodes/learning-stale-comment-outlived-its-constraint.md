@@ -13,6 +13,7 @@ sources:
   - command: "cd web && corepack pnpm exec playwright test crossday --project=desktop  # 1 passed после деплоя"
 stakes: high
 links:
+  - relates-to: workitem-drag-commit-flicker
   - relates-to: learning-md2-lived-in-untested-producers
   - relates-to: learning-checkbox-in-a-plan-is-a-claim-not-evidence
   - relates-to: entity-e2e-playwright-harness
