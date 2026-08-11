@@ -18,6 +18,7 @@ import (
 	"neuroboost/api-go/internal/status"
 
 	a "neuroboost/api-go/internal/auth"
+	"neuroboost/api-go/internal/calendars"
 	e "neuroboost/api-go/internal/events"
 	exp "neuroboost/api-go/internal/export"
 	f "neuroboost/api-go/internal/feedback"
@@ -52,6 +53,7 @@ func main() {
 	defer db.Close()
 
 	// Initialize package-level DB connections
+	calendars.InitDB(db)
 	e.InitDB(db)
 	t.InitDB(db)
 	rfl.InitDB(db)
