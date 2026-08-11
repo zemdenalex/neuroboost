@@ -356,7 +356,7 @@ func listTasks(ctx context.Context, userID, status, category, taskContext string
 	}
 
 	query := `
-		SELECT id, user_id, title, description, status, category, priority,
+		SELECT id, calendar_id::text, user_id, title, description, status, category, priority,
 		       estimated_minutes, due_date, COALESCE(tags, '{}'), COALESCE(contexts, '{}'),
 		       energy, parent_id, completed_at, created_at, updated_at, actual_minutes,
 		          COALESCE(reminder_offsets, '{}')
@@ -399,7 +399,7 @@ func listTasks(ctx context.Context, userID, status, category, taskContext string
 		var t Task
 		var tags, contexts []string
 		err := rows.Scan(
-			&t.ID, &t.UserID, &t.Title, &t.Description, &t.Status, &t.Category,
+			&t.ID, &t.CalendarID, &t.UserID, &t.Title, &t.Description, &t.Status, &t.Category,
 			&t.Priority, &t.EstimatedMinutes, &t.DueDate, &tags, &contexts,
 			&t.Energy, &t.ParentID, &t.CompletedAt, &t.CreatedAt, &t.UpdatedAt, &t.ActualMinutes,
 			&t.ReminderOffsets,
@@ -443,12 +443,12 @@ func createTask(ctx context.Context, userID string, req CreateTaskRequest, statu
 	err = db.Pool.QueryRow(ctx, `
 		INSERT INTO task (user_id, calendar_id, title, description, status, category, priority, estimated_minutes, due_date, tags, contexts, energy, parent_id, reminder_offsets)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
-		RETURNING id, user_id, title, description, status, category, priority,
+		RETURNING id, calendar_id::text, user_id, title, description, status, category, priority,
 		          estimated_minutes, due_date, COALESCE(tags, '{}'), COALESCE(contexts, '{}'),
 		          energy, parent_id, completed_at, created_at, updated_at, actual_minutes,
 		          COALESCE(reminder_offsets, '{}')
 	`, userID, calID, req.Title, req.Description, status, req.Category, priority, req.EstimatedMinutes, dueDate, tags, contexts, req.Energy, req.ParentID, reminderOffsets).Scan(
-		&t.ID, &t.UserID, &t.Title, &t.Description, &t.Status, &t.Category,
+		&t.ID, &t.CalendarID, &t.UserID, &t.Title, &t.Description, &t.Status, &t.Category,
 		&t.Priority, &t.EstimatedMinutes, &t.DueDate, &resultTags, &resultContexts,
 		&t.Energy, &t.ParentID, &t.CompletedAt, &t.CreatedAt, &t.UpdatedAt, &t.ActualMinutes,
 		&t.ReminderOffsets,
@@ -473,14 +473,14 @@ func getTask(ctx context.Context, userID, taskID string) (*Task, error) {
 	var tags, contexts []string
 
 	err = db.Pool.QueryRow(ctx, `
-		SELECT id, user_id, title, description, status, category, priority,
+		SELECT id, calendar_id::text, user_id, title, description, status, category, priority,
 		       estimated_minutes, due_date, COALESCE(tags, '{}'), COALESCE(contexts, '{}'),
 		       energy, parent_id, completed_at, created_at, updated_at, actual_minutes,
 		          COALESCE(reminder_offsets, '{}')
 		FROM task
 		WHERE id = $1 AND calendar_id = ANY($2)
 	`, taskID, calIDs).Scan(
-		&t.ID, &t.UserID, &t.Title, &t.Description, &t.Status, &t.Category,
+		&t.ID, &t.CalendarID, &t.UserID, &t.Title, &t.Description, &t.Status, &t.Category,
 		&t.Priority, &t.EstimatedMinutes, &t.DueDate, &tags, &contexts,
 		&t.Energy, &t.ParentID, &t.CompletedAt, &t.CreatedAt, &t.UpdatedAt, &t.ActualMinutes,
 		&t.ReminderOffsets,
@@ -593,7 +593,7 @@ func updateTask(ctx context.Context, userID, taskID string, req UpdateTaskReques
 	query := fmt.Sprintf(`
 		UPDATE task SET %s
 		WHERE id = $%d AND calendar_id = ANY($%d)
-		RETURNING id, user_id, title, description, status, category, priority,
+		RETURNING id, calendar_id::text, user_id, title, description, status, category, priority,
 		          estimated_minutes, due_date, COALESCE(tags, '{}'), COALESCE(contexts, '{}'),
 		          energy, parent_id, completed_at, created_at, updated_at, actual_minutes,
 		          COALESCE(reminder_offsets, '{}')
@@ -603,7 +603,7 @@ func updateTask(ctx context.Context, userID, taskID string, req UpdateTaskReques
 	var tags, contexts []string
 
 	err = db.Pool.QueryRow(ctx, query, args...).Scan(
-		&t.ID, &t.UserID, &t.Title, &t.Description, &t.Status, &t.Category,
+		&t.ID, &t.CalendarID, &t.UserID, &t.Title, &t.Description, &t.Status, &t.Category,
 		&t.Priority, &t.EstimatedMinutes, &t.DueDate, &tags, &contexts,
 		&t.Energy, &t.ParentID, &t.CompletedAt, &t.CreatedAt, &t.UpdatedAt, &t.ActualMinutes,
 		&t.ReminderOffsets,
@@ -714,12 +714,12 @@ func logTaskTime(ctx context.Context, userID, taskID string, delta int) (*Task, 
 		UPDATE task
 		SET actual_minutes = GREATEST(0, actual_minutes + $1), updated_at = NOW()
 		WHERE id = $2 AND calendar_id = ANY($3)
-		RETURNING id, user_id, title, description, status, category, priority,
+		RETURNING id, calendar_id::text, user_id, title, description, status, category, priority,
 		          estimated_minutes, due_date, COALESCE(tags, '{}'), COALESCE(contexts, '{}'),
 		          energy, parent_id, completed_at, created_at, updated_at, actual_minutes,
 		          COALESCE(reminder_offsets, '{}')
 	`, delta, taskID, calIDs).Scan(
-		&t.ID, &t.UserID, &t.Title, &t.Description, &t.Status, &t.Category,
+		&t.ID, &t.CalendarID, &t.UserID, &t.Title, &t.Description, &t.Status, &t.Category,
 		&t.Priority, &t.EstimatedMinutes, &t.DueDate, &tags, &contexts,
 		&t.Energy, &t.ParentID, &t.CompletedAt, &t.CreatedAt, &t.UpdatedAt, &t.ActualMinutes,
 		&t.ReminderOffsets,

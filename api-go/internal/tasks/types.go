@@ -29,6 +29,7 @@ const (
 type Task struct {
 	ID               string        `json:"id"`
 	UserID           string        `json:"user_id"`
+	CalendarID       string        `json:"calendar_id"`
 	Title            string        `json:"title"`
 	Description      *string       `json:"description,omitempty"`
 	Status           TaskStatus    `json:"status"`
