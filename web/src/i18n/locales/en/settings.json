@@ -82,6 +82,7 @@
     "title": "Calendars",
     "loading": "Loading…",
     "loadFailed": "Failed to load calendars",
+    "retry": "Retry",
     "personalBadge": "Personal",
     "rename": "Rename",
     "delete": "Delete",
@@ -93,6 +94,7 @@
     "renameFailed": "Failed to rename calendar",
     "deleteFailed": "Failed to delete calendar",
     "isPersonal": "The personal calendar cannot be deleted",
+    "notOwner": "Only the calendar owner can do that",
     "notEmpty": "This calendar has {{events}} events and {{tasks}} tasks — move them first"
   }
 }

@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CalendarDays, Pencil, Trash2 } from 'lucide-react'
+import { CalendarDays, Pencil, RefreshCw, Trash2 } from 'lucide-react'
 import {
   listCalendars,
   createCalendar,
@@ -9,8 +9,10 @@ import {
   type Calendar,
 } from '../../api/calendars'
 import { sortCalendars } from '../../lib/calendars/order'
+import { describeCalendarError } from '../../lib/calendars/errors'
 import { showToast } from '../ui/Toast'
-import { ApiError } from '../../api/client'
+
+type LoadStatus = 'loading' | 'error' | 'loaded'
 
 /**
  * Calendar list + create/rename/delete, shown as its own settings section.
@@ -21,38 +23,54 @@ import { ApiError } from '../../api/client'
 export function CalendarsSection() {
   const { t } = useTranslation('settings')
 
-  const [calendars, setCalendars] = useState<Calendar[] | null>(null)
-  const [loadError, setLoadError] = useState(false)
+  const [status, setStatus] = useState<LoadStatus>('loading')
+  const [calendars, setCalendars] = useState<Calendar[]>([])
   const [newName, setNewName] = useState('')
   const [creating, setCreating] = useState(false)
   const [renamingId, setRenamingId] = useState<string | null>(null)
   const [renameValue, setRenameValue] = useState('')
   const [busyId, setBusyId] = useState<string | null>(null)
 
-  useEffect(() => {
-    let cancelled = false
-    listCalendars()
+  // Shared by the initial load, the retry button, and a create that lands
+  // while the list is in an errored state (see handleCreate below) — one
+  // place that goes to the server and replaces local state with the truth.
+  const fetchCalendars = useCallback(() => {
+    setStatus('loading')
+    return listCalendars()
       .then((list) => {
-        if (!cancelled) setCalendars(sortCalendars(list))
+        setCalendars(sortCalendars(list))
+        setStatus('loaded')
       })
       .catch(() => {
-        if (!cancelled) setLoadError(true)
+        setStatus('error')
       })
-    return () => {
-      cancelled = true
-    }
   }, [])
 
+  useEffect(() => {
+    void fetchCalendars()
+  }, [fetchCalendars])
+
   const handleCreate = async () => {
+    // Guarded here, not just on the submit button: the Enter-key handler
+    // calls this directly and a held/repeated key must not fire twice.
+    if (creating) return
     const name = newName.trim()
     if (!name) return
     setCreating(true)
     try {
       const created = await createCalendar(name)
-      setCalendars((prev) => sortCalendars([...(prev ?? []), created]))
+      if (status === 'error') {
+        // Local state is empty/stale from the earlier failed load — appending
+        // to it would show one calendar while the server may hold several.
+        // Refetch instead of trusting what we have.
+        await fetchCalendars()
+      } else {
+        setCalendars((prev) => sortCalendars([...prev, created]))
+      }
       setNewName('')
-    } catch {
-      showToast(t('calendars.createFailed'))
+    } catch (err) {
+      const msg = describeCalendarError(err, 'calendars.createFailed')
+      showToast(t(msg.key, msg.params))
     } finally {
       setCreating(false)
     }
@@ -69,38 +87,31 @@ export function CalendarsSection() {
   }
 
   const submitRename = async (id: string) => {
+    if (busyId === id) return
     const name = renameValue.trim()
     if (!name) return
     setBusyId(id)
     try {
       const updated = await updateCalendar(id, { name })
-      setCalendars((prev) =>
-        sortCalendars((prev ?? []).map((c) => (c.id === id ? updated : c))),
-      )
+      setCalendars((prev) => sortCalendars(prev.map((c) => (c.id === id ? updated : c))))
       cancelRename()
-    } catch {
-      showToast(t('calendars.renameFailed'))
+    } catch (err) {
+      const msg = describeCalendarError(err, 'calendars.renameFailed')
+      showToast(t(msg.key, msg.params))
     } finally {
       setBusyId(null)
     }
   }
 
   const handleDelete = async (cal: Calendar) => {
+    if (busyId === cal.id) return
     setBusyId(cal.id)
     try {
       await deleteCalendar(cal.id)
-      setCalendars((prev) => (prev ?? []).filter((c) => c.id !== cal.id))
+      setCalendars((prev) => prev.filter((c) => c.id !== cal.id))
     } catch (err) {
-      if (err instanceof ApiError && err.code === 'CALENDAR_NOT_EMPTY') {
-        const raw = err.raw as { events?: unknown; tasks?: unknown } | undefined
-        const events = typeof raw?.events === 'number' ? raw.events : 0
-        const tasks = typeof raw?.tasks === 'number' ? raw.tasks : 0
-        showToast(t('calendars.notEmpty', { events, tasks }))
-      } else if (err instanceof ApiError && err.code === 'CALENDAR_IS_PERSONAL') {
-        showToast(t('calendars.isPersonal'))
-      } else {
-        showToast(t('calendars.deleteFailed'))
-      }
+      const msg = describeCalendarError(err, 'calendars.deleteFailed')
+      showToast(t(msg.key, msg.params))
     } finally {
       setBusyId(null)
     }
@@ -116,12 +127,23 @@ export function CalendarsSection() {
         <h2 className="text-lg font-mono font-semibold text-white">{t('calendars.title')}</h2>
       </div>
 
-      {calendars === null && !loadError && (
-        <p className="text-sm text-zinc-500">{t('calendars.loading')}</p>
-      )}
-      {loadError && <p className="text-sm text-red-400">{t('calendars.loadFailed')}</p>}
+      {status === 'loading' && <p className="text-sm text-zinc-500">{t('calendars.loading')}</p>}
 
-      {calendars !== null && (
+      {status === 'error' && (
+        <div className="flex items-center gap-3 mb-4">
+          <p className="text-sm text-red-400">{t('calendars.loadFailed')}</p>
+          <button
+            data-testid="calendars-retry"
+            onClick={() => void fetchCalendars()}
+            className="flex items-center gap-1 text-xs font-mono text-blue-400 hover:text-blue-300"
+          >
+            <RefreshCw className="w-3 h-3" />
+            {t('calendars.retry')}
+          </button>
+        </div>
+      )}
+
+      {status === 'loaded' && (
         <div className="space-y-2">
           {calendars.map((cal) => {
             const canDelete = cal.kind === 'shared' && cal.role === 'owner'
@@ -133,10 +155,12 @@ export function CalendarsSection() {
               <div
                 key={cal.id}
                 data-testid="calendar-row"
+                data-calendar-name={cal.name}
                 className="flex items-center gap-3 p-3 bg-zinc-800/50 rounded-lg"
               >
                 {isRenaming ? (
                   <input
+                    data-testid="calendar-rename-input"
                     type="text"
                     value={renameValue}
                     onChange={(e) => setRenameValue(e.target.value)}
@@ -161,6 +185,7 @@ export function CalendarsSection() {
                 {isRenaming ? (
                   <>
                     <button
+                      data-testid="calendar-rename-save"
                       onClick={() => void submitRename(cal.id)}
                       disabled={isBusy || !renameValue.trim()}
                       className="px-2 py-1 text-xs font-mono text-blue-400 hover:text-blue-300 disabled:opacity-40"
@@ -168,6 +193,7 @@ export function CalendarsSection() {
                       {t('calendars.save')}
                     </button>
                     <button
+                      data-testid="calendar-rename-cancel"
                       onClick={cancelRename}
                       className="px-2 py-1 text-xs font-mono text-zinc-400 hover:text-zinc-300"
                     >
@@ -178,6 +204,7 @@ export function CalendarsSection() {
                   <>
                     {canRename && (
                       <button
+                        data-testid="calendar-rename"
                         onClick={() => startRename(cal)}
                         title={t('calendars.rename')}
                         className="p-1.5 text-zinc-400 hover:text-blue-400 rounded transition-colors"
