@@ -6,7 +6,7 @@ status: verified
 verified_by: session-88767014
 verified_at: 2026-08-10
 tags: [neuroboost, testing, e2e, playwright, verification]
-weight: { importance: 4, connectivity: 2, access: 2, last_accessed: 2026-08-10 }
+weight: { importance: 4, connectivity: 11, access: 3, last_accessed: 2026-08-11 }
 sources:
   - command: "corepack pnpm e2e  (web/, 6 passed)"
   - file: "web/playwright.config.ts"

@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-08-10
 tags: [neuroboost, calendar, drag, testing, e2e]
-weight: { importance: 5, connectivity: 4, access: 2, last_accessed: 2026-08-11 }
+weight: { importance: 5, connectivity: 5, access: 3, last_accessed: 2026-08-11 }
 sources:
   - command: "grep -rn 'anchorMs' web/src/components/Calendar/WeekGrid/  # до 10.08: только чтение в dragHandlers.ts + объявление в types"
   - command: "cd web && corepack pnpm test --run resizeCoords  # 19 тестов"

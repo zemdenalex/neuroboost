@@ -116,3 +116,40 @@ learning-md2-lived-in-untested-producers · workitem-release-v0410-gated-by-deni
 **Скиллы на следующую сессию:** `superpowers:test-driven-development` (drag-работа — чистые
 функции первыми), `superpowers:brainstorming` (P3, ни разу не обсуждали),
 `superpowers:systematic-debugging` (если тап по боту снова упадёт).
+
+## [2026-08-11 09:27] consolidate | START — 1 to consolidate, 0 skipped (too large)
+
+## [2026-08-11 09:30] consolidate | DONE — 0 new proposed (all learnings already ingested)
+Transcript analyzed: 1665 lines, 8 user messages, 135 assistant messages. Session covered full night loop + morning follow-up (10–11.08). All technical discoveries already captured in nodes: silent digest failure, bot auth, MD2 resize, dialog harness gap, old prod image, compose profile behavior, null-value silent failures, goroutine panics, DB index behavior, plan-checkbox fallacy. No duplicates needed.
+
+## [2026-08-11 09:31] consolidate | DONE — 1 ok, 0 failed, 0 skipped
+
+## [2026-08-11] recall | learning-md2-lived-in-untested-producers, learning-prod-has-no-svc-routes, learning-fix-in-the-wrong-container-looks-like-a-broken-fix, entity-e2e-playwright-harness, entity-bot-runs-on-nl2
+
+## [2026-08-11] session | MD1 закрыт, мобильный день открывается на сегодня
+
+Сделано: **MD1** (`b4b270f`) — `cursorMs` от `targetDayUtc0`, конец resize уходит в соседние
+сутки; заодно `resizeRangeMs` объединила расчёт ghost'а и коммита (превью больше не расходится
+с сохранённым). **Мобильный день** (`475fcde`) — открывается на сегодня, а не на понедельнике
+недели. Тесты 311 → 328, e2e 17/1 → **18 passed, 2 skipped** (mobile drag не покрыт: 375px
+показывает один день). Оба прогона — против задеплоенного staging.
+
+Два узла: [[learning-stale-comment-outlived-its-constraint]] (условие «сначала обобщить ghost»
+было ложным — комментарий пережил своё ограничение, проверка заняла минуты),
+[[learning-e2e-baseline-recorded-on-a-monday]] (базовая линия снята в понедельник, во вторник
+две спеки упали и вскрыли настоящий баг).
+
+🔴 **Открыто и ждёт Дениса** — тап по прод-боту `@NeuroBoost_assistant_bot` (`🎯 Today`,
+`📋 Tasks`): контейнер жив 6 часов, в логах после 00:02 **ни одной строки**, то есть ни одной
+обработанной команды. Проверить может только он.
+
+Остальное без изменений: мерж PR #9 = релиз прода, 6 узлов в очереди promote, ротация токена
+прод-бота, раздвоение личности в прод-базе. Заметка к мержу: у прод-бота
+`SERVICE_TOKEN` не задан, после релиза уведомления не поедут, пока его не проставят в
+`/opt/neuroboost-bot-prod/.env` + `up -d --force-recreate`.
+
+**Дальше по убыванию пользы:** шаги 4–6 drag-плана (`grabOffsetMs`, all-day move, порог resize),
+шаг 7 P2 (кнопки/snooze), P3 (не брейнштормили), `TaskEditor`-заглушка, ретрай FAILED-строк.
+
+**Скиллы на следующую сессию:** `superpowers:test-driven-development`,
+`superpowers:brainstorming` (P3), `superpowers:systematic-debugging`.

@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-08-11
 tags: [neuroboost, telegram, deploy, debugging]
-weight: { importance: 5, connectivity: 4, access: 1, last_accessed: 2026-08-11 }
+weight: { importance: 5, connectivity: 4, access: 2, last_accessed: 2026-08-11 }
 sources:
   - command: "docker image inspect $(docker inspect neuroboost-bot --format '{{.Image}}') --format '{{.Created}}'  # → 2026-04-10, за 4 месяца до починки"
   - command: "docker logs --timestamps --tail 8 neuroboost-bot  # последняя ошибка 05:18Z, дальше тишина = polling идёт успешно"

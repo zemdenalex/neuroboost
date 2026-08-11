@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-08-10
 tags: [neuroboost, telegram, deploy, prod, staging]
-weight: { importance: 5, connectivity: 7, access: 2, last_accessed: 2026-08-11 }
+weight: { importance: 5, connectivity: 7, access: 3, last_accessed: 2026-08-11 }
 sources:
   - command: "curl -s -o /dev/null -w '%{http_code}' -H 'Authorization: Bearer x' https://neuroboost.website/api/svc/notifications/pending  # → 404"
   - command: "curl -s -o /dev/null -w '%{http_code}' -H 'Authorization: Bearer x' https://dev.neuroboost.website/api/svc/notifications/pending  # → 503 до токена, 401 после"
