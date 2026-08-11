@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"neuroboost/api-go/internal/calendars"
 	"neuroboost/api-go/internal/util"
 )
 
@@ -145,11 +146,19 @@ func ActionHandler(w http.ResponseWriter, r *http.Request) {
 			util.RespondError(w, http.StatusBadRequest, "NOT_A_TASK", "Only a task can be completed")
 			return
 		}
-		// user_id in the WHERE, not just the id: the row was already checked
-		// against tg_id above, and this keeps that guarantee inside the write.
+		// A scoping clause in the WHERE, not just the id: the reminder row was
+		// already matched against tg_id above, and this keeps that guarantee
+		// inside the write. Access to a task comes from calendar membership,
+		// so the clause is the membership list of that same verified user —
+		// the check is not weakened, only re-expressed.
+		calIDs, err := calendars.CalendarIDsFor(ctx, userID)
+		if err != nil {
+			util.RespondError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to complete task")
+			return
+		}
 		tag, err := db.Pool.Exec(ctx,
-			`UPDATE task SET status = 'DONE', updated_at = NOW() WHERE id = $1 AND user_id = $2`,
-			*taskID, userID)
+			`UPDATE task SET status = 'DONE', updated_at = NOW() WHERE id = $1 AND calendar_id = ANY($2)`,
+			*taskID, calIDs)
 		if err != nil {
 			util.RespondError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to complete task")
 			return

@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"time"
 
+	"neuroboost/api-go/internal/calendars"
 	"neuroboost/api-go/internal/database"
 	"neuroboost/api-go/internal/events"
 	"neuroboost/api-go/internal/usersettings"
@@ -61,7 +62,22 @@ func Scan(ctx context.Context, from, to time.Time, log *slog.Logger) (int, error
 		}
 		st := usersettings.ParseReminders(u.settings)
 
-		n, err := scanEvents(ctx, u, st, loc, from, to)
+		// Access to events and tasks comes from calendar membership, so the
+		// scoping list is read once per user and threaded through every query
+		// below rather than re-read per event.
+		//
+		// An error here skips the user entirely instead of degrading to an
+		// empty list. The digest is written ON CONFLICT DO NOTHING keyed on
+		// (user, local day): an empty-by-mistake digest would claim the day is
+		// free and the correct one could never replace it.
+		calIDs, err := calendars.CalendarIDsFor(ctx, u.id)
+		if err != nil {
+			log.Error("reminder calendar scoping failed",
+				slog.String("user_id", u.id), slog.String("error", err.Error()))
+			continue
+		}
+
+		n, err := scanEvents(ctx, u, calIDs, st, loc, from, to)
 		if err != nil {
 			// One user's bad data must not stop everyone else's reminders.
 			log.Error("reminder event scan failed",
@@ -69,7 +85,7 @@ func Scan(ctx context.Context, from, to time.Time, log *slog.Logger) (int, error
 		}
 		inserted += n
 
-		n, err = scanTasks(ctx, u, st, loc, from, to)
+		n, err = scanTasks(ctx, u, calIDs, st, loc, from, to)
 		if err != nil {
 			log.Error("reminder task scan failed",
 				slog.String("user_id", u.id), slog.String("error", err.Error()))
@@ -78,7 +94,7 @@ func Scan(ctx context.Context, from, to time.Time, log *slog.Logger) (int, error
 
 		if st.DigestEnabled {
 			if day, fireAt, ok := DigestDue(from, to, st.DigestAt, loc); ok {
-				n, err := insertDigest(ctx, u.id, day, fireAt, loc)
+				n, err := insertDigest(ctx, u.id, calIDs, day, fireAt, loc)
 				if err != nil {
 					log.Error("digest insert failed",
 						slog.String("user_id", u.id), slog.String("error", err.Error()))
@@ -90,7 +106,7 @@ func Scan(ctx context.Context, from, to time.Time, log *slog.Logger) (int, error
 	return inserted, nil
 }
 
-func scanEvents(ctx context.Context, u scanUser, st usersettings.Reminders, loc *time.Location, from, to time.Time) (int, error) {
+func scanEvents(ctx context.Context, u scanUser, calIDs []string, st usersettings.Reminders, loc *time.Location, from, to time.Time) (int, error) {
 	// Look ahead by the largest offset in use: an occurrence up to a month
 	// away can have a reminder due right now.
 	horizon := to.Add(maxOffsetMinutes * time.Minute)
@@ -99,13 +115,13 @@ func scanEvents(ctx context.Context, u scanUser, st usersettings.Reminders, loc 
 		SELECT id, user_id, title, starts_at, ends_at, all_day, rrule,
 		       COALESCE(timezone, 'Europe/Moscow'), COALESCE(reminder_offsets, '{}')
 		FROM event
-		WHERE user_id = $1
+		WHERE calendar_id = ANY($1)
 		  AND cardinality(reminder_offsets) > 0
 		  AND (
 		    (rrule IS NOT NULL AND rrule != '')
 		    OR starts_at BETWEEN $2 AND $3
 		  )`,
-		u.id, from, horizon)
+		calIDs, from, horizon)
 	if err != nil {
 		return 0, err
 	}
@@ -131,7 +147,7 @@ func scanEvents(ctx context.Context, u scanUser, st usersettings.Reminders, loc 
 
 	inserted := 0
 	for _, c := range candidates {
-		exceptions := fetchSkippedOccurrences(ctx, u.id, c.ev.ID)
+		exceptions := fetchSkippedOccurrences(ctx, calIDs, c.ev.ID)
 		occurrences := events.OccurrencesInRange(c.ev, from, horizon, exceptions)
 		for _, d := range DueReminders(occurrences, c.offsets, from, to) {
 			remindAt := d.RemindAt
@@ -154,13 +170,21 @@ func scanEvents(ctx context.Context, u scanUser, st usersettings.Reminders, loc 
 	return inserted, nil
 }
 
-// fetchSkippedOccurrences mirrors the events package's own exception lookup:
-// only rows with skipped = true remove an occurrence.
-func fetchSkippedOccurrences(ctx context.Context, userID, eventID string) []time.Time {
+// fetchSkippedOccurrences returns the occurrences removed from a series; only
+// rows with skipped = true remove one.
+//
+// Scoped by calendar membership, not by who wrote the exception — the same
+// shape as events.fetchExceptions, and for the same reason: exceptions are
+// shared series state, like the event itself. Filtering by user_id here made a
+// skip written by one calendar member invisible to the reminder path, so a
+// reminder fired for an occurrence the interface had already hidden.
+func fetchSkippedOccurrences(ctx context.Context, calIDs []string, eventID string) []time.Time {
 	rows, err := db.Pool.Query(ctx,
-		`SELECT occurrence FROM event_exception
-		 WHERE user_id = $1 AND event_id = $2 AND skipped = true`,
-		userID, eventID)
+		`SELECT ee.occurrence
+		 FROM event_exception ee
+		 JOIN event e ON e.id = ee.event_id
+		 WHERE e.calendar_id = ANY($1) AND ee.event_id = $2 AND ee.skipped = true`,
+		calIDs, eventID)
 	if err != nil {
 		return nil
 	}
@@ -176,18 +200,18 @@ func fetchSkippedOccurrences(ctx context.Context, userID, eventID string) []time
 	return out
 }
 
-func scanTasks(ctx context.Context, u scanUser, st usersettings.Reminders, loc *time.Location, from, to time.Time) (int, error) {
+func scanTasks(ctx context.Context, u scanUser, calIDs []string, st usersettings.Reminders, loc *time.Location, from, to time.Time) (int, error) {
 	horizon := to.Add(maxOffsetMinutes * time.Minute)
 
 	rows, err := db.Pool.Query(ctx, `
 		SELECT id, title, due_date, COALESCE(reminder_offsets, '{}')
 		FROM task
-		WHERE user_id = $1
+		WHERE calendar_id = ANY($1)
 		  AND due_date IS NOT NULL
 		  AND cardinality(reminder_offsets) > 0
 		  AND status NOT IN ('DONE', 'CANCELLED')
 		  AND due_date BETWEEN $2 AND $3`,
-		u.id, from, horizon)
+		calIDs, from, horizon)
 	if err != nil {
 		return 0, err
 	}
@@ -271,8 +295,10 @@ const digestMinutesBefore = -2
 // looks ahead, so the row is written slightly BEFORE the digest is due; with
 // NOW() the notifier's `remind_at <= NOW()` gate was already satisfied and the
 // digest went out up to a minute early.
-func insertDigest(ctx context.Context, userID string, localDay, fireAt time.Time, loc *time.Location) (int, error) {
-	message := DigestText(localDay, loc, digestEvents(ctx, userID, localDay), digestTasks(ctx, userID, localDay))
+// userID stays the delivery target of the reminder row; calIDs only scopes what
+// the digest is allowed to read.
+func insertDigest(ctx context.Context, userID string, calIDs []string, localDay, fireAt time.Time, loc *time.Location) (int, error) {
+	message := DigestText(localDay, loc, digestEvents(ctx, calIDs, localDay), digestTasks(ctx, calIDs, localDay))
 
 	tag, err := db.Pool.Exec(ctx, `
 		INSERT INTO reminder (user_id, source_kind, occurrence_start, minutes_before,
@@ -292,7 +318,7 @@ func insertDigest(ctx context.Context, userID string, localDay, fireAt time.Time
 // A query error yields an empty list rather than an error: a digest listing
 // only tasks is worth sending, whereas propagating the failure would abort the
 // whole scan and cost the user their per-event reminders too.
-func digestEvents(ctx context.Context, userID string, localDay time.Time) []DigestEvent {
+func digestEvents(ctx context.Context, calIDs []string, localDay time.Time) []DigestEvent {
 	dayStart := localDay
 	dayEnd := localDay.AddDate(0, 0, 1)
 
@@ -300,9 +326,9 @@ func digestEvents(ctx context.Context, userID string, localDay time.Time) []Dige
 		SELECT id, user_id, title, starts_at, ends_at, all_day, rrule,
 		       COALESCE(timezone, 'Europe/Moscow')
 		FROM event
-		WHERE user_id = $1
+		WHERE calendar_id = ANY($1)
 		  AND ((rrule IS NOT NULL AND rrule != '') OR (starts_at < $3 AND ends_at > $2))`,
-		userID, dayStart, dayEnd)
+		calIDs, dayStart, dayEnd)
 	if err != nil {
 		return nil
 	}
@@ -324,7 +350,7 @@ func digestEvents(ctx context.Context, userID string, localDay time.Time) []Dige
 	var out []DigestEvent
 	for _, ev := range candidates {
 		duration := ev.EndsAt.Sub(ev.StartsAt)
-		exceptions := fetchSkippedOccurrences(ctx, userID, ev.ID)
+		exceptions := fetchSkippedOccurrences(ctx, calIDs, ev.ID)
 		for _, start := range events.OccurrencesInRange(ev, dayStart, dayEnd, exceptions) {
 			out = append(out, DigestEvent{
 				Title:    ev.Title,
@@ -338,15 +364,15 @@ func digestEvents(ctx context.Context, userID string, localDay time.Time) []Dige
 }
 
 // digestTasks lists what is due that local day and still open.
-func digestTasks(ctx context.Context, userID string, localDay time.Time) []DigestTask {
+func digestTasks(ctx context.Context, calIDs []string, localDay time.Time) []DigestTask {
 	rows, err := db.Pool.Query(ctx, `
 		SELECT title FROM task
-		WHERE user_id = $1
+		WHERE calendar_id = ANY($1)
 		  AND due_date IS NOT NULL
 		  AND due_date >= $2 AND due_date < $3
 		  AND status NOT IN ('DONE', 'CANCELLED')
 		ORDER BY priority, due_date`,
-		userID, localDay, localDay.AddDate(0, 0, 1))
+		calIDs, localDay, localDay.AddDate(0, 0, 1))
 	if err != nil {
 		return nil
 	}
