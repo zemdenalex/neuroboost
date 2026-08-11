@@ -29,6 +29,13 @@ CREATE INDEX IF NOT EXISTS idx_calendar_member_user ON calendar_member (user_id,
 ALTER TABLE event ADD COLUMN IF NOT EXISTS calendar_id UUID REFERENCES calendar(id);
 ALTER TABLE task  ADD COLUMN IF NOT EXISTS calendar_id UUID REFERENCES calendar(id);
 
+-- Один личный календарь на человека — инвариант, а не договорённость.
+-- Без него состояние «два personal у одного пользователя» схемой разрешено,
+-- и код, который его ищет, вынужден гадать, какой из них настоящий.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_calendar_one_personal_per_owner
+    ON calendar (owner_id)
+    WHERE kind = 'personal';
+
 -- Личный календарь каждому существующему пользователю.
 INSERT INTO calendar (owner_id, name, kind)
 SELECT u.id, 'Мой календарь', 'personal'
