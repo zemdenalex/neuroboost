@@ -4,12 +4,13 @@ title: NULL в ключе дедупликации проходит уникал
 type: learning
 status: verified
 tags: [neuroboost, postgres, reminders, migrations]
-weight: { importance: 4, connectivity: 4, access: 3, last_accessed: 2026-08-10 }
+weight: { importance: 5, connectivity: 6, access: 3, last_accessed: 2026-08-11 }
 created: 2026-08-10
 sources:
   - file: "api-go/migrations — 000010 (reminder_offsets + журнал доставки reminder)"
   - file: ".remember/handoff-2026-07-28.md §Что построено в P2"
 links:
+  - relates-to: learning-snooze-sentinel-not-null
   - relates-to: workitem-p2-notifications-last-mile
 ---
 **Summary:** В Postgres два NULL не равны друг другу, поэтому уникальный индекс не защищает
