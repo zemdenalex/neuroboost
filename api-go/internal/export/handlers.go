@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"neuroboost/api-go/internal/calendars"
 	"neuroboost/api-go/internal/database"
 	"neuroboost/api-go/internal/middleware"
 	"neuroboost/api-go/internal/util"
@@ -138,6 +139,15 @@ func ImportHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Imported events and tasks land in the importer's personal calendar. The
+	// export file carries no calendar identifiers of its own — importing must
+	// never become a way to write into someone else's calendar.
+	calID, err := calendars.PersonalIDFor(r.Context(), userID)
+	if err != nil {
+		util.RespondError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to resolve calendar")
+		return
+	}
+
 	eventsImported := 0
 	eventsSkipped := 0
 	for _, ev := range req.Events {
@@ -155,15 +165,15 @@ func ImportHandler(w http.ResponseWriter, r *http.Request) {
 
 		result, err := db.Pool.Exec(r.Context(), `
 			INSERT INTO event (
-				id, user_id, title, description, starts_at, ends_at, all_day, rrule,
+				id, user_id, calendar_id, title, description, starts_at, ends_at, all_day, rrule,
 				timezone, location, color, tags, task_id, is_work_event, created_at, updated_at
 			) VALUES (
 				$1, $2, $3, $4, $5, $6, $7, $8,
-				$9, $10, $11, $12, $13, $14, $15, $16
+				$9, $10, $11, $12, $13, $14, $15, $16, $17
 			)
 			ON CONFLICT (id) DO NOTHING
 		`,
-			ev.ID, userID, ev.Title, ev.Description, ev.StartsAt, ev.EndsAt, ev.AllDay, ev.Rrule,
+			ev.ID, userID, calID, ev.Title, ev.Description, ev.StartsAt, ev.EndsAt, ev.AllDay, ev.Rrule,
 			ev.Timezone, ev.Location, ev.Color, tags, ev.TaskID, ev.IsWorkEvent, ev.CreatedAt, ev.UpdatedAt,
 		)
 		if err == nil && result.RowsAffected() > 0 {
@@ -190,17 +200,17 @@ func ImportHandler(w http.ResponseWriter, r *http.Request) {
 
 		result, err := db.Pool.Exec(r.Context(), `
 			INSERT INTO task (
-				id, user_id, title, description, status, category, priority,
+				id, user_id, calendar_id, title, description, status, category, priority,
 				estimated_minutes, due_date, tags, contexts, energy, parent_id,
 				completed_at, created_at, updated_at, actual_minutes
 			) VALUES (
 				$1, $2, $3, $4, $5, $6, $7,
 				$8, $9, $10, $11, $12, $13,
-				$14, $15, $16, $17
+				$14, $15, $16, $17, $18
 			)
 			ON CONFLICT (id) DO NOTHING
 		`,
-			tk.ID, userID, tk.Title, tk.Description, tk.Status, tk.Category, tk.Priority,
+			tk.ID, userID, calID, tk.Title, tk.Description, tk.Status, tk.Category, tk.Priority,
 			tk.EstimatedMinutes, tk.DueDate, tags, contexts, tk.Energy, tk.ParentID,
 			tk.CompletedAt, tk.CreatedAt, tk.UpdatedAt, tk.ActualMinutes,
 		)

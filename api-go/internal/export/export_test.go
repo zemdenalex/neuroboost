@@ -56,10 +56,29 @@ func TestExportIncludesActualMinutes(t *testing.T) {
 	defer cleanup()
 	ctx := context.Background()
 
-	var taskID string
+	// The task's own personal calendar — calendar_id is NOT NULL (migration
+	// 000012), and access to the task now comes from calendar membership,
+	// not user_id, so the fixture needs a real calendar row to join.
+	var calID string
 	err := db.Pool.QueryRow(ctx,
-		`INSERT INTO task (user_id, title, actual_minutes) VALUES ($1, $2, $3) RETURNING id`,
-		userID, "Logged task", 25,
+		`INSERT INTO calendar (owner_id, name, kind) VALUES ($1, 'Мой календарь', 'personal') RETURNING id`,
+		userID,
+	).Scan(&calID)
+	if err != nil {
+		t.Fatalf("seed calendar: %v", err)
+	}
+	_, err = db.Pool.Exec(ctx,
+		`INSERT INTO calendar_member (calendar_id, user_id, role, status) VALUES ($1, $2, 'owner', 'active')`,
+		calID, userID,
+	)
+	if err != nil {
+		t.Fatalf("seed calendar_member: %v", err)
+	}
+
+	var taskID string
+	err = db.Pool.QueryRow(ctx,
+		`INSERT INTO task (user_id, calendar_id, title, actual_minutes) VALUES ($1, $2, $3, $4) RETURNING id`,
+		userID, calID, "Logged task", 25,
 	).Scan(&taskID)
 	if err != nil {
 		t.Fatalf("seed task: %v", err)
