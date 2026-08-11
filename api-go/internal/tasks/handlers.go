@@ -11,6 +11,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5"
 
+	"neuroboost/api-go/internal/calendars"
 	"neuroboost/api-go/internal/database"
 	"neuroboost/api-go/internal/middleware"
 	"neuroboost/api-go/internal/usersettings"
@@ -349,15 +350,22 @@ func ScheduleHandler(w http.ResponseWriter, r *http.Request) {
 // Database operations
 
 func listTasks(ctx context.Context, userID, status, category, taskContext string) ([]Task, error) {
+	calIDs, err := calendars.CalendarIDsFor(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
 	query := `
 		SELECT id, user_id, title, description, status, category, priority,
 		       estimated_minutes, due_date, COALESCE(tags, '{}'), COALESCE(contexts, '{}'),
 		       energy, parent_id, completed_at, created_at, updated_at, actual_minutes,
 		          COALESCE(reminder_offsets, '{}')
 		FROM task
-		WHERE user_id = $1
+		WHERE calendar_id = ANY($1)
 	`
-	args := []interface{}{userID}
+	// Пустой список — законное «ничего не видно», а не ошибка: ANY('{}') не
+	// вернёт ни одной строки.
+	args := []interface{}{calIDs}
 	argNum := 2
 
 	if status != "" {
@@ -425,14 +433,21 @@ func createTask(ctx context.Context, userID string, req CreateTaskRequest, statu
 		reminderOffsets = usersettings.DefaultTaskOffsets(ctx, userID)
 	}
 
-	err := db.Pool.QueryRow(ctx, `
-		INSERT INTO task (user_id, title, description, status, category, priority, estimated_minutes, due_date, tags, contexts, energy, parent_id, reminder_offsets)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+	// New tasks land in the author's personal calendar. user_id stays on the
+	// row too — it means authorship now, not access.
+	calID, err := calendars.PersonalIDFor(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	err = db.Pool.QueryRow(ctx, `
+		INSERT INTO task (user_id, calendar_id, title, description, status, category, priority, estimated_minutes, due_date, tags, contexts, energy, parent_id, reminder_offsets)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
 		RETURNING id, user_id, title, description, status, category, priority,
 		          estimated_minutes, due_date, COALESCE(tags, '{}'), COALESCE(contexts, '{}'),
 		          energy, parent_id, completed_at, created_at, updated_at, actual_minutes,
 		          COALESCE(reminder_offsets, '{}')
-	`, userID, req.Title, req.Description, status, req.Category, priority, req.EstimatedMinutes, dueDate, tags, contexts, req.Energy, req.ParentID, reminderOffsets).Scan(
+	`, userID, calID, req.Title, req.Description, status, req.Category, priority, req.EstimatedMinutes, dueDate, tags, contexts, req.Energy, req.ParentID, reminderOffsets).Scan(
 		&t.ID, &t.UserID, &t.Title, &t.Description, &t.Status, &t.Category,
 		&t.Priority, &t.EstimatedMinutes, &t.DueDate, &resultTags, &resultContexts,
 		&t.Energy, &t.ParentID, &t.CompletedAt, &t.CreatedAt, &t.UpdatedAt, &t.ActualMinutes,
@@ -449,17 +464,22 @@ func createTask(ctx context.Context, userID string, req CreateTaskRequest, statu
 }
 
 func getTask(ctx context.Context, userID, taskID string) (*Task, error) {
+	calIDs, err := calendars.CalendarIDsFor(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
 	var t Task
 	var tags, contexts []string
 
-	err := db.Pool.QueryRow(ctx, `
+	err = db.Pool.QueryRow(ctx, `
 		SELECT id, user_id, title, description, status, category, priority,
 		       estimated_minutes, due_date, COALESCE(tags, '{}'), COALESCE(contexts, '{}'),
 		       energy, parent_id, completed_at, created_at, updated_at, actual_minutes,
 		          COALESCE(reminder_offsets, '{}')
 		FROM task
-		WHERE id = $1 AND user_id = $2
-	`, taskID, userID).Scan(
+		WHERE id = $1 AND calendar_id = ANY($2)
+	`, taskID, calIDs).Scan(
 		&t.ID, &t.UserID, &t.Title, &t.Description, &t.Status, &t.Category,
 		&t.Priority, &t.EstimatedMinutes, &t.DueDate, &tags, &contexts,
 		&t.Energy, &t.ParentID, &t.CompletedAt, &t.CreatedAt, &t.UpdatedAt, &t.ActualMinutes,
@@ -562,12 +582,17 @@ func updateTask(ctx context.Context, userID, taskID string, req UpdateTaskReques
 		return getTask(ctx, userID, taskID)
 	}
 
+	calIDs, err := calendars.CalendarIDsFor(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
 	updates = append(updates, "updated_at = NOW()")
-	args = append(args, taskID, userID)
+	args = append(args, taskID, calIDs)
 
 	query := fmt.Sprintf(`
 		UPDATE task SET %s
-		WHERE id = $%d AND user_id = $%d
+		WHERE id = $%d AND calendar_id = ANY($%d)
 		RETURNING id, user_id, title, description, status, category, priority,
 		          estimated_minutes, due_date, COALESCE(tags, '{}'), COALESCE(contexts, '{}'),
 		          energy, parent_id, completed_at, created_at, updated_at, actual_minutes,
@@ -577,7 +602,7 @@ func updateTask(ctx context.Context, userID, taskID string, req UpdateTaskReques
 	var t Task
 	var tags, contexts []string
 
-	err := db.Pool.QueryRow(ctx, query, args...).Scan(
+	err = db.Pool.QueryRow(ctx, query, args...).Scan(
 		&t.ID, &t.UserID, &t.Title, &t.Description, &t.Status, &t.Category,
 		&t.Priority, &t.EstimatedMinutes, &t.DueDate, &tags, &contexts,
 		&t.Energy, &t.ParentID, &t.CompletedAt, &t.CreatedAt, &t.UpdatedAt, &t.ActualMinutes,
@@ -594,9 +619,14 @@ func updateTask(ctx context.Context, userID, taskID string, req UpdateTaskReques
 }
 
 func deleteTask(ctx context.Context, userID, taskID string) error {
+	calIDs, err := calendars.CalendarIDsFor(ctx, userID)
+	if err != nil {
+		return err
+	}
+
 	result, err := db.Pool.Exec(ctx, `
-		DELETE FROM task WHERE id = $1 AND user_id = $2
-	`, taskID, userID)
+		DELETE FROM task WHERE id = $1 AND calendar_id = ANY($2)
+	`, taskID, calIDs)
 
 	if err != nil {
 		return err
@@ -621,19 +651,32 @@ type ScheduledEvent struct {
 }
 
 func scheduleTask(ctx context.Context, userID, taskID string, startsAt, endsAt time.Time, allDay bool, color *string) (*ScheduledEvent, error) {
-	// First get the task to use its title
+	// First get the task to use its title. This also enforces access via
+	// calendar membership — a 404 here means "not yours to see", same as
+	// everywhere else.
 	task, err := getTask(ctx, userID, taskID)
 	if err != nil {
+		return nil, err
+	}
+
+	// The event this task turns into belongs in the task's OWN calendar, not
+	// unconditionally the caller's personal one — a task living in a shared
+	// calendar must schedule its event into that same calendar. getTask above
+	// already proved userID has access to this row, so a plain read is safe.
+	var calID string
+	if err := db.Pool.QueryRow(ctx,
+		`SELECT calendar_id::text FROM task WHERE id = $1`, taskID,
+	).Scan(&calID); err != nil {
 		return nil, err
 	}
 
 	// Create event from task
 	var event ScheduledEvent
 	err = db.Pool.QueryRow(ctx, `
-		INSERT INTO event (user_id, title, starts_at, ends_at, all_day, task_id, color, timezone)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, 'Europe/Moscow')
+		INSERT INTO event (user_id, calendar_id, title, starts_at, ends_at, all_day, task_id, color, timezone)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'Europe/Moscow')
 		RETURNING id, task_id, title, starts_at, ends_at, all_day, color
-	`, userID, task.Title, startsAt, endsAt, allDay, taskID, color).Scan(
+	`, userID, calID, task.Title, startsAt, endsAt, allDay, taskID, color).Scan(
 		&event.ID, &event.TaskID, &event.Title, &event.StartsAt, &event.EndsAt, &event.AllDay, &event.Color,
 	)
 
@@ -642,9 +685,12 @@ func scheduleTask(ctx context.Context, userID, taskID string, startsAt, endsAt t
 	}
 
 	// Update task status to SCHEDULED
-	_, err = db.Pool.Exec(ctx, `
-		UPDATE task SET status = 'SCHEDULED', updated_at = NOW() WHERE id = $1 AND user_id = $2
-	`, taskID, userID)
+	calIDs, err := calendars.CalendarIDsFor(ctx, userID)
+	if err == nil {
+		_, err = db.Pool.Exec(ctx, `
+			UPDATE task SET status = 'SCHEDULED', updated_at = NOW() WHERE id = $1 AND calendar_id = ANY($2)
+		`, taskID, calIDs)
+	}
 
 	if err != nil {
 		// Non-fatal, event was created
@@ -656,18 +702,23 @@ func scheduleTask(ctx context.Context, userID, taskID string, startsAt, endsAt t
 // logTaskTime adds delta minutes to a task's actual_minutes, clamped at >= 0,
 // and returns the updated task. A negative delta is used for undo.
 func logTaskTime(ctx context.Context, userID, taskID string, delta int) (*Task, error) {
+	calIDs, err := calendars.CalendarIDsFor(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
 	var t Task
 	var tags, contexts []string
 
-	err := db.Pool.QueryRow(ctx, `
+	err = db.Pool.QueryRow(ctx, `
 		UPDATE task
 		SET actual_minutes = GREATEST(0, actual_minutes + $1), updated_at = NOW()
-		WHERE id = $2 AND user_id = $3
+		WHERE id = $2 AND calendar_id = ANY($3)
 		RETURNING id, user_id, title, description, status, category, priority,
 		          estimated_minutes, due_date, COALESCE(tags, '{}'), COALESCE(contexts, '{}'),
 		          energy, parent_id, completed_at, created_at, updated_at, actual_minutes,
 		          COALESCE(reminder_offsets, '{}')
-	`, delta, taskID, userID).Scan(
+	`, delta, taskID, calIDs).Scan(
 		&t.ID, &t.UserID, &t.Title, &t.Description, &t.Status, &t.Category,
 		&t.Priority, &t.EstimatedMinutes, &t.DueDate, &tags, &contexts,
 		&t.Energy, &t.ParentID, &t.CompletedAt, &t.CreatedAt, &t.UpdatedAt, &t.ActualMinutes,
