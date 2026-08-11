@@ -17,14 +17,20 @@ import (
 var sqlBlockRe = regexp.MustCompile("(?s)`([^`]*)`")
 
 // sqlKeywordRe recognizes a backtick string as SQL rather than some other
-// raw string literal (a template, a help message, ...). Uppercase only —
-// every query in this codebase is written in uppercase SQL keywords.
-var sqlKeywordRe = regexp.MustCompile(`\b(SELECT|INSERT|UPDATE|DELETE)\b`)
+// raw string literal (a template, a help message, ...). Case-insensitive:
+// this codebase's convention is uppercase SQL keywords, but the guard must
+// not depend on every future query following that convention by hand.
+var sqlKeywordRe = regexp.MustCompile(`(?i)\b(SELECT|INSERT|UPDATE|DELETE)\b`)
 
 // userIDFilterRe matches `user_id = $1` and its dynamic-argument cousin
 // `user_id = $%d` (built via fmt.Sprintf for a variable-length UPDATE) alike:
-// the digit after `$` is deliberately not part of the pattern.
-var userIDFilterRe = regexp.MustCompile(`user_id\s*=\s*\$`)
+// the digit after `$` is deliberately not part of the pattern. Also matches
+// the `user_id = ANY($1)` form — the array-membership counterpart to
+// `calendar_id = ANY($1)` seen elsewhere in this codebase, and specifically
+// the form most likely to be copy-pasted from that neighboring line without
+// noticing it re-adds a user_id scope. Case-insensitive for the same reason
+// as sqlKeywordRe above.
+var userIDFilterRe = regexp.MustCompile(`(?i)user_id\s*=\s*(?:any\()?\$`)
 
 // tableRefRe matches a SQL block that operates on the event or task table —
 // `FROM event`, `UPDATE event`, `JOIN event`, and the task equivalents.
@@ -32,18 +38,20 @@ var userIDFilterRe = regexp.MustCompile(`user_id\s*=\s*\$`)
 // table name is load-bearing: it is what keeps `event_exception`,
 // `task_dependency`, and `task_requirement` — different tables, legitimately
 // scoped by user_id or anything else — from matching `event`/`task`.
-var tableRefRe = regexp.MustCompile(`\b(?:FROM|UPDATE|JOIN)\s+(event|task)\b`)
+// Case-insensitive: `select ... from task ...` is valid Go/SQL and must not
+// slip past this guard just because it isn't uppercase.
+var tableRefRe = regexp.MustCompile(`(?i)\b(?:FROM|UPDATE|JOIN)\s+(event|task)\b`)
 
 // minSQLBlocksScanned is today's actual count of SQL-shaped backtick strings
-// under api-go/internal (67, measured 2026-08-11), given headroom. It exists
-// so that if a query ever moves out of a backtick string — into a named
-// constant, a query builder, fmt.Sprintf with the SQL itself as an argument —
-// both tests below still have something to fail on, instead of silently
-// finding zero matches and going green having checked nothing.
+// under api-go/internal, given headroom. It exists so that if a query ever
+// moves out of a backtick string — into a named constant, a query builder,
+// fmt.Sprintf with the SQL itself as an argument — both tests below still
+// have something to fail on, instead of silently finding zero matches and
+// going green having checked nothing.
 //
 // 🔴 Raise this as the codebase grows queries. Never lower it to make a
 // failure go away — that defeats the reason it exists.
-const minSQLBlocksScanned = 40
+const minSQLBlocksScanned = 60
 
 // walkGoFiles calls fn with the contents of every non-test .go file under
 // api-go/internal.

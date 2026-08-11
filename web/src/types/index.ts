@@ -2,6 +2,8 @@
 export interface Task {
   id: string;
   userId?: string;
+  /** Calendar this task belongs to. Access is governed by membership in it. */
+  calendarId?: string;
   title: string;
   description?: string;
   priority: number; // 0-5: Buffer, Emergency, ASAP, Must today, Deadline soon, If possible

@@ -7,6 +7,7 @@ import type { Task } from '../types'
 export interface RawTask {
   id: string
   user_id: string
+  calendar_id?: string
   title: string
   description?: string
   status: Task['status']
@@ -34,6 +35,7 @@ export function toTask(raw: RawTask): Task {
   return {
     id: raw.id,
     userId: raw.user_id,
+    calendarId: raw.calendar_id,
     title: raw.title,
     description: raw.description,
     status: raw.status,
