@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { resizeAnchorMs, resizeCursorMsAtStart, resizeCursorMs, buildResizeState, resizeGhostForColumn, resizeRangeMs, MIN_SLOT_MS } from './resizeCoords';
+import { resizeAnchorMs, resizeCursorMsAtStart, resizeCursorMs, buildResizeState, ghostSliceForColumn, resizeRangeMs, MIN_SLOT_MS } from './resizeCoords';
 import { handleDragComplete } from './dragHandlers';
 import { DAY_MS } from './weekgrid.constants';
 import { vi } from 'vitest';
@@ -167,42 +167,42 @@ describe('buildResizeState — the producer that used to omit the absolute field
   });
 });
 
-describe('resizeGhostForColumn — preview must agree with the commit', () => {
+describe('ghostSliceForColumn — preview must agree with the commit', () => {
   const DAY_MIN = DAY_MS / 60_000;
 
   it('fills the whole of a day the range passes straight through', () => {
     const TUE = MON + DAY_MS;
-    expect(resizeGhostForColumn(at(MON, 22), at(WED, 3), TUE, DAY_MS))
+    expect(ghostSliceForColumn(at(MON, 22), at(WED, 3), TUE, DAY_MS))
       .toEqual({ startMin: 0, endMin: DAY_MIN });
   });
 
   it('clips the first day to the start time', () => {
-    expect(resizeGhostForColumn(at(MON, 22), at(WED, 3), MON, DAY_MS))
+    expect(ghostSliceForColumn(at(MON, 22), at(WED, 3), MON, DAY_MS))
       .toEqual({ startMin: min(22), endMin: DAY_MIN });
   });
 
   it('clips the last day to the end time', () => {
-    expect(resizeGhostForColumn(at(MON, 22), at(WED, 3), WED, DAY_MS))
+    expect(ghostSliceForColumn(at(MON, 22), at(WED, 3), WED, DAY_MS))
       .toEqual({ startMin: 0, endMin: min(3) });
   });
 
   it('draws nothing on a day the range never touches', () => {
     const THU = MON + 3 * DAY_MS;
-    expect(resizeGhostForColumn(at(MON, 22), at(WED, 3), THU, DAY_MS)).toBeNull();
+    expect(ghostSliceForColumn(at(MON, 22), at(WED, 3), THU, DAY_MS)).toBeNull();
   });
 
   it('is orientation-agnostic — dragging the top edge passes cursor before anchor', () => {
-    expect(resizeGhostForColumn(at(WED, 3), at(MON, 22), MON, DAY_MS))
+    expect(ghostSliceForColumn(at(WED, 3), at(MON, 22), MON, DAY_MS))
       .toEqual({ startMin: min(22), endMin: DAY_MIN });
   });
 
   it('treats an end exactly at midnight as belonging to the previous day', () => {
     const TUE = MON + DAY_MS;
-    expect(resizeGhostForColumn(at(MON, 9), TUE, TUE, DAY_MS)).toBeNull();
+    expect(ghostSliceForColumn(at(MON, 9), TUE, TUE, DAY_MS)).toBeNull();
   });
 
   it('still describes an ordinary same-day resize', () => {
-    expect(resizeGhostForColumn(at(MON, 9), at(MON, 11), MON, DAY_MS))
+    expect(ghostSliceForColumn(at(MON, 9), at(MON, 11), MON, DAY_MS))
       .toEqual({ startMin: min(9), endMin: min(11) });
   });
 });
@@ -250,8 +250,8 @@ describe('resizeRangeMs — one range for both the ghost and the commit', () => 
     // The point of sharing the function: an inverted drag previews exactly the
     // 15-minute range that will be saved, on the anchor's day and nowhere else.
     const [startMs, endMs] = resizeRangeMs('resize-end', at(TUE, 3), at(MON, 22));
-    expect(resizeGhostForColumn(startMs, endMs, MON, DAY_MS)).toBeNull();
-    expect(resizeGhostForColumn(startMs, endMs, TUE, DAY_MS))
+    expect(ghostSliceForColumn(startMs, endMs, MON, DAY_MS)).toBeNull();
+    expect(ghostSliceForColumn(startMs, endMs, TUE, DAY_MS))
       .toEqual({ startMin: min(3), endMin: min(3, 15) });
   });
 });

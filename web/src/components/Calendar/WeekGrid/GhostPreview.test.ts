@@ -10,7 +10,7 @@ import type { DragResizeEnd } from './weekgrid.types';
  * "the resize ghost renders on the start column only", and the MD1 plan was
  * ordered around that claim — generalise the ghost first, follow the cursor's X
  * second, on pain of committing a move the user never saw. The claim was
- * written mid-MD2 and never revisited when `resizeGhostForColumn` landed in the
+ * written mid-MD2 and never revisited when `ghostSliceForColumn` landed in the
  * same commit, so it has to be observed rather than read.
  *
  * GhostPreview is a pure function returning an element, and DayColumn renders
@@ -68,6 +68,36 @@ describe('resize ghost across columns (the MD1 prerequisite)', () => {
 
   it('draws nothing on a column the range does not reach', () => {
     expect(ghostOn(acrossMidnight, WED)).toBeNull();
+  });
+
+  it('previews a multi-day MOVE across every column it covers', () => {
+    // The old move ghost drew `durMin`, which is computed mod 24h: a 28-hour
+    // event previewed as a 4-hour box on one column. Same slicing as resize now.
+    const move = {
+      kind: 'move' as const,
+      dayUtc0: MON,
+      targetDayUtc0: MON,
+      id: 'evt-3',
+      offsetMin: 22 * 60,
+      durMin: 4 * 60, // deliberately the mod-24h figure, to prove it is unused
+      daySpan: 2,
+      originalStart: 22 * 60,
+      originalEnd: 2 * 60,
+      originalStartMs: at(MON, 22),
+      originalEndMs: at(TUE, 2),
+      allDay: false,
+      pending: false,
+      grabOffsetMs: 0,
+      cursorMs: at(MON, 22),
+    };
+    const el = GhostPreview({ drag: move, dayUtc0: MON, isMobile: false }) as { props: GhostBoxProps } | null;
+    expect(el).not.toBeNull();
+    expect(el!.props.startTime).toBe('22:00');
+    expect(el!.props.endTime).toBe('24:00');
+
+    const next = GhostPreview({ drag: move, dayUtc0: TUE, isMobile: false }) as { props: GhostBoxProps } | null;
+    expect(next, 'the second day of a multi-day move must be previewed too').not.toBeNull();
+    expect(next!.props.endTime).toBe('02:00');
   });
 
   it('still draws a same-day resize on its own column only', () => {

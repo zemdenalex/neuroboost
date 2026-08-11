@@ -1,7 +1,8 @@
 import { HOUR_PX, MIN_SLOT_MIN, GHOST_COLORS, DAY_MS } from './weekgrid.constants';
 import { minsToTop, formatMinutesToTime } from './weekgrid.utils';
 import type { DragState } from './weekgrid.types';
-import { resizeGhostForColumn, resizeRangeMs } from './resizeCoords';
+import { ghostSliceForColumn, resizeRangeMs } from './resizeCoords';
+import { moveRangeMs } from './moveCoords';
 
 interface GhostPreviewProps {
   drag: DragState;
@@ -34,13 +35,47 @@ export function GhostPreview({ drag, dayUtc0, isMobile }: GhostPreviewProps) {
     );
   }
   
-  // Move ghost
+  // Move ghost.
+  //
+  // When the state carries absolute coordinates the range is sliced per column,
+  // exactly as a resize is. That is what makes a multi-day move previewable at
+  // all: the day-relative branch below draws `durMin`, which is computed mod 24h,
+  // so dragging a 28-hour event used to show a 4-hour box — a preview that could
+  // never match what the commit would write.
+  if (drag.kind === 'move' && !drag.allDay && !drag.pending &&
+      drag.cursorMs !== undefined && drag.grabOffsetMs !== undefined &&
+      drag.originalStartMs !== undefined && drag.originalEndMs !== undefined) {
+    const [startMs, endMs] = moveRangeMs(
+      drag.cursorMs,
+      drag.grabOffsetMs,
+      drag.originalEndMs - drag.originalStartMs,
+      MIN_SLOT_MIN * 60_000,
+    );
+    const slice = ghostSliceForColumn(startMs, endMs, dayUtc0, DAY_MS);
+    if (!slice) return null;
+
+    const top = Math.max(0, minsToTop(slice.startMin));
+    const height = Math.max(minsToTop(MIN_SLOT_MIN), Math.min(minsToTop(slice.endMin - slice.startMin), maxTop - top));
+
+    return (
+      <GhostBox
+        top={top}
+        height={height}
+        colorClass={GHOST_COLORS.move}
+        startTime={formatMinutesToTime(slice.startMin)}
+        endTime={formatMinutesToTime(slice.endMin)}
+      />
+    );
+  }
+
+  // Move ghost, day-relative fallback for producers without absolute fields
+  // (the all-day row, and anything not yet migrated).
   if (drag.kind === 'move' && !drag.allDay && !drag.pending &&
       (drag.targetDayUtc0 === dayUtc0 || (!drag.targetDayUtc0 && drag.dayUtc0 === dayUtc0))) {
     const offsetMin = Math.max(0, Math.min(1440 - MIN_SLOT_MIN, Math.round(drag.offsetMin / MIN_SLOT_MIN) * MIN_SLOT_MIN));
     const top = Math.max(0, minsToTop(offsetMin));
     const height = Math.max(minsToTop(MIN_SLOT_MIN), Math.min(minsToTop(drag.durMin), maxTop - top));
-    
+
     return (
       <GhostBox
         top={top}
@@ -66,7 +101,7 @@ export function GhostPreview({ drag, dayUtc0, isMobile }: GhostPreviewProps) {
     let slice: { startMin: number; endMin: number } | null;
     if (drag.anchorMs !== undefined && drag.cursorMs !== undefined) {
       const [startMs, endMs] = resizeRangeMs(drag.kind, drag.anchorMs, drag.cursorMs);
-      slice = resizeGhostForColumn(startMs, endMs, dayUtc0, DAY_MS);
+      slice = ghostSliceForColumn(startMs, endMs, dayUtc0, DAY_MS);
     } else {
       slice = drag.dayUtc0 === dayUtc0
         ? { startMin: Math.min(drag.curMin, drag.otherEndMin), endMin: Math.max(drag.curMin, drag.otherEndMin) }

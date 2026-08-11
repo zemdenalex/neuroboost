@@ -40,7 +40,7 @@ export function resizeCursorMsAtStart(kind: 'resize-start' | 'resize-end', event
  * Pass the column the cursor is currently OVER, not the one the drag started
  * on — that is what lets a resize reach the neighbouring day (MD1). It is safe
  * because the ghost slices the same absolute range per column
- * (`resizeGhostForColumn`), so every day the commit touches is a day the user
+ * (`ghostSliceForColumn`), so every day the commit touches is a day the user
  * watched fill in.
  */
 export function resizeCursorMs(dayUtc0: number, curMin: number): number {
@@ -137,7 +137,7 @@ export interface ResizeGhostSlice {
  * Returns null when the range does not touch this column, so the caller draws
  * nothing there.
  */
-export function resizeGhostForColumn(
+export function ghostSliceForColumn(
   anchorMs: number,
   cursorMs: number,
   dayUtc0: number,
