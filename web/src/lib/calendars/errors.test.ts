@@ -25,6 +25,14 @@ describe('describeCalendarError', () => {
     })
   })
 
+  it('maps CALENDAR_NOT_FOUND and asks the caller to reconcile', () => {
+    const err = new ApiError('Calendar not found', 'CALENDAR_NOT_FOUND', {})
+    expect(describeCalendarError(err, 'calendars.deleteFailed')).toEqual({
+      key: 'calendars.notFound',
+      reconcile: true,
+    })
+  })
+
   it('falls back for an unrecognised ApiError code', () => {
     const err = new ApiError('Something new', 'SOME_FUTURE_CODE', {})
     expect(describeCalendarError(err, 'calendars.deleteFailed')).toEqual({

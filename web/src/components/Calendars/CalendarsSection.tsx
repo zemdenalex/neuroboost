@@ -53,19 +53,27 @@ export function CalendarsSection() {
   const handleCreate = async () => {
     // Guarded here, not just on the submit button: the Enter-key handler
     // calls this directly and a held/repeated key must not fire twice.
-    if (creating) return
+    //
+    // Also refuses to start unless the list has actually finished loading
+    // ('loaded'). Without this, a create submitted while the initial GET is
+    // still in flight would take the append branch below, and the in-flight
+    // GET's response — a snapshot from before the create — would then land
+    // and overwrite state, silently dropping the just-created row. Requiring
+    // 'loaded' up front means every append below is known-safe rather than
+    // merely likely-safe.
+    if (creating || status !== 'loaded') return
     const name = newName.trim()
     if (!name) return
     setCreating(true)
     try {
       const created = await createCalendar(name)
-      if (status === 'error') {
-        // Local state is empty/stale from the earlier failed load — appending
-        // to it would show one calendar while the server may hold several.
-        // Refetch instead of trusting what we have.
-        await fetchCalendars()
-      } else {
+      if (status === 'loaded') {
         setCalendars((prev) => sortCalendars([...prev, created]))
+      } else {
+        // Status moved on while the request was in flight (e.g. a retry
+        // fired concurrently) — local state may no longer be the base the
+        // append would assume. Get the truth from the server instead.
+        await fetchCalendars()
       }
       setNewName('')
     } catch (err) {
@@ -98,6 +106,10 @@ export function CalendarsSection() {
     } catch (err) {
       const msg = describeCalendarError(err, 'calendars.renameFailed')
       showToast(t(msg.key, msg.params))
+      // CALENDAR_NOT_FOUND: someone deleted this calendar elsewhere between
+      // load and this rename. The row on screen no longer matches the
+      // server — refetch instead of leaving a stale row in place.
+      if (msg.reconcile) void fetchCalendars()
     } finally {
       setBusyId(null)
     }
@@ -112,6 +124,9 @@ export function CalendarsSection() {
     } catch (err) {
       const msg = describeCalendarError(err, 'calendars.deleteFailed')
       showToast(t(msg.key, msg.params))
+      // Already gone on the server (deleted elsewhere) — reconcile rather
+      // than leave a row on screen that no longer exists.
+      if (msg.reconcile) void fetchCalendars()
     } finally {
       setBusyId(null)
     }
@@ -240,13 +255,14 @@ export function CalendarsSection() {
           onKeyDown={(e) => {
             if (e.key === 'Enter') void handleCreate()
           }}
+          disabled={status !== 'loaded'}
           placeholder={t('calendars.createPlaceholder')}
-          className="flex-1 px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white font-mono text-sm focus:outline-none focus:border-blue-500"
+          className="flex-1 px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white font-mono text-sm focus:outline-none focus:border-blue-500 disabled:opacity-40"
         />
         <button
           data-testid="calendar-create-submit"
           onClick={() => void handleCreate()}
-          disabled={creating || !newName.trim()}
+          disabled={creating || status !== 'loaded' || !newName.trim()}
           className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-zinc-700 disabled:text-zinc-500 text-white font-mono text-sm rounded-lg transition-colors"
         >
           {t('calendars.create')}

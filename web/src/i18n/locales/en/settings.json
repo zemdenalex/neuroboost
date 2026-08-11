@@ -95,6 +95,7 @@
     "deleteFailed": "Failed to delete calendar",
     "isPersonal": "The personal calendar cannot be deleted",
     "notOwner": "Only the calendar owner can do that",
+    "notFound": "This calendar no longer exists",
     "notEmpty": "This calendar has {{events}} events and {{tasks}} tasks — move them first"
   }
 }
