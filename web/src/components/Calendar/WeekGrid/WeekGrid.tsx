@@ -136,7 +136,8 @@ export function WeekGrid({
       startMin: number,
       action: 'create' | 'move' | 'resize-start' | 'resize-end',
       eventId?: string,
-      event?: ProcessedEvent
+      event?: ProcessedEvent,
+      grabMin?: number
     ) => {
       if (action === 'create') {
         startCreate(day, startMin);
@@ -145,7 +146,7 @@ export function WeekGrid({
 
       if (!eventId || !event) return;
 
-      if (action === 'move') startMove(day, event);
+      if (action === 'move') startMove(day, event, grabMin);
       if (action === 'resize-start') startResizeStart(day, event);
       if (action === 'resize-end') startResizeEnd(day, event);
     },

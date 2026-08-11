@@ -71,6 +71,14 @@ export interface DragMove {
   originalStartMs?: number;
   /** UTC ms of the event's actual end (for multi-day delta move) */
   originalEndMs?: number;
+  /**
+   * Where inside the event it was grabbed, in ms from its start. Committing
+   * `cursor − grabOffset` is what keeps the block under the hand instead of
+   * snapping its start to the cursor. Optional while producers are migrated.
+   */
+  grabOffsetMs?: number;
+  /** Absolute instant the cursor maps to, including its day column. */
+  cursorMs?: number;
   allDay: boolean;
   pending?: boolean;
   startX?: number;

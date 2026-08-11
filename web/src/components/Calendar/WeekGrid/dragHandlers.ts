@@ -1,6 +1,7 @@
 import { DAY_MS, MIN_SLOT_MIN } from './weekgrid.constants';
 import { clampMins, snapMin } from './weekgrid.utils';
 import { resizeRangeMs } from './resizeCoords';
+import { moveRangeMs } from './moveCoords';
 import type { DragState, WeekGridCallbacks } from './weekgrid.types';
 
 type CreateCallback = WeekGridCallbacks['onCreate'];
@@ -60,7 +61,26 @@ function handleMoveComplete(
 ): void {
   const targetDay = drag.targetDayUtc0 || drag.dayUtc0;
   const offsetMin = clampMins(snapMin(drag.offsetMin));
-  
+
+  // Absolute path: keeps the grip and the exact duration, so a multi-day event
+  // needs no branch of its own and durMin (computed mod 24h) never reaches the
+  // commit. Timed events only — the all-day row has no cursor to grab with.
+  if (!drag.allDay && drag.grabOffsetMs !== undefined && drag.cursorMs !== undefined
+      && drag.originalStartMs !== undefined && drag.originalEndMs !== undefined) {
+    const [startMs, endMs] = moveRangeMs(
+      drag.cursorMs,
+      drag.grabOffsetMs,
+      drag.originalEndMs - drag.originalStartMs,
+      MIN_SLOT_MIN * 60000,
+    );
+    onMoveOrResize({
+      id: drag.id,
+      startsAt: new Date(startMs).toISOString(),
+      endsAt: new Date(endMs).toISOString(),
+    });
+    return;
+  }
+
   if (drag.allDay) {
     onMoveOrResize({
       id: drag.id,

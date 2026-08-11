@@ -111,6 +111,126 @@ describe('handleDragComplete — move', () => {
 });
 
 // ---------------------------------------------------------------------------
+// The absolute move path (drag plan step 4).
+//
+// The legacy branches above commit `targetDay + offsetMin`, i.e. they put the
+// event's START wherever the cursor is. Grabbing a block by its middle
+// therefore yanked it upwards by the grab offset the instant the drag began.
+// Carrying grabOffsetMs lets the block stay under the hand, and makes the
+// single-day and multi-day cases the same arithmetic.
+// ---------------------------------------------------------------------------
+
+describe('handleDragComplete — move, absolute path', () => {
+  const grabbed = (over: Partial<Extract<NonNullable<DragState>, { kind: 'move' }>> = {}) => ({
+    kind: 'move' as const,
+    dayUtc0: MON,
+    targetDayUtc0: MON,
+    id: 'e1',
+    offsetMin: min(9),
+    durMin: 60,
+    daySpan: 1,
+    originalStart: min(9),
+    originalEnd: min(10),
+    originalStartMs: at(MON, 9),
+    originalEndMs: at(MON, 10),
+    allDay: false,
+    ...over,
+  });
+
+  it('keeps the grip instead of snapping the start to the cursor', () => {
+    // 09:00–10:00 grabbed at 09:40, cursor now at 10:40 → 10:00–11:00.
+    // The legacy path would have produced 10:40–11:40.
+    const { onMoveOrResize } = runDrag(grabbed({
+      grabOffsetMs: 40 * 60_000,
+      cursorMs: at(MON, 10, 40),
+    }));
+
+    expect(onMoveOrResize).toHaveBeenCalledWith({
+      id: 'e1',
+      startsAt: iso(at(MON, 10)),
+      endsAt: iso(at(MON, 11)),
+    });
+  });
+
+  it('carries a multi-day event with no special case and no durMin', () => {
+    // Mon 22:00 → Wed 02:00 (28h) grabbed at its start, dropped a day on.
+    // durMin for this event is 240 (mod 24h) and would corrupt the end.
+    const { onMoveOrResize } = runDrag(grabbed({
+      durMin: 240,
+      daySpan: 3,
+      originalStartMs: at(MON, 22),
+      originalEndMs: at(WED, 2),
+      grabOffsetMs: 0,
+      cursorMs: at(TUE, 22),
+    }));
+
+    expect(onMoveOrResize).toHaveBeenCalledWith({
+      id: 'e1',
+      startsAt: iso(at(TUE, 22)),
+      endsAt: iso(at(WED + DAY_MS, 2)),
+    });
+  });
+
+  it('snaps the resulting start to the slot grid, rounding to the nearer edge', () => {
+    // Snapping happens AFTER the grab offset comes off, so it is the event's
+    // start that lands on the grid — not the cursor.
+    // 10:47 − 40min = 10:07 → 10:00.
+    const down = runDrag(grabbed({ grabOffsetMs: 40 * 60_000, cursorMs: at(MON, 10, 47) }));
+    expect(down.onMoveOrResize).toHaveBeenCalledWith({
+      id: 'e1',
+      startsAt: iso(at(MON, 10)),
+      endsAt: iso(at(MON, 11)),
+    });
+
+    // 10:50 − 40min = 10:10 → 10:15.
+    const up = runDrag(grabbed({ grabOffsetMs: 40 * 60_000, cursorMs: at(MON, 10, 50) }));
+    expect(up.onMoveOrResize).toHaveBeenCalledWith({
+      id: 'e1',
+      startsAt: iso(at(MON, 10, 15)),
+      endsAt: iso(at(MON, 11, 15)),
+    });
+  });
+
+  it('lets a move cross midnight into the next day', () => {
+    const { onMoveOrResize } = runDrag(grabbed({
+      grabOffsetMs: 0,
+      cursorMs: at(MON, 23, 30),
+    }));
+
+    expect(onMoveOrResize).toHaveBeenCalledWith({
+      id: 'e1',
+      startsAt: iso(at(MON, 23, 30)),
+      endsAt: iso(at(TUE, 0, 30)),
+    });
+  });
+
+  it('leaves the all-day row on the legacy path — it has no cursor to grab with', () => {
+    const { onMoveOrResize } = runDrag(grabbed({
+      allDay: true,
+      targetDayUtc0: TUE,
+      grabOffsetMs: 0,
+      cursorMs: at(TUE, 9),
+    }));
+
+    expect(onMoveOrResize).toHaveBeenCalledWith({
+      id: 'e1',
+      startsAt: iso(TUE),
+      endsAt: iso(TUE + DAY_MS),
+    });
+  });
+
+  it('falls back to the legacy path when the grab offset is absent', () => {
+    const { onMoveOrResize } = runDrag(grabbed({ targetDayUtc0: TUE, offsetMin: min(14) }));
+
+    expect(onMoveOrResize).toHaveBeenCalledWith({
+      id: 'e1',
+      startsAt: iso(at(TUE, 14)),
+      endsAt: iso(at(TUE, 15)),
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
 // MD1 / MD2 — the bugs.
 //
 // Root cause: resize state stored time as minutes-within-one-day plus a single
