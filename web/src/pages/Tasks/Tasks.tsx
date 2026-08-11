@@ -569,6 +569,11 @@ export default function Tasks() {
                                 setEditingTask(task)
                                 setShowEditor(true)
                               }}
+                              // Icon-only, like its neighbours — but unlike them
+                              // it carried no accessible name at all, so screen
+                              // readers announced it as an unlabelled button.
+                              title={t('editTask')}
+                              aria-label={t('editTask')}
                               className="p-1.5 text-zinc-500 hover:text-white hover:bg-zinc-700 rounded transition-colors"
                             >
                               <Edit2 className="w-4 h-4" />

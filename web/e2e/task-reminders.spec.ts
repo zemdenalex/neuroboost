@@ -59,10 +59,12 @@ test.describe('task reminders', () => {
     await authedPage.goto('/tasks')
     await authedPage.waitForLoadState('networkidle')
 
-    // Open the editor for our task.
-    const row = authedPage.getByText(title, { exact: false }).first()
-    await expect(row).toBeVisible({ timeout: 15_000 })
-    await row.click()
+    // Open the editor for our task. Clicking the row only selects it — the
+    // editor opens from the row's pencil button, which is why that button
+    // needed an accessible name to be addressable at all.
+    const row = authedPage.locator('div').filter({ hasText: title }).last()
+    await expect(authedPage.getByText(title, { exact: false }).first()).toBeVisible({ timeout: 15_000 })
+    await row.getByRole('button', { name: 'Edit Task' }).click()
 
     const offsetInput = authedPage.getByLabel('New reminder offset')
     await expect(
