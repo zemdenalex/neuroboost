@@ -90,10 +90,20 @@
 
 | Метод | Путь | Тело | Успех | Отказы |
 |---|---|---|---|---|
-| `GET` | `/api/calendars` | — | `200`, массив | `401` |
-| `POST` | `/api/calendars` | `{"name": "…", "color": "#7c3aed"}` | `201`, объект | `400 INVALID_NAME` |
-| `PATCH` | `/api/calendars/{id}` | `{"name": "…"}` и/или `{"color": "…"}` | `200`, объект | `400`, `403 NOT_CALENDAR_OWNER`, `404 CALENDAR_NOT_FOUND` |
-| `DELETE` | `/api/calendars/{id}` | — | `204` | `403`, `404`, `409 CALENDAR_NOT_EMPTY`, `409 CALENDAR_IS_PERSONAL` |
+| `GET` | `/api/calendars` | — | `200`, массив | `401 NOT_AUTHENTICATED` |
+| `POST` | `/api/calendars` | `{"name": "…", "color": "#7c3aed"}` | `201`, объект | `400 INVALID_NAME`, `400 INVALID_COLOR`, `400 INVALID_REQUEST`, `401` |
+| `PATCH` | `/api/calendars/{id}` | `{"name": "…"}` и/или `{"color": "…"}` | `200`, объект | `400 INVALID_NAME`, `400 INVALID_COLOR`, `400 INVALID_REQUEST`, `401`, `403 NOT_CALENDAR_OWNER`, `404 CALENDAR_NOT_FOUND` |
+| `DELETE` | `/api/calendars/{id}` | — | `204` | `401`, `403 NOT_CALENDAR_OWNER`, `404 CALENDAR_NOT_FOUND`, `409 CALENDAR_NOT_EMPTY`, `409 CALENDAR_IS_PERSONAL` |
+
+🔴 **`error.code` — открытое множество, а не закрытое.** Таблица перечисляет коды, которые
+ручки отдают сегодня; клиент обязан внятно отработать код, которого в ней нет. Первая
+редакция таблицы пропустила `INVALID_COLOR` и `INVALID_REQUEST` — оба отдаются кодом с первого
+дня. Исполнитель следующего среза читает этот файл как истину, поэтому `switch` без
+ветки по умолчанию здесь превращается в дефект на фронте.
+
+⚠️ **`color` валидируется в handler'е, не в store:** `^#[0-9a-fA-F]{6}$`. Отсутствующий цвет
+(поля нет в JSON) — валиден и значит «нет цвета» при создании, «не менять» при правке. Пустая
+строка **не** принимается: обнулить цвет в v1 намеренно нельзя.
 
 🔴 **Не участник получает `404 CALENDAR_NOT_FOUND`, а не `403`.** `403` подтверждает, что
 календарь с таким id существует — это утечка существования чужого объекта. `403` отдаётся

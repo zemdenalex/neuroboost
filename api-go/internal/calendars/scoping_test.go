@@ -51,7 +51,13 @@ var tableRefRe = regexp.MustCompile(`(?i)\b(?:FROM|UPDATE|JOIN)\s+(event|task)\b
 //
 // 🔴 Raise this as the codebase grows queries. Never lower it to make a
 // failure go away — that defeats the reason it exists.
-const minSQLBlocksScanned = 60
+//
+// Measured at 76 on 2026-08-12, after P3 slice 2 added the calendar CRUD
+// queries; it was 68 when the floor was first set to 60. Raising the floor with
+// the count is the whole point: leave it behind and the tripwire's headroom
+// grows until a genuine regression fits inside it unnoticed. Measure by setting
+// this absurdly high and reading the count back out of the failure message.
+const minSQLBlocksScanned = 68
 
 // walkGoFiles calls fn with the contents of every non-test .go file under
 // api-go/internal.
