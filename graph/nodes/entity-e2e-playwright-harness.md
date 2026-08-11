@@ -16,7 +16,14 @@ links:
   - relates-to: learning-native-confirm-hides-the-r1-dialog
   - relates-to: learning-checkbox-in-a-plan-is-a-claim-not-evidence
   - relates-to: entity-server-topology
+  - relates-to: learning-e2e-baseline-recorded-on-a-monday
+  - relates-to: learning-stale-comment-outlived-its-constraint
 ---
+
+⚠️ **Базовая линия имеет дату.** Числа «17 passed / 1 skipped» сняты 10.08, в понедельник, и
+две мобильные спеки проходили именно поэтому —
+[[learning-e2e-baseline-recorded-on-a-monday]]. Текущая линия: **18 passed, 2 skipped**
+(11.08, после `crossday-resize.spec.ts`).
 **Зачем.** Юнит-тесты не видят экран. Диалог R1 был принят по чтению JSON и ни разу не
 прожат в браузере; v0.4.5 закрыт «сделанным», хотя четырёх мобильных видов календаря не
 существует. Это один и тот же зазор — см.
