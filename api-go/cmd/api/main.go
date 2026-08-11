@@ -174,6 +174,12 @@ func main() {
 		// Planning
 		r.Get("/api/planning/week", pl.GetWeekHandler)
 
+		// Calendars
+		r.Get("/api/calendars", calendars.ListHandler)
+		r.Post("/api/calendars", calendars.CreateHandler)
+		r.Patch("/api/calendars/{id}", calendars.UpdateHandler)
+		r.Delete("/api/calendars/{id}", calendars.DeleteHandler)
+
 		// Export / Import
 		r.Get("/api/export", exp.ExportHandler)
 		r.Post("/api/import", exp.ImportHandler)
