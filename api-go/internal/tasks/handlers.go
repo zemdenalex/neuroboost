@@ -363,8 +363,8 @@ func listTasks(ctx context.Context, userID, status, category, taskContext string
 		FROM task
 		WHERE calendar_id = ANY($1)
 	`
-	// Пустой список — законное «ничего не видно», а не ошибка: ANY('{}') не
-	// вернёт ни одной строки.
+	// An empty list is a legitimate "nothing visible", not an error:
+	// ANY('{}') returns zero rows.
 	args := []interface{}{calIDs}
 	argNum := 2
 

@@ -2,13 +2,13 @@
 // user read? Everything about events and tasks scopes itself through this.
 package calendars
 
-// Статусы членства.
+// Membership statuses.
 const (
 	StatusInvited = "invited"
 	StatusActive  = "active"
 )
 
-// Роли участника.
+// Member roles.
 const (
 	RoleOwner  = "owner"
 	RoleEditor = "editor"

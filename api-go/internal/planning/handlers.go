@@ -123,8 +123,8 @@ func listUnscheduledTasks(ctx context.Context, userID string) ([]PlanningTask, e
 		return nil, err
 	}
 
-	// Пустой список — это законное «ничего не видно», а не ошибка:
-	// ANY('{}') не вернёт ни одной строки.
+	// An empty list is a legitimate "nothing visible", not an error:
+	// ANY('{}') returns zero rows.
 	rows, err := db.Pool.Query(ctx, `
 		SELECT id, title, priority, estimated_minutes,
 		       CASE WHEN due_date IS NOT NULL THEN to_char(due_date, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') END,
@@ -162,8 +162,8 @@ func listWeekEvents(ctx context.Context, userID string, weekStart, weekEnd time.
 		return nil, 0, err
 	}
 
-	// Пустой список — это законное «ничего не видно», а не ошибка:
-	// ANY('{}') не вернёт ни одной строки.
+	// An empty list is a legitimate "nothing visible", not an error:
+	// ANY('{}') returns zero rows.
 	rows, err := db.Pool.Query(ctx, `
 		SELECT id, title, starts_at, ends_at, all_day, color
 		FROM event

@@ -72,9 +72,9 @@ func walkGoFiles(t *testing.T, fn func(path, src string)) {
 	}
 }
 
-// 🔴 Одно забытое место = чужие данные в чужом браузере, и откатить это нельзя:
-// показанное однажды показано. Поэтому запрет проверяется механически, а не
-// вниманием ревьюера.
+// 🔴 One forgotten spot means someone else's data in someone else's browser,
+// and there's no undoing that: once shown, it's been shown. So the rule is
+// enforced mechanically, not by a reviewer's attention.
 //
 // The rule is narrower than "no query filters by user_id" — that would also
 // flag planning/reflections/reminders' own tables, and their own tables are

@@ -3,8 +3,8 @@ package calendars
 import "testing"
 
 func TestAccessibleIDsKeepsOnlyActiveMemberships(t *testing.T) {
-	// 🔴 Приглашённый не видит ничего до принятия. Если это правило ошибётся,
-	// человек увидит чужой календарь, которого ещё не принимал.
+	// 🔴 An invitee sees nothing until they accept. If this rule breaks,
+	// a person would see someone else's calendar they never accepted into.
 	got := AccessibleIDs([]Membership{
 		{CalendarID: "a", Status: StatusActive},
 		{CalendarID: "b", Status: StatusInvited},
@@ -16,8 +16,8 @@ func TestAccessibleIDsKeepsOnlyActiveMemberships(t *testing.T) {
 }
 
 func TestAccessibleIDsOnEmptyInputIsEmptyNotNil(t *testing.T) {
-	// Пустой срез уходит в `calendar_id = ANY($1)`. nil там означал бы
-	// «нет условия», то есть выдачу чужих строк.
+	// An empty slice ends up in `calendar_id = ANY($1)`. nil there would mean
+	// "no condition", i.e. returning rows that belong to someone else.
 	got := AccessibleIDs(nil)
 	if got == nil {
 		t.Fatal("AccessibleIDs(nil) returned nil; must be an empty slice")
@@ -28,7 +28,7 @@ func TestAccessibleIDsOnEmptyInputIsEmptyNotNil(t *testing.T) {
 }
 
 func TestAccessibleIDsIgnoresUnknownStatus(t *testing.T) {
-	// Неизвестный статус трактуется как «нет доступа», а не как «есть».
+	// An unrecognised status is treated as "no access", not "has access".
 	got := AccessibleIDs([]Membership{{CalendarID: "a", Status: "revoked"}})
 	if len(got) != 0 {
 		t.Fatalf("got %v, want empty for an unrecognised status", got)

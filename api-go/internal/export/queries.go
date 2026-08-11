@@ -12,8 +12,8 @@ func queryEvents(ctx context.Context, userID string) ([]EventRow, error) {
 		return nil, err
 	}
 
-	// Пустой список — это законное «ничего не видно», а не ошибка:
-	// ANY('{}') не вернёт ни одной строки.
+	// An empty list is a legitimate "nothing visible", not an error:
+	// ANY('{}') returns zero rows.
 	rows, err := db.Pool.Query(ctx, `
 		SELECT id, user_id, title, description, starts_at, ends_at, all_day, rrule,
 		       COALESCE(timezone, 'Europe/Moscow'), location, color, COALESCE(tags, '{}'),

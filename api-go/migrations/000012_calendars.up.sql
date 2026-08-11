@@ -1,8 +1,9 @@
 -- api-go/migrations/000012_calendars.up.sql
 --
--- Календарь как контейнер доступа. До этой миграции user_id отвечал сразу за
--- две вещи: кто владелец строки и кому её видно. Здесь они расходятся:
--- доступ даёт членство в календаре, user_id остаётся авторством.
+-- Calendar as an access container. Before this migration, user_id was
+-- responsible for two things at once: who owns the row and who can see it.
+-- Here they split apart: access is granted by calendar membership, while
+-- user_id remains authorship.
 
 CREATE TABLE IF NOT EXISTS calendar (
     id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -17,7 +18,7 @@ CREATE TABLE IF NOT EXISTS calendar_member (
     calendar_id UUID NOT NULL REFERENCES calendar(id) ON DELETE CASCADE,
     user_id     UUID NOT NULL REFERENCES "user"(id)   ON DELETE CASCADE,
     role        TEXT NOT NULL CHECK (role IN ('owner','editor','viewer')),
-    -- Зарезервировано под режим «занят/свободен». В срезе 1 всегда 'full'.
+    -- Reserved for busy/free mode. Always 'full' in slice 1.
     visibility  TEXT NOT NULL DEFAULT 'full'   CHECK (visibility IN ('full','busy')),
     status      TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('invited','active')),
     created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -29,14 +30,15 @@ CREATE INDEX IF NOT EXISTS idx_calendar_member_user ON calendar_member (user_id,
 ALTER TABLE event ADD COLUMN IF NOT EXISTS calendar_id UUID REFERENCES calendar(id);
 ALTER TABLE task  ADD COLUMN IF NOT EXISTS calendar_id UUID REFERENCES calendar(id);
 
--- Один личный календарь на человека — инвариант, а не договорённость.
--- Без него состояние «два personal у одного пользователя» схемой разрешено,
--- и код, который его ищет, вынужден гадать, какой из них настоящий.
+-- One personal calendar per person is an invariant, not a convention.
+-- Without it, the schema would allow "two personal calendars for one
+-- user", and any code looking up the personal calendar would have to
+-- guess which one is the real one.
 CREATE UNIQUE INDEX IF NOT EXISTS idx_calendar_one_personal_per_owner
     ON calendar (owner_id)
     WHERE kind = 'personal';
 
--- Личный календарь каждому существующему пользователю.
+-- Give every existing user their personal calendar.
 INSERT INTO calendar (owner_id, name, kind)
 SELECT u.id, 'Мой календарь', 'personal'
 FROM "user" u
@@ -50,7 +52,7 @@ FROM calendar c
 WHERE c.kind = 'personal'
 ON CONFLICT DO NOTHING;
 
--- Всё существующее переезжает в личный календарь автора.
+-- Everything existing moves into the author's personal calendar.
 UPDATE event e
 SET calendar_id = c.id
 FROM calendar c
