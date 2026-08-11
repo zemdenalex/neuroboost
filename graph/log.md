@@ -83,3 +83,36 @@ Transcript analyzed: 3602 lines, 41 file reads, numerous tool writes. Conclusion
 ## [2026-08-10] verify | learning-digest-sent-empty-text — настоящий дайджест 08:00 ушёл SENT 04:59:46Z; ночной луп завершён
 
 ## [2026-08-10] ingest | learning-md2-lived-in-untested-producers — MD2 починен (aec55e3), проверен перетаскиванием мыши (31643f4)
+
+## [2026-08-11] recall | entity-bot-runs-on-nl2, workitem-bot-authtoken-never-set, learning-prod-has-no-svc-routes, learning-md2-lived-in-untested-producers, entity-server-topology
+## [2026-08-11] ingest | learning-fix-in-the-wrong-container-looks-like-a-broken-fix — прод-бот крутил апрельский образ; тишина в логах = контейнер работает
+
+## [2026-08-11] continuation
+
+**Сделано (сессия 10–11.08, ночной луп + утро).** Уведомления Telegram доведены до живого
+сообщения: `SERVICE_TOKEN` заведён на staging, боты переехали на `nl-2`, `tg_id` проставлен.
+Дайджест 08:00 уходил с пустым текстом и не мог работать никогда — починен, настоящий доставлен
+10.08 в 07:59:46 МСК. `AuthToken` бота починен через подпись Login Widget. MD2 (resize схлопывал
+многодневное) закрыт и проверен перетаскиванием мыши. Диалог R1 впервые прожат в браузере.
+Утром 11.08 прод-бот пересобран и переехал на `nl-2` — он крутил апрельский образ, из-за чего
+починка выглядела неработающей.
+
+**Открыто.** 🔴 Не проверен тап Дениса по прод-боту после переезда — это первое действие
+следующей сессии. MD1 (resize на соседний день) оставлен намеренно: сначала обобщить ghost,
+иначе баг хуже исправляемого. Прод всё ещё `v0.4.9` без `/api/svc`. Шаг 7 P2 (кнопки, snooze)
+не построен. P3 не брейнштормили.
+
+**Ждёт слова Дениса:** мерж PR #9 (релиз прода) · 6 узлов в очереди promote · ротация токена
+прод-бота (канал теперь работает, отсрочка исчерпана) · раздвоение личности в прод-базе
+(две записи, 7/4 против 15/3).
+
+**Читать первыми:** entity-bot-runs-on-nl2 · learning-prod-has-no-svc-routes ·
+learning-fix-in-the-wrong-container-looks-like-a-broken-fix ·
+learning-md2-lived-in-untested-producers · workitem-release-v0410-gated-by-denis-report
+
+**Промпт следующей сессии:** `.remember/loop-prompt-2026-08-11.md` (самодостаточный, для `/loop`).
+**Отчёт ночи:** `.remember/night-report-2026-08-10.md`.
+
+**Скиллы на следующую сессию:** `superpowers:test-driven-development` (drag-работа — чистые
+функции первыми), `superpowers:brainstorming` (P3, ни разу не обсуждали),
+`superpowers:systematic-debugging` (если тап по боту снова упадёт).

@@ -6,7 +6,7 @@ status: verified
 verified_by: session-88767014
 verified_at: 2026-08-10
 tags: [neuroboost, infra, deploy, telegram, nivium]
-weight: { importance: 5, connectivity: 11, access: 4, last_accessed: 2026-08-10 }
+weight: { importance: 5, connectivity: 11, access: 5, last_accessed: 2026-08-11 }
 sources:
   - command: "ssh root@62.76.228.106 'docker ps --format {{.Names}}'"
   - command: "ssh -i ~/.ssh/ufo_servers root@185.214.10.107 'curl -o /dev/null -w %{http_code} https://api.telegram.org/'"

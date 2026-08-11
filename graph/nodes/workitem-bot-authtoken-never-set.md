@@ -4,7 +4,7 @@ title: 🔴 Ассистент-бот не может ходить в API — Au
 type: work-item
 status: verified
 tags: [neuroboost, bot, telegram, auth, blocker]
-weight: { importance: 5, connectivity: 2, access: 1, last_accessed: 2026-08-10 }
+weight: { importance: 5, connectivity: 6, access: 2, last_accessed: 2026-08-11 }
 created: 2026-08-10
 sources:
   - file: "bot/internal/state/state.go:7 — поле AuthToken"
