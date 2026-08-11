@@ -6,6 +6,7 @@ export type TaskCategory = 'EMERGENCY' | 'ASAP' | 'MUST_TODAY' | 'DEADLINE_SOON'
 export interface Task {
   id: string
   user_id: string
+  calendar_id?: string
   title: string
   description?: string
   status: TaskStatus

@@ -44,6 +44,7 @@ export interface Reflection {
 export interface ApiEvent {
   id: string;
   user_id?: string;
+  calendar_id?: string;
   title: string;
   description?: string;
   starts_at: string;
@@ -67,6 +68,8 @@ export interface ApiEvent {
 export interface NbEvent {
   id: string;
   userId?: string;
+  /** Calendar this event belongs to. Access is governed by membership in it. */
+  calendarId?: string;
   title: string;
   description?: string;
   startsAt: string;
@@ -92,6 +95,7 @@ export function toNbEvent(api: ApiEvent): NbEvent {
   return {
     id: api.id,
     userId: api.user_id,
+    calendarId: api.calendar_id,
     title: api.title,
     description: api.description,
     startsAt: api.starts_at,

@@ -607,7 +607,7 @@ func listEvents(ctx context.Context, userID string, start, end time.Time) ([]Eve
 	// An empty list is a legitimate "nothing visible", not an error:
 	// ANY('{}') returns zero rows.
 	rows, err := db.Pool.Query(ctx, `
-		SELECT id, user_id, title, description, starts_at, ends_at, all_day, rrule,
+		SELECT id, calendar_id::text, user_id, title, description, starts_at, ends_at, all_day, rrule,
 		       COALESCE(timezone, 'Europe/Moscow'), location, color, COALESCE(tags, '{}'),
 		       task_id, COALESCE(is_work_event, true), created_at, updated_at,
 		          COALESCE(reminder_offsets, '{}')
@@ -629,7 +629,7 @@ func listEvents(ctx context.Context, userID string, start, end time.Time) ([]Eve
 		var e Event
 		var tags []string
 		err := rows.Scan(
-			&e.ID, &e.UserID, &e.Title, &e.Description, &e.StartsAt, &e.EndsAt,
+			&e.ID, &e.CalendarID, &e.UserID, &e.Title, &e.Description, &e.StartsAt, &e.EndsAt,
 			&e.AllDay, &e.Rrule, &e.Timezone, &e.Location, &e.Color, &tags,
 			&e.TaskID, &e.IsWorkEvent, &e.CreatedAt, &e.UpdatedAt, &e.ReminderOffsets,
 		)
@@ -672,12 +672,12 @@ func createEvent(ctx context.Context, userID string, req CreateEventRequest, sta
 	err = db.Pool.QueryRow(ctx, `
 		INSERT INTO event (user_id, calendar_id, title, description, starts_at, ends_at, all_day, rrule, timezone, location, color, tags, task_id, is_work_event, reminder_offsets)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
-		RETURNING id, user_id, title, description, starts_at, ends_at, all_day, rrule,
+		RETURNING id, calendar_id::text, user_id, title, description, starts_at, ends_at, all_day, rrule,
 		          COALESCE(timezone, 'Europe/Moscow'), location, color, COALESCE(tags, '{}'),
 		          task_id, COALESCE(is_work_event, true), created_at, updated_at,
 		          COALESCE(reminder_offsets, '{}')
 	`, userID, calID, req.Title, req.Description, startsAt, endsAt, req.AllDay, req.Rrule, timezone, req.Location, req.Color, tags, req.TaskID, isWorkEvent, reminderOffsets).Scan(
-		&e.ID, &e.UserID, &e.Title, &e.Description, &e.StartsAt, &e.EndsAt,
+		&e.ID, &e.CalendarID, &e.UserID, &e.Title, &e.Description, &e.StartsAt, &e.EndsAt,
 		&e.AllDay, &e.Rrule, &e.Timezone, &e.Location, &e.Color, &resultTags,
 		&e.TaskID, &e.IsWorkEvent, &e.CreatedAt, &e.UpdatedAt, &e.ReminderOffsets,
 	)
@@ -700,14 +700,14 @@ func getEvent(ctx context.Context, userID, eventID string) (*Event, error) {
 	var tags []string
 
 	err = db.Pool.QueryRow(ctx, `
-		SELECT id, user_id, title, description, starts_at, ends_at, all_day, rrule,
+		SELECT id, calendar_id::text, user_id, title, description, starts_at, ends_at, all_day, rrule,
 		       COALESCE(timezone, 'Europe/Moscow'), location, color, COALESCE(tags, '{}'),
 		       task_id, COALESCE(is_work_event, true), created_at, updated_at,
 		          COALESCE(reminder_offsets, '{}')
 		FROM event
 		WHERE id = $1 AND calendar_id = ANY($2)
 	`, eventID, calIDs).Scan(
-		&e.ID, &e.UserID, &e.Title, &e.Description, &e.StartsAt, &e.EndsAt,
+		&e.ID, &e.CalendarID, &e.UserID, &e.Title, &e.Description, &e.StartsAt, &e.EndsAt,
 		&e.AllDay, &e.Rrule, &e.Timezone, &e.Location, &e.Color, &tags,
 		&e.TaskID, &e.IsWorkEvent, &e.CreatedAt, &e.UpdatedAt, &e.ReminderOffsets,
 	)
@@ -810,7 +810,7 @@ func updateEvent(ctx context.Context, userID, eventID string, req UpdateEventReq
 	query := fmt.Sprintf(`
 		UPDATE event SET %s
 		WHERE id = $%d AND calendar_id = ANY($%d)
-		RETURNING id, user_id, title, description, starts_at, ends_at, all_day, rrule,
+		RETURNING id, calendar_id::text, user_id, title, description, starts_at, ends_at, all_day, rrule,
 		          COALESCE(timezone, 'Europe/Moscow'), location, color, COALESCE(tags, '{}'), 
 		          task_id, COALESCE(is_work_event, true), created_at, updated_at,
 		          COALESCE(reminder_offsets, '{}')
@@ -820,7 +820,7 @@ func updateEvent(ctx context.Context, userID, eventID string, req UpdateEventReq
 	var tags []string
 
 	err = db.Pool.QueryRow(ctx, query, args...).Scan(
-		&e.ID, &e.UserID, &e.Title, &e.Description, &e.StartsAt, &e.EndsAt,
+		&e.ID, &e.CalendarID, &e.UserID, &e.Title, &e.Description, &e.StartsAt, &e.EndsAt,
 		&e.AllDay, &e.Rrule, &e.Timezone, &e.Location, &e.Color, &tags,
 		&e.TaskID, &e.IsWorkEvent, &e.CreatedAt, &e.UpdatedAt, &e.ReminderOffsets,
 	)
@@ -866,12 +866,12 @@ func moveEvent(ctx context.Context, userID, eventID string, startsAt, endsAt tim
 	err = db.Pool.QueryRow(ctx, `
 		UPDATE event SET starts_at = $3, ends_at = $4, updated_at = NOW()
 		WHERE id = $1 AND calendar_id = ANY($2)
-		RETURNING id, user_id, title, description, starts_at, ends_at, all_day, rrule,
+		RETURNING id, calendar_id::text, user_id, title, description, starts_at, ends_at, all_day, rrule,
 		          COALESCE(timezone, 'Europe/Moscow'), location, color, COALESCE(tags, '{}'),
 		          task_id, COALESCE(is_work_event, true), created_at, updated_at,
 		          COALESCE(reminder_offsets, '{}')
 	`, eventID, calIDs, startsAt, endsAt).Scan(
-		&e.ID, &e.UserID, &e.Title, &e.Description, &e.StartsAt, &e.EndsAt,
+		&e.ID, &e.CalendarID, &e.UserID, &e.Title, &e.Description, &e.StartsAt, &e.EndsAt,
 		&e.AllDay, &e.Rrule, &e.Timezone, &e.Location, &e.Color, &tags,
 		&e.TaskID, &e.IsWorkEvent, &e.CreatedAt, &e.UpdatedAt, &e.ReminderOffsets,
 	)
@@ -896,12 +896,12 @@ func resizeEvent(ctx context.Context, userID, eventID string, endsAt time.Time) 
 	err = db.Pool.QueryRow(ctx, `
 		UPDATE event SET ends_at = $3, updated_at = NOW()
 		WHERE id = $1 AND calendar_id = ANY($2)
-		RETURNING id, user_id, title, description, starts_at, ends_at, all_day, rrule,
+		RETURNING id, calendar_id::text, user_id, title, description, starts_at, ends_at, all_day, rrule,
 		          COALESCE(timezone, 'Europe/Moscow'), location, color, COALESCE(tags, '{}'),
 		          task_id, COALESCE(is_work_event, true), created_at, updated_at,
 		          COALESCE(reminder_offsets, '{}')
 	`, eventID, calIDs, endsAt).Scan(
-		&e.ID, &e.UserID, &e.Title, &e.Description, &e.StartsAt, &e.EndsAt,
+		&e.ID, &e.CalendarID, &e.UserID, &e.Title, &e.Description, &e.StartsAt, &e.EndsAt,
 		&e.AllDay, &e.Rrule, &e.Timezone, &e.Location, &e.Color, &tags,
 		&e.TaskID, &e.IsWorkEvent, &e.CreatedAt, &e.UpdatedAt, &e.ReminderOffsets,
 	)

@@ -6,6 +6,7 @@ import "time"
 type Event struct {
 	ID          string    `json:"id"`
 	UserID      string    `json:"user_id"`
+	CalendarID  string    `json:"calendar_id"`
 	Title       string    `json:"title"`
 	Description *string   `json:"description,omitempty"`
 	StartsAt    time.Time `json:"starts_at"`
