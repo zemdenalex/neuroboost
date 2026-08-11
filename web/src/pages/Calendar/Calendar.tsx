@@ -84,10 +84,30 @@ export function Calendar() {
   }, []);
 
   const handleMoveOrResize = useCallback(async (data: { id: string; startsAt: string; endsAt: string }) => {
+    // Draw the event where it was dropped, before the request goes out.
+    //
+    // Measured, not assumed: between mouseup and the refetch landing the block
+    // sat at its OLD position (`web/e2e/drag-commit-repaint.spec.ts` recorded
+    // delta = 0px), so letting go made the event snap back and then jump. The
+    // comment that used to sit here claimed the opposite.
+    //
+    // 🔴 Non-recurring only. Editing one occurrence of a series can split it,
+    // and which occurrences move is the scope dialog's answer, not ours — an
+    // optimistic guess there would show something the server will not agree
+    // with. Recurring events keep waiting for the refetch.
+    //
+    // Functional form so this never reads a stale `events` from the closure.
+    setEvents(prev => prev.map(event =>
+      event.id === data.id && !event.rrule
+        ? { ...event, startsAt: data.startsAt, endsAt: data.endsAt }
+        : event
+    ));
+
     try {
       await withScope(data.id, 'move', scope => moveEvent(data.id, data.startsAt, data.endsAt, scope).then(() => undefined));
-      // Reloaded even when the dialog was cancelled: the grid has already drawn
-      // the event at its dropped position, and only a reload puts it back.
+      // Still reloaded, and still on the cancel path: the optimistic patch above
+      // is a guess about one event, and the reload is what reconciles it — including
+      // putting the event back when the scope dialog was dismissed.
       await loadEvents();
     } catch (error) {
       console.error('Failed to move/resize event:', error);
