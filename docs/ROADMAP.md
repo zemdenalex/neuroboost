@@ -212,10 +212,13 @@ which cannot represent a range crossing midnight. `utcToLocalMinutes`
    targetDayUtc0 + curMin*60000` for **all** kinds~~ — сделано (`aec55e3` + `b4b270f`).
 3. ~~`handleResizeComplete`: **clamp, don't min/max-swap**~~ — сделано; кламп живёт в
    `resizeRangeMs`, общей для ghost'а и коммита, чтобы превью не расходилось с сохранённым.
-4. Add `grabOffsetMs` at mousedown; move commit = `cursorAbs − grabOffset`. Unifies single/multi-day
-   move and removes the `daySpan > 1` special case.
-5. All-day move: reuse the timed branch's delta pattern; set `dragMeta` in `handleAllDayDragStart`.
-6. Add a movement threshold before any resize commits.
+4. ~~Add `grabOffsetMs` at mousedown; move commit = `cursorAbs − grabOffset`~~ — сделано
+   (`f59063e`, `moveCoords.ts`). Спецслучай `daySpan > 1` убран, `durMin` до коммита не доходит.
+   Проверено `web/e2e/move-grab-offset.spec.ts`.
+5. ~~All-day move: set `dragMeta` in `handleAllDayDragStart`~~ — сделано (`95dbe4c`). Первый
+   all-day drag сессии больше не мёртв. ⚠ Спекой не покрыт.
+6. ~~Add a movement threshold before any resize commits~~ — сделано (`95dbe4c`,
+   `DRAG_THRESHOLD_PX`). Проверено `web/e2e/resize-click-noop.spec.ts` с положительным контролем.
 7. Generalize `MultiDayTimedGhost` to render any absolute range (largest UI chunk).
 
 **Schedule alongside:** the recurring-instance 500 (below). Drag work will make it more visible.
