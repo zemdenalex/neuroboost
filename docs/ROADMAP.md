@@ -194,16 +194,24 @@ which cannot represent a range crossing midnight. `utcToLocalMinutes`
 > покрытия не было вовсе. Тест на обработчик проходил бы в момент написания. Разбор —
 > узел графа `learning-md2-lived-in-untested-producers`.
 >
-> Осталось: **MD1** (шаг 2 в части X курсора) и шаги 4–7. MD1 намеренно не делается до
-> шага 7: без обобщённого ghost неаккуратное вертикальное движение утащит событие в соседние
-> сутки — баг хуже исправляемого.
+> **Поправка 11.08 — MD1 закрыт, а его «обязательный порядок» был выдумкой** (`b4b270f`).
+> Здесь стояло: «MD1 намеренно не делается до шага 7, без обобщённого ghost событие утащит в
+> соседние сутки». Это неверно. Ghost для resize уже резал абсолютный диапазон по колонкам —
+> `resizeGhostForColumn` появился в том же `aec55e3`, а `GhostPreview` рендерится по одной на
+> колонку (`DayColumn.tsx:213`). Шаг 7 для MD1 не нужен был вовсе; правка — одна строка
+> (`cursorMs` от `targetDayUtc0`). Проверено `GhostPreview.test.ts` (по колонкам) и
+> `web/e2e/crossday-resize.spec.ts` (настоящее перетаскивание, утверждение по API).
+> Узел: `learning-stale-comment-outlived-its-constraint`.
+>
+> Осталось: шаги 4–6. Шаг 7 остаётся полезным сам по себе — но для ghost'а **create**, а не
+> для resize.
 
 1. ~~**Write `dragHandlers.test.ts` first**~~ — сделано; см. поправку выше о том, почему этого
    было недостаточно.
-2. Resize states carry absolute `startMs`/`endMs` (as `DragMove.originalStartMs/EndMs` already
-   does); `onMove` computes `cursorAbsMs = targetDayUtc0 + curMin*60000` for **all** kinds.
-3. `handleResizeComplete`: **clamp, don't min/max-swap** — resize-end → `newEnd = max(cursorAbs,
-   start + 15min)`, held endpoint untouched. Fixes MD1 + MD2 together.
+2. ~~Resize states carry absolute `startMs`/`endMs`; `onMove` computes `cursorAbsMs =
+   targetDayUtc0 + curMin*60000` for **all** kinds~~ — сделано (`aec55e3` + `b4b270f`).
+3. ~~`handleResizeComplete`: **clamp, don't min/max-swap**~~ — сделано; кламп живёт в
+   `resizeRangeMs`, общей для ghost'а и коммита, чтобы превью не расходилось с сохранённым.
 4. Add `grabOffsetMs` at mousedown; move commit = `cursorAbs − grabOffset`. Unifies single/multi-day
    move and removes the `daySpan > 1` special case.
 5. All-day move: reuse the timed branch's delta pattern; set `dragMeta` in `handleAllDayDragStart`.

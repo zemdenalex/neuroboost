@@ -49,6 +49,14 @@ export function WeekGrid({
 
   // Reset mobileDayOffset when the week changes. Returning to the current week
   // lands on today; any other week has no "today" and opens on its Monday.
+  //
+  // ⚠ This also fires on the rollover below, when swiping day-by-day crosses a
+  // week boundary. Swiping backwards INTO the current week therefore lands on
+  // today rather than on the day adjacent to the one just left. That is the
+  // deliberate trade: the "Today" control and a cold open are the common paths
+  // and must show today, while day-swiping across a boundary already jumped
+  // (it landed on Monday before this change). Not covered by the mobile specs —
+  // both drag specs skip at 375px and recurring-scope never swipes.
   useEffect(() => {
     setMobileDayOffset(initialMobileDayOffset(currentWeekOffset, timezone));
   }, [currentWeekOffset, timezone]);
