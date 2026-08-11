@@ -376,3 +376,54 @@ func TestNormalizeName(t *testing.T) {
 		})
 	}
 }
+
+// TestInvalidNameIsClassified proves the store surfaces the typed
+// ErrInvalidName, not just that NormalizeName's predicate is correct
+// (TestNormalizeName already covers the predicate itself). The handler will
+// switch on this with errors.Is; an unclassified error here would fall
+// through to a 500 on plain bad input.
+func TestInvalidNameIsClassified(t *testing.T) {
+	userID, cleanup := setupTestDB(t)
+	defer cleanup()
+	ctx := context.Background()
+
+	badNames := []string{"", "   "}
+
+	for _, bad := range badNames {
+		if _, err := Create(ctx, userID, bad, nil); !errors.Is(err, ErrInvalidName) {
+			t.Errorf("Create(%q): want ErrInvalidName, got %v", bad, err)
+		}
+	}
+
+	c, err := Create(ctx, userID, "Валидное", nil)
+	if err != nil {
+		t.Fatalf("create: %v", err)
+	}
+
+	for _, bad := range badNames {
+		badName := bad
+		if _, err := Update(ctx, userID, c.ID, UpdateFields{Name: &badName}); !errors.Is(err, ErrInvalidName) {
+			t.Errorf("Update(%q): want ErrInvalidName, got %v", bad, err)
+		}
+	}
+}
+
+// TestMalformedCalendarIDIsNotFound is the path a junk id in a URL takes: the
+// caller passes something that isn't a UUID, Postgres rejects it while
+// coercing the query parameter (SQLSTATE 22P02), and membership must
+// translate that into pgx.ErrNoRows so requireOwner's existing handling turns
+// it into ErrCalendarNotFound instead of a 500.
+func TestMalformedCalendarIDIsNotFound(t *testing.T) {
+	userID, cleanup := setupTestDB(t)
+	defer cleanup()
+	ctx := context.Background()
+
+	const junkID = "not-a-uuid"
+
+	if _, err := Update(ctx, userID, junkID, UpdateFields{}); !errors.Is(err, ErrCalendarNotFound) {
+		t.Errorf("update with malformed id: want ErrCalendarNotFound, got %v", err)
+	}
+	if err := Delete(ctx, userID, junkID); !errors.Is(err, ErrCalendarNotFound) {
+		t.Errorf("delete with malformed id: want ErrCalendarNotFound, got %v", err)
+	}
+}
