@@ -4,7 +4,7 @@ title: Prod деплоится на push в `main`, а не на тег — ме
 type: learning
 status: verified
 tags: [neuroboost, ci, deploy, release, git]
-weight: { importance: 5, connectivity: 5, access: 4, last_accessed: 2026-08-10 }
+weight: { importance: 5, connectivity: 6, access: 4, last_accessed: 2026-08-11 }
 created: 2026-08-10
 sources:
   - file: ".github/workflows/ci.yml — job deploy, if: github.ref == 'refs/heads/main'"
@@ -31,3 +31,14 @@ links:
 **Why it matters:** «просто смёржить PR, тег поставим потом» здесь означает «выложить в
 продакшен». Отдельно: `develop` авто-деплоится на staging, поэтому push тоже не нейтрален,
 если Денис в этот момент проходит staging-чеклист руками.
+
+## 🔴 Что сломается сразу после мержа, если не поставить заранее
+
+У прод-бота **`SERVICE_TOKEN` не задан** — в его логах при старте прямо написано
+`notifier: SERVICE_TOKEN is not set, notifications disabled`. Сегодня это ничего не ломает:
+прод — `v0.4.9`, ручек `/api/svc` там нет вовсе ([[learning-prod-has-no-svc-routes]]).
+
+**Мерж делает эти ручки реальными — и уведомления на проде всё равно не поедут**, пока токен
+не появится в `/opt/neuroboost-bot-prod/.env` на `nl-2` и контейнер не будет поднят через
+`up -d --force-recreate` (не `restart` — он не перечитывает `.env`). Значение должно совпадать
+с `SERVICE_TOKEN` прод-API. Это пункт чеклиста релиза, а не отдельная задача.
