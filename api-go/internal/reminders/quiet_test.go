@@ -86,7 +86,7 @@ func TestDigestFiresOnceInLocalMidnightTerms(t *testing.T) {
 	// 08:00 MSK on Aug 1 == 05:00 UTC.
 	start := time.Date(2026, 8, 1, 4, 59, 0, 0, time.UTC)
 	end := time.Date(2026, 8, 1, 5, 1, 0, 0, time.UTC)
-	day, ok := DigestDue(start, end, "08:00", msk())
+	day, fireAt, ok := DigestDue(start, end, "08:00", msk())
 	if !ok {
 		t.Fatal("digest should be due in this window")
 	}
@@ -97,12 +97,24 @@ func TestDigestFiresOnceInLocalMidnightTerms(t *testing.T) {
 	if !day.Equal(wantDay) {
 		t.Errorf("digest day = %v, want %v", day.In(msk()), wantDay)
 	}
+
+	// 🔴 The fire time is the point: the row used to be written with
+	// remind_at = NOW(), and because this window looks AHEAD (it starts at
+	// 04:59 for an 05:00 digest) the notifier's `remind_at <= NOW()` gate was
+	// already satisfied — 08:00 arrived at 07:59.
+	wantAt := time.Date(2026, 8, 1, 8, 0, 0, 0, msk())
+	if !fireAt.Equal(wantAt) {
+		t.Errorf("digest fires at %v, want %v", fireAt.In(msk()), wantAt)
+	}
+	if !fireAt.After(start) {
+		t.Error("fireAt must be later than the window start, or nothing is gained")
+	}
 }
 
 func TestDigestNotDueOutsideWindow(t *testing.T) {
 	start := time.Date(2026, 8, 1, 6, 0, 0, 0, time.UTC)
 	end := time.Date(2026, 8, 1, 6, 1, 0, 0, time.UTC)
-	if _, ok := DigestDue(start, end, "08:00", msk()); ok {
+	if _, _, ok := DigestDue(start, end, "08:00", msk()); ok {
 		t.Error("digest fired an hour late")
 	}
 }
@@ -112,7 +124,7 @@ func TestDigestAcrossLocalMidnight(t *testing.T) {
 	// 00:00 — checking only "today" would miss it.
 	start := time.Date(2026, 7, 31, 20, 59, 0, 0, time.UTC) // 23:59 MSK
 	end := time.Date(2026, 7, 31, 21, 1, 0, 0, time.UTC)    // 00:01 MSK Aug 1
-	day, ok := DigestDue(start, end, "00:00", msk())
+	day, _, ok := DigestDue(start, end, "00:00", msk())
 	if !ok {
 		t.Fatal("midnight digest missed across the day boundary")
 	}
@@ -124,7 +136,7 @@ func TestDigestAcrossLocalMidnight(t *testing.T) {
 func TestDigestBadTimeIsNotDue(t *testing.T) {
 	start := time.Date(2026, 8, 1, 0, 0, 0, 0, time.UTC)
 	end := time.Date(2026, 8, 2, 0, 0, 0, 0, time.UTC)
-	if _, ok := DigestDue(start, end, "nonsense", msk()); ok {
+	if _, _, ok := DigestDue(start, end, "nonsense", msk()); ok {
 		t.Error("unparseable digest_at must not fire")
 	}
 }

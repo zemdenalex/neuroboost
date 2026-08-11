@@ -52,20 +52,26 @@ func ShiftForQuietHours(remindAt time.Time, minutesBefore int, quietStart, quiet
 // midnight of the day the digest belongs to; it goes into
 // reminder.occurrence_start so the unique index dedupes per local day rather
 // than per UTC day.
-func DigestDue(windowStart, windowEnd time.Time, digestAt string, loc *time.Location) (time.Time, bool) {
-	atMin, ok := usersettings.ParseHHMM(digestAt)
-	if !ok {
-		return time.Time{}, false
+// It returns both the local day the digest covers and the exact instant it is
+// due. 🔴 The instant used to be computed here and thrown away, and the row was
+// written with remind_at = NOW(); because the scan window looks AHEAD, the
+// digest went out up to a minute early — 08:00 arrived at 07:59:12. Returning
+// fireAt lets the row carry its real time, and PendingHandler's
+// `remind_at <= NOW()` then holds it until the minute it was asked for.
+func DigestDue(windowStart, windowEnd time.Time, digestAt string, loc *time.Location) (day time.Time, fireAt time.Time, ok bool) {
+	atMin, parsed := usersettings.ParseHHMM(digestAt)
+	if !parsed {
+		return time.Time{}, time.Time{}, false
 	}
 	local := windowStart.In(loc)
-	day := time.Date(local.Year(), local.Month(), local.Day(), 0, 0, 0, 0, loc)
+	midnight := time.Date(local.Year(), local.Month(), local.Day(), 0, 0, 0, 0, loc)
 
 	// Check today and tomorrow: a window can straddle local midnight.
-	for _, d := range []time.Time{day, day.AddDate(0, 0, 1)} {
-		fireAt := d.Add(time.Duration(atMin) * time.Minute)
-		if !fireAt.Before(windowStart) && fireAt.Before(windowEnd) {
-			return d, true
+	for _, d := range []time.Time{midnight, midnight.AddDate(0, 0, 1)} {
+		at := d.Add(time.Duration(atMin) * time.Minute)
+		if !at.Before(windowStart) && at.Before(windowEnd) {
+			return d, at, true
 		}
 	}
-	return time.Time{}, false
+	return time.Time{}, time.Time{}, false
 }

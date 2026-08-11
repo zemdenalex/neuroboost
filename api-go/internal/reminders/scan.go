@@ -77,8 +77,8 @@ func Scan(ctx context.Context, from, to time.Time, log *slog.Logger) (int, error
 		inserted += n
 
 		if st.DigestEnabled {
-			if day, ok := DigestDue(from, to, st.DigestAt, loc); ok {
-				n, err := insertDigest(ctx, u.id, day, loc)
+			if day, fireAt, ok := DigestDue(from, to, st.DigestAt, loc); ok {
+				n, err := insertDigest(ctx, u.id, day, fireAt, loc)
 				if err != nil {
 					log.Error("digest insert failed",
 						slog.String("user_id", u.id), slog.String("error", err.Error()))
@@ -267,15 +267,19 @@ const digestMinutesBefore = -2
 // leaving only a FAILED row nobody read. Composing at insert time is also the
 // right moment: the scan writes this row when the digest is due, so the day's
 // contents are current rather than hours stale.
-func insertDigest(ctx context.Context, userID string, localDay time.Time, loc *time.Location) (int, error) {
+// remind_at carries the digest's real time rather than NOW(). The scan window
+// looks ahead, so the row is written slightly BEFORE the digest is due; with
+// NOW() the notifier's `remind_at <= NOW()` gate was already satisfied and the
+// digest went out up to a minute early.
+func insertDigest(ctx context.Context, userID string, localDay, fireAt time.Time, loc *time.Location) (int, error) {
 	message := DigestText(localDay, loc, digestEvents(ctx, userID, localDay), digestTasks(ctx, userID, localDay))
 
 	tag, err := db.Pool.Exec(ctx, `
 		INSERT INTO reminder (user_id, source_kind, occurrence_start, minutes_before,
 		                      remind_at, status, channel, message)
-		VALUES ($1, 'DIGEST', $2, $3, NOW(), 'PENDING', 'TELEGRAM', $4)
+		VALUES ($1, 'DIGEST', $2, $3, $4, 'PENDING', 'TELEGRAM', $5)
 		ON CONFLICT DO NOTHING`,
-		userID, localDay, digestMinutesBefore, message)
+		userID, localDay, digestMinutesBefore, fireAt, message)
 	if err != nil {
 		return 0, err
 	}
