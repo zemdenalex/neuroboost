@@ -62,8 +62,15 @@ test.describe('task reminders', () => {
     // Open the editor for our task. Clicking the row only selects it — the
     // editor opens from the row's pencil button, which is why that button
     // needed an accessible name to be addressable at all.
-    const row = authedPage.locator('div').filter({ hasText: title }).last()
     await expect(authedPage.getByText(title, { exact: false }).first()).toBeVisible({ timeout: 15_000 })
+    // Innermost element holding BOTH the title and an edit button: filtering on
+    // the title alone matches every ancestor up to <body>, and .last() of those
+    // is the title's own wrapper, which contains no button.
+    const row = authedPage
+      .locator('div')
+      .filter({ hasText: title })
+      .filter({ has: authedPage.getByRole('button', { name: 'Edit Task' }) })
+      .last()
     await row.getByRole('button', { name: 'Edit Task' }).click()
 
     const offsetInput = authedPage.getByLabel('New reminder offset')
