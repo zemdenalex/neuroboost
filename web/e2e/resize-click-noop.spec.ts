@@ -46,7 +46,6 @@ test.describe('clicking a resize handle', () => {
     authedPage,
     session,
   }) => {
-    test.skip(test.info().project.name === 'mobile', 'resize handles are pointer-sized; mobile uses touch')
     token = session.token
 
     const ctx = await apiContext(session.token)

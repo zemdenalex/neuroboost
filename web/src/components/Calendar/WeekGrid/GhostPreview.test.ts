@@ -98,6 +98,23 @@ describe('resize ghost across columns (the MD1 prerequisite)', () => {
     const next = GhostPreview({ drag: move, dayUtc0: TUE, isMobile: false }) as { props: GhostBoxProps } | null;
     expect(next, 'the second day of a multi-day move must be previewed too').not.toBeNull();
     expect(next!.props.endTime).toBe('02:00');
+
+    // 🔴 The case above only re-checks the slicer, which already had tests: the
+    // event has not actually moved. Dragging it a day forward is what exercises
+    // the branch — the ghost must LEAVE Monday and appear on Wednesday.
+    const moved = { ...move, cursorMs: at(TUE, 22) };
+    expect(
+      GhostPreview({ drag: moved, dayUtc0: MON, isMobile: false }),
+      'the ghost must leave the day the event was dragged off'
+    ).toBeNull();
+
+    const movedStart = GhostPreview({ drag: moved, dayUtc0: TUE, isMobile: false }) as { props: GhostBoxProps } | null;
+    expect(movedStart).not.toBeNull();
+    expect(movedStart!.props.startTime).toBe('22:00');
+
+    const movedEnd = GhostPreview({ drag: moved, dayUtc0: WED, isMobile: false }) as { props: GhostBoxProps } | null;
+    expect(movedEnd, 'a 28-hour event dragged onto Tuesday must also preview on Wednesday').not.toBeNull();
+    expect(movedEnd!.props.endTime).toBe('02:00');
   });
 
   it('still draws a same-day resize on its own column only', () => {
