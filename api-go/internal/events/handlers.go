@@ -11,6 +11,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5"
 
+	"neuroboost/api-go/internal/calendars"
 	"neuroboost/api-go/internal/database"
 	"neuroboost/api-go/internal/middleware"
 	"neuroboost/api-go/internal/usersettings"
@@ -508,10 +509,16 @@ func ResizeHandler(w http.ResponseWriter, r *http.Request) {
 		endsAt = seriesEnd
 	} else {
 		// Query the event's current start time to validate the new end time
+		calIDs, err := calendars.CalendarIDsFor(r.Context(), userID)
+		if err != nil {
+			util.RespondError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to resolve calendars")
+			return
+		}
+
 		var startsAt time.Time
 		err = db.Pool.QueryRow(r.Context(),
-			`SELECT starts_at FROM event WHERE id = $1 AND user_id = $2`,
-			targetID, userID,
+			`SELECT starts_at FROM event WHERE id = $1 AND calendar_id = ANY($2)`,
+			targetID, calIDs,
 		).Scan(&startsAt)
 		if err != nil {
 			if err == pgx.ErrNoRows {
@@ -584,19 +591,26 @@ func AddExceptionHandler(w http.ResponseWriter, r *http.Request) {
 // Database operations
 
 func listEvents(ctx context.Context, userID string, start, end time.Time) ([]Event, error) {
+	calIDs, err := calendars.CalendarIDsFor(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Пустой список — это законное «ничего не видно», а не ошибка:
+	// ANY('{}') не вернёт ни одной строки.
 	rows, err := db.Pool.Query(ctx, `
 		SELECT id, user_id, title, description, starts_at, ends_at, all_day, rrule,
 		       COALESCE(timezone, 'Europe/Moscow'), location, color, COALESCE(tags, '{}'),
 		       task_id, COALESCE(is_work_event, true), created_at, updated_at,
 		          COALESCE(reminder_offsets, '{}')
 		FROM event
-		WHERE user_id = $1
+		WHERE calendar_id = ANY($1)
 		  AND (
 		    (starts_at < $3 AND ends_at > $2)
 		    OR (rrule IS NOT NULL AND rrule != '' AND starts_at < $3)
 		  )
 		ORDER BY starts_at ASC
-	`, userID, start, end)
+	`, calIDs, start, end)
 	if err != nil {
 		return nil, err
 	}
@@ -640,14 +654,21 @@ func createEvent(ctx context.Context, userID string, req CreateEventRequest, sta
 		reminderOffsets = usersettings.DefaultEventOffsets(ctx, userID)
 	}
 
-	err := db.Pool.QueryRow(ctx, `
-		INSERT INTO event (user_id, title, description, starts_at, ends_at, all_day, rrule, timezone, location, color, tags, task_id, is_work_event, reminder_offsets)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
-		RETURNING id, user_id, title, description, starts_at, ends_at, all_day, rrule, 
-		          COALESCE(timezone, 'Europe/Moscow'), location, color, COALESCE(tags, '{}'), 
+	// New events land in the author's personal calendar. user_id stays on the
+	// row too — it means authorship now, not access.
+	calID, err := calendars.PersonalIDFor(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	err = db.Pool.QueryRow(ctx, `
+		INSERT INTO event (user_id, calendar_id, title, description, starts_at, ends_at, all_day, rrule, timezone, location, color, tags, task_id, is_work_event, reminder_offsets)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+		RETURNING id, user_id, title, description, starts_at, ends_at, all_day, rrule,
+		          COALESCE(timezone, 'Europe/Moscow'), location, color, COALESCE(tags, '{}'),
 		          task_id, COALESCE(is_work_event, true), created_at, updated_at,
 		          COALESCE(reminder_offsets, '{}')
-	`, userID, req.Title, req.Description, startsAt, endsAt, req.AllDay, req.Rrule, timezone, req.Location, req.Color, tags, req.TaskID, isWorkEvent, reminderOffsets).Scan(
+	`, userID, calID, req.Title, req.Description, startsAt, endsAt, req.AllDay, req.Rrule, timezone, req.Location, req.Color, tags, req.TaskID, isWorkEvent, reminderOffsets).Scan(
 		&e.ID, &e.UserID, &e.Title, &e.Description, &e.StartsAt, &e.EndsAt,
 		&e.AllDay, &e.Rrule, &e.Timezone, &e.Location, &e.Color, &resultTags,
 		&e.TaskID, &e.IsWorkEvent, &e.CreatedAt, &e.UpdatedAt, &e.ReminderOffsets,
@@ -662,17 +683,22 @@ func createEvent(ctx context.Context, userID string, req CreateEventRequest, sta
 }
 
 func getEvent(ctx context.Context, userID, eventID string) (*Event, error) {
+	calIDs, err := calendars.CalendarIDsFor(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
 	var e Event
 	var tags []string
 
-	err := db.Pool.QueryRow(ctx, `
-		SELECT id, user_id, title, description, starts_at, ends_at, all_day, rrule, 
-		       COALESCE(timezone, 'Europe/Moscow'), location, color, COALESCE(tags, '{}'), 
+	err = db.Pool.QueryRow(ctx, `
+		SELECT id, user_id, title, description, starts_at, ends_at, all_day, rrule,
+		       COALESCE(timezone, 'Europe/Moscow'), location, color, COALESCE(tags, '{}'),
 		       task_id, COALESCE(is_work_event, true), created_at, updated_at,
 		          COALESCE(reminder_offsets, '{}')
 		FROM event
-		WHERE id = $1 AND user_id = $2
-	`, eventID, userID).Scan(
+		WHERE id = $1 AND calendar_id = ANY($2)
+	`, eventID, calIDs).Scan(
 		&e.ID, &e.UserID, &e.Title, &e.Description, &e.StartsAt, &e.EndsAt,
 		&e.AllDay, &e.Rrule, &e.Timezone, &e.Location, &e.Color, &tags,
 		&e.TaskID, &e.IsWorkEvent, &e.CreatedAt, &e.UpdatedAt, &e.ReminderOffsets,
@@ -765,13 +791,18 @@ func updateEvent(ctx context.Context, userID, eventID string, req UpdateEventReq
 		return getEvent(ctx, userID, eventID)
 	}
 
+	calIDs, err := calendars.CalendarIDsFor(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
 	updates = append(updates, "updated_at = NOW()")
-	args = append(args, eventID, userID)
+	args = append(args, eventID, calIDs)
 
 	query := fmt.Sprintf(`
 		UPDATE event SET %s
-		WHERE id = $%d AND user_id = $%d
-		RETURNING id, user_id, title, description, starts_at, ends_at, all_day, rrule, 
+		WHERE id = $%d AND calendar_id = ANY($%d)
+		RETURNING id, user_id, title, description, starts_at, ends_at, all_day, rrule,
 		          COALESCE(timezone, 'Europe/Moscow'), location, color, COALESCE(tags, '{}'), 
 		          task_id, COALESCE(is_work_event, true), created_at, updated_at,
 		          COALESCE(reminder_offsets, '{}')
@@ -780,7 +811,7 @@ func updateEvent(ctx context.Context, userID, eventID string, req UpdateEventReq
 	var e Event
 	var tags []string
 
-	err := db.Pool.QueryRow(ctx, query, args...).Scan(
+	err = db.Pool.QueryRow(ctx, query, args...).Scan(
 		&e.ID, &e.UserID, &e.Title, &e.Description, &e.StartsAt, &e.EndsAt,
 		&e.AllDay, &e.Rrule, &e.Timezone, &e.Location, &e.Color, &tags,
 		&e.TaskID, &e.IsWorkEvent, &e.CreatedAt, &e.UpdatedAt, &e.ReminderOffsets,
@@ -795,9 +826,14 @@ func updateEvent(ctx context.Context, userID, eventID string, req UpdateEventReq
 }
 
 func deleteEvent(ctx context.Context, userID, eventID string) error {
+	calIDs, err := calendars.CalendarIDsFor(ctx, userID)
+	if err != nil {
+		return err
+	}
+
 	result, err := db.Pool.Exec(ctx, `
-		DELETE FROM event WHERE id = $1 AND user_id = $2
-	`, eventID, userID)
+		DELETE FROM event WHERE id = $1 AND calendar_id = ANY($2)
+	`, eventID, calIDs)
 
 	if err != nil {
 		return err
@@ -811,17 +847,22 @@ func deleteEvent(ctx context.Context, userID, eventID string) error {
 }
 
 func moveEvent(ctx context.Context, userID, eventID string, startsAt, endsAt time.Time) (*Event, error) {
+	calIDs, err := calendars.CalendarIDsFor(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
 	var e Event
 	var tags []string
 
-	err := db.Pool.QueryRow(ctx, `
+	err = db.Pool.QueryRow(ctx, `
 		UPDATE event SET starts_at = $3, ends_at = $4, updated_at = NOW()
-		WHERE id = $1 AND user_id = $2
-		RETURNING id, user_id, title, description, starts_at, ends_at, all_day, rrule, 
-		          COALESCE(timezone, 'Europe/Moscow'), location, color, COALESCE(tags, '{}'), 
+		WHERE id = $1 AND calendar_id = ANY($2)
+		RETURNING id, user_id, title, description, starts_at, ends_at, all_day, rrule,
+		          COALESCE(timezone, 'Europe/Moscow'), location, color, COALESCE(tags, '{}'),
 		          task_id, COALESCE(is_work_event, true), created_at, updated_at,
 		          COALESCE(reminder_offsets, '{}')
-	`, eventID, userID, startsAt, endsAt).Scan(
+	`, eventID, calIDs, startsAt, endsAt).Scan(
 		&e.ID, &e.UserID, &e.Title, &e.Description, &e.StartsAt, &e.EndsAt,
 		&e.AllDay, &e.Rrule, &e.Timezone, &e.Location, &e.Color, &tags,
 		&e.TaskID, &e.IsWorkEvent, &e.CreatedAt, &e.UpdatedAt, &e.ReminderOffsets,
@@ -836,17 +877,22 @@ func moveEvent(ctx context.Context, userID, eventID string, startsAt, endsAt tim
 }
 
 func resizeEvent(ctx context.Context, userID, eventID string, endsAt time.Time) (*Event, error) {
+	calIDs, err := calendars.CalendarIDsFor(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
 	var e Event
 	var tags []string
 
-	err := db.Pool.QueryRow(ctx, `
+	err = db.Pool.QueryRow(ctx, `
 		UPDATE event SET ends_at = $3, updated_at = NOW()
-		WHERE id = $1 AND user_id = $2
-		RETURNING id, user_id, title, description, starts_at, ends_at, all_day, rrule, 
-		          COALESCE(timezone, 'Europe/Moscow'), location, color, COALESCE(tags, '{}'), 
+		WHERE id = $1 AND calendar_id = ANY($2)
+		RETURNING id, user_id, title, description, starts_at, ends_at, all_day, rrule,
+		          COALESCE(timezone, 'Europe/Moscow'), location, color, COALESCE(tags, '{}'),
 		          task_id, COALESCE(is_work_event, true), created_at, updated_at,
 		          COALESCE(reminder_offsets, '{}')
-	`, eventID, userID, endsAt).Scan(
+	`, eventID, calIDs, endsAt).Scan(
 		&e.ID, &e.UserID, &e.Title, &e.Description, &e.StartsAt, &e.EndsAt,
 		&e.AllDay, &e.Rrule, &e.Timezone, &e.Location, &e.Color, &tags,
 		&e.TaskID, &e.IsWorkEvent, &e.CreatedAt, &e.UpdatedAt, &e.ReminderOffsets,
