@@ -6,7 +6,14 @@ import (
 	"strings"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 )
+
+// pgErrCode reports whether err is a *pgconn.PgError with the given SQLSTATE.
+func pgErrCode(err error, code string) bool {
+	var pgErr *pgconn.PgError
+	return errors.As(err, &pgErr) && pgErr.Code == code
+}
 
 // maxNameLen bounds the stored name. The column is TEXT; this is a product
 // limit, not a storage one.
@@ -18,6 +25,13 @@ const maxNameLen = 100
 // migration 000012 ran sees their personal calendar on the very first request
 // instead of an empty list — that self-healing lives in one place and this is
 // the first read path that would expose its absence.
+//
+// Deliberately unlike AccessibleIDs and membership: this does NOT filter by
+// m.status. An invited-but-not-yet-accepted membership is included, with
+// Status == StatusInvited on the wire — that is how a caller (and slice 3's
+// invitation UI) tells an invitation apart from active membership. Being
+// listed here does not imply being readable: CalendarIDsFor, which does
+// filter by status, remains the only access rule for event/task scoping.
 func ListFor(ctx context.Context, userID string) ([]Calendar, error) {
 	if _, err := PersonalIDFor(ctx, userID); err != nil {
 		return nil, err
@@ -64,7 +78,7 @@ func NormalizeName(name string) (string, bool) {
 func Create(ctx context.Context, userID, name string, color *string) (Calendar, error) {
 	n, ok := NormalizeName(name)
 	if !ok {
-		return Calendar{}, errors.New("invalid name")
+		return Calendar{}, ErrInvalidName
 	}
 
 	tx, err := db.Pool.Begin(ctx)
@@ -101,6 +115,12 @@ func Create(ctx context.Context, userID, name string, color *string) (Calendar, 
 
 // membership reads the caller's own row for a calendar. pgx.ErrNoRows here
 // means "not a member", which callers translate to ErrCalendarNotFound.
+//
+// A malformed calendarID (not a valid UUID) makes Postgres reject the value
+// while coercing $1 to uuid — SQLSTATE 22P02, invalid_text_representation.
+// That is normalized to pgx.ErrNoRows here rather than left as a raw driver
+// error, so a junk id in a URL path reads as "no such calendar" (the existing
+// ErrNoRows handling in requireOwner) instead of a 500.
 func membership(ctx context.Context, userID, calendarID string) (kind, role string, err error) {
 	err = db.Pool.QueryRow(ctx,
 		`SELECT c.kind, m.role
@@ -108,6 +128,9 @@ func membership(ctx context.Context, userID, calendarID string) (kind, role stri
 		 JOIN calendar_member m ON m.calendar_id = c.id
 		 WHERE c.id = $1 AND m.user_id = $2 AND m.status = $3`,
 		calendarID, userID, StatusActive).Scan(&kind, &role)
+	if err != nil && pgErrCode(err, "22P02") {
+		return "", "", pgx.ErrNoRows
+	}
 	return kind, role, err
 }
 
@@ -137,7 +160,7 @@ func Update(ctx context.Context, userID, calendarID string, p UpdateFields) (Cal
 	if p.Name != nil {
 		n, ok := NormalizeName(*p.Name)
 		if !ok {
-			return Calendar{}, errors.New("invalid name")
+			return Calendar{}, ErrInvalidName
 		}
 		p.Name = &n
 	}
@@ -151,6 +174,11 @@ func Update(ctx context.Context, userID, calendarID string, p UpdateFields) (Cal
 		 RETURNING id::text, name, color, kind, created_at`,
 		calendarID, p.Name, p.Color,
 	).Scan(&c.ID, &c.Name, &c.Color, &c.Kind, &c.CreatedAt); err != nil {
+		// Can only happen if the row disappeared between the pre-flight
+		// requireOwner check above and this UPDATE (e.g. a concurrent delete).
+		if errors.Is(err, pgx.ErrNoRows) {
+			return Calendar{}, ErrCalendarNotFound
+		}
 		return Calendar{}, err
 	}
 
@@ -187,7 +215,26 @@ func Delete(ctx context.Context, userID, calendarID string) error {
 	}
 
 	// calendar_member cascades from calendar; nothing else references an empty
-	// calendar at this point.
+	// calendar at this point — except a TOCTOU race with a concurrent insert
+	// into event/task between the count above and this DELETE, which the FK
+	// (no ON DELETE on event.calendar_id / task.calendar_id) turns into
+	// SQLSTATE 23503 instead of silently dropping the new row's calendar.
 	_, err = db.Pool.Exec(ctx, `DELETE FROM calendar WHERE id = $1`, calendarID)
+	if err != nil && pgErrCode(err, "23503") {
+		var fresh NotEmptyError
+		if err2 := db.Pool.QueryRow(ctx,
+			`SELECT (SELECT count(*) FROM event WHERE calendar_id = $1),
+			        (SELECT count(*) FROM task  WHERE calendar_id = $1)`,
+			calendarID).Scan(&fresh.Events, &fresh.Tasks); err2 != nil {
+			return err2
+		}
+		if fresh.Events > 0 || fresh.Tasks > 0 {
+			return &fresh
+		}
+		// The race resolved to something else the FK caught (not a leftover
+		// event/task) — surface the original driver error rather than
+		// inventing an empty NotEmptyError that would misreport as 409.
+		return err
+	}
 	return err
 }

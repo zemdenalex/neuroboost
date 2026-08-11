@@ -49,6 +49,12 @@ var (
 	// calendar either violates the foreign key (non-empty) or silently strips
 	// the user of their own calendar (empty).
 	ErrCalendarIsPersonal = errors.New("personal calendar cannot be deleted")
+
+	// ErrInvalidName is returned by Create and Update when NormalizeName
+	// rejects the supplied name (empty, or over maxNameLen runes). Exported so
+	// the handler can classify it with errors.Is instead of falling through to
+	// a generic 500 on a validation failure the store already caught.
+	ErrInvalidName = errors.New("invalid calendar name")
 )
 
 // NotEmptyError reports what is still inside a calendar the caller tried to
