@@ -153,3 +153,35 @@ Transcript analyzed: 1665 lines, 8 user messages, 135 assistant messages. Sessio
 
 **Скиллы на следующую сессию:** `superpowers:test-driven-development`,
 `superpowers:brainstorming` (P3), `superpowers:systematic-debugging`.
+
+## [2026-08-11] recall | learning-merge-to-main-is-the-release, learning-prod-has-no-svc-routes, entity-e2e-playwright-harness, learning-md2-lived-in-untested-producers, learning-stale-comment-outlived-its-constraint, learning-null-key-passes-a-unique-index, entity-server-topology
+
+## [2026-08-11 вечер] session | P3 срез 1 собран и проверен на staging
+
+Денис вернулся в 15:50 и спросил про три вещи: сделан ли P3, проверен ли сайт целиком, залатаны
+ли документы. Честный ответ был «ни одно», с конкретикой. Выбрал P3.
+
+Брейншторм → спека (`2026-08-11-p3-shared-calendars-design.md`, модель C — календарь-контейнер,
+его выбор против моей рекомендации A) → план на срез 1 → исполнение субагентами, его выбор режима.
+
+**Итог:** доступ к событиям и задачам больше не даёт колонка `user_id` — его даёт членство в
+календаре. 12 задач вместо 8, 8 файлов пяти пакетов вместо 2. На staging: миграция 12,
+`dirty=false`, три нуля, **57 событий из 57 и 8 задач из 8** видны, e2e 24 passed / 4 skipped —
+базовая линия. `main` не тронут, 182 коммита ждут его слова.
+
+Новые узлы: [[entity-p3-slice1-calendar-foundation]] (что теперь существует и чего срез НЕ даёт),
+[[learning-green-because-skipped-proves-nothing]] (CI поймал nil pointer, который 12 локальных
+прогонов пропустили — тесты с базой без `DATABASE_URL` делают `t.Skip`),
+[[learning-plan-named-two-files-invariant-lived-in-eight]] (границу работы нашёл красный
+охранный тест, а не чтение кода).
+
+**Читать первыми в следующей сессии:** `entity-p3-slice1-calendar-foundation`, затем
+`docs/superpowers/plans/2026-08-11-p3-slice2-inherited-debt.md` — там же то, что касается прода.
+
+**Открыто и ждёт Дениса:** тап по прод-боту и нажатие кнопки в уведомлении (проверить может
+только он) · мерж PR #9 = релиз прода · слияние двух его записей в прод-базе (предусловие P3,
+и скрипт слияния теперь обязан переносить `calendar_id`) · 6 узлов в очереди promote ·
+ротация токена прод-бота.
+
+**Скиллы на следующую сессию:** `superpowers:subagent-driven-development` (срез 2 по тому же
+образцу), `superpowers:writing-plans` (плана на срез 2 ещё нет).

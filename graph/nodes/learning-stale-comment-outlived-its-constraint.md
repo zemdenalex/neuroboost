@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-08-11
 tags: [neuroboost, calendar, drag, testing, comments]
-weight: { importance: 5, connectivity: 5, access: 1, last_accessed: 2026-08-11 }
+weight: { importance: 5, connectivity: 7, access: 2, last_accessed: 2026-08-11 }
 sources:
   - command: "git log -S resizeGhostForColumn --oneline -- web/src/components/Calendar/WeekGrid/GhostPreview.tsx  # → aec55e3, тот же коммит, что написал запрет"
   - command: "cd web && corepack pnpm test --run GhostPreview  # 5 тестов: вторая колонка рисуется"

@@ -1,3 +1,5 @@
+<!-- паспорт: тип=план | статус=действует | строк=643 | ~токенов=5978 | обновлён=по git -->
+
 # P3 срез 1 — фундамент календарей Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.

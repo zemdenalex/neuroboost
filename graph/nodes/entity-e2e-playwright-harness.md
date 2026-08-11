@@ -6,7 +6,7 @@ status: verified
 verified_by: session-88767014
 verified_at: 2026-08-10
 tags: [neuroboost, testing, e2e, playwright, verification]
-weight: { importance: 4, connectivity: 11, access: 3, last_accessed: 2026-08-11 }
+weight: { importance: 4, connectivity: 16, access: 4, last_accessed: 2026-08-11 }
 sources:
   - command: "corepack pnpm e2e  (web/, 6 passed)"
   - file: "web/playwright.config.ts"
@@ -20,7 +20,6 @@ links:
   - relates-to: learning-e2e-baseline-recorded-on-a-monday
   - relates-to: learning-stale-comment-outlived-its-constraint
 ---
-
 ⚠️ **Базовая линия имеет дату.** Числа «17 passed / 1 skipped» сняты 10.08, в понедельник, и
 две мобильные спеки проходили именно поэтому —
 [[learning-e2e-baseline-recorded-on-a-monday]].

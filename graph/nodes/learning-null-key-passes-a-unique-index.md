@@ -4,7 +4,7 @@ title: NULL в ключе дедупликации проходит уникал
 type: learning
 status: verified
 tags: [neuroboost, postgres, reminders, migrations]
-weight: { importance: 5, connectivity: 6, access: 3, last_accessed: 2026-08-11 }
+weight: { importance: 5, connectivity: 6, access: 4, last_accessed: 2026-08-11 }
 created: 2026-08-10
 sources:
   - file: "api-go/migrations — 000010 (reminder_offsets + журнал доставки reminder)"
