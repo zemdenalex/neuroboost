@@ -52,14 +52,23 @@ func CalendarIDsFor(ctx context.Context, userID string) ([]string, error) {
 // registers afterwards (email or Telegram signup both skip it), so on a miss
 // this creates it on demand instead of returning pgx.ErrNoRows to the caller.
 //
+// The fast path checks for calendar AND active membership together, not just
+// the calendar. A calendar row can exist with no membership row — e.g. the
+// membership insert below failed or the connection dropped between the two
+// inserts — and in that state CalendarIDsFor (which only reads
+// calendar_member) would silently show the owner none of their own events.
+// Checking both closes that state instead of only checking "does the
+// calendar exist".
+//
 // Race-safe: the creation relies on the partial unique index
 // idx_calendar_one_personal_per_owner (owner_id WHERE kind = 'personal') from
 // Task 1. Two concurrent calls for the same user both attempt the insert;
 // exactly one row survives, the other's INSERT is a no-op via ON CONFLICT DO
-// NOTHING, and both callers converge on re-reading the same row — never two
-// calendars, never an error.
+// NOTHING, and both callers converge on the same calendar id via the
+// calendar-only re-read — never two calendars, never an error. Both then
+// upsert calendar_member idempotently against its primary key.
 func PersonalIDFor(ctx context.Context, userID string) (string, error) {
-	id, err := readPersonalID(ctx, userID)
+	id, err := readHealthyPersonalID(ctx, userID)
 	if err == nil {
 		return id, nil
 	}
@@ -67,6 +76,8 @@ func PersonalIDFor(ctx context.Context, userID string) (string, error) {
 		return "", err
 	}
 
+	// Recovery path: either the calendar is missing, or the calendar exists
+	// but membership does not. Both are handled by the same sequence below.
 	if _, err := db.Pool.Exec(ctx,
 		`INSERT INTO calendar (owner_id, name, kind) VALUES ($1, 'Мой календарь', 'personal')
 		 ON CONFLICT DO NOTHING`,
@@ -74,10 +85,10 @@ func PersonalIDFor(ctx context.Context, userID string) (string, error) {
 		return "", err
 	}
 
-	// Re-read regardless of which side of the race we were on: the insert
-	// above may have been ours or a no-op against a concurrent winner, and
-	// either way the row now exists.
-	id, err = readPersonalID(ctx, userID)
+	// Re-read the calendar alone, without joining on membership: joining here
+	// would fail to find the row in the exact "calendar without membership"
+	// state this function exists to repair, turning the repair into an error.
+	id, err = readCalendarID(ctx, userID)
 	if err != nil {
 		return "", err
 	}
@@ -93,7 +104,25 @@ func PersonalIDFor(ctx context.Context, userID string) (string, error) {
 	return id, nil
 }
 
-func readPersonalID(ctx context.Context, userID string) (string, error) {
+// readHealthyPersonalID returns the personal calendar id only when both the
+// calendar and an active owner membership exist. pgx.ErrNoRows means either
+// piece (or both) is missing.
+func readHealthyPersonalID(ctx context.Context, userID string) (string, error) {
+	var id string
+	err := db.Pool.QueryRow(ctx,
+		`SELECT c.id::text
+		 FROM calendar c
+		 JOIN calendar_member m ON m.calendar_id = c.id AND m.user_id = c.owner_id
+		 WHERE c.owner_id = $1 AND c.kind = 'personal' AND m.status = $2
+		 LIMIT 1`,
+		userID, StatusActive).Scan(&id)
+	return id, err
+}
+
+// readCalendarID returns the personal calendar id regardless of whether
+// membership exists. Used only inside the recovery path, after the calendar
+// row is guaranteed to exist.
+func readCalendarID(ctx context.Context, userID string) (string, error) {
 	var id string
 	err := db.Pool.QueryRow(ctx,
 		`SELECT id::text FROM calendar WHERE owner_id = $1 AND kind = 'personal' LIMIT 1`,
