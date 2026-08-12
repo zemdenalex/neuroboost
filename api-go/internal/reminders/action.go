@@ -128,7 +128,11 @@ func ActionHandler(w http.ResponseWriter, r *http.Request) {
 			VALUES ($1, $2, $3, $4, $5, -1, NOW() + make_interval(mins => $6), 'PENDING', 'TELEGRAM', $7)
 			ON CONFLICT (user_id, source_kind, COALESCE(event_id, task_id), occurrence_start, minutes_before)
 			DO UPDATE SET remind_at = EXCLUDED.remind_at, status = 'PENDING', sent_at = NULL`,
-			userID, sourceKind, eventID, taskID, occurrenceStart, req.Minutes, message); err != nil {
+			// SnoozedText, not `message`: the copied text still claims the
+			// original interval ("Через 15 минут"), which snoozing has just
+			// made false. Only the context line is replaced; the title stays.
+			userID, sourceKind, eventID, taskID, occurrenceStart, req.Minutes,
+			SnoozedText(message, req.Minutes)); err != nil {
 			if svcLog != nil {
 				svcLog.Error("snooze failed",
 					slog.String("reminder_id", req.ReminderID), slog.String("error", err.Error()))

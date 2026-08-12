@@ -160,7 +160,8 @@ func scanEvents(ctx context.Context, u scanUser, calIDs []string, st usersetting
 			}
 			eventID := c.ev.ID
 			n, err := insertReminder(ctx, u.id, "EVENT", &eventID, nil,
-				d.OccurrenceStart, d.MinutesBefore, remindAt, c.ev.Title)
+				d.OccurrenceStart, d.MinutesBefore, remindAt,
+				ReminderText("EVENT", c.ev.Title, d.OccurrenceStart, d.MinutesBefore, loc))
 			if err != nil {
 				return inserted, err
 			}
@@ -250,7 +251,8 @@ func scanTasks(ctx context.Context, u scanUser, calIDs []string, st usersettings
 			}
 			taskID := c.id
 			n, err := insertReminder(ctx, u.id, "TASK", nil, &taskID,
-				d.OccurrenceStart, d.MinutesBefore, remindAt, c.title)
+				d.OccurrenceStart, d.MinutesBefore, remindAt,
+				ReminderText("TASK", c.title, d.OccurrenceStart, d.MinutesBefore, loc))
 			if err != nil {
 				return inserted, err
 			}
