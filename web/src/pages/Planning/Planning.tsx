@@ -131,7 +131,11 @@ export default function Planning() {
   return (
     <div className="flex flex-col h-full min-h-0 gap-3 p-4 md:p-6">
       {/* Header */}
-      <header className="flex items-center justify-between gap-3 shrink-0">
+      {/* Stacked below md. Side by side, the week controls left the title 179px
+          for 181px of text, so "Weekly Planning" rendered as "Weekly Planni…" —
+          truncated by two pixels, with empty space directly beneath it. Stacking
+          also holds for longer translations rather than only for this string. */}
+      <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-3 shrink-0">
         <div className="min-w-0">
           <h1 className="text-xl font-mono text-white truncate">{t('title')}</h1>
           <p className="text-sm text-zinc-400 font-mono truncate">{weekLabel}</p>

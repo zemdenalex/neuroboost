@@ -145,7 +145,10 @@ export function QuickAddRow({ onCreate, onCreateMany, onOpenFull, filters, autoF
         }
       }}
     >
-    <div className="flex items-stretch gap-2">
+    {/* Stacked below sm. Side by side on a 375px screen, the "Full task" button
+        and the two icons left the input so narrow that its placeholder clipped
+        mid-word ("New task — typ"), so the field never said what it was for. */}
+    <div className="flex flex-col sm:flex-row items-stretch gap-2">
       <div className="flex flex-1 items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-900 px-3 focus-within:border-blue-500">
         <Plus className="h-4 w-4 shrink-0 text-zinc-500" aria-hidden="true" />
         {/* Nesting is invisible state otherwise — nobody can tell what Enter will do. */}

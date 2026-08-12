@@ -38,7 +38,13 @@ export function WeekOverviewGrid({ days, onTaskDrop }: Props) {
   const locale = dateLocale(i18n.language)
 
   return (
-    <div className="flex-1 grid grid-cols-7 auto-rows-fr gap-2 min-h-0">
+    // One column below md, seven from md up.
+    //
+    // Seven columns on a 375px screen gave each day ~45px, which rendered an
+    // event chip into a 21px box: 209px of text showing as "H…", so the column
+    // could not answer the only question it exists for — what is on this day.
+    // A row per day keeps the week in order and gives the chip the full width.
+    <div className="flex-1 grid grid-cols-1 md:grid-cols-7 md:auto-rows-fr gap-2 min-h-0 overflow-y-auto md:overflow-visible">
       {days.map((day, i) => {
         const dayName = day.date.toLocaleDateString(locale, { weekday: 'short' })
         const dayNum = day.date.getDate()
@@ -65,19 +71,28 @@ export function WeekOverviewGrid({ days, onTaskDrop }: Props) {
               isToday ? 'border-blue-500' : 'border-zinc-800'
             }`}
           >
-            <div className="flex items-baseline justify-between mb-2">
-              <span className="text-xs uppercase tracking-wider text-zinc-500">
-                {dayName}
-              </span>
-              <span
-                className={`text-lg font-mono ${
-                  isToday ? 'text-blue-400' : 'text-zinc-300'
-                }`}
-              >
-                {dayNum}
+            <div className="flex items-baseline gap-3 mb-1 md:mb-2">
+              {/* Takes the full width on desktop, so the day number stays hard
+                  right exactly as before; on mobile it yields the right edge to
+                  the hours, which move up onto this line to save vertical space. */}
+              <div className="flex-1 flex items-baseline justify-between gap-2 min-w-0">
+                <span className="text-xs uppercase tracking-wider text-zinc-500">
+                  {dayName}
+                </span>
+                <span
+                  className={`text-lg font-mono ${
+                    isToday ? 'text-blue-400' : 'text-zinc-300'
+                  }`}
+                >
+                  {dayNum}
+                </span>
+              </div>
+              <span className="md:hidden text-xs text-zinc-400 font-mono tabular-nums shrink-0">
+                {day.scheduledHours.toFixed(1)}
+                {t('hoursShort')}
               </span>
             </div>
-            <div className="text-xs text-zinc-400 mb-2 font-mono tabular-nums">
+            <div className="hidden md:block text-xs text-zinc-400 mb-2 font-mono tabular-nums">
               {day.scheduledHours.toFixed(1)}
               {t('hoursShort')}
             </div>

@@ -368,8 +368,10 @@ export default function Tasks() {
           </div>
 
           {/* Filters */}
-          <div className="flex items-center gap-4 mt-4">
-            <div className="relative flex-1 max-w-md">
+          {/* Wraps below sm: the search field and the status select together
+              overflowed 375px, clipping the search placeholder to "Search ta". */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mt-4">
+            <div className="relative flex-1 sm:max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
               <input
                 type="text"
