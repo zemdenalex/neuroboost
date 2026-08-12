@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-08-12
 tags: [neuroboost, testing, responsive, coverage]
-weight: { importance: 4, connectivity: 4, access: 1, last_accessed: 2026-08-12 }
+weight: { importance: 4, connectivity: 5, access: 2, last_accessed: 2026-08-12 }
 sources:
   - command: "375px, вариант vertical: aside 246px, main padding-left 246.4px, полезная ширина 129px"
   - file: "web/src/components/Layout/Header/VerticalSidebar.tsx"

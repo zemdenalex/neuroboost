@@ -13,15 +13,16 @@
 - [[learning-fix-in-the-wrong-container-looks-like-a-broken-fix]] — "Починка, уехавшая не в тот контейнер, неотличима от неработающей — сначала установить, какой бинарь ответил"
 - [[learning-plan-named-two-files-invariant-lived-in-eight]] — "План назвал 2 файла, инвариант жил в 8 — границу работы нашёл охранный тест, а не чтение кода"
 - [[learning-tg-id-null-kills-reminders-silently]] — "У пользователя staging был tg_id = NULL — скан молча пропускал его, и вся цепочка выглядела зелёной"
+- [[learning-a-setting-that-reshapes-the-frame-is-its-own-coverage-axis]] — "Настройка, меняющая каркас страницы, — отдельная ось покрытия: развёртка по всем маршрутам её не видит"
 - [[learning-e2e-baseline-recorded-on-a-monday]] — "Базовая линия e2e снята в понедельник — во вторник две спеки упали и вскрыли настоящий баг мобильного календаря"
+- [[learning-getboundingclientrect-reports-layout-not-paint]] — "getBoundingClientRect отдаёт координаты раскладки, а не видимость: обрезанный скроллом элемент выглядит как перекрытый"
 - [[learning-goroutine-panic-takes-the-whole-api]] — `OccurrencesInRange` звала `expandRecurrence`, которая разыменовывает `*event.Rrule`
 - [[learning-bot-is-a-second-go-module]] — В репозитории два Go-модуля — `api-go/` и `bot/`. Ни `go build ./...`, ни `go test ./...`
-- [[learning-a-setting-that-reshapes-the-frame-is-its-own-coverage-axis]] — "Настройка, меняющая каркас страницы, — отдельная ось покрытия: развёртка по всем маршрутам её не видит"
 - [[learning-guard-floor-left-behind-becomes-a-hiding-place]] — "Порог охранного теста обязан расти вместе с измеряемым: отставший порог превращает запас в укрытие"
 - [[learning-snooze-sentinel-not-null]] — "Snooze пишет minutes_before = -1, а не NULL — и conflict target обязан повторять выражение индекса"
-- [[learning-getboundingclientrect-reports-layout-not-paint]] — "getBoundingClientRect отдаёт координаты раскладки, а не видимость: обрезанный скроллом элемент выглядит как перекрытый"
 - [[blocker-ssh-key-mismatch-deployment]] — "Снят: 193.104.57.79 — вообще не тот сервер. NeuroBoost живёт на 62.76.228.106"
 - [[learning-native-confirm-hides-the-r1-dialog]] — "Удаление события идёт через native window.confirm, и Playwright по умолчанию его отклоняет — падение читается как «диалог R1 сломан»"
+- [[learning-wider-viewport-is-not-a-wider-column]] — "Шире вьюпорт ≠ шире колонка: на /planning 1024px оказался теснее 768px, и брейкпоинт был выбран не там"
 - [[learning-a-check-outside-the-checklist-never-runs]] — "Проверка, описанная в разделе, но отсутствующая в исполняемом чек-листе, не выполняется никогда"
 - [[learning-compose-profile-hides-running-container]] — "docker compose profiles гасят сервис во ВСЕХ командах, включая down — уже запущенный контейнер остаётся жить"
 - [[learning-drag-flicker-comment-lied]] — "Мигание после drag'а починено: комментарий в коде врал, наблюдение показало delta = 0px"
@@ -30,8 +31,8 @@
 - [[entity-bot-runs-on-nl2]] — "Dev-бот живёт на nl-2 (185.214.10.107) и ходит в staging API по HTTPS — доставка доказана 10.08"
 - [[entity-server-topology]] — "Топология: prod и staging на одной машине 62.76.228.106; бот уезжает на nl-2 (Нидерланды)"
 - [[entity-e2e-playwright-harness]] — "Визуальная проверка: Playwright в репозитории, два вьюпорта, 6/6 зелёные против staging"
-- [[entity-p3-slice1-calendar-foundation]] — "P3 срез 1 собран: доступ к событиям и задачам даёт членство в календаре, а не колонка user_id"
 - [[entity-p3-slice2-calendar-crud]] — "P3 срез 2 собран: календари создаются, переименовываются и удаляются — но пока ничего не содержат"
+- [[entity-p3-slice1-calendar-foundation]] — "P3 срез 1 собран: доступ к событиям и задачам даёт членство в календаре, а не колонка user_id"
 - [[entity-neuroboost-docs-map]] — В проекте 27 markdown-документов на ~14 000 строк, и половина из них врёт о статусе.
 
 ## Work items

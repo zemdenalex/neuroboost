@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-08-12
 tags: [neuroboost, testing, frontend, method]
-weight: { importance: 4, connectivity: 4, access: 1, last_accessed: 2026-08-12 }
+weight: { importance: 4, connectivity: 4, access: 2, last_accessed: 2026-08-12 }
 sources:
   - command: "trace: label top=650 внутри scroller top=153 h=444 (bottom=597) — вне видимой области, но rect отдаёт 650"
   - file: "web/src/pages/Calendar/Calendar.tsx"

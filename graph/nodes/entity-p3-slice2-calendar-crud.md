@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-08-12
 tags: [neuroboost, p3, calendars, api, frontend, staging]
-weight: { importance: 5, connectivity: 6, access: 2, last_accessed: 2026-08-12 }
+weight: { importance: 5, connectivity: 6, access: 3, last_accessed: 2026-08-12 }
 sources:
   - command: "curl -s -o /dev/null -w '%{http_code}' https://dev.neuroboost.website/api/calendars  # 401, не 404"
   - command: "corepack pnpm exec playwright test  # 26 passed / 4 skipped против задеплоенного staging"
