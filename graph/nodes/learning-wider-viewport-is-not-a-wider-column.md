@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-08-12
 tags: [neuroboost, responsive, frontend, testing]
-weight: { importance: 4, connectivity: 4, access: 1, last_accessed: 2026-08-12 }
+weight: { importance: 4, connectivity: 3, access: 2, last_accessed: 2026-08-12 }
 sources:
   - command: "замер чипа /planning: 375→21px · 768→75px · 1024→63px · 1440→103px"
   - file: "web/src/pages/Planning/WeekOverviewGrid.tsx"
