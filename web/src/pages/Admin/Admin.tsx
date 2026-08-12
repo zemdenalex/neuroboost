@@ -220,8 +220,12 @@ export function Admin() {
       </header>
 
       <div className="p-6">
-        {/* Tabs */}
-        <div className="flex gap-2 mb-6">
+        {/* Tabs — scroll sideways rather than widening the page.
+            Five tabs in a non-wrapping row measured 624px wide, which on a 375px
+            phone pushed the whole document to 693px: the last tabs sat off-screen
+            with no way to reach them. shrink-0 keeps each tab at its natural size
+            inside the scroller instead of squashing the labels. */}
+        <div className="flex gap-2 mb-6 overflow-x-auto [&>button]:shrink-0">
           {[
             { id: 'overview' as const, label: 'Overview', icon: Activity },
             { id: 'backlog' as const, label: 'Backlog', icon: Bug },
@@ -295,9 +299,12 @@ export function Admin() {
           </div>
         )}
 
-        {/* Backlog Tab */}
+        {/* Backlog Tab.
+            overflow-hidden on the card keeps the table's sideways scroll inside
+            it instead of widening the document — the fixed column track adds up
+            to ~590px before the title column, which no phone can show. */}
         {selectedTab === 'backlog' && (
-          <div className="bg-zinc-900 border border-zinc-800 rounded-lg">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden">
             {/* Toolbar */}
             <div className="flex flex-wrap items-center gap-3 p-4 border-b border-zinc-800">
               {/* Search */}
@@ -366,8 +373,11 @@ export function Admin() {
               </button>
             </div>
 
+            {/* Headers and rows scroll together as one track, so a header never
+                drifts out of line with the column beneath it. */}
+            <div className="overflow-x-auto">
             {/* Column Headers */}
-            <div className="grid grid-cols-[40px_80px_1fr_100px_120px_80px_120px] gap-2 px-4 py-2 border-b border-zinc-800 text-xs text-zinc-500 font-mono uppercase">
+            <div className="grid grid-cols-[40px_80px_1fr_100px_120px_80px_120px] gap-2 px-4 py-2 border-b border-zinc-800 text-xs text-zinc-500 font-mono uppercase min-w-[760px]">
               <span />
               <SortHeader label="Type" col="type" current={sortBy} dir={sortDir} onSort={toggleSort} />
               <SortHeader label="Title" col="title" current={sortBy} dir={sortDir} onSort={toggleSort} />
@@ -383,7 +393,7 @@ export function Admin() {
             ) : feedback.length === 0 ? (
               <div className="p-8 text-center text-zinc-500">No items found</div>
             ) : (
-              <div className="divide-y divide-zinc-800">
+              <div className="divide-y divide-zinc-800 min-w-[760px]">
                 {feedback.map((item) => (
                   <BacklogRow
                     key={item.id}
@@ -397,6 +407,7 @@ export function Admin() {
                 ))}
               </div>
             )}
+            </div>
           </div>
         )}
 
