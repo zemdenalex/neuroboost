@@ -4,8 +4,8 @@
 - [[learning-merge-to-main-is-the-release]] — Тег — это метка постфактум, а не спусковой крючок: продакшен уезжает в момент
 - [[learning-prod-has-no-svc-routes]] — "Prod — это v0.4.9 без P2: /api/svc отдаёт 404, значит уведомления возможны только на staging"
 - [[learning-null-key-passes-a-unique-index]] — В Postgres два NULL не равны друг другу, поэтому уникальный индекс не защищает
-- [[learning-md2-lived-in-untested-producers]] — "MD2 жил в продюсерах, а не в обработчике: handleResizeComplete читал anchorMs/cursorMs, которые никто не записывал"
 - [[learning-a-test-that-cannot-fail-guards-nothing]] — "Зелёный тест — не свидетельство, пока не показано, что он краснеет: сломать охраняемое и посмотреть"
+- [[learning-md2-lived-in-untested-producers]] — "MD2 жил в продюсерах, а не в обработчике: handleResizeComplete читал anchorMs/cursorMs, которые никто не записывал"
 - [[learning-stale-comment-outlived-its-constraint]] — "Комментарий пережил своё ограничение и читался как действующий запрет — MD1 был открыт зря"
 - [[learning-green-because-skipped-proves-nothing]] — "«Зелено» из-за t.Skip ничего не доказывает — CI с DATABASE_URL уронил то, что локально проходило 12 задач подряд"
 - [[learning-digest-sent-empty-text]] — "Утренний дайджест уходил с пустым текстом — Telegram отбивал его каждое утро, следов кроме строки FAILED не было"
@@ -18,8 +18,8 @@
 - [[learning-e2e-baseline-recorded-on-a-monday]] — "Базовая линия e2e снята в понедельник — во вторник две спеки упали и вскрыли настоящий баг мобильного календаря"
 - [[learning-goroutine-panic-takes-the-whole-api]] — `OccurrencesInRange` звала `expandRecurrence`, которая разыменовывает `*event.Rrule`
 - [[learning-wider-viewport-is-not-a-wider-column]] — "Шире вьюпорт ≠ шире колонка: на /planning 1024px оказался теснее 768px, и брейкпоинт был выбран не там"
-- [[learning-bot-is-a-second-go-module]] — В репозитории два Go-модуля — `api-go/` и `bot/`. Ни `go build ./...`, ни `go test ./...`
 - [[learning-guard-floor-left-behind-becomes-a-hiding-place]] — "Порог охранного теста обязан расти вместе с измеряемым: отставший порог превращает запас в укрытие"
+- [[learning-bot-is-a-second-go-module]] — В репозитории два Go-модуля — `api-go/` и `bot/`. Ни `go build ./...`, ни `go test ./...`
 - [[learning-snooze-sentinel-not-null]] — "Snooze пишет minutes_before = -1, а не NULL — и conflict target обязан повторять выражение индекса"
 - [[learning-innerwidth-grows-with-the-defect-it-should-report]] — "window.innerWidth растёт вместе с дефектом: проверку переполнения сравнивать с шириной устройства, а не страницы"
 - [[blocker-ssh-key-mismatch-deployment]] — "Снят: 193.104.57.79 — вообще не тот сервер. NeuroBoost живёт на 62.76.228.106"
@@ -39,10 +39,10 @@
 ## Work items
 - [[workitem-p2-notifications-last-mile]] — Собрано 8 шагов из 10 (не 9, как говорил ROADMAP до 10.08), staging обновлён; но [hub]
 - [[workitem-release-v0410-gated-by-denis-report]] — PR #9 (`develop` → `main`, **124** коммитов на 10.08 08:00 — пересчитывать `git rev-list --count main..develop`, число росло всю ночь) открыт и НЕ смёржен; мерж и
-- [[workitem-bot-authtoken-never-set]] — `UserState.AuthToken` объявлен и читается семью вызовами API (`GetTasks`,
 - [[workitem-night-loop-2026-08-10]] — "Ночной автономный луп: промпт готов и не запущен; цель — пользоваться приложением утром"
 
 ## Other
+- [[workitem-bot-authtoken-never-set]] — "ЗАКРЫТО: бот не аутентифицировался — AuthToken читался 7 раз и не присваивался; починено 11.08 и подтверждено живым прогоном"
 - [[preference-rotate-after-it-works]] — "Предпочтение Дениса: ротировать утёкший секрет ПОСЛЕ того, как починка заработала, а не до"
 
 ## Proposed (unconfirmed)
