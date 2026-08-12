@@ -29,10 +29,15 @@ PostgreSQL + Telegram bot. "The calendar is truth; tasks exist to support schedu
 - Текущий чеклист приёмки Дениса — `docs/staging-check-v0.4.10.md`
 - Требования P1/P2 — `docs/superpowers/specs/2026-07-27-p1-task-quick-capture-design.md` и
   `docs/superpowers/specs/2026-07-27-p2-notifications-design.md`
-- Последнее состояние работы — `.remember/handoff-2026-07-28.md`
+- Требования P3 — `docs/superpowers/specs/2026-08-11-p3-shared-calendars-design.md`; что срезы
+  1–2 оставили срезу 3 — `docs/superpowers/plans/2026-08-11-p3-slice2-inherited-debt.md`
+- 🔴 **Последнее состояние работы — хвост `graph/log.md`**, он инжектится на старте сессии.
+  `.remember/handoff-2026-07-28.md` — это состояние на 28.07, а не «последнее»
 
-🔴 **Активно врут** — `README.md` (`### Next` зовёт делать замороженное), `PROGRESS.md`,
-`DEPLOY.md`, `docs/NeuroBoost_v0_4_0_Feature_List.md`. Вердикты по каждому — `DOCS-MAP.md` §3.
+🟢 **Активно врущих документов больше нет (12.08).** `README.md` починен; `PROGRESS.md`,
+`DEPLOY.md` и `docs/NeuroBoost_v0_4_0_Feature_List.md` безопасны шапкой-предупреждением в первых
+строках — они исторические артефакты, и переписывать их под сегодня значит стереть их ценность.
+Вердикт по каждому — `DOCS-MAP.md` §3. ⚠ Проверять шапку в самом файле: §3 уже один раз протух.
 
 ## Tech Stack
 
