@@ -204,7 +204,19 @@ export function Calendar() {
   }
 
   return (
-    <div className="flex h-screen bg-black text-white font-mono">
+    // Height is the viewport MINUS the app chrome, not the whole viewport.
+    //
+    // h-screen here is nested inside a <main> that already carries pt-14 for the
+    // fixed header and pb-16 for the mobile tab bar. Being an absolute 100vh, it
+    // ignored that padding and overhung the bottom by exactly the bar's height,
+    // so the last hour label sat underneath the tab bar and could not be read.
+    //
+    // The subtracted values mirror Layout's padding and are in rem, so they
+    // track the interface-size setting (which is why the bar measures 70.4px at
+    // 110%, not 64px). With the vertical-sidebar variant there is no top bar and
+    // the grid comes out 3.5rem shorter than it could be — visibly fine, and far
+    // better than overflowing.
+    <div className="flex h-[calc(100vh-3.5rem-4rem)] md:h-[calc(100vh-3.5rem)] bg-black text-white font-mono">
       {/* Task sidebar - hidden on mobile */}
       <div className="hidden lg:block">
         <TaskSidebar
