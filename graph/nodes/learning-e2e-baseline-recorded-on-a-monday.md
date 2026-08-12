@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-08-11
 tags: [neuroboost, e2e, calendar, mobile, testing]
-weight: { importance: 4, connectivity: 4, access: 1, last_accessed: 2026-08-11 }
+weight: { importance: 4, connectivity: 4, access: 2, last_accessed: 2026-08-12 }
 sources:
   - command: "corepack pnpm exec playwright test recurring-scope --project=mobile  # 2 failed, воспроизводимо"
   - command: "web/e2e-results/.../test-failed-1.png  # заголовок «Monday, August 10» при сегодня 11.08"
