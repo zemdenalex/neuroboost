@@ -62,10 +62,15 @@ func main() {
 		mux := http.NewServeMux()
 		mux.HandleFunc("/health", func(w http.ResponseWriter, _ *http.Request) {
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`{"status":"ok"}`))
+			_, _ = w.Write([]byte(`{"status":"ok"}`))
 		})
 		log.Printf("Health server on :%s", cfg.BotPort)
-		http.ListenAndServe(":"+cfg.BotPort, mux)
+		// Checked, not ignored: if the port is taken this returns immediately
+		// and the health endpoint silently never exists. Docker then reports the
+		// bot unhealthy while the log says nothing about why.
+		if err := http.ListenAndServe(":"+cfg.BotPort, mux); err != nil {
+			log.Printf("health server on :%s stopped: %v", cfg.BotPort, err)
+		}
 	}()
 
 	// Polling

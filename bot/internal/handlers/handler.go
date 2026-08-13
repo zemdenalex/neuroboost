@@ -169,7 +169,11 @@ func (h *Handler) HandleCallback(cb *tgbotapi.CallbackQuery) {
 	chatID := cb.Message.Chat.ID
 	data := cb.Data
 
-	h.bot.Send(tgbotapi.NewCallback(cb.ID, ""))
+	// Answering the callback is what stops the spinner on the user's button;
+	// failing silently here looks exactly like a hung bot.
+	if _, err := h.bot.Request(tgbotapi.NewCallback(cb.ID, "")); err != nil {
+		log.Printf("callback %s: answer failed: %s", cb.ID, logsafe.Redact(err))
+	}
 
 	// Notification buttons are handled BEFORE ensureAuth: they travel on the
 	// service token, not on a user JWT, so a failure to mint a user session must
@@ -203,20 +207,36 @@ func (h *Handler) HandleCallback(cb *tgbotapi.CallbackQuery) {
 	}
 }
 
+// send is the one place a message actually leaves the bot, so it is the one
+// place the error can be noticed.
+//
+// Every caller used to drop it. A user who blocked the bot, a message over
+// Telegram's length limit, malformed HTML — all produced silence in the chat
+// AND silence in the log, which makes "the bot did not answer" impossible to
+// diagnose after the fact. The notifier already got this right
+// (notifier.go:73); the interactive half did not.
+//
+// Redacted: a transport failure arrives as *url.Error carrying the API URL,
+// token included.
+func (h *Handler) send(chatID int64, msg tgbotapi.Chattable) {
+	if _, err := h.bot.Send(msg); err != nil {
+		log.Printf("send to chat %d failed: %s", chatID, logsafe.Redact(err))
+	}
+}
+
 func (h *Handler) sendText(chatID int64, text string) {
-	msg := tgbotapi.NewMessage(chatID, text)
-	h.bot.Send(msg)
+	h.send(chatID, tgbotapi.NewMessage(chatID, text))
 }
 
 func (h *Handler) sendHTML(chatID int64, text string) {
 	msg := tgbotapi.NewMessage(chatID, text)
 	msg.ParseMode = "HTML"
-	h.bot.Send(msg)
+	h.send(chatID, msg)
 }
 
 func (h *Handler) sendHTMLWithKeyboard(chatID int64, text string, kb tgbotapi.InlineKeyboardMarkup) {
 	msg := tgbotapi.NewMessage(chatID, text)
 	msg.ParseMode = "HTML"
 	msg.ReplyMarkup = kb
-	h.bot.Send(msg)
+	h.send(chatID, msg)
 }
