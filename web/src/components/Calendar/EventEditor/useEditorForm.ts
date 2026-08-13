@@ -42,7 +42,10 @@ export interface EditorFormActions {
 
 export function useEditorForm(
   draft: NbEvent | null,
-  range: { start: Date; end: Date } | null,
+  // `allDay` is part of the prop this hook is fed (editor.types.ts:7); the
+  // signature used to omit it, and the read below was cast to `any` to
+  // compensate. Widened here so the cast is unnecessary.
+  range: { start: Date; end: Date; allDay?: boolean } | null,
   timezone: string,
   onCreated: () => void,
   onPatched: () => void,
@@ -136,7 +139,7 @@ export function useEditorForm(
       setStartDateLocal(start.date);
       setEndDateLocal(end.date);
       setValidation(createInitialValidation(start.time, end.time));
-      const rangeAllDay = !!(range as any).allDay;
+      const rangeAllDay = !!range.allDay;
       const looksAllDay = start.time === '00:00' && end.time === '00:00' && range.end.getTime() > range.start.getTime();
       setIsAllDay(rangeAllDay || looksAllDay);
     }

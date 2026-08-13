@@ -35,7 +35,6 @@ import {
   ThumbsUp,
   ThumbsDown,
   Eye,
-  X,
   Save,
   Loader2,
   Heart,

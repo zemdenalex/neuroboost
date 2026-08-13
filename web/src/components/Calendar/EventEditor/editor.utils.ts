@@ -106,7 +106,7 @@ export function validateDateRange(
   
   const isCrossMidnight = startDate === endDate && endTime < startTime;
   
-  let startDt = localDateTimeToUtc(startDate, startTime, timezone);
+  const startDt = localDateTimeToUtc(startDate, startTime, timezone);
   let endDt = localDateTimeToUtc(endDate, endTime, timezone);
   
   // Handle cross-midnight on same date

@@ -153,7 +153,5 @@ export interface WeekGridCallbacks {
 export interface WeekGridProps extends WeekGridCallbacks {
   events: NbEvent[];
   currentWeekOffset?: number;
-  deadlineTasks?: Task[];
-  showDeadlineTasks?: boolean;
   timezone: string; // User's timezone from settings
 }

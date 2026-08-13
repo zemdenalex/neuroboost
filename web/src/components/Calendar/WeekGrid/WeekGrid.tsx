@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { MOBILE_BREAKPOINT, TABLET_BREAKPOINT, ALL_DAY_HEIGHT, DAY_HEADER_HEIGHT, DAY_MS } from './weekgrid.constants';
 import { getMondayUtcMs, getMidnightUtcMs, utcToLocalMinutes, generateDays, processEventsForWeek } from './weekgrid.utils';
-import type { WeekGridProps, TouchStart, DayInfo, ProcessedEvent, NbEvent } from './weekgrid.types';
+import type { WeekGridProps, TouchStart, DayInfo, ProcessedEvent } from './weekgrid.types';
 import { WeekHeader } from './WeekHeader';
 import { AllDaySection } from './AllDaySection';
 import { DayColumn } from './DayColumn';
@@ -12,8 +12,6 @@ import { initialMobileDayOffset } from '../../../lib/calendar/mobileDayOffset';
 export function WeekGrid({
   events,
   currentWeekOffset = 0,
-  deadlineTasks = [],
-  showDeadlineTasks = false,
   timezone,
   onCreate,
   onMoveOrResize,

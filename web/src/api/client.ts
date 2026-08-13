@@ -67,6 +67,17 @@ export function getAuthToken(): string | null {
   return getStoredToken();
 }
 
+/**
+ * Narrows an unknown JSON value to an indexable object.
+ *
+ * `typeof null === 'object'` in JavaScript, so the null check is load-bearing:
+ * without it a `null` body would pass and every property read below would throw
+ * instead of falling through to the default message.
+ */
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
 // Base request function with auth
 async function request<T>(
   method: string,
@@ -99,21 +110,26 @@ async function request<T>(
     return {} as T;
   }
 
-  const payload: any = await response.json().catch(() => null);
+  // `unknown`, not `any`: this is the funnel every response passes through, so
+  // an `any` here silently disables checking for the whole client. The reads
+  // below narrow explicitly instead.
+  const payload: unknown = await response.json().catch(() => null);
+  const envelope = isRecord(payload) ? payload : undefined;
+  const errorField = envelope?.error;
 
   if (!response.ok) {
     const msg =
-      payload?.error?.message ??
-      payload?.message ??
-      (typeof payload?.error === 'string' ? payload.error : null) ??
+      (isRecord(errorField) && typeof errorField.message === 'string' ? errorField.message : null) ??
+      (typeof envelope?.message === 'string' ? envelope.message : null) ??
+      (typeof errorField === 'string' ? errorField : null) ??
       'Request failed';
 
-    const code = typeof payload?.error?.code === 'string' ? payload.error.code : undefined;
-    throw new ApiError(typeof msg === 'string' ? msg : JSON.stringify(msg), code, payload?.error);
+    const code = isRecord(errorField) && typeof errorField.code === 'string' ? errorField.code : undefined;
+    throw new ApiError(msg, code, errorField);
   }
 
-  if (payload && typeof payload === 'object' && 'data' in payload) {
-    return payload.data as T;
+  if (envelope && 'data' in envelope) {
+    return envelope.data as T;
   }
 
   return payload as T;

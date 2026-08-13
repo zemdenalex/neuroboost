@@ -8,8 +8,17 @@ type AuthMode = 'login' | 'register'
 
 declare global {
   interface Window {
-    onTelegramAuth: (user: TelegramUser) => void
+    // Optional because the cleanup below deletes it: the Telegram widget calls
+    // this global by name (`data-onauth`), so it exists only while the widget
+    // is mounted. Declared as required, `delete window.onTelegramAuth` does not
+    // typecheck, which is why that line used to be cast to `any`.
+    onTelegramAuth?: (user: TelegramUser) => void
   }
+}
+
+/** Shape of the location state React Router carries through a redirect to /login. */
+interface RedirectState {
+  from?: { pathname?: string }
 }
 
 interface TelegramUser {
@@ -35,7 +44,7 @@ export function Login() {
   const [name, setName] = useState('')
   const [localError, setLocalError] = useState<string | null>(null)
 
-  const from = (location.state as any)?.from?.pathname || '/calendar'
+  const from = (location.state as RedirectState | null)?.from?.pathname || '/calendar'
 
   // Load Telegram widget
   useEffect(() => {
@@ -71,7 +80,7 @@ export function Login() {
     }
 
     return () => {
-      delete (window as any).onTelegramAuth
+      delete window.onTelegramAuth
     }
   }, [loginWithTelegram, navigate, from])
 

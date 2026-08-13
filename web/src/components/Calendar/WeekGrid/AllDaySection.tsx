@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { ALL_DAY_HEIGHT, DAY_MS } from './weekgrid.constants';
 import type { ProcessedEvent, DragState, NbEvent, DayInfo } from './weekgrid.types';
-import { getTimezoneOffsetMs, formatDayLabel, formatAllDayGhostLabel } from './weekgrid.utils';
+import { getTimezoneOffsetMs, formatAllDayGhostLabel } from './weekgrid.utils';
 
 interface AllDaySectionProps {
   days: DayInfo[];

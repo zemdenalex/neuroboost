@@ -4,7 +4,6 @@ import { useAuthContext } from '../../contexts/AuthContext'
 import { dateLocale } from '../../utils/date'
 import { resolveDisplayName } from '../../lib/profile/resolveDisplayName'
 import {
-  User,
   Mail,
   Calendar,
   Award,
