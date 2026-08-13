@@ -119,13 +119,51 @@ export async function applySession(page: Page, session: Session, { skipOnboardin
   )
 }
 
+/**
+ * Pins the account's interface language to English for the run.
+ *
+ * Specs address controls by their accessible names — "Edit Task", "Add", "New
+ * reminder offset" — which are translated. The language does NOT come from
+ * localStorage: AuthContext reads `locale` off the user profile and applies it
+ * over anything a spec seeded, and the column defaults to 'ru'. So a seeded
+ * locale is a control that cannot work, and it looked like it did only because
+ * nobody ran these specs in CI.
+ *
+ * This failed for real on the first CI run (13.08): staging rendered
+ * "Редактировать задачу" while the spec waited for "Edit Task".
+ *
+ * ⚠ This writes to the test account's settings on whatever environment
+ * E2E_BASE_URL points at. That is staging, whose database is overwritten from
+ * production on every deploy-dev, so the change does not accumulate — but if
+ * E2E_TG_ID is a real person's account, their staging UI will be in English.
+ */
+async function pinLocaleToEnglish(token: string): Promise<void> {
+  const ctx = await playwrightRequest.newContext()
+  try {
+    const res = await ctx.patch(`${API_BASE}/api/auth/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+      data: { locale: 'en' },
+    })
+    if (!res.ok()) {
+      // Loud, not silent: if this ever stops working the specs would fail later
+      // with an unrelated-looking "element not found", which is the exact
+      // confusion this function exists to prevent.
+      throw new Error(`could not pin locale to en: ${res.status()} ${await res.text()}`)
+    }
+  } finally {
+    await ctx.dispose()
+  }
+}
+
 export const test = base.extend<{ authedPage: Page; session: Session }>({
   session: async ({}, use, testInfo) => {
     if (!process.env.E2E_TG_BOT_TOKEN || !process.env.E2E_TG_ID) {
       testInfo.skip(true, 'E2E_TG_BOT_TOKEN / E2E_TG_ID not set — authenticated specs skipped')
       return
     }
-    await use(await mintSession())
+    const session = await mintSession()
+    await pinLocaleToEnglish(session.token)
+    await use(session)
   },
 
   authedPage: async ({ page, session }, use) => {

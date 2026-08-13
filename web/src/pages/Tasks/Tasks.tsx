@@ -576,6 +576,15 @@ export default function Tasks() {
                               // readers announced it as an unlabelled button.
                               title={t('editTask')}
                               aria-label={t('editTask')}
+                              // Addressable by something that does not change
+                              // with the interface language. The accessible
+                              // name is the right thing for a screen reader and
+                              // the wrong thing for a test: e2e looked for
+                              // "Edit Task" and staging rendered "Редактировать
+                              // задачу", because the account's language comes
+                              // from server settings and outranks anything the
+                              // spec seeds into localStorage.
+                              data-testid="task-edit"
                               className="p-1.5 text-zinc-500 hover:text-white hover:bg-zinc-700 rounded transition-colors"
                             >
                               <Edit2 className="w-4 h-4" />

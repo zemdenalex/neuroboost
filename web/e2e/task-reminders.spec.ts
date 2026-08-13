@@ -66,12 +66,17 @@ test.describe('task reminders', () => {
     // Innermost element holding BOTH the title and an edit button: filtering on
     // the title alone matches every ancestor up to <body>, and .last() of those
     // is the title's own wrapper, which contains no button.
+    //
+    // Addressed by testid rather than by accessible name: the name is
+    // translated, and the account's language arrives from server settings,
+    // which outrank the locale seeded above. This spec failed its first CI run
+    // for exactly that reason — staging rendered "Редактировать задачу".
     const row = authedPage
       .locator('div')
       .filter({ hasText: title })
-      .filter({ has: authedPage.getByRole('button', { name: 'Edit Task' }) })
+      .filter({ has: authedPage.getByTestId('task-edit') })
       .last()
-    await row.getByRole('button', { name: 'Edit Task' }).click()
+    await row.getByTestId('task-edit').click()
 
     const offsetInput = authedPage.getByLabel('New reminder offset')
     await expect(
