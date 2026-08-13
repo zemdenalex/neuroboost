@@ -200,6 +200,11 @@ jobs:
     needs: [docker]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
+    # Same reasoning as deploy-dev, on the machine where it matters more.
+    concurrency:
+      group: deploy-prod
+      cancel-in-progress: false
+
     steps:
       - name: Deploy to production
         uses: appleboy/ssh-action@v1
@@ -245,6 +250,16 @@ jobs:
     runs-on: ubuntu-latest
     needs: [docker]
     if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+
+    # Serialise, do not cancel. Two runs of this job collided on 13.08: one tore
+    # the dev stack down while the other was recreating it, and the deploy died
+    # on "container name /neuroboost-dev-db is already in use" — leaving staging
+    # down rather than merely stale. cancel-in-progress would be worse: killing
+    # a deploy mid-teardown leaves the host half-dismantled with nobody
+    # finishing the job.
+    concurrency:
+      group: deploy-dev
+      cancel-in-progress: false
 
     steps:
       - name: Deploy to dev
@@ -310,6 +325,14 @@ jobs:
     runs-on: ubuntu-latest
     needs: [deploy-dev]
     if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+
+    # These specs share one staging environment and one test account: they pin
+    # that account's locale and create tasks under it. Two runs at once would
+    # interfere the same way the deploys did, only quietly — as an unrelated
+    # "element not found" rather than an obvious conflict.
+    concurrency:
+      group: e2e-staging
+      cancel-in-progress: false
 
     steps:
       - uses: actions/checkout@v5
