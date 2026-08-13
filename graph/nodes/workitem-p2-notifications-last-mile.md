@@ -4,7 +4,7 @@ title: P2 «уведомления приходят» — упирается в 
 type: work-item
 status: open
 tags: [neuroboost, notifications, telegram, deploy, blocked]
-weight: { importance: 5, connectivity: 17, access: 3, last_accessed: 2026-08-10 }
+weight: { importance: 5, connectivity: 20, access: 3, last_accessed: 2026-08-13 }
 created: 2026-08-10
 sources:
   - file: "docs/ROADMAP.md — секция «P2 — что построено»"
@@ -32,10 +32,16 @@ links:
 уведомление физически не доедет до Telegram, пока не заданы `SERVICE_TOKEN` и бот не переехал
 за границу.
 
-🔴 **Шаг 7 (кнопки и callback'и в уведомлении, snooze) не построен** — проверено 10.08: под
-`/api/svc` в `cmd/api/main.go` только `notifications/pending` и `{id}/ack`, ручки
-`/notifications/action` нет, нотифаер шлёт plain text. «1–9» родилось из коммита `7c282c5
-docs: P2 steps 8-9 shipped`: UI-шаги сделали вперёд седьмого, а документ записал диапазоном.
+✅ **Шаг 7 ПОСТРОЕН 11.08 — эта строка исправлена 13.08.** На 10.08 под `/api/svc` были только
+`notifications/pending` и `{id}/ack`, нотифаер слал plain text; сейчас есть
+`POST /notifications/action` (`cmd/api/main.go:111`), обработчик `reminders/action.go`, кнопки
+на стороне бота `bot/internal/notifier/callback.go`, snooze — sentinel `minutes_before = -1`.
+**Подтверждено живым нажатием Дениса 13.08 в 01:09**: snooze ответил «Напомню через 10 минут»,
+ack ответил. Путь человек → бот → API пройден.
+
+⚠️ Урок из этой строки сохраняется: «1–9» родилось из коммита `7c282c5 docs: P2 steps 8-9
+shipped` — UI-шаги сделали вперёд седьмого, а документ записал диапазоном, и диапазон читался
+как «всё до девятого готово».
 
 1. 🔴 **`SERVICE_TOKEN`** (`openssl rand -hex 32`) — **одинаковый** на API и на боте. Без него
    `/api/svc` отдаёт 503 (проверено на staging), нотифаер пишет «disabled» и выходит. В файлы
@@ -67,8 +73,9 @@ docs: P2 steps 8-9 shipped`: UI-шаги сделали вперёд седьм�
 - 🔴 Дайджест вставлялся с **пустым текстом**, Telegram отбивал его каждое утро
   ([[learning-digest-sent-empty-text]]).
 
-🔴 **Шаг 7 (кнопки, snooze) по-прежнему не построен** — уведомление приходит plain text.
-Это единственный незакрытый шаг, и он остаётся честным «8 из 10».
+✅ **Шаг 7 закрыт 11.08, проверен нажатием 13.08** (см. выше). Тогда же вскрылось, что текстом
+уведомления был **голый заголовок** — форматтера не существовало; починено `reminders/text.go`
+([[learning-sent-measures-delivery-not-usefulness]]).
 
 ⚠️ Всё вышесказанное — про **staging**. В проде роутов `/api/svc` нет вовсе
 ([[learning-prod-has-no-svc-routes]]), поэтому уведомления там появятся только вместе с
