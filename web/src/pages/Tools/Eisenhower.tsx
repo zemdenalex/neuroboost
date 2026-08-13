@@ -4,32 +4,11 @@ import { Grid2X2, RefreshCw, AlertCircle } from 'lucide-react'
 import { getTasks, updateTask } from '../../api'
 import type { Task } from '../../types'
 import { PRIORITY_DOT_COLORS } from '../../lib/priority'
+// The matrix rule lives in a leaf module so it can be tested; this page
+// renders it. Do not re-declare it here — two copies would drift.
+import { priorityToQuadrant, QUADRANT_TO_PRIORITY, type QuadrantId } from '../../lib/tools/eisenhower'
 
 // ─── Priority → Quadrant mapping ─────────────────────────────────────────────
-
-type QuadrantId = 'q1' | 'q2' | 'q3' | 'q4'
-
-// Priority 1 (Emergency) → Q1 Do First
-// Priority 2 (ASAP) → Q1 Do First
-// Priority 3 (Normal) → Q2 Schedule
-// Priority 4 (Low) → Q3 Delegate
-// Priority 5 (If Possible) → Q4 Eliminate
-// Priority 0 (Buffer) → Q4 Eliminate
-function priorityToQuadrant(priority: number): QuadrantId {
-  if (priority === 1 || priority === 2) return 'q1'
-  if (priority === 3) return 'q2'
-  if (priority === 4) return 'q3'
-  return 'q4'
-}
-
-// What priority value to assign when dropped into a quadrant
-// We pick the most representative priority for each quadrant
-const QUADRANT_TO_PRIORITY: Record<QuadrantId, number> = {
-  q1: 1,
-  q2: 3,
-  q3: 4,
-  q4: 5,
-}
 
 // ─── Quadrant definitions ─────────────────────────────────────────────────────
 

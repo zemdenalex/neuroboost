@@ -2,9 +2,13 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Plus, Settings, X, GripVertical, Clock, Calendar } from 'lucide-react'
 import { listTasks, createTask, updateTask } from '../../api/tasks'
-import type { Task, TaskStatus } from '../../api/tasks'
+import type { Task } from '../../api/tasks'
 import { PRIORITY_DOT_COLORS } from '../../lib/priority'
 import { describeDueDate, dueDateColorClass, formatDueDateLabel } from '../../lib/dueDate'
+// Column rules live in a leaf module so they can be tested; this page renders
+// them. KanbanColumnId stays derived from COLUMN_DEFS below, so if the two
+// ever disagree the compiler says so instead of the board quietly misfiling.
+import { COLUMN_TO_STATUS, statusToColumn } from '../../lib/tools/kanban'
 
 // ─── Column definitions ──────────────────────────────────────────────────────
 
@@ -17,28 +21,6 @@ const COLUMN_DEFS = [
 ] as const
 
 type KanbanColumnId = typeof COLUMN_DEFS[number]['id']
-
-// Map KanbanColumnId → TaskStatus accepted by backend
-// INBOX is treated as TODO on creation; SCHEDULED is set by backend, but we allow manual drag
-const COLUMN_TO_STATUS: Record<KanbanColumnId, TaskStatus> = {
-  INBOX: 'TODO',
-  TODO: 'TODO',
-  IN_PROGRESS: 'IN_PROGRESS',
-  SCHEDULED: 'SCHEDULED',
-  DONE: 'DONE',
-}
-
-// Map TaskStatus → which column to render it in
-function statusToColumn(status: TaskStatus): KanbanColumnId {
-  switch (status) {
-    case 'TODO': return 'TODO'
-    case 'IN_PROGRESS': return 'IN_PROGRESS'
-    case 'SCHEDULED': return 'SCHEDULED'
-    case 'DONE': return 'DONE'
-    case 'CANCELLED': return 'DONE'
-    default: return 'TODO'
-  }
-}
 
 // ─── Priority dot ─────────────────────────────────────────────────────────────
 // Colors come from lib/priority (shared across Tasks, calendar, sidebar, Eisenhower).
