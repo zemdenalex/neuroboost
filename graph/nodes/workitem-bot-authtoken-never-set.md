@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-08-13
 tags: [neuroboost, bot, auth, closed]
-weight: { importance: 3, connectivity: 5, access: 2, last_accessed: 2026-08-13 }
+weight: { importance: 3, connectivity: 5, access: 3, last_accessed: 2026-08-13 }
 sources:
   - file: "bot/internal/handlers/handler.go:77 (ensureAuth)"
   - command: "git log -S ensureAuth → 38e6bec (2026-08-11)"

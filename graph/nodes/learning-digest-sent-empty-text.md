@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-08-10
 tags: [neuroboost, telegram, reminders, silent-failure, digest]
-weight: { importance: 5, connectivity: 6, access: 2, last_accessed: 2026-08-11 }
+weight: { importance: 5, connectivity: 7, access: 3, last_accessed: 2026-08-13 }
 sources:
   - command: "docker logs neuroboost-dev-bot | grep notifier  # → send to 495598685 failed: Bad Request: message text is empty"
   - command: "api-go/internal/reminders/scan.go — insertDigest вставлял message = '' (до 52683de)"
