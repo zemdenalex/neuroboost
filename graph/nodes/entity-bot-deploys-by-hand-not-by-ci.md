@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-08-13
 tags: [neuroboost, bot, deploy, infra]
-weight: { importance: 5, connectivity: 4, access: 3, last_accessed: 2026-08-13 }
+weight: { importance: 5, connectivity: 4, access: 4, last_accessed: 2026-08-13 }
 sources:
   - command: "ssh 62.76.228.106 docker ps → api/db/web, контейнера бота НЕТ"
   - command: "ssh 185.214.10.107 docker ps → neuroboost-dev-bot, neuroboost-prod-bot (Up 2 days)"

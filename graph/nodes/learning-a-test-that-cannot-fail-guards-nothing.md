@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-08-12
 tags: [neuroboost, testing, review, method]
-weight: { importance: 5, connectivity: 10, access: 3, last_accessed: 2026-08-13 }
+weight: { importance: 5, connectivity: 11, access: 4, last_accessed: 2026-08-13 }
 sources:
   - command: "swap ErrCalendarNotFound/ErrNotCalendarOwner arms → FAIL ровно 2 теста; restore → ok"
   - file: "api-go/internal/calendars/handlers_test.go"
