@@ -6,6 +6,7 @@ package notifier
 
 import (
 	"context"
+	"github.com/zemdenalex/neuroboost-bot/internal/logsafe"
 	"log"
 	"runtime/debug"
 	"time"
@@ -70,7 +71,11 @@ func deliverBatch(bot *tgbotapi.BotAPI, client *api.Client, serviceToken string)
 		reason := ""
 		if sendErr != nil {
 			reason = sendErr.Error()
-			log.Printf("notifier: send to %d failed: %v", n.TgID, sendErr)
+			// Redacted: sendErr is a *url.Error from the Telegram client on a
+			// transport failure, and its message carries the API URL — token
+			// included. This ticks once a minute, so an outage used to write
+			// the token to the log every sixty seconds.
+			log.Printf("notifier: send to %d failed: %s", n.TgID, logsafe.Redact(sendErr))
 		}
 		// Ack even on failure. An un-acked row is retried forever, so a user
 		// who blocked the bot would generate one failed send every minute

@@ -2,11 +2,13 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"net/url"
 	"os"
 	"os/signal"
+	"runtime/debug"
 	"syscall"
 	"time"
 
@@ -15,6 +17,7 @@ import (
 	"github.com/zemdenalex/neuroboost-bot/internal/api"
 	"github.com/zemdenalex/neuroboost-bot/internal/config"
 	"github.com/zemdenalex/neuroboost-bot/internal/handlers"
+	"github.com/zemdenalex/neuroboost-bot/internal/logsafe"
 	"github.com/zemdenalex/neuroboost-bot/internal/notifier"
 	"github.com/zemdenalex/neuroboost-bot/internal/state"
 )
@@ -38,14 +41,14 @@ func main() {
 		}
 		bot, err = tgbotapi.NewBotAPIWithClient(cfg.TelegramToken, tgbotapi.APIEndpoint, httpClient)
 		if err != nil {
-			log.Fatalf("Failed to create bot with proxy: %v", err)
+			log.Fatalf("Failed to create bot with proxy: %s", logsafe.Redact(err))
 		}
 		log.Printf("Using proxy: %s", proxyURL.Host)
 	} else {
 		var err error
 		bot, err = tgbotapi.NewBotAPI(cfg.TelegramToken)
 		if err != nil {
-			log.Fatal("Failed to create bot (set TELEGRAM_PROXY if Telegram is blocked): ", err)
+			log.Fatal("Failed to create bot (set TELEGRAM_PROXY if Telegram is blocked): ", logsafe.Redact(err))
 		}
 	}
 	log.Printf("Bot authorized as @%s", bot.Self.UserName)
@@ -89,14 +92,43 @@ func main() {
 	for {
 		select {
 		case update := <-updates:
-			if update.Message != nil {
-				h.HandleMessage(update.Message)
-			} else if update.CallbackQuery != nil {
-				h.HandleCallback(update.CallbackQuery)
-			}
+			// 🔴 One update must never be able to kill the bot for everyone.
+			//
+			// This loop is the whole process: a panic in any handler unwinds
+			// through here and terminates it, and the bot is deployed BY HAND
+			// off a separate host, so "it restarts" is not a comfort — someone
+			// has to notice first. gotcha 9 in CLAUDE.md says every background
+			// goroutine needs a recover; this loop is the goroutine whose panic
+			// takes down everything, and until 14.08 it was the one place
+			// without one.
+			//
+			// A nil CallbackQuery.Message was the known way in (Telegram omits
+			// it for old messages) and is now checked at its own door too. This
+			// guard is for the ones nobody has found yet.
+			handleUpdate(h, update)
 		case <-ctx.Done():
 			log.Println("Bot stopped")
 			return
 		}
+	}
+}
+
+// handleUpdate routes one update and contains any panic it causes.
+//
+// Deliberately NOT logging the panic value through a plain %v: a panic raised
+// from inside the Telegram client can carry an error whose message holds the
+// bot token.
+func handleUpdate(h *handlers.Handler, update tgbotapi.Update) {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("panic while handling update %d: %s\n%s",
+				update.UpdateID, logsafe.String(fmt.Sprint(r)), debug.Stack())
+		}
+	}()
+
+	if update.Message != nil {
+		h.HandleMessage(update.Message)
+	} else if update.CallbackQuery != nil {
+		h.HandleCallback(update.CallbackQuery)
 	}
 }

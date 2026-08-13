@@ -10,6 +10,7 @@ import (
 	"github.com/zemdenalex/neuroboost-bot/internal/api"
 	"github.com/zemdenalex/neuroboost-bot/internal/auth"
 	"github.com/zemdenalex/neuroboost-bot/internal/config"
+	"github.com/zemdenalex/neuroboost-bot/internal/logsafe"
 	"github.com/zemdenalex/neuroboost-bot/internal/notifier"
 	"github.com/zemdenalex/neuroboost-bot/internal/state"
 )
@@ -146,6 +147,25 @@ func (h *Handler) HandleMessage(msg *tgbotapi.Message) {
 }
 
 func (h *Handler) HandleCallback(cb *tgbotapi.CallbackQuery) {
+	// 🔴 CallbackQuery.Message is OPTIONAL in the Bot API. Telegram omits it
+	// when the message is too old, and for callbacks from inline messages. This
+	// line dereferenced it unconditionally, so anyone pressing a button under
+	// an old reminder took the whole process down — for every user, on a host
+	// where the bot is redeployed by hand.
+	//
+	// Note the asymmetry that made it easy to miss: cb.From IS nil-checked, two
+	// call sites below.
+	//
+	// The callback still has to be answered. Without that, Telegram leaves the
+	// spinner turning on the user's button forever, which reads as a hung bot
+	// rather than as a stale message.
+	if cb.Message == nil {
+		if _, err := h.bot.Request(tgbotapi.NewCallback(cb.ID, "This message is too old — open the bot and try again")); err != nil {
+			log.Printf("callback %s: could not answer a message-less callback: %s", cb.ID, logsafe.Redact(err))
+		}
+		return
+	}
+
 	chatID := cb.Message.Chat.ID
 	data := cb.Data
 
