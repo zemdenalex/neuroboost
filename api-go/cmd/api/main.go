@@ -86,16 +86,25 @@ func main() {
 	statusHandler := status.NewHandler(db)
 	r.Get("/api/health", statusHandler.HealthHandler)
 
-	// Auth routes (no JWT required)
+	// Auth and public feedback (no JWT required).
+	//
+	// Grouped rather than hung on the root router so the body limit can reach
+	// them: these four decode a request body BEFORE any authentication, which
+	// makes them the cheapest way to hand the process an unbounded allocation.
+	// The API and the reminder worker share this process.
 	authHandler := a.NewHandler(db, cfg)
-	r.Post("/api/auth/telegram", authHandler.TelegramLogin)
-	r.Post("/api/auth/register", authHandler.Register)
-	r.Post("/api/auth/login", authHandler.Login)
-	r.Post("/api/auth/logout", authHandler.Logout)
-
-	// Feedback - create is public (with optional auth)
 	feedbackHandler := f.NewHandler(db)
-	r.Post("/api/feedback", feedbackHandler.Create)
+	r.Group(func(pr chi.Router) {
+		pr.Use(middleware.BodyLimit(middleware.PublicBodyLimit))
+
+		pr.Post("/api/auth/telegram", authHandler.TelegramLogin)
+		pr.Post("/api/auth/register", authHandler.Register)
+		pr.Post("/api/auth/login", authHandler.Login)
+		pr.Post("/api/auth/logout", authHandler.Logout)
+
+		// Feedback - create is public (with optional auth)
+		pr.Post("/api/feedback", feedbackHandler.Create)
+	})
 
 	// Service endpoints for the notifier bot. Guarded by a shared secret, NOT
 	// by network topology — the notifier runs on a foreign host, so this is a
@@ -103,6 +112,7 @@ func main() {
 	// flood of bad-token requests is cheap to reject.
 	r.Route("/api/svc", func(sr chi.Router) {
 		sr.Use(rem.RateLimitMiddleware())
+		sr.Use(middleware.BodyLimit(middleware.ServiceBodyLimit))
 		sr.Use(rem.ServiceTokenMiddleware(cfg.ServiceToken))
 		sr.Get("/notifications/pending", rem.PendingHandler)
 		sr.Post("/notifications/{id}/ack", rem.AckHandler)
@@ -114,6 +124,7 @@ func main() {
 	// Protected routes (JWT required)
 	r.Group(func(r chi.Router) {
 		r.Use(middleware.JWTMiddleware(cfg.JWTSecret))
+		r.Use(middleware.BodyLimit(middleware.AuthedBodyLimit))
 
 		// Auth - get and update current user
 		r.Get("/api/auth/me", authHandler.Me)
@@ -180,9 +191,22 @@ func main() {
 		r.Patch("/api/calendars/{id}", calendars.UpdateHandler)
 		r.Delete("/api/calendars/{id}", calendars.DeleteHandler)
 
-		// Export / Import
+		// Export (Import lives in its own group below — see there)
 		r.Get("/api/export", exp.ExportHandler)
-		r.Post("/api/import", exp.ImportHandler)
+	})
+
+	// POST /api/import, deliberately outside the group above.
+	//
+	// Its body is a whole user export — every event and task with descriptions
+	// and tags — so the 1 MiB that fits the rest of the API would reject a
+	// normal import. It cannot simply add a second, larger BodyLimit inside
+	// that group either: chi runs the group's middleware first, so the 1 MiB
+	// cap would already have wrapped the body and the wider limit would apply
+	// to an already-truncated stream. Same JWT, its own ceiling.
+	r.Group(func(ir chi.Router) {
+		ir.Use(middleware.JWTMiddleware(cfg.JWTSecret))
+		ir.Use(middleware.BodyLimit(middleware.ImportBodyLimit))
+		ir.Post("/api/import", exp.ImportHandler)
 	})
 
 	// Start server

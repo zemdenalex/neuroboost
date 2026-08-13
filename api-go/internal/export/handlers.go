@@ -135,7 +135,10 @@ func ImportHandler(w http.ResponseWriter, r *http.Request) {
 
 	var req ImportRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		util.RespondError(w, http.StatusBadRequest, "INVALID_REQUEST", "Invalid request body")
+		// 413 when the export simply exceeded the ceiling, 400 when the JSON is
+		// actually broken. Answering both with 400 is how a too-large import
+		// gets reported as malformed and the user learns nothing.
+		util.RespondDecodeError(w, err)
 		return
 	}
 
