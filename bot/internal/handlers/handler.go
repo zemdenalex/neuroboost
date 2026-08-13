@@ -132,6 +132,8 @@ func (h *Handler) HandleMessage(msg *tgbotapi.Message) {
 		h.startNoteFlow(chatID)
 	case "➕ New Task":
 		h.startNewTaskFlow(chatID)
+	case "📅 New Event":
+		h.startNewEventFlow(chatID)
 	case "🗓 Calendar":
 		h.handleCalendar(chatID, time.Now())
 	case "📊 Stats":
@@ -176,6 +178,8 @@ func (h *Handler) HandleCallback(cb *tgbotapi.CallbackQuery) {
 		h.handleTaskDelete(chatID, strings.TrimPrefix(data, "task_delete_"))
 	case strings.HasPrefix(data, "priority_"):
 		h.handlePrioritySelect(chatID, data)
+	case strings.HasPrefix(data, "when_"):
+		h.handleWhenSelect(chatID, data)
 	}
 }
 

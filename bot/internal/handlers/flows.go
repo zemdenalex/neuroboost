@@ -37,6 +37,8 @@ func (h *Handler) handleFlowInput(chatID int64, text string) {
 		h.handleNoteFlow(chatID, text)
 	case "new_task":
 		h.handleNewTaskFlow(chatID, text)
+	case "new_event":
+		h.handleNewEventFlow(chatID, text)
 	default:
 		h.store.ClearFlow(chatID)
 		h.sendText(chatID, "Something went wrong. Use /start")
