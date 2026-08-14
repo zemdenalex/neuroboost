@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import i18n from '../../i18n'
 import { useAuthContext } from '../../contexts/AuthContext'
@@ -11,13 +10,14 @@ import { resolveQuickTaskSettings, type QuickTaskSettings } from '../../lib/quic
 import { resolveRememberedScope, type RememberedScope } from '../../lib/recurrence/scope'
 import { resolveReminderSettings, type ReminderSettings } from '../../lib/reminders/offsets'
 import { createDebouncedSaver, type DebouncedSaver } from '../../lib/autoSave/debouncedSaver'
+import { SessionSection } from './sections/SessionSection'
+import { HintStyleSection } from './sections/HintStyleSection'
 
 /** The subset of the profile this page edits. */
 type ProfilePatch = { display_name?: string; timezone?: string; locale?: string }
 import { ReminderOffsets } from '../../components/ReminderOffsets/ReminderOffsets'
 import { CalendarsSection } from '../../components/Calendars/CalendarsSection'
-import { AlertTriangle, Bell, Clock, Database, Globe, LayoutGrid, Lightbulb, LogOut, Maximize, Repeat, Sliders, Smartphone, Zap } from 'lucide-react'
-import { getHintStyle, setHintStyle as persistHintStyle, type HintStyle } from '../../lib/onboarding/hintStyle'
+import { Bell, Clock, Database, Globe, LayoutGrid, Maximize, Repeat, Sliders, Smartphone, Zap } from 'lucide-react'
 
 type HeaderVariant = 'horizontal' | 'vertical'
 type MobileNavType = 'bottom_tabs' | 'hamburger' | 'fab'
@@ -40,15 +40,12 @@ const TIMEZONES = [
 
 export default function Settings() {
   const { t } = useTranslation('settings')
-  const { t: tc } = useTranslation('common')
   const { t: tr } = useTranslation('reminders')
-  const navigate = useNavigate()
-  const { user, logout, updateSettings, updateProfile } = useAuthContext()
+  const { user, updateSettings, updateProfile } = useAuthContext()
   const [quickTask, setQuickTask] = useState<QuickTaskSettings>(() => resolveQuickTaskSettings(user?.settings))
   const [recurringScope, setRecurringScope] = useState<RememberedScope>(() => resolveRememberedScope(user?.settings))
   const [reminders, setReminders] = useState<ReminderSettings>(() => resolveReminderSettings(user?.settings))
   const isMobile = useMediaQuery('(max-width: 767px)')
-  const [showConfirmLogout, setShowConfirmLogout] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [language, setLanguage] = useState(i18n.language?.startsWith('ru') ? 'ru' : 'en')
 
@@ -111,7 +108,6 @@ export default function Settings() {
 
   // Settings state - initialize from user settings or defaults
   const [headerStyle, setHeaderStyle] = useState<HeaderVariant>('horizontal')
-  const [hintStyle, setHintStyle] = useState<HintStyle>(() => getHintStyle())
   const [mobileNav, setMobileNav] = useState<MobileNavType>('bottom_tabs')
   const [uiScale, setUIScale] = useState(100)
   const [timezone, setTimezone] = useState('Europe/Moscow')
@@ -180,12 +176,6 @@ export default function Settings() {
   }
 
   // Hint style is localStorage-only (v1); broadcast so the live OnboardingProvider updates immediately.
-  const handleHintStyleChange = (style: HintStyle) => {
-    setHintStyle(style)
-    persistHintStyle(style)
-    window.dispatchEvent(new CustomEvent('neuroboost-hints-style-change', { detail: style }))
-  }
-
   const handleMobileNavChange = async (nav: MobileNavType) => {
     setMobileNav(nav)
     try {
@@ -206,11 +196,6 @@ export default function Settings() {
     } catch {
       setError(t('error.languageFailed'))
     }
-  }
-
-  const handleLogout = async () => {
-    await logout()
-    navigate('/login')
   }
 
   const toggleFeature = (key: keyof typeof features) => {
@@ -303,29 +288,7 @@ export default function Settings() {
           <p className="text-xs text-zinc-500 mt-2">{t('layout.note')}</p>
         </section>
 
-        {/* Hint Style */}
-        <section className="bg-zinc-900 border border-zinc-800 rounded-lg p-5">
-          <div className="flex items-center gap-2 mb-4">
-            <Lightbulb className="w-5 h-5 text-zinc-400" />
-            <h2 className="text-lg font-mono font-semibold text-white">{t('hints.title')}</h2>
-          </div>
-          <div className="flex gap-3">
-            {(['bubbles', 'walkthrough', 'markers'] as const).map((style) => (
-              <button
-                key={style}
-                onClick={() => handleHintStyleChange(style)}
-                className={`flex-1 p-3 rounded-lg border text-sm font-mono transition-colors ${
-                  hintStyle === style
-                    ? 'bg-blue-600/20 border-blue-500 text-blue-400'
-                    : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:border-zinc-600'
-                }`}
-              >
-                {t(`hints.${style}`)}
-              </button>
-            ))}
-          </div>
-          <p className="text-xs text-zinc-500 mt-2">{t('hints.note')}</p>
-        </section>
+        <HintStyleSection />
 
         {/* Mobile Navigation — only shown on mobile viewports */}
         {isMobile && (
@@ -835,40 +798,7 @@ export default function Settings() {
           </div>
         </section>
 
-        {/* Sign Out */}
-        <section className="bg-zinc-900 border border-zinc-800 rounded-lg p-5">
-          <div className="flex items-center gap-2 mb-4">
-            <LogOut className="w-5 h-5 text-zinc-400" />
-            <h2 className="text-lg font-mono font-semibold text-white">{t('session.title')}</h2>
-          </div>
-
-          {showConfirmLogout ? (
-            <div className="flex items-center gap-3 p-3 bg-red-900/20 border border-red-800 rounded-lg">
-              <AlertTriangle className="w-5 h-5 text-red-400 shrink-0" />
-              <span className="flex-1 text-sm text-red-400">{t('session.signOutConfirm')}</span>
-              <button
-                onClick={handleLogout}
-                className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-sm font-mono rounded transition-colors"
-              >
-                {t('session.yesSignOut')}
-              </button>
-              <button
-                onClick={() => setShowConfirmLogout(false)}
-                className="px-3 py-1 bg-zinc-700 hover:bg-zinc-600 text-white text-sm font-mono rounded transition-colors"
-              >
-                {tc('action.cancel')}
-              </button>
-            </div>
-          ) : (
-            <button
-              onClick={() => setShowConfirmLogout(true)}
-              className="flex items-center gap-2 px-3 py-2 text-red-400 hover:bg-zinc-800 rounded-lg transition-colors"
-            >
-              <LogOut className="w-4 h-4" />
-              {t('session.signOut')}
-            </button>
-          )}
-        </section>
+        <SessionSection />
     </div>
   )
 }
