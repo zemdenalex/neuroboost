@@ -6,7 +6,6 @@ import { useMediaQuery } from '../../hooks/useMediaQuery'
 import { showToast } from '../../components/ui/Toast'
 import type { UserSettings } from '../../api/auth'
 import { resolveQuickTaskSettings, type QuickTaskSettings } from '../../lib/quickTask/settings'
-import { resolveReminderSettings, type ReminderSettings } from '../../lib/reminders/offsets'
 import { createDebouncedSaver, type DebouncedSaver } from '../../lib/autoSave/debouncedSaver'
 import { SessionSection } from './sections/SessionSection'
 import { HintStyleSection } from './sections/HintStyleSection'
@@ -17,12 +16,12 @@ import { WorkHoursSection } from './sections/WorkHoursSection'
 import { FeatureTogglesSection } from './sections/FeatureTogglesSection'
 import { RecurringScopeSection } from './sections/RecurringScopeSection'
 import { DataSection } from './sections/DataSection'
+import { RemindersSection } from './sections/RemindersSection'
 
 /** The subset of the profile this page edits. */
 type ProfilePatch = { display_name?: string; timezone?: string; locale?: string }
-import { ReminderOffsets } from '../../components/ReminderOffsets/ReminderOffsets'
 import { CalendarsSection } from '../../components/Calendars/CalendarsSection'
-import { Bell, Globe, Zap } from 'lucide-react'
+import { Globe, Zap } from 'lucide-react'
 
 
 const LANGUAGES = [
@@ -43,10 +42,8 @@ const TIMEZONES = [
 
 export default function Settings() {
   const { t } = useTranslation('settings')
-  const { t: tr } = useTranslation('reminders')
   const { user, updateSettings, updateProfile } = useAuthContext()
   const [quickTask, setQuickTask] = useState<QuickTaskSettings>(() => resolveQuickTaskSettings(user?.settings))
-  const [reminders, setReminders] = useState<ReminderSettings>(() => resolveReminderSettings(user?.settings))
   const isMobile = useMediaQuery('(max-width: 767px)')
   const [error, setError] = useState<string | null>(null)
   const [language, setLanguage] = useState(i18n.language?.startsWith('ru') ? 'ru' : 'en')
@@ -243,120 +240,7 @@ export default function Settings() {
           </div>
         </section>
 
-        {/* Reminders */}
-        <section className="bg-zinc-900 border border-zinc-800 rounded-lg p-5">
-          <div className="flex items-center gap-2 mb-4">
-            <Bell className="w-5 h-5 text-zinc-400" />
-            <h2 className="text-lg font-mono font-semibold text-white">{tr('settings.title')}</h2>
-          </div>
-          <p className="mb-4 text-xs text-zinc-500">{tr('settings.description')}</p>
-
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm text-zinc-400 mb-1" htmlFor="rem-event-preset">{tr('settings.defaultEventPreset')}</label>
-              <select
-                id="rem-event-preset"
-                value={reminders.default_event_preset}
-                onChange={(e) => {
-                  const value = e.target.value
-                  setReminders(prev => ({ ...prev, default_event_preset: value }))
-                  autoSaveSettings({ reminders: { ...reminders, default_event_preset: value } })
-                }}
-                className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white font-mono text-sm focus:outline-none focus:border-blue-500"
-              >
-                {Object.keys(reminders.presets).map(name => (
-                  <option key={name} value={name}>{name}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm text-zinc-400 mb-1" htmlFor="rem-task-preset">{tr('settings.defaultTaskPreset')}</label>
-              <select
-                id="rem-task-preset"
-                value={reminders.default_task_preset}
-                onChange={(e) => {
-                  const value = e.target.value
-                  setReminders(prev => ({ ...prev, default_task_preset: value }))
-                  autoSaveSettings({ reminders: { ...reminders, default_task_preset: value } })
-                }}
-                className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white font-mono text-sm focus:outline-none focus:border-blue-500"
-              >
-                {Object.keys(reminders.presets).map(name => (
-                  <option key={name} value={name}>{name}</option>
-                ))}
-              </select>
-            </div>
-
-            <label className="flex items-start gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={reminders.digest_enabled}
-                onChange={(e) => {
-                  const value = e.target.checked
-                  setReminders(prev => ({ ...prev, digest_enabled: value }))
-                  autoSaveSettings({ reminders: { ...reminders, digest_enabled: value } })
-                }}
-                className="mt-1 accent-blue-500"
-              />
-              <span className="block text-sm text-white">{tr('settings.digestEnabled')}</span>
-            </label>
-
-            <div>
-              <label className="block text-sm text-zinc-400 mb-1" htmlFor="rem-digest-at">{tr('settings.digestAt')}</label>
-              <input
-                id="rem-digest-at"
-                type="time"
-                value={reminders.digest_at}
-                disabled={!reminders.digest_enabled}
-                onChange={(e) => {
-                  const value = e.target.value
-                  setReminders(prev => ({ ...prev, digest_at: value }))
-                  autoSaveSettings({ reminders: { ...reminders, digest_at: value } })
-                }}
-                className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white font-mono text-sm focus:outline-none focus:border-blue-500 disabled:opacity-40"
-              />
-            </div>
-
-            <label className="flex items-start gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={reminders.quiet_hours_respected}
-                onChange={(e) => {
-                  const value = e.target.checked
-                  setReminders(prev => ({ ...prev, quiet_hours_respected: value }))
-                  autoSaveSettings({ reminders: { ...reminders, quiet_hours_respected: value } })
-                }}
-                className="mt-1 accent-blue-500"
-              />
-              <span>
-                <span className="block text-sm text-white">{tr('settings.quietHoursRespected')}</span>
-                <span className="block text-xs text-zinc-500">{tr('settings.quietHoursHint')}</span>
-              </span>
-            </label>
-
-            <div>
-              <h3 className="text-sm text-zinc-400 mb-1">{tr('settings.presetsTitle')}</h3>
-              <p className="mb-2 text-xs text-zinc-500">{tr('settings.presetsHint')}</p>
-              <div className="space-y-3">
-                {Object.entries(reminders.presets).map(([name, offsets]) => (
-                  <div key={name} className="rounded-lg border border-zinc-800 p-3">
-                    <div className="mb-2 font-mono text-sm text-zinc-300">{name}</div>
-                    <ReminderOffsets
-                      value={offsets}
-                      presets={reminders.presets}
-                      onChange={(next) => {
-                        const presets = { ...reminders.presets, [name]: next }
-                        setReminders(prev => ({ ...prev, presets }))
-                        autoSaveSettings({ reminders: { ...reminders, presets } })
-                      }}
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
+        <RemindersSection autoSave={autoSaveSettings} />
 
         <CalendarsSection />
 
