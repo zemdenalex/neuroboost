@@ -14,12 +14,15 @@ import { SessionSection } from './sections/SessionSection'
 import { HintStyleSection } from './sections/HintStyleSection'
 import { LayoutStyleSection } from './sections/LayoutStyleSection'
 import { MobileNavSection } from './sections/MobileNavSection'
+import { UIScaleSection } from './sections/UIScaleSection'
+import { WorkHoursSection } from './sections/WorkHoursSection'
+import { FeatureTogglesSection } from './sections/FeatureTogglesSection'
 
 /** The subset of the profile this page edits. */
 type ProfilePatch = { display_name?: string; timezone?: string; locale?: string }
 import { ReminderOffsets } from '../../components/ReminderOffsets/ReminderOffsets'
 import { CalendarsSection } from '../../components/Calendars/CalendarsSection'
-import { Bell, Clock, Database, Globe, Maximize, Repeat, Sliders, Zap } from 'lucide-react'
+import { Bell, Database, Globe, Repeat, Zap } from 'lucide-react'
 
 
 const LANGUAGES = [
@@ -107,54 +110,17 @@ export default function Settings() {
   }, [])
 
   // Settings state - initialize from user settings or defaults
-  const [uiScale, setUIScale] = useState(100)
   const [timezone, setTimezone] = useState('Europe/Moscow')
-  const [workDays, setWorkDays] = useState(['Mon', 'Tue', 'Wed', 'Thu', 'Fri'])
-  const [workStart, setWorkStart] = useState('09:00')
-  const [workEnd, setWorkEnd] = useState('17:00')
 
   // Feature toggles
-  const [features, setFeatures] = useState({
-    dreams: false,
-    goals: false,
-    projects: false,
-    opportunities: false,
-    needs: false,
-    graph: false,
-    timeline: false,
-    tools: true,
-  })
 
-  // Load settings from user on mount
+  // All that is left of the effect that used to resync eight fields here and
+  // silently skip three others. Every section now reads its own slice, so there
+  // is nothing to keep in step — timezone is simply the last value the parent
+  // still owns.
   useEffect(() => {
-    if (user) {
-      setTimezone(user.timezone || 'Europe/Moscow')
-      
-      if (user.settings) {
-        if (user.settings.ui_scale) {
-          setUIScale(user.settings.ui_scale)
-        }
-        if (user.settings.work_days) {
-          setWorkDays(user.settings.work_days)
-        }
-        if (user.settings.work_start) {
-          setWorkStart(user.settings.work_start)
-        }
-        if (user.settings.work_end) {
-          setWorkEnd(user.settings.work_end)
-        }
-        const userFeatures = user.settings.features
-        if (userFeatures) {
-          setFeatures(prev => ({ ...prev, ...userFeatures }))
-        }
-      }
-    }
+    if (user) setTimezone(user.timezone || 'Europe/Moscow')
   }, [user])
-
-  // Apply UI scale to document (no cleanup — scale should persist when leaving page)
-  useEffect(() => {
-    document.documentElement.style.fontSize = `${uiScale}%`
-  }, [uiScale])
 
   // Apply header style immediately when changed
 
@@ -170,12 +136,6 @@ export default function Settings() {
     } catch {
       setError(t('error.languageFailed'))
     }
-  }
-
-  const toggleFeature = (key: keyof typeof features) => {
-    const nextFeatures = { ...features, [key]: !features[key] }
-    setFeatures(nextFeatures)
-    autoSaveSettings({ features: nextFeatures })
   }
 
   const handleExport = async () => {
@@ -237,45 +197,7 @@ export default function Settings() {
         {/* The isMobile gate stays here: it decides whether the section exists. */}
         {isMobile && <MobileNavSection />}
 
-        {/* UI Scale */}
-        <section className="bg-zinc-900 border border-zinc-800 rounded-lg p-5">
-          <div className="flex items-center gap-2 mb-4">
-            <Maximize className="w-5 h-5 text-zinc-400" />
-            <h2 className="text-lg font-mono font-semibold text-white">{t('uiScale.title')}</h2>
-          </div>
-
-          <div className="space-y-4">
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-zinc-400 w-8">80%</span>
-              <input
-                type="range"
-                min="80"
-                max="150"
-                step="5"
-                value={uiScale}
-                onChange={(e) => {
-                  const val = Number(e.target.value)
-                  setUIScale(val)
-                  autoSaveSettings({ ui_scale: val })
-                }}
-                className="flex-1 h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-600"
-              />
-              <span className="text-sm text-zinc-400 w-10">150%</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-zinc-400">{t('uiScale.current')} <strong className="text-white">{uiScale}%</strong></span>
-              <button
-                onClick={() => {
-                  setUIScale(100)
-                  autoSaveSettings({ ui_scale: 100 })
-                }}
-                className="text-xs text-blue-400 hover:text-blue-300"
-              >
-                {t('uiScale.reset')}
-              </button>
-            </div>
-          </div>
-        </section>
+        <UIScaleSection autoSave={autoSaveSettings} />
 
         {/* Recurring-event scope */}
         <section className="bg-zinc-900 border border-zinc-800 rounded-lg p-5">
@@ -502,71 +424,7 @@ export default function Settings() {
 
         <CalendarsSection />
 
-        {/* Work Hours */}
-        <section className="bg-zinc-900 border border-zinc-800 rounded-lg p-5">
-          <div className="flex items-center gap-2 mb-4">
-            <Clock className="w-5 h-5 text-zinc-400" />
-            <h2 className="text-lg font-mono font-semibold text-white">{t('workHours.title')}</h2>
-          </div>
-
-          <div className="space-y-4">
-            {/* Working days */}
-            <div>
-              <label className="block text-sm text-zinc-400 mb-2">{t('workHours.days')}</label>
-              <div className="flex flex-wrap gap-2">
-                {(['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const).map((day) => (
-                  <button
-                    key={day}
-                    onClick={() => {
-                      const next = workDays.includes(day)
-                        ? workDays.filter((d) => d !== day)
-                        : [...workDays, day]
-                      setWorkDays(next)
-                      autoSaveSettings({ work_days: next })
-                    }}
-                    className={`px-3 py-1.5 rounded text-sm font-mono transition-colors ${
-                      workDays.includes(day)
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
-                    }`}
-                  >
-                    {t(`workHours.${day}`)}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Time range */}
-            <div className="flex gap-4">
-              <div className="flex-1">
-                <label className="block text-sm text-zinc-400 mb-1">{t('workHours.start')}</label>
-                <input
-                  type="time"
-                  value={workStart}
-                  onChange={(e) => {
-                    const val = e.target.value
-                    setWorkStart(val)
-                    autoSaveSettings({ work_start: val })
-                  }}
-                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white font-mono focus:outline-none focus:border-blue-500"
-                />
-              </div>
-              <div className="flex-1">
-                <label className="block text-sm text-zinc-400 mb-1">{t('workHours.end')}</label>
-                <input
-                  type="time"
-                  value={workEnd}
-                  onChange={(e) => {
-                    const val = e.target.value
-                    setWorkEnd(val)
-                    autoSaveSettings({ work_end: val })
-                  }}
-                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white font-mono focus:outline-none focus:border-blue-500"
-                />
-              </div>
-            </div>
-          </div>
-        </section>
+        <WorkHoursSection autoSave={autoSaveSettings} />
 
         {/* Timezone */}
         <section className="bg-zinc-900 border border-zinc-800 rounded-lg p-5">
@@ -622,37 +480,7 @@ export default function Settings() {
           </div>
         </section>
 
-        {/* Feature Toggles */}
-        <section className="bg-zinc-900 border border-zinc-800 rounded-lg p-5">
-          <div className="flex items-center gap-2 mb-4">
-            <Sliders className="w-5 h-5 text-zinc-400" />
-            <h2 className="text-lg font-mono font-semibold text-white">{t('featureToggles.title')}</h2>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            {Object.entries(features).map(([key, enabled]) => (
-              <button
-                key={key}
-                onClick={() => toggleFeature(key as keyof typeof features)}
-                className="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg hover:bg-zinc-800 transition-colors"
-              >
-                <span className="text-sm text-zinc-300">{t(`featureToggles.${key}View`)}</span>
-                {/* Custom toggle switch */}
-                <div
-                  className={`relative w-10 h-5 rounded-full transition-colors ${
-                    enabled ? 'bg-blue-600' : 'bg-zinc-600'
-                  }`}
-                >
-                  <div
-                    className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${
-                      enabled ? 'translate-x-5' : 'translate-x-0.5'
-                    }`}
-                  />
-                </div>
-              </button>
-            ))}
-          </div>
-        </section>
+        <FeatureTogglesSection autoSave={autoSaveSettings} />
 
         {/* Data Management */}
         <section className="bg-zinc-900 border border-zinc-800 rounded-lg p-5">
