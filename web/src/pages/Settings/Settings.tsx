@@ -12,15 +12,15 @@ import { resolveReminderSettings, type ReminderSettings } from '../../lib/remind
 import { createDebouncedSaver, type DebouncedSaver } from '../../lib/autoSave/debouncedSaver'
 import { SessionSection } from './sections/SessionSection'
 import { HintStyleSection } from './sections/HintStyleSection'
+import { LayoutStyleSection } from './sections/LayoutStyleSection'
+import { MobileNavSection } from './sections/MobileNavSection'
 
 /** The subset of the profile this page edits. */
 type ProfilePatch = { display_name?: string; timezone?: string; locale?: string }
 import { ReminderOffsets } from '../../components/ReminderOffsets/ReminderOffsets'
 import { CalendarsSection } from '../../components/Calendars/CalendarsSection'
-import { Bell, Clock, Database, Globe, LayoutGrid, Maximize, Repeat, Sliders, Smartphone, Zap } from 'lucide-react'
+import { Bell, Clock, Database, Globe, Maximize, Repeat, Sliders, Zap } from 'lucide-react'
 
-type HeaderVariant = 'horizontal' | 'vertical'
-type MobileNavType = 'bottom_tabs' | 'hamburger' | 'fab'
 
 const LANGUAGES = [
   { value: 'en', label: 'English', flag: '\u{1F1EC}\u{1F1E7}' },
@@ -107,8 +107,6 @@ export default function Settings() {
   }, [])
 
   // Settings state - initialize from user settings or defaults
-  const [headerStyle, setHeaderStyle] = useState<HeaderVariant>('horizontal')
-  const [mobileNav, setMobileNav] = useState<MobileNavType>('bottom_tabs')
   const [uiScale, setUIScale] = useState(100)
   const [timezone, setTimezone] = useState('Europe/Moscow')
   const [workDays, setWorkDays] = useState(['Mon', 'Tue', 'Wed', 'Thu', 'Fri'])
@@ -133,12 +131,6 @@ export default function Settings() {
       setTimezone(user.timezone || 'Europe/Moscow')
       
       if (user.settings) {
-        if (user.settings.header_variant) {
-          setHeaderStyle(user.settings.header_variant)
-        }
-        if (user.settings.mobile_nav) {
-          setMobileNav(user.settings.mobile_nav)
-        }
         if (user.settings.ui_scale) {
           setUIScale(user.settings.ui_scale)
         }
@@ -165,26 +157,8 @@ export default function Settings() {
   }, [uiScale])
 
   // Apply header style immediately when changed
-  const handleHeaderStyleChange = async (style: HeaderVariant) => {
-    setHeaderStyle(style)
-    try {
-      await updateSettings({ header_variant: style })
-      showToast(t('saved'))
-    } catch {
-      setError(t('error.saveLayout'))
-    }
-  }
 
   // Hint style is localStorage-only (v1); broadcast so the live OnboardingProvider updates immediately.
-  const handleMobileNavChange = async (nav: MobileNavType) => {
-    setMobileNav(nav)
-    try {
-      await updateSettings({ mobile_nav: nav })
-      showToast(t('saved'))
-    } catch {
-      setError(t('error.saveMobileNav'))
-    }
-  }
 
   const handleLanguageChange = async (locale: string) => {
     setLanguage(locale)
@@ -256,104 +230,12 @@ export default function Settings() {
           </div>
         )}
 
-        {/* Layout Style */}
-        <section className="bg-zinc-900 border border-zinc-800 rounded-lg p-5">
-          <div className="flex items-center gap-2 mb-4">
-            <LayoutGrid className="w-5 h-5 text-zinc-400" />
-            <h2 className="text-lg font-mono font-semibold text-white">{t('layout.title')}</h2>
-          </div>
-
-          <div className="flex gap-3">
-            <button
-              onClick={() => handleHeaderStyleChange('horizontal')}
-              className={`flex-1 p-3 rounded-lg border text-sm font-mono transition-colors ${
-                headerStyle === 'horizontal'
-                  ? 'bg-blue-600/20 border-blue-500 text-blue-400'
-                  : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:border-zinc-600'
-              }`}
-            >
-              {t('layout.horizontal')}
-            </button>
-            <button
-              onClick={() => handleHeaderStyleChange('vertical')}
-              className={`flex-1 p-3 rounded-lg border text-sm font-mono transition-colors ${
-                headerStyle === 'vertical'
-                  ? 'bg-blue-600/20 border-blue-500 text-blue-400'
-                  : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:border-zinc-600'
-              }`}
-            >
-              {t('layout.vertical')}
-            </button>
-          </div>
-          <p className="text-xs text-zinc-500 mt-2">{t('layout.note')}</p>
-        </section>
+        <LayoutStyleSection />
 
         <HintStyleSection />
 
-        {/* Mobile Navigation — only shown on mobile viewports */}
-        {isMobile && (
-        <section className="bg-zinc-900 border border-zinc-800 rounded-lg p-5">
-          <div className="flex items-center gap-2 mb-4">
-            <Smartphone className="w-5 h-5 text-zinc-400" />
-            <h2 className="text-lg font-mono font-semibold text-white">{t('mobileNav.title')}</h2>
-          </div>
-
-          <div className="flex flex-col gap-3">
-            <button
-              onClick={() => handleMobileNavChange('bottom_tabs')}
-              className={`flex items-start gap-3 p-3 rounded-lg border text-left transition-colors ${
-                mobileNav === 'bottom_tabs'
-                  ? 'bg-blue-600/20 border-blue-500'
-                  : 'bg-zinc-800 border-zinc-700 hover:border-zinc-600'
-              }`}
-            >
-              <div className="flex-1">
-                <p className={`text-sm font-mono ${mobileNav === 'bottom_tabs' ? 'text-blue-400' : 'text-zinc-300'}`}>
-                  {t('mobileNav.bottomTabs')}
-                </p>
-                <p className="text-xs text-zinc-500 mt-0.5">
-                  {t('mobileNav.bottomTabsDesc')}
-                </p>
-              </div>
-            </button>
-            <button
-              onClick={() => handleMobileNavChange('hamburger')}
-              className={`flex items-start gap-3 p-3 rounded-lg border text-left transition-colors ${
-                mobileNav === 'hamburger'
-                  ? 'bg-blue-600/20 border-blue-500'
-                  : 'bg-zinc-800 border-zinc-700 hover:border-zinc-600'
-              }`}
-            >
-              <div className="flex-1">
-                <p className={`text-sm font-mono ${mobileNav === 'hamburger' ? 'text-blue-400' : 'text-zinc-300'}`}>
-                  {t('mobileNav.hamburger')}
-                </p>
-                <p className="text-xs text-zinc-500 mt-0.5">
-                  {t('mobileNav.hamburgerDesc')}
-                </p>
-              </div>
-            </button>
-            <button
-              onClick={() => handleMobileNavChange('fab')}
-              className={`flex items-start gap-3 p-3 rounded-lg border text-left transition-colors ${
-                mobileNav === 'fab'
-                  ? 'bg-blue-600/20 border-blue-500'
-                  : 'bg-zinc-800 border-zinc-700 hover:border-zinc-600'
-              }`}
-            >
-              <div className="flex-1">
-                <p className={`text-sm font-mono ${mobileNav === 'fab' ? 'text-blue-400' : 'text-zinc-300'}`}>
-                  {t('mobileNav.fab')}
-                </p>
-                <p className="text-xs text-zinc-500 mt-0.5">
-                  {t('mobileNav.fabDesc')}
-                </p>
-              </div>
-            </button>
-          </div>
-          <p className="text-xs text-zinc-500 mt-2">{t('mobileNav.note')}</p>
-        </section>
-        )}
+        {/* The isMobile gate stays here: it decides whether the section exists. */}
+        {isMobile && <MobileNavSection />}
 
         {/* UI Scale */}
         <section className="bg-zinc-900 border border-zinc-800 rounded-lg p-5">
