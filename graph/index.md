@@ -3,31 +3,34 @@
 ## Learnings
 - [[learning-merge-to-main-is-the-release]] — Тег — это метка постфактум, а не спусковой крючок: продакшен уезжает в момент
 - [[learning-a-test-that-cannot-fail-guards-nothing]] — "Зелёный тест — не свидетельство, пока не показано, что он краснеет: сломать охраняемое и посмотреть"
+- [[learning-green-because-skipped-proves-nothing]] — "«Зелено» из-за t.Skip ничего не доказывает — CI с DATABASE_URL уронил то, что локально проходило 12 задач подряд"
 - [[learning-digest-sent-empty-text]] — "Утренний дайджест уходил с пустым текстом — Telegram отбивал его каждое утро, следов кроме строки FAILED не было"
 - [[learning-prod-has-no-svc-routes]] — "Prod — это v0.4.9 без P2: /api/svc отдаёт 404, значит уведомления возможны только на staging"
-- [[learning-green-because-skipped-proves-nothing]] — "«Зелено» из-за t.Skip ничего не доказывает — CI с DATABASE_URL уронил то, что локально проходило 12 задач подряд"
 - [[learning-null-key-passes-a-unique-index]] — В Postgres два NULL не равны друг другу, поэтому уникальный индекс не защищает
 - [[learning-md2-lived-in-untested-producers]] — "MD2 жил в продюсерах, а не в обработчике: handleResizeComplete читал anchorMs/cursorMs, которые никто не записывал"
 - [[learning-stale-comment-outlived-its-constraint]] — "Комментарий пережил своё ограничение и читался как действующий запрет — MD1 был открыт зря"
-- [[learning-checkbox-in-a-plan-is-a-claim-not-evidence]] — Состояние работы в этом проекте нельзя читать по `- [x]` — оно врёт в обе стороны.
+- [[learning-a-control-nobody-runs-hides-a-control-that-cannot-work]] — "Контроль, который никто не запускает, прячет внутри себя контроль, который не мог сработать — e2e нашли посев локали, проигрывавший серверу, первым же прогоном"
 - [[learning-sent-measures-delivery-not-usefulness]] — "Статус SENT меряет доставку, а не пользу: три напоминания дошли и были бесполезны, потому что текстом был голый заголовок"
+- [[learning-checkbox-in-a-plan-is-a-claim-not-evidence]] — Состояние работы в этом проекте нельзя читать по `- [x]` — оно врёт в обе стороны.
 - [[learning-fix-in-the-wrong-container-looks-like-a-broken-fix]] — "Починка, уехавшая не в тот контейнер, неотличима от неработающей — сначала установить, какой бинарь ответил"
 - [[learning-plan-named-two-files-invariant-lived-in-eight]] — "План назвал 2 файла, инвариант жил в 8 — границу работы нашёл охранный тест, а не чтение кода"
+- [[learning-the-deploy-job-swallowed-two-failures-for-months]] — "Job деплоя глотал два отказа месяцами: бэкапов нет с апреля, синк прод→dev не работает — оба писали строчку в лог, которую никто не читал"
 - [[learning-tg-id-null-kills-reminders-silently]] — "У пользователя staging был tg_id = NULL — скан молча пропускал его, и вся цепочка выглядела зелёной"
-- [[learning-a-control-nobody-runs-hides-a-control-that-cannot-work]] — "Контроль, который никто не запускает, прячет внутри себя контроль, который не мог сработать — e2e нашли посев локали, проигрывавший серверу, первым же прогоном"
+- [[learning-four-of-my-own-defects-in-one-session]] — "Четыре моих собственных дефекта за сессию, и все — тот класс, который я в ней же искал в чужом коде"
 - [[learning-getboundingclientrect-reports-layout-not-paint]] — "getBoundingClientRect отдаёт координаты раскладки, а не видимость: обрезанный скроллом элемент выглядит как перекрытый"
+- [[learning-an-editor-that-contains-a-chooser-corrupts-what-it-edits]] — "Редактор, содержащий выбор того же самого, портит редактируемое: выпадашка пресетов внутри редактора пресетов схлопнула все три в один"
 - [[learning-a-setting-that-reshapes-the-frame-is-its-own-coverage-axis]] — "Настройка, меняющая каркас страницы, — отдельная ось покрытия: развёртка по всем маршрутам её не видит"
 - [[learning-e2e-baseline-recorded-on-a-monday]] — "Базовая линия e2e снята в понедельник — во вторник две спеки упали и вскрыли настоящий баг мобильного календаря"
 - [[learning-goroutine-panic-takes-the-whole-api]] — `OccurrencesInRange` звала `expandRecurrence`, которая разыменовывает `*event.Rrule`
 - [[learning-wider-viewport-is-not-a-wider-column]] — "Шире вьюпорт ≠ шире колонка: на /planning 1024px оказался теснее 768px, и брейкпоинт был выбран не там"
 - [[learning-guard-floor-left-behind-becomes-a-hiding-place]] — "Порог охранного теста обязан расти вместе с измеряемым: отставший порог превращает запас в укрытие"
 - [[learning-innerwidth-grows-with-the-defect-it-should-report]] — "window.innerWidth растёт вместе с дефектом: проверку переполнения сравнивать с шириной устройства, а не страницы"
-- [[learning-bot-is-a-second-go-module]] — В репозитории два Go-модуля — `api-go/` и `bot/`. Ни `go build ./...`, ни `go test ./...`
 - [[learning-snooze-sentinel-not-null]] — "Snooze пишет minutes_before = -1, а не NULL — и conflict target обязан повторять выражение индекса"
+- [[learning-bot-is-a-second-go-module]] — В репозитории два Go-модуля — `api-go/` и `bot/`. Ни `go build ./...`, ни `go test ./...`
 - [[learning-native-confirm-hides-the-r1-dialog]] — "Удаление события идёт через native window.confirm, и Playwright по умолчанию его отклоняет — падение читается как «диалог R1 сломан»"
-- [[blocker-ssh-key-mismatch-deployment]] — "Снят: 193.104.57.79 — вообще не тот сервер. NeuroBoost живёт на 62.76.228.106"
 - [[learning-a-check-outside-the-checklist-never-runs]] — "Проверка, описанная в разделе, но отсутствующая в исполняемом чек-листе, не выполняется никогда"
 - [[learning-compose-profile-hides-running-container]] — "docker compose profiles гасят сервис во ВСЕХ командах, включая down — уже запущенный контейнер остаётся жить"
+- [[blocker-ssh-key-mismatch-deployment]] — "Снят: 193.104.57.79 — вообще не тот сервер. NeuroBoost живёт на 62.76.228.106"
 - [[learning-drag-flicker-comment-lied]] — "Мигание после drag'а починено: комментарий в коде врал, наблюдение показало delta = 0px"
 
 ## Entities
