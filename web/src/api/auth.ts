@@ -25,6 +25,16 @@ export interface UserSettings {
   work_start?: string
   work_end?: string
   features?: Record<string, boolean>
+  /**
+   * Which scope to use when editing a recurring event, or 'ask' to prompt.
+   *
+   * Declared here on 2026-08-14. The settings blob is free-form JSONB and the
+   * Go side has no field for it, so the frontend was writing and reading it
+   * through casts on BOTH sides — `as Partial<UserSettings>` when saving and a
+   * `Record<string, unknown>` widening when reading. The value was real and
+   * only the type system was unaware; naming it removes both casts.
+   */
+  recurring_scope?: 'ask' | 'occurrence' | 'series'
   quiet_hours_start?: string
   quiet_hours_end?: string
   quick_task?: {

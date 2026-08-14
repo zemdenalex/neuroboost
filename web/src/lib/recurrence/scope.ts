@@ -29,7 +29,7 @@ export function isRecurringInstance(id: string): boolean {
  * back to asking, which is the choice that cannot destroy data.
  */
 export function resolveRememberedScope(settings: UserSettings | null | undefined): RememberedScope {
-  const raw: unknown = (settings as Record<string, unknown> | null | undefined)?.recurring_scope
+  const raw: unknown = settings?.recurring_scope
   return REMEMBERED_VALUES.includes(raw as RememberedScope)
     ? (raw as RememberedScope)
     : RECURRING_SCOPE_DEFAULT

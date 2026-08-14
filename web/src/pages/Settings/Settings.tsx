@@ -2,12 +2,10 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import i18n from '../../i18n'
 import { useAuthContext } from '../../contexts/AuthContext'
-import { api } from '../../api/client'
 import { useMediaQuery } from '../../hooks/useMediaQuery'
 import { showToast } from '../../components/ui/Toast'
 import type { UserSettings } from '../../api/auth'
 import { resolveQuickTaskSettings, type QuickTaskSettings } from '../../lib/quickTask/settings'
-import { resolveRememberedScope, type RememberedScope } from '../../lib/recurrence/scope'
 import { resolveReminderSettings, type ReminderSettings } from '../../lib/reminders/offsets'
 import { createDebouncedSaver, type DebouncedSaver } from '../../lib/autoSave/debouncedSaver'
 import { SessionSection } from './sections/SessionSection'
@@ -17,12 +15,14 @@ import { MobileNavSection } from './sections/MobileNavSection'
 import { UIScaleSection } from './sections/UIScaleSection'
 import { WorkHoursSection } from './sections/WorkHoursSection'
 import { FeatureTogglesSection } from './sections/FeatureTogglesSection'
+import { RecurringScopeSection } from './sections/RecurringScopeSection'
+import { DataSection } from './sections/DataSection'
 
 /** The subset of the profile this page edits. */
 type ProfilePatch = { display_name?: string; timezone?: string; locale?: string }
 import { ReminderOffsets } from '../../components/ReminderOffsets/ReminderOffsets'
 import { CalendarsSection } from '../../components/Calendars/CalendarsSection'
-import { Bell, Database, Globe, Repeat, Zap } from 'lucide-react'
+import { Bell, Globe, Zap } from 'lucide-react'
 
 
 const LANGUAGES = [
@@ -46,7 +46,6 @@ export default function Settings() {
   const { t: tr } = useTranslation('reminders')
   const { user, updateSettings, updateProfile } = useAuthContext()
   const [quickTask, setQuickTask] = useState<QuickTaskSettings>(() => resolveQuickTaskSettings(user?.settings))
-  const [recurringScope, setRecurringScope] = useState<RememberedScope>(() => resolveRememberedScope(user?.settings))
   const [reminders, setReminders] = useState<ReminderSettings>(() => resolveReminderSettings(user?.settings))
   const isMobile = useMediaQuery('(max-width: 767px)')
   const [error, setError] = useState<string | null>(null)
@@ -138,45 +137,7 @@ export default function Settings() {
     }
   }
 
-  const handleExport = async () => {
-    try {
-      // api.get throws on non-2xx / 401 (and unwraps the { data } envelope), so a
-      // failed export no longer downloads an "undefined" blob as if it succeeded.
-      const exported = await api.get('/export')
-      const blob = new Blob([JSON.stringify(exported, null, 2)], {
-        type: 'application/json',
-      })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `neuroboost-export-${new Date().toISOString().split('T')[0]}.json`
-      a.click()
-      URL.revokeObjectURL(url)
-    } catch {
-      setError(t('dataManagement.exportFailed'))
-    }
-  }
 
-  const handleImport = () => {
-    const input = document.createElement('input')
-    input.type = 'file'
-    input.accept = '.json'
-    input.onchange = async (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0]
-      if (!file) return
-      try {
-        const text = await file.text()
-        const data = JSON.parse(text) as unknown
-        // api.post throws on non-2xx / 401, so the reload only happens on a real
-        // success — a failed import no longer reloads and masks itself as done.
-        await api.post('/import', data)
-        window.location.reload()
-      } catch {
-        setError(t('dataManagement.importFailed'))
-      }
-    }
-    input.click()
-  }
 
   return (
     <div className="max-w-3xl mx-auto p-6 space-y-8">
@@ -199,32 +160,7 @@ export default function Settings() {
 
         <UIScaleSection autoSave={autoSaveSettings} />
 
-        {/* Recurring-event scope */}
-        <section className="bg-zinc-900 border border-zinc-800 rounded-lg p-5">
-          <div className="flex items-center gap-2 mb-4">
-            <Repeat className="w-5 h-5 text-zinc-400" />
-            <h2 className="text-lg font-mono font-semibold text-white">{t('recurringScope.title')}</h2>
-          </div>
-
-          <label className="block text-sm text-zinc-400 mb-1" htmlFor="recurring-scope">
-            {t('recurringScope.label')}
-          </label>
-          <select
-            id="recurring-scope"
-            value={recurringScope}
-            onChange={e => {
-              const value = e.target.value as RememberedScope
-              setRecurringScope(value)
-              autoSaveSettings({ recurring_scope: value } as Partial<UserSettings>)
-            }}
-            className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-white font-mono text-sm focus:outline-none focus:border-blue-500"
-          >
-            <option value="ask">{t('recurringScope.ask')}</option>
-            <option value="occurrence">{t('recurringScope.occurrence')}</option>
-            <option value="series">{t('recurringScope.series')}</option>
-          </select>
-          <p className="mt-2 text-xs text-zinc-500">{t('recurringScope.hint')}</p>
-        </section>
+        <RecurringScopeSection autoSave={autoSaveSettings} />
 
         {/* Quick task defaults */}
         <section className="bg-zinc-900 border border-zinc-800 rounded-lg p-5">
@@ -482,31 +418,7 @@ export default function Settings() {
 
         <FeatureTogglesSection autoSave={autoSaveSettings} />
 
-        {/* Data Management */}
-        <section className="bg-zinc-900 border border-zinc-800 rounded-lg p-5">
-          <div className="flex items-center gap-2 mb-4">
-            <Database className="w-5 h-5 text-zinc-400" />
-            <h2 className="text-lg font-mono font-semibold text-white">{t('dataManagement.title')}</h2>
-          </div>
-
-          <div className="flex flex-wrap gap-3">
-            <button
-              onClick={handleExport}
-              className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-mono text-sm rounded-lg transition-colors"
-            >
-              {t('dataManagement.export')}
-            </button>
-            <button
-              onClick={handleImport}
-              className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-mono text-sm rounded-lg transition-colors"
-            >
-              {t('dataManagement.import')}
-            </button>
-            <button className="px-4 py-2 bg-red-900/30 hover:bg-red-900/50 text-red-400 font-mono text-sm rounded-lg transition-colors border border-red-800">
-              {t('dataManagement.clearAll')}
-            </button>
-          </div>
-        </section>
+        <DataSection />
 
         <SessionSection />
     </div>
