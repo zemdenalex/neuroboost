@@ -218,8 +218,17 @@ jobs:
             # `git pull` here has aborted a deploy with "Could not resolve host").
             retry() { for i in 1 2 3; do "$@" && return 0; echo "attempt $i failed, retrying in 5s..."; sleep 5; done; return 1; }
             cd /opt/neuroboost
-            # Backup before deploy
-            ./scripts/backup.sh || echo "Backup failed, continuing deploy..."
+            # 🔴 A failed backup STOPS the deploy. It used to be
+            # `|| echo "Backup failed, continuing deploy..."`, and that line ran
+            # on every release from 2026-04-23 to 2026-08-14 — the script had no
+            # execute bit, so it failed instantly and the swallow hid it. Four
+            # months of production deploys, each applying migrations, with the
+            # newest backup dating from April. Nobody read the log line, which
+            # is the whole problem with logging a failure instead of raising it.
+            #
+            # This deploy applies migrations. Refusing to run without a verified
+            # backup is the only version of this step worth having.
+            bash ./scripts/backup.sh
             # Pull and rebuild
             retry git pull origin main
             docker compose build --pull
