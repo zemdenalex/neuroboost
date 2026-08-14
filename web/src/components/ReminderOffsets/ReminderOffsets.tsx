@@ -17,6 +17,22 @@ interface ReminderOffsetsProps {
   /** Disabled when a task has no due date — there is nothing to count back from. */
   disabled?: boolean
   disabledHint?: string
+  /**
+   * Show the "apply a preset" dropdown. Default true.
+   *
+   * 🔴 Must be false when this component is editing a PRESET ITSELF, which is
+   * what the Settings presets list does. Otherwise each preset row carries a
+   * control that overwrites that preset with a different one's offsets — and
+   * that is not hypothetical: on 2026-08-14 the staging account held
+   * {"без": [1440,60], "важное": [1440,60], "обычное": [1440,60]}, all three
+   * flattened to the same values by exactly this control.
+   *
+   * The damage compounds, because matchPreset returns the FIRST preset whose
+   * offsets match. Once two coincide, the dropdown reports the wrong name, and
+   * choosing another preset writes identical offsets and snaps straight back —
+   * which reads as "the selector is broken".
+   */
+  showPresetPicker?: boolean
 }
 
 /**
@@ -30,6 +46,7 @@ export function ReminderOffsets({
   presets,
   disabled = false,
   disabledHint,
+  showPresetPicker = true,
 }: ReminderOffsetsProps) {
   const { t } = useTranslation('reminders')
   const [draft, setDraft] = useState('')
@@ -70,22 +87,24 @@ export function ReminderOffsets({
           <Bell size={16} />
           {t('title')}
         </span>
-        <select
-          aria-label={t('preset.label')}
-          className="bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-sm text-white"
-          value={activePreset ?? ''}
-          onChange={e => {
-            const preset = presets[e.target.value]
-            if (preset) onChange([...preset])
-          }}
-        >
-          {/* An empty option only exists while the list matches no preset, so
-              the select never silently reports a preset the user is not on. */}
-          {activePreset === null && <option value="">{t('preset.custom')}</option>}
-          {Object.keys(presets).map(name => (
-            <option key={name} value={name}>{name}</option>
-          ))}
-        </select>
+        {showPresetPicker && (
+          <select
+            aria-label={t('preset.label')}
+            className="bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-sm text-white"
+            value={activePreset ?? ''}
+            onChange={e => {
+              const preset = presets[e.target.value]
+              if (preset) onChange([...preset])
+            }}
+          >
+            {/* An empty option only exists while the list matches no preset, so
+                the select never silently reports a preset the user is not on. */}
+            {activePreset === null && <option value="">{t('preset.custom')}</option>}
+            {Object.keys(presets).map(name => (
+              <option key={name} value={name}>{name}</option>
+            ))}
+          </select>
+        )}
       </div>
 
       {value.length === 0 ? (

@@ -135,6 +135,29 @@ describe('matchPreset', () => {
   it('returns null for a custom list, so the UI can say "custom"', () => {
     expect(matchPreset([7], DEFAULT_REMINDER_PRESETS)).toBeNull()
   })
+
+  // 🔴 Pinning the rule that made the preset selector look broken on staging.
+  //
+  // When several presets hold the same offsets, this returns the FIRST one in
+  // key order. The account had {"без": [1440,60], "важное": [1440,60],
+  // "обычное": [1440,60]} — all flattened by the preset picker that used to sit
+  // inside the presets EDITOR — so the dropdown read "без" whatever was chosen,
+  // and choosing "обычное" wrote the identical list and snapped back.
+  //
+  // The cause is fixed at the source (ReminderOffsets takes showPresetPicker,
+  // and the presets editor passes false). This test states what happens when
+  // duplicates exist anyway, so nobody has to rediscover it from a screenshot.
+  it('names the first preset when several hold the same offsets', () => {
+    const duplicated = { 'без': [1440, 60], 'важное': [1440, 60], 'обычное': [1440, 60] }
+    expect(matchPreset([1440, 60], duplicated)).toBe('без')
+  })
+
+  it('is unambiguous as long as the presets differ', () => {
+    // The negative control for the case above: with distinct presets the same
+    // list resolves to the one that actually holds it.
+    expect(matchPreset([1440, 60], DEFAULT_REMINDER_PRESETS)).toBe('обычное')
+    expect(matchPreset([], DEFAULT_REMINDER_PRESETS)).toBe('без')
+  })
 })
 
 describe('resolveReminderSettings', () => {

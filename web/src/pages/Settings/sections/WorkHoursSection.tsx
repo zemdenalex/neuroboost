@@ -2,12 +2,9 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Clock } from 'lucide-react'
 import { useAuthContext } from '../../../contexts/AuthContext'
+import { WEEK_DAYS, toggleWorkDay, normaliseWorkDays } from '../../../lib/settings/workDays'
 import type { UserSettings } from '../../../api/auth'
 
-/** ISO order — the project's weeks start on Monday everywhere else too. */
-const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const
-
-const DEFAULT_DAYS: string[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']
 const DEFAULT_START = '09:00'
 const DEFAULT_END = '17:00'
 
@@ -32,20 +29,22 @@ export function WorkHoursSection({ autoSave }: Props) {
   const { t } = useTranslation('settings')
   const { user } = useAuthContext()
 
-  const [days, setDays] = useState<string[]>(user?.settings?.work_days ?? DEFAULT_DAYS)
+  const [days, setDays] = useState<string[]>(() => normaliseWorkDays(user?.settings?.work_days))
   const [start, setStart] = useState(user?.settings?.work_start ?? DEFAULT_START)
   const [end, setEnd] = useState(user?.settings?.work_end ?? DEFAULT_END)
 
   useEffect(() => {
     const s = user?.settings
     if (!s) return
-    if (s.work_days) setDays(s.work_days)
+    if (s.work_days) setDays(normaliseWorkDays(s.work_days))
     if (s.work_start) setStart(s.work_start)
     if (s.work_end) setEnd(s.work_end)
   }, [user])
 
   const toggleDay = (day: string) => {
-    const next = days.includes(day) ? days.filter((d) => d !== day) : [...days, day]
+    // Keeps ISO order: the previous version appended, so a day switched off and
+    // on again landed at the end of the stored array. See lib/settings/workDays.
+    const next = toggleWorkDay(days, day)
     setDays(next)
     autoSave({ work_days: next })
   }
@@ -61,7 +60,7 @@ export function WorkHoursSection({ autoSave }: Props) {
         <div>
           <label className="block text-sm text-zinc-400 mb-2">{t('workHours.days')}</label>
           <div className="flex flex-wrap gap-2">
-            {DAYS.map((day) => (
+            {WEEK_DAYS.map((day) => (
               <button
                 key={day}
                 onClick={() => toggleDay(day)}

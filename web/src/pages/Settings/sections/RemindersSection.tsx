@@ -146,6 +146,11 @@ export function RemindersSection({ autoSave }: Props) {
                 <ReminderOffsets
                   value={offsets}
                   presets={reminders.presets}
+                  // 🔴 This row EDITS the preset named above it. A preset
+                  // chooser inside it overwrites that preset with another
+                  // one's offsets — which is how all three collapsed to the
+                  // same values on staging.
+                  showPresetPicker={false}
                   onChange={(next) => update({ presets: { ...reminders.presets, [name]: next } })}
                 />
               </div>

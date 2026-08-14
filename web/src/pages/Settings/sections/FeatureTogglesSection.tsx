@@ -2,34 +2,8 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Sliders } from 'lucide-react'
 import { useAuthContext } from '../../../contexts/AuthContext'
+import { mergeFeatures, DEFAULT_FEATURES, type Features, type FeatureKey } from '../../../lib/settings/features'
 import type { UserSettings } from '../../../api/auth'
-
-/**
- * The default set. Also the list of what the page offers, since the toggles are
- * rendered from the object's own keys.
- *
- * 🔴 `opportunities`, `needs` and `graph` no longer have anything behind them.
- * The backend packages answering those routes were 501 stubs with no writer and
- * were deleted on 2026-08-14, along with the dead GraphView tree on the front
- * end. The switches still flip and still persist — they simply enable nothing.
- *
- * Left in place deliberately rather than quietly dropped: removing them changes
- * what the user sees and what is stored in their settings, which is a product
- * decision, not a side effect of a refactor. Recorded here so the next reader
- * does not have to rediscover it.
- */
-const DEFAULT_FEATURES = {
-  dreams: false,
-  goals: false,
-  projects: false,
-  opportunities: false,
-  needs: false,
-  graph: false,
-  timeline: false,
-  tools: true,
-}
-
-type Features = typeof DEFAULT_FEATURES
 
 interface Props {
   autoSave: (patch: Partial<UserSettings>) => void
@@ -43,21 +17,16 @@ interface Props {
 export function FeatureTogglesSection({ autoSave }: Props) {
   const { t } = useTranslation('settings')
   const { user } = useAuthContext()
-  const [features, setFeatures] = useState<Features>(() => ({
-    ...DEFAULT_FEATURES,
-    ...(user?.settings?.features ?? {}),
-  }))
+  const [features, setFeatures] = useState<Features>(() => mergeFeatures(user?.settings?.features))
 
   // Merged over the defaults, not replaced: a stored object written before a
   // toggle existed would otherwise leave that key undefined and render a switch
   // in neither state.
   useEffect(() => {
-    if (user?.settings?.features) {
-      setFeatures((prev) => ({ ...prev, ...user.settings!.features }))
-    }
+    if (user?.settings?.features) setFeatures(mergeFeatures(user.settings.features))
   }, [user])
 
-  const toggle = (key: keyof Features) => {
+  const toggle = (key: FeatureKey) => {
     const next = { ...features, [key]: !features[key] }
     setFeatures(next)
     autoSave({ features: next })
@@ -71,7 +40,7 @@ export function FeatureTogglesSection({ autoSave }: Props) {
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        {(Object.keys(features) as Array<keyof Features>).map((key) => {
+        {(Object.keys(DEFAULT_FEATURES) as FeatureKey[]).map((key) => {
           const enabled = features[key]
           return (
             <button
