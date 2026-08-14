@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { DateTimeFields } from './DateTimeFields';
 import { BasicFields } from './BasicFields';
+import { CalendarField } from './CalendarField';
 import { AdvancedFields } from './AdvancedFields';
 import { RepeatFields } from './RepeatFields';
 import { ReflectionFields } from './ReflectionFields';
@@ -74,6 +75,15 @@ export function EventEditor({
           onTagsChange={actions.setTags}
           onTitleEnter={actions.handleSave}
           onDescriptionCtrlEnter={actions.handleSave}
+        />
+
+        {/* Which calendar. Renders nothing when editing, when the list cannot
+            be loaded, or when there is only one writable calendar — a select
+            with a single option is noise in an already long form. */}
+        <CalendarField
+          value={state.calendarId}
+          onChange={actions.setCalendarId}
+          disabled={isEditing}
         />
 
         {/* Advanced fields (all-day, reminder, color, repeat) */}

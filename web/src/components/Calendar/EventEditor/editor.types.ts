@@ -95,7 +95,21 @@ export interface CreateEventBody {
    * and therefore silently discarded.
    */
   reminderOffsets?: number[];
+  /**
+   * Which calendar to create in; omitted means the author's personal one.
+   * The backend verifies membership — a supplied id is never trusted.
+   */
+  calendarId?: string;
 }
+
+/**
+ * ⚠ This interface is a SECOND declaration of the one in api/index.ts, same
+ * name and same shape, and the two must be kept in step by hand: a field added
+ * to one and not the other fails at the call site with a message about an
+ * unknown property, which is what happened while adding calendarId on
+ * 2026-08-15. Same class as the duplicate task stacks — see the headers in
+ * api/index.ts and api/tasks.ts.
+ */
 
 export const DEFAULT_REFLECTION: ReflectionState = {
   focus: 7,

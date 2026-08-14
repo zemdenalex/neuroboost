@@ -30,7 +30,16 @@ type Event struct {
 
 // CreateEventRequest represents the request to create an event
 type CreateEventRequest struct {
-	Title       string   `json:"title"`
+	Title string `json:"title"`
+	// Which calendar the event goes in. Absent or empty means the author's
+	// personal calendar — the behaviour every creation had before shared
+	// calendars, and the one the bot and the importer still depend on.
+	//
+	// 🔴 Checked, never trusted: calendars.WritableIDFor verifies the caller is
+	// an active owner or editor. The row's user_id records authorship, not
+	// access, so an unchecked id would write into someone else's calendar with
+	// nothing downstream objecting.
+	CalendarID  *string  `json:"calendar_id,omitempty"`
 	Description *string  `json:"description,omitempty"`
 	StartsAt    string   `json:"starts_at"` // ISO 8601
 	EndsAt      string   `json:"ends_at"`   // ISO 8601

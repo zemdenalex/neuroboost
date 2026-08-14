@@ -110,6 +110,14 @@ export interface CreateEventBody {
    * default preset" on the backend; an explicit [] means "no reminders".
    */
   reminderOffsets?: number[];
+  /**
+   * Which calendar to create in. Omitted means the author's personal one.
+   *
+   * The backend verifies membership — a supplied id is never trusted — and
+   * answers 404 for a calendar the caller cannot see, 403 for one they can read
+   * but not write.
+   */
+  calendarId?: string;
 }
 
 /** Create event from camelCase body, return NbEvent */
@@ -126,6 +134,7 @@ export async function createEvent(body: CreateEventBody): Promise<NbEvent> {
     timezone: body.timezone,
     rrule: body.rrule,
     reminder_offsets: body.reminderOffsets,
+    calendar_id: body.calendarId,
   };
   const response = await api.post<{ event: ApiEvent } | ApiEvent>('/events', apiBody);
   const event = 'event' in (response as Record<string, unknown>)

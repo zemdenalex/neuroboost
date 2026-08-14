@@ -2,6 +2,7 @@ package calendars
 
 import (
 	"context"
+	"errors"
 
 	"github.com/jackc/pgx/v5"
 
@@ -128,4 +129,44 @@ func readCalendarID(ctx context.Context, userID string) (string, error) {
 		`SELECT id::text FROM calendar WHERE owner_id = $1 AND kind = 'personal' LIMIT 1`,
 		userID).Scan(&id)
 	return id, err
+}
+
+// WritableIDFor resolves the calendar an event or task should be created in.
+//
+// Absent calendarID means the caller's personal calendar — the behaviour every
+// creation had before shared calendars existed, and the one the bot and import
+// still rely on.
+//
+// 🔴 A supplied id is CHECKED, not trusted. Without this, a caller could post
+// any UUID and write into someone else's calendar: the row's user_id records
+// authorship, not access, so nothing downstream would object.
+//
+// A viewer gets ErrNotCalendarOwner — they can read the calendar but not add to
+// it. A non-member gets ErrCalendarNotFound rather than a permission error, for
+// the same reason requireOwner does: a 403 would confirm to a stranger that the
+// calendar exists.
+func WritableIDFor(ctx context.Context, userID, calendarID string) (string, error) {
+	if calendarID == "" {
+		return PersonalIDFor(ctx, userID)
+	}
+
+	var role string
+	err := db.Pool.QueryRow(ctx,
+		`SELECT m.role
+		   FROM calendar_member m
+		  WHERE m.calendar_id = $1 AND m.user_id = $2 AND m.status = $3`,
+		calendarID, userID, StatusActive).Scan(&role)
+	if err != nil {
+		// 22P02: the id was not a UUID at all. Reads as "no such calendar"
+		// rather than a 500, matching membership() in crud.go.
+		if errors.Is(err, pgx.ErrNoRows) || pgErrCode(err, "22P02") {
+			return "", ErrCalendarNotFound
+		}
+		return "", err
+	}
+
+	if role != RoleOwner && role != RoleEditor {
+		return "", ErrNotCalendarOwner
+	}
+	return calendarID, nil
 }

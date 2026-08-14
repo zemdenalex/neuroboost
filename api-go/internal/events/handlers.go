@@ -3,6 +3,7 @@ package events
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -150,7 +151,19 @@ func CreateHandler(w http.ResponseWriter, r *http.Request) {
 
 	event, err := createEvent(r.Context(), userID, req, startsAt, endsAt, timezone, isWorkEvent, tags)
 	if err != nil {
-		util.RespondError(w, http.StatusInternalServerError, "CREATE_ERROR", "Failed to create event")
+		// A refused calendar is the caller's mistake, not the server's. Left as
+		// a flat 500 it would read as "the app is broken" for what is really
+		// "you cannot write there" or "no such calendar".
+		switch {
+		case errors.Is(err, calendars.ErrCalendarNotFound):
+			// 404 rather than 403 on purpose: a permission error would confirm
+			// to a stranger that the calendar exists.
+			util.RespondError(w, http.StatusNotFound, "CALENDAR_NOT_FOUND", "Calendar not found")
+		case errors.Is(err, calendars.ErrNotCalendarOwner):
+			util.RespondError(w, http.StatusForbidden, "CALENDAR_READ_ONLY", "You can read this calendar but not add to it")
+		default:
+			util.RespondError(w, http.StatusInternalServerError, "CREATE_ERROR", "Failed to create event")
+		}
 		return
 	}
 
@@ -678,9 +691,14 @@ func createEvent(ctx context.Context, userID string, req CreateEventRequest, sta
 		reminderOffsets = usersettings.DefaultEventOffsets(ctx, userID)
 	}
 
-	// New events land in the author's personal calendar. user_id stays on the
-	// row too — it means authorship now, not access.
-	calID, err := calendars.PersonalIDFor(ctx, userID)
+	// The calendar the caller asked for, or their personal one when they asked
+	// for none. user_id stays on the row either way — it means authorship now,
+	// not access.
+	requested := ""
+	if req.CalendarID != nil {
+		requested = *req.CalendarID
+	}
+	calID, err := calendars.WritableIDFor(ctx, userID, requested)
 	if err != nil {
 		return nil, err
 	}

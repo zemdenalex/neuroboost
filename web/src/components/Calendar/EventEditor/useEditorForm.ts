@@ -21,7 +21,7 @@ export type RepeatEndType = 'never' | 'count' | 'date';
 
 export interface EditorFormState {
   title: string; description: string; location: string; tags: string; isAllDay: boolean;
-  color: string; reminderOffsets: number[]; startTimeInput: string; endTimeInput: string;
+  color: string; calendarId: string; reminderOffsets: number[]; startTimeInput: string; endTimeInput: string;
   startDateLocal: string; endDateLocal: string; validation: TimeValidation;
   showAdvanced: boolean; showReflection: boolean; isDeleting: boolean; reflection: ReflectionState;
   repeatType: RepeatType; repeatEndType: RepeatEndType; repeatCount: number; repeatUntil: string;
@@ -30,6 +30,7 @@ export interface EditorFormState {
 export interface EditorFormActions {
   setTitle: (v: string) => void; setDescription: (v: string) => void; setLocation: (v: string) => void;
   setTags: (v: string) => void; setIsAllDay: (v: boolean) => void; setColor: (v: string) => void;
+  setCalendarId: (v: string) => void;
   setReminderOffsets: (v: number[]) => void; setStartDateLocal: (v: string) => void;
   setEndDateLocal: (v: string) => void; setShowAdvanced: (v: boolean) => void;
   setShowReflection: (v: boolean) => void;
@@ -58,6 +59,9 @@ export function useEditorForm(
   const [tags, setTags] = useState('');
   const [isAllDay, setIsAllDay] = useState(false);
   const [color, setColor] = useState('');
+  // '' means "my personal calendar" — the same default the backend applies when
+  // the field is absent, so an untouched form behaves exactly as before.
+  const [calendarId, setCalendarId] = useState('');
   // Empty until a draft loads or the user picks. Omitting the key on create
   // would ask the backend for its default preset; sending [] would mean
   // "none". We send what the control shows, so the two never disagree.
@@ -188,6 +192,10 @@ export function useEditorForm(
       color: color.trim() || undefined,
       timezone,
       reminderOffsets,
+      // Omitted rather than sent empty: the backend reads an absent field as
+      // "the author's personal calendar", and an empty string would have to be
+      // special-cased on the far side.
+      calendarId: calendarId || undefined,
     };
 
     // Build RRULE string from repeat fields
@@ -246,8 +254,8 @@ export function useEditorForm(
   const canSave = !!(title.trim() && (isAllDay || (validation.start && validation.end && validation.dateRangeValid)));
 
   return {
-    state: { title, description, location, tags, isAllDay, color, reminderOffsets, startTimeInput, endTimeInput, startDateLocal, endDateLocal, validation, showAdvanced, showReflection, isDeleting, reflection, repeatType, repeatEndType, repeatCount, repeatUntil },
-    actions: { setTitle, setDescription, setLocation, setTags, setIsAllDay, setColor, setReminderOffsets, setStartDateLocal, setEndDateLocal, setShowAdvanced, setShowReflection, handleTimeChange, handleReflectionChange, handleSave, handleDelete, setRepeatType, setRepeatEndType, setRepeatCount, setRepeatUntil },
+    state: { title, description, location, tags, isAllDay, color, calendarId, reminderOffsets, startTimeInput, endTimeInput, startDateLocal, endDateLocal, validation, showAdvanced, showReflection, isDeleting, reflection, repeatType, repeatEndType, repeatCount, repeatUntil },
+    actions: { setTitle, setDescription, setLocation, setTags, setIsAllDay, setColor, setCalendarId, setReminderOffsets, setStartDateLocal, setEndDateLocal, setShowAdvanced, setShowReflection, handleTimeChange, handleReflectionChange, handleSave, handleDelete, setRepeatType, setRepeatEndType, setRepeatCount, setRepeatUntil },
     isEditing,
     hasReflection,
     canSave,
