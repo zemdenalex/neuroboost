@@ -22,9 +22,6 @@ import (
 	e "neuroboost/api-go/internal/events"
 	exp "neuroboost/api-go/internal/export"
 	f "neuroboost/api-go/internal/feedback"
-	n "neuroboost/api-go/internal/needs"
-	o "neuroboost/api-go/internal/opportunities"
-	p "neuroboost/api-go/internal/patterns"
 	pl "neuroboost/api-go/internal/planning"
 	rfl "neuroboost/api-go/internal/reflections"
 	rem "neuroboost/api-go/internal/reminders"
@@ -161,26 +158,17 @@ func main() {
 		r.Post("/api/tasks/{id}/schedule", t.ScheduleHandler)
 		r.Post("/api/tasks/{id}/log-time", t.LogTimeHandler)
 
-		// Opportunities
-		r.Get("/api/opportunities", o.ListHandler)
-		r.Post("/api/opportunities", o.CreateHandler)
-		r.Patch("/api/opportunities/{id}", o.UpdateHandler)
-		r.Delete("/api/opportunities/{id}", o.DeleteHandler)
-
-		// Needs
-		r.Get("/api/needs", n.ListHandler)
-		r.Post("/api/needs", n.CreateHandler)
-		r.Patch("/api/needs/{id}", n.UpdateHandler)
-		r.Delete("/api/needs/{id}", n.DeleteHandler)
-
+		// needs, opportunities and patterns lived here as ten routes that answered
+		// 501 to an authenticated caller — a promise in a public API that nobody
+		// owned. No writer existed anywhere in api-go, and every frontend piece
+		// was a one-line stub with no importer. Removed 14.08; the tables stay
+		// (migrations are never edited here, and node_kind still references
+		// them) and git holds the packages if the feature ever gets a spec and a
+		// consumer.
 		// Reflections
 		r.Get("/api/reflections", rfl.ListHandler)
 		r.Post("/api/reflections", rfl.CreateHandler)
 		r.Patch("/api/reflections/{id}", rfl.UpdateHandler)
-
-		// Patterns
-		r.Get("/api/patterns/metrics", p.GetMetricsHandler)
-		r.Get("/api/patterns/alert-status", p.GetAlertStatusHandler)
 
 		// Planning
 		r.Get("/api/planning/week", pl.GetWeekHandler)

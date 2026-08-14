@@ -94,7 +94,7 @@ corepack pnpm e2e
 | `export` / `import` | 2 | 2 тест-файла | 🟡 импорт большого файла не гонялся |
 | `feedback` | 4 | `handlers_test.go` — валидация, allowlist сортировки, отказ анониму | 🟢 доб. 13.08 |
 | `admin` | 2 | `handlers_test.go` — 401 анониму, 403 при недоступной базе | 🟡 доб. 13.08, **чинен 14.08** (пропускался) |
-| `needs`, `opportunities`, `patterns` | 10 | — | ⬛ **501-заглушки**, потребителей ноль |
+| ~~`needs`, `opportunities`, `patterns`~~ | — | — | ✅ **удалены 14.08**, 501-заглушек в проекте больше нет |
 | `bodyLimit` (новое 13.08) | middleware | `bodylimit_test.go` + `response_test.go`, **проверено саботажем** | 🟢 |
 
 ## 3. Бот — 8 кнопок главного меню

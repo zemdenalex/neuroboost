@@ -60,7 +60,13 @@ func ListHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	list, err := ListFor(r.Context(), userID)
 	if err != nil {
-		util.RespondError(w, http.StatusInternalServerError, "LIST_ERROR", "Failed to list calendars")
+		// Through the shared mapper like every other handler in this file, not
+		// a flat 500. Harmless today — ListFor only returns raw database
+		// errors — but the moment it learns to return a typed one, a hand-rolled
+		// 500 here answers it wrongly and silently, which is exactly how the
+		// other handlers' error mapping was allowed to drift apart before
+		// requireOwner centralised it.
+		respondCalendarError(w, err)
 		return
 	}
 	util.RespondJSON(w, http.StatusOK, list)
