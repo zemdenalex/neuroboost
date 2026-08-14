@@ -1,3 +1,26 @@
+/**
+ * THE camelCase TASK STACK — used by the calendar side of the app.
+ *
+ * There are two task stacks, and this is the boundary between them:
+ *
+ *   api/tasks.ts   snake_case on the wire AND in its types. The complete one:
+ *                  list, create, batch, get, update, delete, schedule, logTime.
+ *                  Used by Tasks, Planning, QuickAdd.
+ *   api/index.ts   this file. camelCase wrappers over the same endpoints, for
+ *                  consumers that speak the calendar's camelCase `Task` type
+ *                  (types/index.ts) — Calendar and Dashboard.
+ *
+ * 🔴 Every wrapper here CONVERTS through toTask/toNbEvent. It must stay that
+ * way. Asserting a camelCase type onto a snake_case response is what produced
+ * T1 ("a dragged task is always 60 minutes") and, until 2026-08-14, made
+ * createTask and updateTask return undefined under a type that promised a Task.
+ *
+ * ⚠ Merging the two stacks is deliberately NOT done. It would mean converting
+ * the calendar, WeekGrid and TaskSidebar from the camelCase Task type to the
+ * snake_case one — a large change across code with no regression suite. The
+ * duplication that remains is of NAMES, not of behaviour; the correctness
+ * problem it used to hide is fixed and covered by api/taskWrappers.test.ts.
+ */
 import { toTask, type RawTask } from './toTask';
 import { scopeQuery, type MutationScope } from '../lib/recurrence/scope';
 

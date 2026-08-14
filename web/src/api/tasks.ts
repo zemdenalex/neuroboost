@@ -1,3 +1,16 @@
+/**
+ * THE snake_case TASK STACK — the complete one, used by Tasks, Planning and
+ * QuickAdd.
+ *
+ * Its counterpart is api/index.ts, which wraps the same endpoints for the
+ * calendar's camelCase `Task` type. See the header there for why both exist and
+ * why they have not been merged.
+ *
+ * 🔴 `scheduleTask` here takes an OBJECT — `(id, { starts_at, ends_at, all_day })`.
+ * The positional one, `(id, startsAt, minutes)`, is `scheduleTaskAt` in
+ * api/index.ts. They shared the name `scheduleTask` until 2026-08-14, and a
+ * blind rename during that very cleanup renamed a call to the wrong one.
+ */
 import { api } from './client'
 
 export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'SCHEDULED' | 'DONE' | 'CANCELLED'
