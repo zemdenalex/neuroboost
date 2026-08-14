@@ -10,6 +10,10 @@ import type { UserSettings } from '../../api/auth'
 import { resolveQuickTaskSettings, type QuickTaskSettings } from '../../lib/quickTask/settings'
 import { resolveRememberedScope, type RememberedScope } from '../../lib/recurrence/scope'
 import { resolveReminderSettings, type ReminderSettings } from '../../lib/reminders/offsets'
+import { createDebouncedSaver, type DebouncedSaver } from '../../lib/autoSave/debouncedSaver'
+
+/** The subset of the profile this page edits. */
+type ProfilePatch = { display_name?: string; timezone?: string; locale?: string }
 import { ReminderOffsets } from '../../components/ReminderOffsets/ReminderOffsets'
 import { CalendarsSection } from '../../components/Calendars/CalendarsSection'
 import { AlertTriangle, Bell, Clock, Database, Globe, LayoutGrid, Lightbulb, LogOut, Maximize, Repeat, Sliders, Smartphone, Zap } from 'lucide-react'
@@ -48,57 +52,60 @@ export default function Settings() {
   const [error, setError] = useState<string | null>(null)
   const [language, setLanguage] = useState(i18n.language?.startsWith('ru') ? 'ru' : 'en')
 
-  // Debounced auto-save — coalesces rapid changes (e.g. slider drags) into a single save.
-  // Separate timers + pending-patch refs per function so changes to different fields
-  // within the debounce window merge instead of cancelling each other.
-  const settingsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const profileTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const pendingSettingsRef = useRef<Partial<UserSettings>>({})
-  const pendingProfileRef = useRef<{ display_name?: string; timezone?: string; locale?: string }>({})
+  // Debounced auto-save. The machinery lives in lib/autoSave so it can be
+  // tested: both copies that used to sit here cancelled their timer on unmount
+  // under a comment claiming they flushed it, so a change followed by leaving
+  // the page inside 300ms was lost silently. See debouncedSaver.test.ts.
+  //
+  // Held in refs and built once: rebuilding the saver on re-render would drop
+  // the pending patch it was holding.
+  const settingsSaverRef = useRef<DebouncedSaver<UserSettings> | null>(null)
+  const profileSaverRef = useRef<DebouncedSaver<ProfilePatch> | null>(null)
 
-  const autoSaveSettings = useCallback(
-    (patch: Partial<UserSettings>) => {
-      pendingSettingsRef.current = { ...pendingSettingsRef.current, ...patch }
-      if (settingsTimerRef.current) clearTimeout(settingsTimerRef.current)
-      settingsTimerRef.current = setTimeout(async () => {
-        const toSave = pendingSettingsRef.current
-        pendingSettingsRef.current = {}
-        try {
-          await updateSettings(toSave)
-          showToast(t('saved'))
-        } catch (err) {
-          console.error('Auto-save failed:', err)
-          setError(t('error.saveSettings'))
-        }
-      }, 300)
-    },
-    [updateSettings, t]
-  )
+  // Callbacks change identity every render; the savers are created once, so
+  // they read through this ref rather than closing over the first render's
+  // versions.
+  const handlersRef = useRef({ updateSettings, updateProfile, showToast, setError, t })
+  handlersRef.current = { updateSettings, updateProfile, showToast, setError, t }
 
-  const autoSaveProfile = useCallback(
-    (patch: { display_name?: string; timezone?: string; locale?: string }) => {
-      pendingProfileRef.current = { ...pendingProfileRef.current, ...patch }
-      if (profileTimerRef.current) clearTimeout(profileTimerRef.current)
-      profileTimerRef.current = setTimeout(async () => {
-        const toSave = pendingProfileRef.current
-        pendingProfileRef.current = {}
-        try {
-          await updateProfile(toSave)
-          showToast(t('saved'))
-        } catch (err) {
-          console.error('Auto-save failed:', err)
-          setError(t('error.saveSettings'))
-        }
-      }, 300)
-    },
-    [updateProfile, t]
-  )
+  if (settingsSaverRef.current === null) {
+    settingsSaverRef.current = createDebouncedSaver<UserSettings>({
+      save: (patch) => handlersRef.current.updateSettings(patch),
+      onSaved: () => handlersRef.current.showToast(handlersRef.current.t('saved')),
+      onError: (err) => {
+        console.error('Auto-save failed:', err)
+        handlersRef.current.setError(handlersRef.current.t('error.saveSettings'))
+      },
+      onFlushError: (err) => console.error('Auto-save flush failed:', err),
+    })
+  }
 
-  // Flush any pending save on unmount so a quick navigation doesn't drop changes.
+  if (profileSaverRef.current === null) {
+    profileSaverRef.current = createDebouncedSaver<ProfilePatch>({
+      save: (patch) => handlersRef.current.updateProfile(patch),
+      onSaved: () => handlersRef.current.showToast(handlersRef.current.t('saved')),
+      onError: (err) => {
+        console.error('Auto-save failed:', err)
+        handlersRef.current.setError(handlersRef.current.t('error.saveSettings'))
+      },
+      onFlushError: (err) => console.error('Auto-save flush failed:', err),
+    })
+  }
+
+  const autoSaveSettings = useCallback((patch: Partial<UserSettings>) => {
+    settingsSaverRef.current?.schedule(patch)
+  }, [])
+
+  const autoSaveProfile = useCallback((patch: Partial<ProfilePatch>) => {
+    profileSaverRef.current?.schedule(patch)
+  }, [])
+
+  // 🔴 Flush, not cancel. This is the whole point of the extraction: what the
+  // old comment here promised and the old body did not do.
   useEffect(() => {
     return () => {
-      if (settingsTimerRef.current) clearTimeout(settingsTimerRef.current)
-      if (profileTimerRef.current) clearTimeout(profileTimerRef.current)
+      settingsSaverRef.current?.flush()
+      profileSaverRef.current?.flush()
     }
   }, [])
 
