@@ -26,7 +26,6 @@ export type {
 export {
   listEvents,
   getEvent,
-  resizeEvent,
 } from './events';
 
 export type {
@@ -187,7 +186,15 @@ export async function createTask(body: {
   dueDate?: string;
   estimatedMinutes?: number;
 }): Promise<import('../types').Task> {
-  const response = await api.post<{ task: import('../types').Task }>('/tasks', {
+  // 🔴 The API returns the task object itself inside the { data } envelope,
+  // and api.post already unwraps that envelope — so asking for a `.task` key
+  // returned undefined under a type that promised a Task. Every current caller
+  // throws the value away, which is the only reason nobody saw it.
+  //
+  // This is the T1 mechanism exactly: a type asserted onto a response nobody
+  // checked. T1 cost "a dragged task is always 60 minutes"; this one was
+  // waiting for the first caller to use the result.
+  const raw = await api.post<RawTask>('/tasks', {
     title: body.title,
     description: body.description,
     priority: body.priority,
@@ -195,7 +202,7 @@ export async function createTask(body: {
     due_date: body.dueDate,
     estimated_minutes: body.estimatedMinutes,
   });
-  return response.task;
+  return toTask(raw);
 }
 
 /** Update task */
@@ -204,8 +211,9 @@ export async function updateTask(id: string, updates: {
   status?: string;
   priority?: number;
 }): Promise<import('../types').Task> {
-  const response = await api.patch<{ task: import('../types').Task }>(`/tasks/${id}`, updates);
-  return response.task;
+  // Same defect as createTask above, same fix.
+  const raw = await api.patch<RawTask>(`/tasks/${id}`, updates);
+  return toTask(raw);
 }
 
 /** Delete a task */
@@ -214,7 +222,21 @@ export async function deleteTask(id: string): Promise<void> {
 }
 
 /** Schedule task to calendar, creating an event */
-export async function scheduleTask(taskId: string, startsAt: string, durationMinutes = 60): Promise<NbEvent> {
+/**
+ * Schedule a task by start time and duration, returning the created event in
+ * the calendar's camelCase shape.
+ *
+ * 🔴 Named `scheduleTaskAt` since 2026-08-14. It was `scheduleTask`, which is
+ * also the name of a DIFFERENT function in api/tasks.ts — same identifier, two
+ * modules, incompatible arity (`(id, startsAt, minutes)` here against
+ * `(id, { ... })` there) and different return types. Both are in active use:
+ * Calendar and Tasks call this one, Planning calls the other. Whichever a
+ * reader had in mind, the wrong import compiled or failed for reasons that had
+ * nothing to do with what they were doing.
+ *
+ * The name says what distinguishes it: this one takes a moment in time.
+ */
+export async function scheduleTaskAt(taskId: string, startsAt: string, durationMinutes = 60): Promise<NbEvent> {
   const startMs = Date.parse(startsAt);
   const mins = Number.isFinite(durationMinutes) ? Math.max(15, durationMinutes) : 60;
   const endsAt = new Date(startMs + mins * 60_000).toISOString();

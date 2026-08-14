@@ -14,7 +14,7 @@ import {
   getTasks,
   moveEvent,
   deleteEvent,
-  scheduleTask,
+  scheduleTaskAt,
   updateTask,
 } from '../../api';
 import type { NbEvent, Task } from '../../types';
@@ -128,7 +128,7 @@ export function Calendar() {
 
   const handleTaskDrop = useCallback(async (task: { id: string; estimatedMinutes?: number }, startTime: Date) => {
     try {
-      await scheduleTask(task.id, startTime.toISOString(), task.estimatedMinutes);
+      await scheduleTaskAt(task.id, startTime.toISOString(), task.estimatedMinutes);
       await Promise.all([loadEvents(), loadTasks()]);
     } catch (error) {
       console.error('Failed to schedule task:', error);

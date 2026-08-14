@@ -69,18 +69,9 @@ export async function getEvent(id: string): Promise<Event> {
   return api.get<Event>(`/events/${id}`)
 }
 
-export async function updateEvent(id: string, data: UpdateEventRequest): Promise<Event> {
-  return api.patch<Event>(`/events/${id}`, data)
-}
 
 export async function deleteEvent(id: string): Promise<void> {
   return api.delete(`/events/${id}`)
 }
 
-export async function moveEvent(id: string, data: MoveEventRequest): Promise<Event> {
-  return api.patch<Event>(`/events/${id}/move`, data)
-}
 
-export async function resizeEvent(id: string, data: ResizeEventRequest): Promise<Event> {
-  return api.patch<Event>(`/events/${id}/resize`, data)
-}

@@ -125,13 +125,20 @@ cd web && pnpm test --run                      # сколько тестов н�
    `Date.now()` в миллисекундах») **устарела: починено**, `client.ts:47` делает
    `Number(expiry) * 1000`. Номер слота сохранён намеренно — на номера gotcha ссылаются
    `graph/log.md` и узлы графа.
-3. **Дублирующие API-стеки — но опасен не тот, что здесь стоял.** ⚠ Прежняя запись пугала
-   коллизией `moveEvent` в `api/events.ts` против `api/index.ts`: она **латентна** — у
-   `events.ts` `moveEvent`/`resizeEvent`/`updateEvent` ноль потребителей и через barrel они не
-   проходят. 🔴 Живое дублирование — **у задач**: `api/tasks.ts` против обёрток `api/index.ts`,
-   потребители по обе стороны, `scheduleTask` экспортирован дважды с несовместимой арностью, а
-   `createTask`/`updateTask` (`api/index.ts:190,207`) возвращают `undefined` под типом `Task`.
-   Разбор: `docs/audit-frontend-2026-08-13.md` §1.
+3. **Дублирующие API-стеки — что осталось после чистки 14.08.**
+   ✅ **События вылечены:** `moveEvent`/`resizeEvent`/`updateEvent` в `api/events.ts` имели ноль
+   потребителей и удалены; зелёный `typecheck` после удаления — доказательство. Реэкспорт
+   `resizeEvent` из `api/index.ts` снят.
+   ✅ **`createTask`/`updateTask` (`api/index.ts`) починены:** они читали ключ `.task`, которого
+   в ответе нет — `api.post` уже разворачивает `{data}` — и возвращали `undefined` под типом
+   `Task`. Теперь `RawTask` + `toTask`, 5 тестов (`api/taskWrappers.test.ts`), проверено
+   воспроизведением. Дефект был невидим только потому, что все вызывающие возврат выбрасывают.
+   ✅ **Двойной `scheduleTask` разведён:** позиционный вариант из `api/index.ts` называется
+   **`scheduleTaskAt`** (`(id, startsAt, minutes)`); объектный в `api/tasks.ts`
+   (`(id, {starts_at, ends_at, all_day})`) остался `scheduleTask`. 🔴 Оба живые: `Calendar` зовёт
+   первый, `Planning` и `Tasks` — второй.
+   ⚠ **Задачи по-прежнему в двух стеках** (`api/tasks.ts` против обёрток `api/index.ts`) —
+   сведение к одному имени на операцию не сделано. Разбор: `docs/audit-frontend-2026-08-13.md` §1.
 4. **Инверсия приоритета:** 1 = Emergency, 5 = If Possible (меньше число — выше приоритет),
    0 = Buffer.
 5. **Таймзона по умолчанию** «Europe/Moscow» местами захардкожена.
