@@ -49,7 +49,7 @@ corepack pnpm e2e
 
 | Слой | Прошло | Пропущено |
 |---|---|---|
-| Go `api-go` | **182** | **15** без `DATABASE_URL` |
+| Go `api-go` | **186** | **15** без `DATABASE_URL` |
 | Go `bot` | **38** | 0 |
 | Фронт unit | **380 в 44 файлах** | 0 |
 | Фронт lint | 0 errors, 2 warnings | — |
@@ -93,7 +93,7 @@ corepack pnpm e2e
 | `planning` | 1 | косвенно | 🟡 |
 | `export` / `import` | 2 | 2 тест-файла | 🟡 импорт большого файла не гонялся |
 | `feedback` | 4 | `handlers_test.go` — валидация, allowlist сортировки, отказ анониму | 🟢 доб. 13.08 |
-| `admin` | 2 | `handlers_test.go` — 401 анониму, 403 при недоступной базе | 🟡 доб. 13.08 |
+| `admin` | 2 | `handlers_test.go` — 401 анониму, 403 при недоступной базе | 🟡 доб. 13.08, **чинен 14.08** (пропускался) |
 | `needs`, `opportunities`, `patterns` | 10 | — | ⬛ **501-заглушки**, потребителей ноль |
 | `bodyLimit` (новое 13.08) | middleware | `bodylimit_test.go` + `response_test.go`, **проверено саботажем** | 🟢 |
 
@@ -170,6 +170,12 @@ corepack pnpm e2e
   значит локальное «всё зелено» слабее CI-шного, и это надо помнить, а не открывать заново.
 - 🟡 **`web/pnpm-lock.yaml` в `.gitignore`** (`.gitignore:104`) — CI ставит зависимости без
   lockfile, версии в CI не обязаны совпадать с локальными.
+- 🔴 **Два моих же теста молча пропускались (14.08).** `TestRefusesWhenTheAdminLookupCannotBeAnswered`
+  и `TestFetchExceptionsReportsFailureInsteadOfClaimingThereAreNone` строили «сломанный» пул
+  через `database.New`, а тот **пингует при создании** — недостижимый DSN падал сразу, и
+  `t.Skipf` превращал оба теста в no-op. Первый был доложен как покрывающий отказ, покрывая
+  ноль. Лечится `pgxpool.NewWithConfig` (соединяется лениво). 🔴 **Правило: `t.Skip` в тесте,
+  который не должен зависеть от окружения, — это не защита, а выключатель.**
 - 🟡 **`TestRefusesWhenTheAdminLookupCannotBeAnswered` не различает две ветки.** pgx оставляет
   `isAdmin = false` при ошибке `Scan`, поэтому удаление проверки `err != nil` оставляет тест
   зелёным — **проверено саботажем 13.08**. Тест доказывает «на сбое базы отвечает 403, а не

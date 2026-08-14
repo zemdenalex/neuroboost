@@ -7,6 +7,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/jackc/pgx/v5/pgxpool"
+
 	"neuroboost/api-go/internal/database"
 	"neuroboost/api-go/internal/middleware"
 	"neuroboost/api-go/internal/util"
@@ -27,23 +29,27 @@ func handlerCases(h *Handler) map[string]func(http.ResponseWriter, *http.Request
 	}
 }
 
-// unreachableDB builds a real pool whose queries always fail.
+// lazyBrokenDB builds a pool that CONNECTS ON FIRST USE and always fails.
 //
-// A nil pool is the wrong instrument for the authorisation test below: the
-// admin check HAS to query the database — that is how it learns whether the
-// caller is an admin — so a nil pool panics inside the very call under test and
-// proves nothing. A pool pointing at a closed port reaches the same branch by
-// the intended route, returning an error the way a real outage would.
-func unreachableDB(t *testing.T) *database.DB {
+// 🔴 Do not reach for database.New here: it pings during construction, so an
+// unreachable DSN fails immediately and the t.Skip that used to guard it turned
+// this whole test into a silent no-op. It skipped in CI and locally, and it was
+// reported as covering the refusal path when it covered nothing.
+// pgxpool.NewWithConfig does not dial until the first query, which is exactly
+// the failure being tested: a pool that looks fine and fails when used.
+func lazyBrokenDB(t *testing.T) *database.DB {
 	t.Helper()
-	// Port 1 is reserved and never listening; the DSN parses, so the pool
-	// constructs and fails on first use rather than on creation.
-	db, err := database.New("postgres://nobody:nobody@127.0.0.1:1/none?sslmode=disable&connect_timeout=1")
+	// Port 1 is reserved and never listening.
+	cfg, err := pgxpool.ParseConfig("postgres://nobody:nobody@127.0.0.1:1/none?sslmode=disable&connect_timeout=1")
 	if err != nil {
-		t.Skipf("could not build an unreachable pool: %v", err)
+		t.Fatalf("could not parse the test DSN: %v", err)
 	}
-	t.Cleanup(db.Close)
-	return db
+	pool, err := pgxpool.NewWithConfig(context.Background(), cfg)
+	if err != nil {
+		t.Fatalf("could not build a lazy pool: %v", err)
+	}
+	t.Cleanup(pool.Close)
+	return &database.DB{Pool: pool}
 }
 
 func TestRefusesAnonymousCaller(t *testing.T) {
@@ -81,7 +87,7 @@ func TestRefusesAnonymousCaller(t *testing.T) {
 // data below. Distinguishing the two clauses needs a live database where the
 // query can succeed with is_admin = false.
 func TestRefusesWhenTheAdminLookupCannotBeAnswered(t *testing.T) {
-	h := &Handler{db: unreachableDB(t)}
+	h := &Handler{db: lazyBrokenDB(t)}
 	for name, call := range handlerCases(h) {
 		t.Run(name, func(t *testing.T) {
 			req := httptest.NewRequest(http.MethodGet, "/api/admin/health", nil)

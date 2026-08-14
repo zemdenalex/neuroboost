@@ -6,8 +6,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"neuroboost/api-go/internal/calendars"
 )
 
 // RecurrenceRule represents a parsed RRULE for event recurrence
@@ -225,12 +223,20 @@ func isException(occurrence time.Time, exceptions []time.Time) bool {
 // are shared series state, same as the event itself. Filtering by user_id
 // here made a skip written by one calendar member invisible to every other
 // member — they would see an occurrence that was, in fact, already deleted.
-func fetchExceptions(ctx context.Context, userID, eventID string) []time.Time {
-	calIDs, err := calendars.CalendarIDsFor(ctx, userID)
-	if err != nil {
-		return nil
-	}
-
+//
+// Takes calIDs rather than a userID, and returns an error rather than nil.
+// Both changes fix the same defect from opposite ends.
+//
+// It used to call calendars.CalendarIDsFor itself and return nil when that
+// failed. Since nil means "no exceptions", a momentary pool failure put every
+// deleted occurrence of a series back on the calendar — silently, with nothing
+// in the log. And because the caller loops over events, that lookup ran once
+// per recurring event: 2+2R queries per GET /api/events where R is the number
+// of recurring events in the window.
+//
+// Same shape as reminders.fetchSkippedOccurrences (scan.go:182), which already
+// takes calIDs for exactly this reason.
+func fetchExceptions(ctx context.Context, calIDs []string, eventID string) ([]time.Time, error) {
 	rows, err := db.Pool.Query(ctx,
 		`SELECT ee.occurrence
 		 FROM event_exception ee
@@ -238,18 +244,21 @@ func fetchExceptions(ctx context.Context, userID, eventID string) []time.Time {
 		 WHERE e.calendar_id = ANY($1) AND ee.event_id = $2 AND ee.skipped = true`,
 		calIDs, eventID)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	defer rows.Close()
 
 	var exceptions []time.Time
 	for rows.Next() {
 		var t time.Time
-		if err := rows.Scan(&t); err == nil {
-			exceptions = append(exceptions, t)
+		if err := rows.Scan(&t); err != nil {
+			// A row that will not scan is not "no exception" — returning it as
+			// such is how a deleted occurrence reappears.
+			return nil, err
 		}
+		exceptions = append(exceptions, t)
 	}
-	return exceptions
+	return exceptions, rows.Err()
 }
 
 // buildRRule builds an RRULE string from components

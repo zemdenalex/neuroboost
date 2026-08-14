@@ -53,6 +53,16 @@ func ListHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Read the caller's calendars ONCE, above the loop. fetchExceptions used to
+	// do this itself, on every recurring event, which made half of this
+	// handler's queries redundant — and, worse, swallowed the failure as "no
+	// exceptions", putting deleted occurrences back on the calendar.
+	calIDs, err := calendars.CalendarIDsFor(r.Context(), userID)
+	if err != nil {
+		util.RespondError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to fetch events")
+		return
+	}
+
 	// Expand recurring events
 	var expanded []Event
 	for _, ev := range events {
@@ -63,7 +73,13 @@ func ListHandler(w http.ResponseWriter, r *http.Request) {
 				expanded = append(expanded, ev)
 				continue
 			}
-			exceptions := fetchExceptions(r.Context(), userID, ev.ID)
+			exceptions, err := fetchExceptions(r.Context(), calIDs, ev.ID)
+			if err != nil {
+				// Refusing is the honest answer. Continuing with no exceptions
+				// would silently redraw occurrences the user has deleted.
+				util.RespondError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to fetch events")
+				return
+			}
 			instances := expandRecurrence(ev, startTime, endTime, exceptions)
 			expanded = append(expanded, instances...)
 		} else {
