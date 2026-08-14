@@ -13,6 +13,7 @@ export function WeekGrid({
   events,
   currentWeekOffset = 0,
   timezone,
+  calendarColors,
   onCreate,
   onMoveOrResize,
   onSelect,
@@ -80,8 +81,8 @@ export function WeekGrid({
 
   // Process events for rendering
   const { allDayEvents, timedPerDay } = useMemo(
-    () => processEventsForWeek(events, adjustedStart, timezone, visibleDays),
-    [events, adjustedStart, timezone, visibleDays]
+    () => processEventsForWeek(events, adjustedStart, timezone, visibleDays, calendarColors),
+    [events, adjustedStart, timezone, visibleDays, calendarColors]
   );
   
   // Current time tracking

@@ -1,6 +1,12 @@
 import type { Task } from '../../../types';
 
-// Event type matching v0.4.x API
+/**
+ * ⚠ A SECOND declaration of NbEvent — types/index.ts has the first, and the
+ * two are kept in step by hand. Adding calendarId here on 2026-08-15 was
+ * necessary only because this copy had fallen behind; the field has existed on
+ * the other one since calendars landed. Same class as the duplicate
+ * CreateEventBody and the two task stacks.
+ */
 export interface NbEvent {
   id: string;
   title: string;
@@ -12,6 +18,8 @@ export interface NbEvent {
   description?: string;
   location?: string;
   color?: string;
+  /** Which calendar the event belongs to; drives its colour on the grid. */
+  calendarId?: string;
   tags?: string[];
   taskId?: string | null;
   isWorkEvent?: boolean;
@@ -29,6 +37,13 @@ export interface DaySpan {
 // Event with rendering metadata
 export interface ProcessedEvent extends NbEvent {
   dayUtc0: number;
+  /**
+   * The colour to paint: the event's own if it has one, otherwise its
+   * calendar's. Resolved once during processing rather than in the block, so
+   * the rule lives in one tested place (lib/calendar/eventColor.ts) instead of
+   * being repeated wherever an event is drawn.
+   */
+  displayColor?: string;
   top: number;
   height: number;
   span?: DaySpan;
@@ -154,4 +169,6 @@ export interface WeekGridProps extends WeekGridCallbacks {
   events: NbEvent[];
   currentWeekOffset?: number;
   timezone: string; // User's timezone from settings
+  /** Calendar id → colour, for events that carry no colour of their own. */
+  calendarColors?: Record<string, string | null>;
 }

@@ -1,4 +1,5 @@
 import { HOUR_PX, MIN_SLOT_MIN, DAY_MS } from './weekgrid.constants';
+import { resolveEventColor } from '../../../lib/calendar/eventColor';
 import type { NbEvent, ProcessedEvent, DayInfo, DaySpan } from './weekgrid.types';
 import { dateLocale } from '../../../utils/date';
 
@@ -158,7 +159,8 @@ export function processEventsForWeek(
   events: NbEvent[],
   mondayUtc0: number,
   timezone: string,
-  visibleDays: number
+  visibleDays: number,
+  calendarColors: Record<string, string | null> = {}
 ): { allDayEvents: ProcessedEvent[]; timedPerDay: Map<number, ProcessedEvent[]> } {
   const allDayEvents: ProcessedEvent[] = [];
   const timedPerDay = new Map<number, ProcessedEvent[]>();
@@ -178,6 +180,7 @@ export function processEventsForWeek(
       if (span.startDay >= visibleDays || span.endDay < 0) continue;
       allDayEvents.push({
         ...event,
+        displayColor: resolveEventColor(event, calendarColors),
         dayUtc0: mondayUtc0 + Math.max(0, span.startDay) * DAY_MS,
         top: 0,
         height: 0,
@@ -217,6 +220,7 @@ export function processEventsForWeek(
         const segment: ProcessedEvent = {
           ...event,
           dayUtc0,
+          displayColor: resolveEventColor(event, calendarColors),
           top: minsToTop(startMin),
           height: minsToTop(endMin - startMin),
           span: {
@@ -239,6 +243,7 @@ export function processEventsForWeek(
         const proc: ProcessedEvent = {
           ...event,
           dayUtc0,
+          displayColor: resolveEventColor(event, calendarColors),
           top: minsToTop(startMin),
           height: Math.max(minsToTop(endMin - startMin), minsToTop(MIN_SLOT_MIN)),
         };

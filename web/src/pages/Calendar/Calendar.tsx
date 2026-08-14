@@ -9,6 +9,7 @@ import { useRecurringScope } from '../../components/Calendar/useRecurringScope';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { computeWeekRange } from '../../lib/calendar/weekRange';
 import { createTask } from '../../api';
+import { listCalendars } from '../../api/calendars';
 import {
   getEvents,
   getTasks,
@@ -35,6 +36,23 @@ export function Calendar() {
     return localStorage.getItem('nb-sidebar-open') === 'true';
   });
   const [mobileTasksOpen, setMobileTasksOpen] = useState(false);
+  // Calendar id → colour, so an event with no colour of its own is drawn in
+  // its calendar's. Loaded once: the list is short and changes rarely, and a
+  // failure is not worth reporting — events simply keep the grid's default
+  // styling, which is exactly how they looked before calendars existed.
+  const [calendarColors, setCalendarColors] = useState<Record<string, string | null>>({});
+
+  useEffect(() => {
+    let cancelled = false;
+    listCalendars()
+      .then(list => {
+        if (cancelled) return;
+        setCalendarColors(Object.fromEntries(list.map(c => [c.id, c.color])));
+      })
+      .catch(() => { /* keep the default styling */ });
+    return () => { cancelled = true; };
+  }, []);
+
   const [quickTaskOpen, setQuickTaskOpen] = useState(false);
   const [quickTaskTitle, setQuickTaskTitle] = useState('');
 
@@ -236,6 +254,7 @@ export function Calendar() {
           events={events}
           currentWeekOffset={currentWeekOffset}
           timezone={timezone}
+          calendarColors={calendarColors}
           onCreate={handleCreate}
           onSelect={handleSelect}
           onMoveOrResize={handleMoveOrResize}

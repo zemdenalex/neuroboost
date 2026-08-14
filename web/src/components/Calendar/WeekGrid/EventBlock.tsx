@@ -57,7 +57,10 @@ export const EventBlock = memo(function EventBlock({
         left: `calc(${(event.leftPct ?? 0) * 100}% + 2px)`,
         width: `calc(${(event.widthPct ?? 1) * 100}% - 4px)`,
         borderRadius,
-        backgroundColor: event.color || undefined,
+        // displayColor already resolved the event-over-calendar precedence
+        // (lib/calendar/eventColor.ts); event.color is the fallback for callers
+        // that build a ProcessedEvent without going through processEventsForWeek.
+        backgroundColor: event.displayColor || event.color || undefined,
       }}
       onClick={(e) => {
         e.stopPropagation();
