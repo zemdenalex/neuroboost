@@ -238,3 +238,81 @@ func Delete(ctx context.Context, userID, calendarID string) error {
 	}
 	return err
 }
+
+// TransferOwnership hands a shared calendar to another active member.
+//
+// 🔴 This is the ONLY sanctioned way to change an owner, and the reason is that
+// ownership is written in two places. `calendar_member.role = 'owner'` is the
+// source of truth — requireOwner reads it and nothing else. `calendar.owner_id`
+// is a denormalised cache of the same fact.
+//
+// The cache is not decorative and cannot simply be dropped:
+// migrations/000012_calendars.up.sql:10 declares it `NOT NULL REFERENCES
+// "user"(id) ON DELETE CASCADE`, so it is what ties a calendar's lifetime to a
+// real user row. Removing it means a migration plus a decision about what
+// happens to a shared calendar whose creator deletes their account — separate
+// work, deliberately not done here.
+//
+// So both rows move, in ONE transaction. Update them separately and the two
+// disagree invisibly: requireOwner says "you are the owner" while
+// PersonalIDFor and readCalendarID say otherwise, and deleting the stale user
+// starts failing on calendars they no longer own.
+//
+// Personal calendars cannot be transferred: a personal calendar IS its owner.
+func TransferOwnership(ctx context.Context, currentOwnerID, calendarID, newOwnerID string) error {
+	kind, err := requireOwner(ctx, currentOwnerID, calendarID)
+	if err != nil {
+		return err
+	}
+	if kind == KindPersonal {
+		return ErrCalendarIsPersonal
+	}
+	if newOwnerID == currentOwnerID {
+		// Not an error worth a distinct code: the requested end state already
+		// holds, and doing the writes would demote the owner to editor and back.
+		return nil
+	}
+
+	tx, err := db.Pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	// The recipient must already be an active member. Promoting a stranger
+	// would be an invitation, which is a different operation with a different
+	// consent story.
+	var newRole string
+	if err := tx.QueryRow(ctx,
+		`SELECT role FROM calendar_member
+		 WHERE calendar_id = $1 AND user_id = $2 AND status = $3`,
+		calendarID, newOwnerID, StatusActive).Scan(&newRole); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) || pgErrCode(err, "22P02") {
+			return ErrCalendarNotFound
+		}
+		return err
+	}
+
+	if _, err := tx.Exec(ctx,
+		`UPDATE calendar_member SET role = $1
+		 WHERE calendar_id = $2 AND user_id = $3`,
+		RoleEditor, calendarID, currentOwnerID); err != nil {
+		return err
+	}
+
+	if _, err := tx.Exec(ctx,
+		`UPDATE calendar_member SET role = $1
+		 WHERE calendar_id = $2 AND user_id = $3`,
+		RoleOwner, calendarID, newOwnerID); err != nil {
+		return err
+	}
+
+	// The cache, in the same transaction as the truth it caches.
+	if _, err := tx.Exec(ctx,
+		`UPDATE calendar SET owner_id = $1 WHERE id = $2`,
+		newOwnerID, calendarID); err != nil {
+		return err
+	}
+
+	return tx.Commit(ctx)
+}

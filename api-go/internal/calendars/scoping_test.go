@@ -52,12 +52,19 @@ var tableRefRe = regexp.MustCompile(`(?i)\b(?:FROM|UPDATE|JOIN)\s+(event|task)\b
 // 🔴 Raise this as the codebase grows queries. Never lower it to make a
 // failure go away — that defeats the reason it exists.
 //
-// Measured at 76 on 2026-08-12, after P3 slice 2 added the calendar CRUD
-// queries; it was 68 when the floor was first set to 60. Raising the floor with
-// the count is the whole point: leave it behind and the tripwire's headroom
-// grows until a genuine regression fits inside it unnoticed. Measure by setting
-// this absurdly high and reading the count back out of the failure message.
-const minSQLBlocksScanned = 68
+// Measured at 81 on 2026-08-14, after the ownership transfer was added; 76 on
+// 2026-08-12 after P3 slice 2, and 68 when the floor was first set to 60.
+//
+// 🔴 The floor had been left at 68 while the count stood at 76 — thirteen
+// blocks of slack instead of three, which is exactly the drift this comment
+// warns about, sitting inside the comment that warns about it. Raising the
+// floor WITH the count is the whole point: leave it behind and the headroom
+// grows until a genuine regression fits inside it unnoticed.
+//
+// Measure by setting this absurdly high and reading the count back out of the
+// failure message. Keep a small margin (3) so an ordinary refactor does not
+// trip it.
+const minSQLBlocksScanned = 78
 
 // walkGoFiles calls fn with the contents of every non-test .go file under
 // api-go/internal.
@@ -182,5 +189,63 @@ func TestInsertsIntoEventOrTaskSetCalendarID(t *testing.T) {
 				"expected at least %d — the regex likely stopped matching real inserts and "+
 				"this test just checked nothing",
 			found, minEventOrTaskInserts)
+	}
+}
+
+// ownerWriteRe finds any statement that writes ownership: a role update on
+// calendar_member, or an owner_id update on calendar.
+var ownerWriteRe = regexp.MustCompile(`(?is)UPDATE\s+calendar_member\s+SET\s+role|UPDATE\s+calendar\s+SET\s+owner_id`)
+
+// Ownership is recorded in two places — calendar_member.role is the truth and
+// calendar.owner_id is a cache anchored by a NOT NULL ... ON DELETE CASCADE
+// foreign key — so the two must never be written apart. TransferOwnership does
+// both in one transaction and is the only sanctioned path.
+//
+// 🔴 The divergence this guards is INVISIBLE at runtime: requireOwner would say
+// "you are the owner" while PersonalIDFor and readCalendarID disagree, and
+// nothing raises an error. No DB-backed test would catch it either, because
+// each half is internally consistent. A static check is the only thing that
+// can, which is why it lives here beside the scoping tripwires.
+//
+// If a second legitimate writer ever appears, do not delete this test: add the
+// file to the allowlist and say why in the commit.
+func TestOwnershipIsWrittenInOneFunctionOnly(t *testing.T) {
+	const allowedFile = "crud.go"
+
+	var scanned int
+	var offenders []string
+
+	walkGoFiles(t, func(path, src string) {
+		for _, m := range sqlBlockRe.FindAllString(src, -1) {
+			block := m[1 : len(m)-1] // strip the surrounding backticks
+			// Same filter, and therefore the same denominator, as the scoping
+			// tripwires above: they share minSQLBlocksScanned, and a floor that
+			// means two different things is its own trap.
+			if !sqlKeywordRe.MatchString(block) {
+				continue
+			}
+			scanned++
+
+			if !ownerWriteRe.MatchString(block) {
+				continue
+			}
+			if filepath.Base(path) == allowedFile {
+				continue
+			}
+			offenders = append(offenders, path)
+		}
+	})
+
+	// Same floor discipline as the scoping tripwires: if the queries ever stop
+	// being backtick literals this test would find nothing and pass having
+	// checked nothing.
+	if scanned < minSQLBlocksScanned {
+		t.Fatalf("scanned only %d SQL blocks, expected at least %d — the queries moved and this test is no longer looking at them",
+			scanned, minSQLBlocksScanned)
+	}
+
+	if len(offenders) > 0 {
+		t.Errorf("ownership is written outside %s, so the role and the owner_id cache can drift apart:\n  %s",
+			allowedFile, strings.Join(offenders, "\n  "))
 	}
 }
