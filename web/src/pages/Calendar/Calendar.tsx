@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ListTodo } from 'lucide-react';
 import { WeekGrid } from '../../components/Calendar/WeekGrid';
@@ -9,7 +9,15 @@ import { useRecurringScope } from '../../components/Calendar/useRecurringScope';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { computeWeekRange } from '../../lib/calendar/weekRange';
 import { createTask } from '../../api';
-import { listCalendars } from '../../api/calendars';
+import { listCalendars, type Calendar as NbCalendar } from '../../api/calendars';
+import { CalendarFilter } from '../../components/Calendars/CalendarFilter';
+import { sortCalendars } from '../../lib/calendars/order';
+import {
+  loadHiddenCalendars,
+  saveHiddenCalendars,
+  toggleHidden,
+  visibleEvents,
+} from '../../lib/calendars/visibility';
 import {
   getEvents,
   getTasks,
@@ -36,22 +44,50 @@ export function Calendar() {
     return localStorage.getItem('nb-sidebar-open') === 'true';
   });
   const [mobileTasksOpen, setMobileTasksOpen] = useState(false);
-  // Calendar id → colour, so an event with no colour of its own is drawn in
-  // its calendar's. Loaded once: the list is short and changes rarely, and a
-  // failure is not worth reporting — events simply keep the grid's default
-  // styling, which is exactly how they looked before calendars existed.
-  const [calendarColors, setCalendarColors] = useState<Record<string, string | null>>({});
+  // The calendar list drives two things on this page: the colour an event with
+  // no colour of its own is drawn in, and the filter's checkboxes. Loaded once
+  // — the list is short and changes rarely — and a failure is not worth
+  // reporting: events keep the grid's default styling, which is exactly how
+  // they looked before calendars existed.
+  const [calendars, setCalendars] = useState<NbCalendar[]>([]);
 
   useEffect(() => {
     let cancelled = false;
     listCalendars()
       .then(list => {
         if (cancelled) return;
-        setCalendarColors(Object.fromEntries(list.map(c => [c.id, c.color])));
+        setCalendars(sortCalendars(list));
       })
       .catch(() => { /* keep the default styling */ });
     return () => { cancelled = true; };
   }, []);
+
+  const calendarColors = useMemo(
+    () => Object.fromEntries(calendars.map(c => [c.id, c.color])),
+    [calendars]
+  );
+
+  // Read once from localStorage rather than on every render: the lazy
+  // initialiser runs on mount only, so a re-render cannot resurrect a choice
+  // the user just undid.
+  const [hiddenCalendars, setHiddenCalendars] = useState<Set<string>>(loadHiddenCalendars);
+
+  const handleToggleCalendar = useCallback((id: string) => {
+    setHiddenCalendars(prev => {
+      const next = toggleHidden(prev, id);
+      saveHiddenCalendars(next);
+      return next;
+    });
+  }, []);
+
+  // 🔴 Filtered for DRAWING only. `events` stays whole everywhere else: the
+  // drag, delete and edit handlers look events up by id, and filtering their
+  // input would make an event that is merely hidden behave as if it had been
+  // deleted.
+  const shownEvents = useMemo(
+    () => visibleEvents(events, hiddenCalendars),
+    [events, hiddenCalendars]
+  );
 
   const [quickTaskOpen, setQuickTaskOpen] = useState(false);
   const [quickTaskTitle, setQuickTaskTitle] = useState('');
@@ -251,10 +287,18 @@ export function Calendar() {
       {/* Main calendar area */}
       <div className="flex-1 flex flex-col min-w-0">
         <WeekGrid
-          events={events}
+          events={shownEvents}
           currentWeekOffset={currentWeekOffset}
           timezone={timezone}
           calendarColors={calendarColors}
+          headerExtra={
+            <CalendarFilter
+              calendars={calendars}
+              hidden={hiddenCalendars}
+              onToggle={handleToggleCalendar}
+              onCalendarsChanged={setCalendars}
+            />
+          }
           onCreate={handleCreate}
           onSelect={handleSelect}
           onMoveOrResize={handleMoveOrResize}

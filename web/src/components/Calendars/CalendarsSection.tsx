@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { CalendarDays, Pencil, RefreshCw, Trash2 } from 'lucide-react'
 import {
@@ -21,7 +21,22 @@ type LoadStatus = 'loading' | 'error' | 'loaded'
  * Kept out of Settings.tsx (already 800+ lines, thirteen sections) — this is
  * the fourteenth, self-contained.
  */
-export function CalendarsSection() {
+interface Props {
+  /**
+   * Told whenever the list settles, so a host that draws these calendars
+   * elsewhere (the grid's colours, the filter's checkboxes) stays in step with
+   * a rename, a recolour or a delete made here.
+   *
+   * Read through a ref rather than listed as an effect dependency: a caller
+   * that passes an inline arrow — the obvious way to write it — would
+   * otherwise hand a new identity every render, re-run the effect, set the
+   * caller's state, and loop forever. The ref makes the callback's identity
+   * irrelevant, so no caller can get this wrong.
+   */
+  onCalendarsChanged?: (list: Calendar[]) => void
+}
+
+export function CalendarsSection({ onCalendarsChanged }: Props = {}) {
   const { t } = useTranslation('settings')
 
   const [status, setStatus] = useState<LoadStatus>('loading')
@@ -50,6 +65,15 @@ export function CalendarsSection() {
   useEffect(() => {
     void fetchCalendars()
   }, [fetchCalendars])
+
+  const notify = useRef(onCalendarsChanged)
+  notify.current = onCalendarsChanged
+  useEffect(() => {
+    // Only once the list is the server's answer. Reporting during 'loading'
+    // would hand the host an empty array and blank the grid's colours on every
+    // refetch.
+    if (status === 'loaded') notify.current?.(calendars)
+  }, [calendars, status])
 
   const handleCreate = async () => {
     // Guarded here, not just on the submit button: the Enter-key handler

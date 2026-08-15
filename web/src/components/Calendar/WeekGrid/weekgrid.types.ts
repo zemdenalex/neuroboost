@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import type { Task } from '../../../types';
 
 /**
@@ -171,4 +172,6 @@ export interface WeekGridProps extends WeekGridCallbacks {
   timezone: string; // User's timezone from settings
   /** Calendar id → colour, for events that carry no colour of their own. */
   calendarColors?: Record<string, string | null>;
+  /** Passed straight through to WeekHeader's right-hand button row. */
+  headerExtra?: ReactNode;
 }

@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getTimezoneOffsetMs } from './weekgrid.utils';
 import { DAY_MS } from './weekgrid.constants';
@@ -13,6 +14,8 @@ interface WeekHeaderProps {
   onMobileNav?: (direction: 'prev' | 'next') => void;
   onToday?: () => void;
   onQuickCreate: () => void;
+  /** Extra controls for the right-hand button row (the calendar filter). */
+  headerExtra?: ReactNode;
 }
 
 export function WeekHeader({
@@ -25,6 +28,7 @@ export function WeekHeader({
   onMobileNav,
   onToday,
   onQuickCreate,
+  headerExtra,
 }: WeekHeaderProps) {
   const { t, i18n } = useTranslation('calendar');
   const locale = dateLocale(i18n.language);
@@ -85,6 +89,7 @@ export function WeekHeader({
         </div>
         
         <div className="flex items-center gap-2">
+          {headerExtra}
           {(currentWeekOffset !== 0 || onMobileNav) && (onWeekChange || onToday) && (
             <button
               onClick={() => {

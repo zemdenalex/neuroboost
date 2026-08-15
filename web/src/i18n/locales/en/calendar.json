@@ -78,5 +78,12 @@
     "cancel": "Cancel"
   },
   "advanced.colorNone": "No colour",
-  "advanced.colorInherits": "Leave empty to use the calendar colour"
+  "advanced.colorInherits": "Leave empty to use the calendar colour",
+  "filter": {
+    "title": "Calendars",
+    "close": "Close",
+    "manage": "Manage calendars",
+    "hideManage": "Hide management",
+    "empty": "No calendars yet."
+  }
 }

@@ -14,6 +14,7 @@ export function WeekGrid({
   currentWeekOffset = 0,
   timezone,
   calendarColors,
+  headerExtra,
   onCreate,
   onMoveOrResize,
   onSelect,
@@ -244,6 +245,7 @@ export function WeekGrid({
         onMobileNav={visibleDays < 7 ? handleMobileNav : undefined}
         onToday={handleToday}
         onQuickCreate={handleQuickCreate}
+        headerExtra={headerExtra}
       />
 
       <div
