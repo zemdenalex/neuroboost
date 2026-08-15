@@ -161,6 +161,7 @@ export function Login() {
               <label className="block text-sm text-zinc-400 mb-1">{t('emailLabel')}</label>
               <input
                 type="email"
+                autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white font-mono focus:outline-none focus:border-blue-500"
@@ -173,6 +174,13 @@ export function Login() {
               <label className="block text-sm text-zinc-400 mb-1">{t('passwordLabel')}</label>
               <input
                 type="password"
+                // Password managers need to be told which password this is.
+                // Without it Chrome logs "Input elements should have
+                // autocomplete attributes" and, worse, offers to save the
+                // wrong credential or none: `new-password` on the register
+                // form is what makes it propose a generated one instead of
+                // autofilling the existing account's.
+                autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white font-mono focus:outline-none focus:border-blue-500"

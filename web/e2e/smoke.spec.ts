@@ -18,12 +18,48 @@ test('the app is served and boots without console errors', async ({ page }) => {
   })
   page.on('pageerror', err => errors.push(err.message))
 
+  // 🔴 `page.on('console')` cannot see a failed resource load. Playwright's
+  // console event is Runtime.consoleAPICalled — JavaScript calling console.*.
+  // A 404 on a subresource is written to the DevTools console by the browser
+  // itself, through a different channel, and never arrives here.
+  //
+  // ⚠ That is NOT why this test stayed green while staging answered 404 to
+  // /favicon.ico on every page load — checked, and the honest answer is duller:
+  // headless Chromium does not request a favicon at all, so there was no
+  // response to miss. The 404 was found in a real browser tab. Both facts were
+  // verified rather than assumed, because the first version of this comment
+  // asserted only the first one and would have read as a complete explanation.
+  //
+  // The response check below therefore does not guard the favicon; it guards
+  // everything else the page actually fetches. It was proved able to fail by
+  // making the page fetch a missing asset and watching this go red.
+  //
+  // Responses are therefore checked directly. Collected first and judged after
+  // the navigation, because before `goto` the page is about:blank and there is
+  // no origin yet to compare against — deriving one there would have silently
+  // compared every URL to localhost and matched nothing, which is the same
+  // blindness in a new costume.
+  const responses: Array<{ url: string; status: number }> = []
+  page.on('response', res => responses.push({ url: res.url(), status: res.status() }))
+
   const response = await page.goto('/')
+
   expect(response?.status(), 'the origin should serve the SPA, not an error page').toBeLessThan(400)
 
   // The SPA mounts into #root; a served-but-dead build gives an empty shell,
   // which a status check alone would happily call success.
   await expect(page.locator('#root')).not.toBeEmpty()
+
+  // Same-origin only, and /api/ excluded: an unauthenticated visit legitimately
+  // gets 401s there, and asserting on those would make this test fail for the
+  // one reason it must not.
+  const origin = new URL(page.url()).origin
+  for (const res of responses) {
+    if (!res.url.startsWith(origin)) continue
+    const path = new URL(res.url).pathname
+    if (path.startsWith('/api/')) continue
+    if (res.status >= 400) errors.push(`${res.status} for ${path}`)
+  }
 
   expect(errors, `console errors on first paint:\n${errors.join('\n')}`).toEqual([])
 })
