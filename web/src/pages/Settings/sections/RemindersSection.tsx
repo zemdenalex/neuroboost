@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Bell } from 'lucide-react'
 import { useAuthContext } from '../../../contexts/AuthContext'
 import { resolveReminderSettings, type ReminderSettings } from '../../../lib/reminders/offsets'
-import { ReminderOffsets } from '../../../components/ReminderOffsets/ReminderOffsets'
+import { PresetsEditor } from './PresetsEditor'
 import type { UserSettings } from '../../../api/auth'
 
 interface Props {
@@ -47,12 +47,13 @@ export function RemindersSection({ autoSave }: Props) {
   const latest = useRef(reminders)
   latest.current = reminders
 
-  const update = (patch: Partial<ReminderSettings>) => {
-    const next = { ...latest.current, ...patch }
+  const replace = (next: ReminderSettings) => {
     latest.current = next
     setReminders(next)
     autoSave({ reminders: next })
   }
+
+  const update = (patch: Partial<ReminderSettings>) => replace({ ...latest.current, ...patch })
 
   return (
     <section className="bg-zinc-900 border border-zinc-800 rounded-lg p-5">
@@ -136,27 +137,10 @@ export function RemindersSection({ autoSave }: Props) {
           </span>
         </label>
 
-        <div>
-          <h3 className="text-sm text-zinc-400 mb-1">{tr('settings.presetsTitle')}</h3>
-          <p className="mb-2 text-xs text-zinc-500">{tr('settings.presetsHint')}</p>
-          <div className="space-y-3">
-            {Object.entries(reminders.presets).map(([name, offsets]) => (
-              <div key={name} className="rounded-lg border border-zinc-800 p-3">
-                <div className="mb-2 font-mono text-sm text-zinc-300">{name}</div>
-                <ReminderOffsets
-                  value={offsets}
-                  presets={reminders.presets}
-                  // 🔴 This row EDITS the preset named above it. A preset
-                  // chooser inside it overwrites that preset with another
-                  // one's offsets — which is how all three collapsed to the
-                  // same values on staging.
-                  showPresetPicker={false}
-                  onChange={(next) => update({ presets: { ...reminders.presets, [name]: next } })}
-                />
-              </div>
-            ))}
-          </div>
-        </div>
+        {/* Renaming and deleting change `default_event_preset` too, so this
+            editor replaces the whole settings object rather than patching one
+            field of it. */}
+        <PresetsEditor settings={reminders} onChange={replace} />
       </div>
     </section>
   )
