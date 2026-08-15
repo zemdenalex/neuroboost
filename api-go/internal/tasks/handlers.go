@@ -582,7 +582,7 @@ func updateTask(ctx context.Context, userID, taskID string, req UpdateTaskReques
 		return getTask(ctx, userID, taskID)
 	}
 
-	calIDs, err := calendars.CalendarIDsFor(ctx, userID)
+	calIDs, err := calendars.WritableIDsFor(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -619,7 +619,7 @@ func updateTask(ctx context.Context, userID, taskID string, req UpdateTaskReques
 }
 
 func deleteTask(ctx context.Context, userID, taskID string) error {
-	calIDs, err := calendars.CalendarIDsFor(ctx, userID)
+	calIDs, err := calendars.WritableIDsFor(ctx, userID)
 	if err != nil {
 		return err
 	}
@@ -685,7 +685,7 @@ func scheduleTask(ctx context.Context, userID, taskID string, startsAt, endsAt t
 	}
 
 	// Update task status to SCHEDULED
-	calIDs, err := calendars.CalendarIDsFor(ctx, userID)
+	calIDs, err := calendars.WritableIDsFor(ctx, userID)
 	if err == nil {
 		_, err = db.Pool.Exec(ctx, `
 			UPDATE task SET status = 'SCHEDULED', updated_at = NOW() WHERE id = $1 AND calendar_id = ANY($2)
@@ -702,7 +702,7 @@ func scheduleTask(ctx context.Context, userID, taskID string, startsAt, endsAt t
 // logTaskTime adds delta minutes to a task's actual_minutes, clamped at >= 0,
 // and returns the updated task. A negative delta is used for undo.
 func logTaskTime(ctx context.Context, userID, taskID string, delta int) (*Task, error) {
-	calIDs, err := calendars.CalendarIDsFor(ctx, userID)
+	calIDs, err := calendars.WritableIDsFor(ctx, userID)
 	if err != nil {
 		return nil, err
 	}

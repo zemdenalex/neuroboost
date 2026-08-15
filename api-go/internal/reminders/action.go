@@ -152,10 +152,16 @@ func ActionHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		// A scoping clause in the WHERE, not just the id: the reminder row was
 		// already matched against tg_id above, and this keeps that guarantee
-		// inside the write. Access to a task comes from calendar membership,
-		// so the clause is the membership list of that same verified user —
-		// the check is not weakened, only re-expressed.
-		calIDs, err := calendars.CalendarIDsFor(ctx, userID)
+		// inside the write.
+		//
+		// 🔴 WritableIDsFor, not CalendarIDsFor. The comment that used to sit
+		// here said "access to a task comes from calendar membership", which is
+		// true of READING one and was the whole confusion: membership includes
+		// viewers, so a Telegram button would have let someone with read access
+		// mark another person's task done. Found by
+		// TestWritesScopeByWritableCalendars, not by anyone reading this file —
+		// which is the argument for the static guard.
+		calIDs, err := calendars.WritableIDsFor(ctx, userID)
 		if err != nil {
 			util.RespondError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to complete task")
 			return
