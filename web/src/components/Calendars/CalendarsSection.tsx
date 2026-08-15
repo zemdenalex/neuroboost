@@ -9,6 +9,7 @@ import {
   type Calendar,
 } from '../../api/calendars'
 import { sortCalendars } from '../../lib/calendars/order'
+import { defaultCalendarColor, resolveColor, PALETTE, PALETTE_NAMES, type PaletteName } from '../../lib/calendar/palette'
 import { describeCalendarError } from '../../lib/calendars/errors'
 import { showToast } from '../ui/Toast'
 
@@ -66,7 +67,11 @@ export function CalendarsSection() {
     if (!name) return
     setCreating(true)
     try {
-      const created = await createCalendar(name)
+      // Never colourless. A calendar with no colour is indistinguishable from
+      // every other one on the grid, which was the state of every calendar
+      // created before 2026-08-15 — createCalendar was called with a name only.
+      // Indexed by how many exist so two made in a row differ.
+      const created = await createCalendar(name, defaultCalendarColor(calendars.length))
       if (status === 'loaded') {
         setCalendars((prev) => sortCalendars([...prev, created]))
       } else {
@@ -87,6 +92,28 @@ export function CalendarsSection() {
   const startRename = (cal: Calendar) => {
     setRenamingId(cal.id)
     setRenameValue(cal.name)
+  }
+
+  /**
+   * Change a calendar's colour.
+   *
+   * Optimistic like the rename beside it: the dot changes under the hand, and
+   * a failure rolls it back and says so. Waiting on the network to recolour a
+   * dot reads as a dead control.
+   */
+  const submitColor = async (id: string, color: string) => {
+    const previous = calendars.find((c) => c.id === id)?.color ?? null
+    setCalendars((prev) => prev.map((c) => (c.id === id ? { ...c, color } : c)))
+    setBusyId(id)
+    try {
+      await updateCalendar(id, { color })
+    } catch (err) {
+      setCalendars((prev) => prev.map((c) => (c.id === id ? { ...c, color: previous } : c)))
+      const msg = describeCalendarError(err, 'calendars.renameFailed')
+      showToast(t(msg.key, msg.params))
+    } finally {
+      setBusyId(null)
+    }
   }
 
   const cancelRename = () => {
@@ -173,6 +200,35 @@ export function CalendarsSection() {
                 data-calendar-name={cal.name}
                 className="flex items-center gap-3 p-3 bg-zinc-800/50 rounded-lg"
               >
+                {/* Colour. A dot rather than a text field: the value has to be
+                    one the picker can show as selected, and free text is how
+                    "blue-400" got in — a Tailwind class is not a CSS colour. */}
+                <span
+                  data-testid="calendar-color"
+                  className="w-4 h-4 rounded-full border border-zinc-600 shrink-0"
+                  style={{ backgroundColor: resolveColor(cal.color) ?? 'transparent' }}
+                  title={cal.color ?? ''}
+                />
+                {canRename && (
+                  <select
+                    data-testid="calendar-color-select"
+                    aria-label={t('calendars.color')}
+                    value={PALETTE_NAMES.find((n) => PALETTE[n] === resolveColor(cal.color)) ?? ''}
+                    onChange={(e) => void submitColor(cal.id, PALETTE[e.target.value as PaletteName])}
+                    disabled={isBusy}
+                    className="bg-zinc-800 border border-zinc-700 rounded px-1 py-0.5 text-xs text-white disabled:opacity-40"
+                  >
+                    {/* Only present while the stored colour is not one of ours —
+                        a hex typed in earlier, or nothing at all. */}
+                    {!PALETTE_NAMES.some((n) => PALETTE[n] === resolveColor(cal.color)) && (
+                      <option value="">—</option>
+                    )}
+                    {PALETTE_NAMES.map((n) => (
+                      <option key={n} value={n}>{n}</option>
+                    ))}
+                  </select>
+                )}
+
                 {isRenaming ? (
                   <input
                     data-testid="calendar-rename-input"

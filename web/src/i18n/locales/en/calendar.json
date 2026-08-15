@@ -76,5 +76,7 @@
     "allEvents": "All events",
     "remember": "Remember my choice",
     "cancel": "Cancel"
-  }
+  },
+  "advanced.colorNone": "No colour",
+  "advanced.colorInherits": "Leave empty to use the calendar colour"
 }

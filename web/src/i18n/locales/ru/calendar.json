@@ -76,5 +76,7 @@
     "allEvents": "Все повторы",
     "remember": "Запомнить выбор",
     "cancel": "Отмена"
-  }
+  },
+  "advanced.colorNone": "Без цвета",
+  "advanced.colorInherits": "Оставь пустым — возьмётся цвет календаря"
 }

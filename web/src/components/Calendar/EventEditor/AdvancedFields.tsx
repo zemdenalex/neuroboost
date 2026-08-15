@@ -1,4 +1,5 @@
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from 'react-i18next'
+import { PALETTE, PALETTE_NAMES, resolveColor } from '../../../lib/calendar/palette';
 import { ReminderOffsets } from '../../ReminderOffsets/ReminderOffsets';
 import type { ReminderPresets } from '../../../lib/reminders/offsets';
 
@@ -52,23 +53,50 @@ export function AdvancedFields({
 
       <div>
         <label className="block text-xs text-zinc-400 mb-1">{t('advanced.color')}</label>
-        <div className="flex items-center gap-2">
-          <input
-            type="text"
-            placeholder={t('advanced.colorPlaceholder')}
-            value={color}
-            onChange={(e) => onColorChange(e.target.value)}
-            className="flex-1 px-3 py-2 bg-zinc-800 border border-zinc-600 rounded text-white placeholder-zinc-400 focus:outline-none focus:border-zinc-400 font-mono"
-          />
-          {color && (
-            <div
-              className="w-8 h-8 rounded border border-zinc-600"
-              style={{ backgroundColor: color.startsWith('#') ? color : `var(--${color})` }}
-            />
-          )}
+        {/* Swatches, not a text field.
+            🔴 It was free text, and Denis reported that "blue" and "blue-400"
+            did nothing — correctly, because a Tailwind class is not a CSS
+            colour and the preview turned it into `var(--blue-400)`, which does
+            not exist. A value the picker cannot show as selected is a value
+            nobody can correct later, so the input now offers only colours this
+            app can render. */}
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => onColorChange('')}
+            aria-label={t('advanced.colorNone')}
+            title={t('advanced.colorNone')}
+            className={`w-6 h-6 rounded-full border grid place-items-center text-xs ${
+              resolveColor(color) === undefined
+                ? 'border-blue-400 ring-2 ring-blue-400/50 text-blue-300'
+                : 'border-zinc-600 text-zinc-500 hover:border-zinc-400'
+            }`}
+          >
+            ×
+          </button>
+          {PALETTE_NAMES.map((name) => {
+            const hex = PALETTE[name]
+            const selected = resolveColor(color) === hex
+            return (
+              <button
+                key={name}
+                type="button"
+                onClick={() => onColorChange(name)}
+                aria-label={name}
+                title={name}
+                className={`w-6 h-6 rounded-full border transition-transform ${
+                  selected ? 'border-white ring-2 ring-white/60 scale-110' : 'border-zinc-600 hover:scale-105'
+                }`}
+                style={{ backgroundColor: hex }}
+              />
+            )
+          })}
         </div>
         <div className="text-xs text-zinc-500 mt-1">
-          {t('colorHint')}
+          {/* The event's own colour wins over its calendar's — stated here
+              because the swatch row otherwise implies "no colour" means grey
+              rather than "inherit from the calendar". */}
+          {t('advanced.colorInherits')}
         </div>
       </div>
     </>
