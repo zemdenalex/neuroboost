@@ -4,7 +4,7 @@ title: P2 «уведомления приходят» — упирается в 
 type: work-item
 status: open
 tags: [neuroboost, notifications, telegram, deploy, blocked]
-weight: { importance: 5, connectivity: 20, access: 3, last_accessed: 2026-08-13 }
+weight: { importance: 5, connectivity: 21, access: 3, last_accessed: 2026-08-15 }
 created: 2026-08-10
 sources:
   - file: "docs/ROADMAP.md — секция «P2 — что построено»"
@@ -18,7 +18,7 @@ links:
   - relates-to: learning-bot-is-a-second-go-module
   - relates-to: workitem-release-v0410-gated-by-denis-report
   - relates-to: workitem-bot-authtoken-never-set
-  - relates-to: workitem-p3-shared-events
+  - relates-to: entity-p3-slice2-calendar-crud
   - relates-to: learning-null-key-passes-a-unique-index
   - relates-to: learning-goroutine-panic-takes-the-whole-api
   - worked-by: workitem-night-loop-2026-08-10

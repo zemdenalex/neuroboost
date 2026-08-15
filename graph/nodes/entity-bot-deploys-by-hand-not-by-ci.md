@@ -6,13 +6,14 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-08-13
 tags: [neuroboost, bot, deploy, infra]
-weight: { importance: 5, connectivity: 5, access: 5, last_accessed: 2026-08-14 }
+weight: { importance: 5, connectivity: 6, access: 5, last_accessed: 2026-08-15 }
 sources:
   - command: "ssh 62.76.228.106 docker ps → api/db/web, контейнера бота НЕТ"
   - command: "ssh 185.214.10.107 docker ps → neuroboost-dev-bot, neuroboost-prod-bot (Up 2 days)"
   - command: "/opt/neuroboost-bot/src → 'fatal: not a git repository', deploy-скрипта нет"
 stakes: high
 links:
+  - relates-to: entity-bot-creates-events-from-one-line
   - relates-to: learning-merge-to-main-is-the-release
   - relates-to: workitem-bot-authtoken-never-set
   - relates-to: learning-sent-measures-delivery-not-usefulness

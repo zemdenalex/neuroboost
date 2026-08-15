@@ -6,13 +6,14 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-08-13
 tags: [neuroboost, ci, e2e, testing, verification]
-weight: { importance: 5, connectivity: 5, access: 1, last_accessed: 2026-08-13 }
+weight: { importance: 5, connectivity: 8, access: 1, last_accessed: 2026-08-15 }
 sources:
   - command: "grep playwright/e2e по .github/workflows/ci.yml → 0 вхождений при 10 спеках"
   - command: "gh run 31732533007 → e2e failure, снимок страницы: button \"Редактировать задачу\""
   - command: "gh run 31733415454 → e2e success, 26 passed / 4 skipped"
 stakes: high
 links:
+  - relates-to: learning-an-editor-that-contains-a-chooser-corrupts-what-it-edits
   - relates-to: learning-a-test-that-cannot-fail-guards-nothing
   - relates-to: learning-green-because-skipped-proves-nothing
   - relates-to: learning-e2e-baseline-recorded-on-a-monday

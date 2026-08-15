@@ -14,6 +14,7 @@ sources:
   - file: "docs/superpowers/plans/2026-08-11-p3-slice2-inherited-debt.md"
 stakes: high
 links:
+  - relates-to: entity-calendars-hold-events-since-slice2plus
   - relates-to: entity-p3-slice1-calendar-foundation
   - relates-to: learning-a-test-that-cannot-fail-guards-nothing
   - relates-to: learning-guard-floor-left-behind-becomes-a-hiding-place
