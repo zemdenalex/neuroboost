@@ -249,6 +249,21 @@ func UpdateHandler(w http.ResponseWriter, r *http.Request) {
 
 	targetID, occDate, mode := resolveMutation(eventID, r.URL.Query().Get("scope"))
 
+	// A calendar change is a property of the SERIES, and refusing the
+	// combination is better than picking a reading of it.
+	//
+	// "Move only this Tuesday to the shared calendar" would have to detach the
+	// occurrence into its own row, so the thing that moved would no longer be
+	// the occurrence the caller named — and the series it came from would stay
+	// where it was, which is not what anyone asking for this wants. Answering
+	// 400 says so; interpreting it silently would leave the caller looking at a
+	// calendar that appears not to have changed.
+	if req.CalendarID != nil && mode == mutateOccurrence {
+		util.RespondError(w, http.StatusBadRequest, "CALENDAR_SCOPE_SERIES",
+			"A calendar change applies to the whole series; retry without scope=occurrence")
+		return
+	}
+
 	if mode != mutatePlain {
 		parent, occStart, occEnd, err := loadOccurrence(r.Context(), userID, targetID, occDate)
 		if err != nil {
@@ -325,11 +340,19 @@ func UpdateHandler(w http.ResponseWriter, r *http.Request) {
 
 	event, err := updateEvent(r.Context(), userID, targetID, req)
 	if err != nil {
-		if err == pgx.ErrNoRows {
+		// Same mapping as CreateHandler, and for the same reason: a refused
+		// destination calendar is the caller's mistake, and a flat 500 would
+		// read as "the app is broken".
+		switch {
+		case err == pgx.ErrNoRows:
 			util.RespondError(w, http.StatusNotFound, "NOT_FOUND", "Event not found")
-			return
+		case errors.Is(err, calendars.ErrCalendarNotFound):
+			util.RespondError(w, http.StatusNotFound, "CALENDAR_NOT_FOUND", "Calendar not found")
+		case errors.Is(err, calendars.ErrNotCalendarOwner):
+			util.RespondError(w, http.StatusForbidden, "CALENDAR_READ_ONLY", "You can read this calendar but not move events into it")
+		default:
+			util.RespondError(w, http.StatusInternalServerError, "UPDATE_ERROR", "Failed to update event")
 		}
-		util.RespondError(w, http.StatusInternalServerError, "UPDATE_ERROR", "Failed to update event")
 		return
 	}
 
@@ -828,12 +851,25 @@ func updateEvent(ctx context.Context, userID, eventID string, req UpdateEventReq
 		args = append(args, *req.IsWorkEvent)
 		argNum++
 	}
+	if req.CalendarID != nil {
+		// Checked, never trusted: WritableIDFor refuses a calendar the user is
+		// not an owner or editor of, and answers "not found" rather than
+		// "forbidden" for a stranger so the reply cannot be used to discover
+		// that a calendar exists.
+		destination, err := calendars.WritableIDFor(ctx, userID, *req.CalendarID)
+		if err != nil {
+			return nil, err
+		}
+		updates = append(updates, fmt.Sprintf("calendar_id = $%d", argNum))
+		args = append(args, destination)
+		argNum++
+	}
 
 	if len(updates) == 0 {
 		return getEvent(ctx, userID, eventID)
 	}
 
-	calIDs, err := calendars.CalendarIDsFor(ctx, userID)
+	calIDs, err := calendars.WritableIDsFor(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -868,7 +904,7 @@ func updateEvent(ctx context.Context, userID, eventID string, req UpdateEventReq
 }
 
 func deleteEvent(ctx context.Context, userID, eventID string) error {
-	calIDs, err := calendars.CalendarIDsFor(ctx, userID)
+	calIDs, err := calendars.WritableIDsFor(ctx, userID)
 	if err != nil {
 		return err
 	}
@@ -889,7 +925,7 @@ func deleteEvent(ctx context.Context, userID, eventID string) error {
 }
 
 func moveEvent(ctx context.Context, userID, eventID string, startsAt, endsAt time.Time) (*Event, error) {
-	calIDs, err := calendars.CalendarIDsFor(ctx, userID)
+	calIDs, err := calendars.WritableIDsFor(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -919,7 +955,7 @@ func moveEvent(ctx context.Context, userID, eventID string, startsAt, endsAt tim
 }
 
 func resizeEvent(ctx context.Context, userID, eventID string, endsAt time.Time) (*Event, error) {
-	calIDs, err := calendars.CalendarIDsFor(ctx, userID)
+	calIDs, err := calendars.WritableIDsFor(ctx, userID)
 	if err != nil {
 		return nil, err
 	}

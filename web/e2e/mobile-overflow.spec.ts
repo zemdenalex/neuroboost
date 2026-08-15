@@ -27,7 +27,13 @@ import type { Page } from '@playwright/test'
 const VIEWPORT_WIDTH = 375
 
 test.describe('375px layout', () => {
-  test.skip(({}, testInfo) => testInfo.project.name !== 'mobile', 'mobile viewport only')
+  // Via beforeEach, not `test.skip(callback)` at describe level: that form's
+  // callback receives the fixtures object ONLY, so reading testInfo.project
+  // from it threw "Cannot read properties of undefined" on every desktop test
+  // — the spec's own first CI run. beforeEach is passed (fixtures, testInfo).
+  test.beforeEach(({}, testInfo) => {
+    test.skip(testInfo.project.name !== 'mobile', 'mobile viewport only')
+  })
 
   /** How many pixels the page can be scrolled sideways. Zero is the contract. */
   async function horizontalOverflow(page: Page): Promise<number> {

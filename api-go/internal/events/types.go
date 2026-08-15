@@ -71,6 +71,18 @@ type UpdateEventRequest struct {
 	Tags            []string `json:"tags,omitempty"`
 	ReminderOffsets *[]int   `json:"reminder_offsets,omitempty"`
 	IsWorkEvent     *bool    `json:"is_work_event,omitempty"`
+
+	// CalendarID moves the event to another calendar.
+	//
+	// 🔴 Two calendars are checked, not one. The destination is checked by
+	// WritableIDFor below; the SOURCE is checked by updateEvent's WHERE
+	// clause, which scopes to WritableIDsFor — without that, read access to a
+	// calendar would be enough to move its events out of it, which is
+	// deletion by another name as far as the other members are concerned.
+	//
+	// Applies to the whole series. See UpdateHandler for why scope=occurrence
+	// is refused rather than quietly interpreted.
+	CalendarID *string `json:"calendar_id,omitempty"`
 }
 
 // MoveEventRequest represents a drag-and-drop move operation

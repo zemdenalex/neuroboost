@@ -45,6 +45,52 @@ func CalendarIDsFor(ctx context.Context, userID string) ([]string, error) {
 	return AccessibleIDs(memberships), nil
 }
 
+// WritableIDsFor returns every calendar the user may CHANGE things in.
+//
+// 🔴 The distinction from CalendarIDsFor is the whole point, and getting it
+// wrong in either direction is a defect:
+//
+//   - Scoping a WRITE by CalendarIDsFor lets a viewer edit, move, resize and
+//     delete events in a calendar they were given read access to. Nothing
+//     downstream objects, because the row's user_id records who wrote the
+//     event, not who may change it.
+//   - Scoping a READ by this function would hide a shared calendar's events
+//     from the very people it was shared with, and stop their reminders
+//     (reminders/scan.go scopes by CalendarIDsFor on purpose).
+//
+// Reads keep CalendarIDsFor. Writes use this. Today the difference is latent —
+// nothing creates a viewer membership yet, since invitations are slice 3 —
+// but "latent" is a property of the calling code, not of this rule, and the
+// day it stops being latent is the day someone is handed read access.
+//
+// Filtering is in SQL rather than in AccessibleIDs because the role is what is
+// being filtered on, and a Go-side filter would have to fetch the role column
+// that AccessibleIDs deliberately does not carry.
+func WritableIDsFor(ctx context.Context, userID string) ([]string, error) {
+	rows, err := db.Pool.Query(ctx,
+		`SELECT calendar_id::text
+		   FROM calendar_member
+		  WHERE user_id = $1 AND status = $2 AND role = ANY($3)`,
+		userID, StatusActive, []string{RoleOwner, RoleEditor})
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	ids := []string{}
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		ids = append(ids, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return ids, nil
+}
+
 // PersonalIDFor returns the user's own calendar, which is where anything
 // created without an explicit calendar goes.
 //
