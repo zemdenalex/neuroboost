@@ -89,7 +89,6 @@ export function WeekHeader({
         </div>
         
         <div className="flex items-center gap-2">
-          {headerExtra}
           {(currentWeekOffset !== 0 || onMobileNav) && (onWeekChange || onToday) && (
             <button
               onClick={() => {
@@ -113,6 +112,14 @@ export function WeekHeader({
               + {t('quickCreate')}
             </button>
           )}
+          {/* Last on purpose. This slot holds the calendar filter, whose panel
+              is `absolute right-0` — anchored to its own button, not to the
+              screen. Sitting before the Today button put that anchor 62px in
+              from the right edge, so a 320px panel started at x = -13 and ran
+              off a 375px screen. Anything added after this will push it back
+              off; add it before, not after. Measured by
+              web/e2e/mobile-overflow.spec.ts. */}
+          {headerExtra}
         </div>
       </div>
       

@@ -82,8 +82,15 @@ test.describe('375px layout', () => {
     // without the document scrolling — the one case the overflow check above
     // cannot see, which is why it is asserted separately.
     const box = await panel.boundingBox()
+    const anchor = await toggle.boundingBox()
     expect(box, 'the filter panel has no box').not.toBeNull()
-    expect(box!.x, 'the filter panel starts left of the screen').toBeGreaterThanOrEqual(0)
+    // The anchor is reported alongside the panel because the first two
+    // failures looked identical (-13.0 both times) and only the button's
+    // position distinguished "the panel is too wide" from "the panel is
+    // anchored too far left". A number that does not move between runs is
+    // saying the change missed.
+    const where = `panel x=${box!.x} w=${box!.width}, button right=${anchor ? anchor.x + anchor.width : 'n/a'}`
+    expect(box!.x, `the filter panel starts left of the screen — ${where}`).toBeGreaterThanOrEqual(0)
     expect(box!.x + box!.width, 'the filter panel runs past the right edge').toBeLessThanOrEqual(
       VIEWPORT_WIDTH,
     )
