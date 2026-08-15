@@ -77,7 +77,13 @@ export function CalendarFilter({ calendars, hidden, onToggle, onCalendarsChanged
           data-testid="calendar-filter-panel"
           // Right-anchored and width-capped below the viewport: at 375px a
           // left-anchored panel of this width runs off the screen edge.
-          className="absolute right-0 z-40 mt-1 max-h-[70vh] w-[min(20rem,calc(100vw-2rem))] overflow-y-auto rounded-lg border border-zinc-700 bg-zinc-900 p-3 shadow-xl"
+          //
+          // 🔴 The underscores are load-bearing. Tailwind arbitrary values take
+          // spaces as `_`, so `calc(100vw-2rem)` compiles to exactly that —
+          // invalid CSS, which the browser drops, which leaves the panel at its
+          // content width. It measured x = -13px at 375px and the e2e spec
+          // written an hour earlier caught it on its first honest run.
+          className="absolute right-0 z-40 mt-1 max-h-[70vh] w-[min(20rem,calc(100vw_-_2rem))] overflow-y-auto rounded-lg border border-zinc-700 bg-zinc-900 p-3 shadow-xl"
         >
           <div className="mb-2 flex items-center justify-between gap-2">
             <h3 className="text-sm font-semibold text-white">{t('filter.title')}</h3>

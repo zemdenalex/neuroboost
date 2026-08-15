@@ -77,13 +77,14 @@ export function EventEditor({
           onDescriptionCtrlEnter={actions.handleSave}
         />
 
-        {/* Which calendar. Renders nothing when editing, when the list cannot
-            be loaded, or when there is only one writable calendar — a select
-            with a single option is noise in an already long form. */}
+        {/* Which calendar. Choosable while editing too since 2026-08-15 —
+            moving an event between calendars is the whole point of having more
+            than one. Still renders nothing when the list cannot be loaded or
+            when there is only one writable calendar: a select with a single
+            option is noise in an already long form. */}
         <CalendarField
           value={state.calendarId}
           onChange={actions.setCalendarId}
-          disabled={isEditing}
         />
 
         {/* Advanced fields (all-day, reminder, color, repeat) */}

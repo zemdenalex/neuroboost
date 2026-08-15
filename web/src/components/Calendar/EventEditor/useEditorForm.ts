@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { createEvent, updateEvent, saveReflection } from '../../../api';
+import { describeSaveError } from '../../../lib/calendar/saveError';
 import { 
   utcToLocalDateTime, 
   localDateTimeToUtc, 
@@ -92,6 +93,10 @@ export function useEditorForm(
       setTags(draft.tags?.join(', ') || '');
       setIsAllDay(!!draft.allDay);
       setColor(draft.color || '');
+      // Where the event currently lives. Without this the select would open on
+      // the first calendar in the list, and simply saving an unrelated field
+      // would move the event somewhere the user never chose.
+      setCalendarId(draft.calendarId || '');
       setReminderOffsets(draft.reminderOffsets ?? []);
       
       const start = utcToLocalDateTime(new Date(draft.startsAt), timezone);
@@ -198,6 +203,18 @@ export function useEditorForm(
       calendarId: calendarId || undefined,
     };
 
+    // 🔴 On edit, send the calendar ONLY when it actually changed.
+    //
+    // The API refuses calendar_id together with ?scope=occurrence by design —
+    // moving one occurrence would detach it, so the thing that moved would not
+    // be the one the user named. Sending the unchanged value on every save
+    // would therefore turn "edit just this Tuesday" into a 400 for every
+    // recurring event, which is a regression the API cannot distinguish from a
+    // real move.
+    if (isEditing && draft && (draft.calendarId || '') === calendarId) {
+      delete body.calendarId;
+    }
+
     // Build RRULE string from repeat fields
     if (repeatType !== 'none') {
       let rrule = `FREQ=${repeatType.toUpperCase()}`;
@@ -234,7 +251,7 @@ export function useEditorForm(
       }
     } catch (error) {
       console.error('Failed to save event:', error);
-      alert('Failed to save event: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      alert(describeSaveError(error));
     }
   }, [title, validation, tags, reminderOffsets, startDateLocal, endDateLocal, timezone, isAllDay, description, location, color, isEditing, draft, showReflection, reflection, repeatType, repeatEndType, repeatCount, repeatUntil, onPatched, onCreated, withScope]);
 

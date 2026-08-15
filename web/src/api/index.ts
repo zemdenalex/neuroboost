@@ -159,6 +159,10 @@ export async function updateEvent(id: string, updates: Partial<CreateEventBody>,
   // An explicit [] must survive: it means "no reminders", which is different
   // from omitting the key (leave whatever is stored alone).
   if (updates.reminderOffsets !== undefined) apiBody.reminder_offsets = updates.reminderOffsets;
+  // Moves the event to another calendar. The API checks that the caller may
+  // write there and refuses this together with ?scope=occurrence — a calendar
+  // change is a property of the series, not of one Tuesday.
+  if (updates.calendarId !== undefined) apiBody.calendar_id = updates.calendarId;
 
   const response = await api.patch<{ event: ApiEvent } | ApiEvent>(`/events/${id}${scopeQuery(scope)}`, apiBody);
   const event = 'event' in (response as Record<string, unknown>)
