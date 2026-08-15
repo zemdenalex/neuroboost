@@ -1,3 +1,5 @@
+import tailwindColors from 'tailwindcss/colors'
+
 /**
  * The colours a calendar or an event may be.
  *
@@ -34,23 +36,74 @@ const HEX = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/
 /**
  * Turn whatever is stored into something a browser will actually paint.
  *
- * Accepts a palette name (`"blue"`) or a hex value (`"#2563eb"`, `"#abc"`).
- * Everything else — a Tailwind class, an empty string, a typo — returns
- * undefined so the caller falls back to the default styling instead of
- * silently painting nothing.
+ * Accepts, in order:
+ *   - a swatch name from PALETTE          `"violet"`
+ *   - a hex value, long or short          `"#2563eb"`, `"#abc"`
+ *   - a Tailwind colour                   `"blue-400"`, `"gray-400"`
+ *   - a CSS colour keyword                `"blue"`, `"red"`, `"rebeccapurple"`
  *
- * 🔴 Deliberately does NOT accept CSS colour keywords beyond the palette.
- * "rebeccapurple" would work in a browser and then not exist in the swatch
- * list, so the picker could not show it as selected — a value the UI cannot
- * represent is a value that will confuse whoever opens the form next.
+ * 🔴 The swatches are an ADDITION, not a replacement. An earlier version of
+ * this function accepted only the first two and the field became swatch-only,
+ * which took away arbitrary colours that already worked. Denis's rule, and it
+ * is a good one: never remove a working capability to make room for a simpler
+ * one. The picker is for people who want to choose quickly; the text field
+ * stays for everyone else.
+ *
+ * Tailwind values come from the tailwindcss package itself rather than a
+ * hand-copied table — a table would drift from the classes used everywhere
+ * else in this app, and drift is invisible until someone types a shade that
+ * used to exist.
+ *
+ * Anything unrecognised returns undefined so the caller falls back to default
+ * styling rather than painting nothing while appearing set.
  */
 export function resolveColor(input: string | null | undefined): string | undefined {
   if (typeof input !== 'string') return undefined
   const value = input.trim()
   if (value === '') return undefined
+
   if (value in PALETTE) return PALETTE[value as PaletteName]
   if (HEX.test(value)) return value
-  return undefined
+
+  const tailwind = resolveTailwind(value)
+  if (tailwind) return tailwind
+
+  return resolveCssKeyword(value)
+}
+
+/**
+ * `blue-400`, `gray-400`, and the bare hues Tailwind ships as objects.
+ *
+ * A bare hue (`"blue"`) is NOT resolved here on purpose — Tailwind has no
+ * single value for it, and CSS does, so it falls through to the keyword check
+ * below and means the CSS colour. That is what someone typing "blue" expects.
+ */
+function resolveTailwind(value: string): string | undefined {
+  const match = /^([a-z]+)-(\d{2,3})$/.exec(value)
+  if (!match) return undefined
+
+  const shades = (tailwindColors as unknown as Record<string, unknown>)[match[1]]
+  if (!shades || typeof shades !== 'object') return undefined
+
+  const hex = (shades as Record<string, unknown>)[match[2]]
+  return typeof hex === 'string' ? hex : undefined
+}
+
+/**
+ * A CSS colour keyword, checked by asking the browser rather than by keeping a
+ * list of 148 names that would need maintaining.
+ *
+ * CSS.supports is absent in some test environments, so the fallback accepts a
+ * bare word: an unknown one simply paints nothing, which is the same outcome as
+ * before this function existed and strictly better than refusing a colour the
+ * browser understands.
+ */
+function resolveCssKeyword(value: string): string | undefined {
+  if (!/^[a-zA-Z]+$/.test(value)) return undefined
+
+  const supports = typeof CSS !== 'undefined' && typeof CSS.supports === 'function'
+  if (supports) return CSS.supports('color', value) ? value : undefined
+  return value
 }
 
 /** True when the stored value is something this app can render and re-select. */

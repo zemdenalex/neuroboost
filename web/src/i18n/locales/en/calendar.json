@@ -37,7 +37,7 @@
   "advanced.reminderOptions.30min": "30 min",
   "advanced.reminderOptions.1hour": "1 hour",
   "advanced.color": "Color (optional)",
-  "advanced.colorPlaceholder": "#3b82f6 or blue-500",
+  "advanced.colorPlaceholder": "blue-400, #7c3aed, teal",
   "repeat.repeat": "Repeat:",
   "repeat.none": "None",
   "repeat.daily": "Daily",

@@ -92,6 +92,28 @@ export function AdvancedFields({
             )
           })}
         </div>
+        {/* 🔴 The text field stays. The swatches were added beside it, not in
+            place of it: an earlier version of this change replaced the field
+            and quietly took away hex, Tailwind and CSS colours that already
+            worked. Never remove a working capability to make room for a
+            simpler one — the picker is the fast path, this is the full one. */}
+        <div className="flex items-center gap-2 mt-2">
+          <input
+            type="text"
+            placeholder={t('advanced.colorPlaceholder')}
+            value={color}
+            onChange={(e) => onColorChange(e.target.value)}
+            className={`flex-1 px-3 py-2 bg-zinc-800 border rounded text-white placeholder-zinc-400 focus:outline-none font-mono ${
+              color && resolveColor(color) === undefined
+                ? 'border-red-500 focus:border-red-400'
+                : 'border-zinc-600 focus:border-zinc-400'
+            }`}
+          />
+          <div
+            className="w-8 h-8 rounded border border-zinc-600 shrink-0"
+            style={{ backgroundColor: resolveColor(color) ?? 'transparent' }}
+          />
+        </div>
         <div className="text-xs text-zinc-500 mt-1">
           {/* The event's own colour wins over its calendar's — stated here
               because the swatch row otherwise implies "no colour" means grey

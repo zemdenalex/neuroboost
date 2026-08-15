@@ -198,7 +198,11 @@ export function CalendarsSection() {
                 key={cal.id}
                 data-testid="calendar-row"
                 data-calendar-name={cal.name}
-                className="flex items-center gap-3 p-3 bg-zinc-800/50 rounded-lg"
+                // flex-wrap is load-bearing: adding the colour controls pushed the
+                // rename and delete buttons off a 375px screen, and the e2e suite
+                // caught it on the mobile project — clicking a button outside the
+                // viewport times out rather than failing with a useful message.
+                className="flex flex-wrap items-center gap-2 p-3 bg-zinc-800/50 rounded-lg"
               >
                 {/* Colour. A dot rather than a text field: the value has to be
                     one the picker can show as selected, and free text is how

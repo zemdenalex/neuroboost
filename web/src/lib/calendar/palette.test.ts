@@ -13,13 +13,27 @@ describe('resolveColor', () => {
     expect(resolveColor('#ABCDEF')).toBe('#ABCDEF')
   })
 
-  // 🔴 The reported bug. A Tailwind class is not a CSS colour, and the old
-  // preview turned it into `var(--blue-400)` — a variable that does not exist,
-  // so the swatch stayed blank and the event kept the default styling.
-  it('rejects a Tailwind class name', () => {
-    expect(resolveColor('blue-400')).toBeUndefined()
+  // 🔴 The reported bug, and the correction that followed. "blue-400" used to
+  // resolve to `var(--blue-400)` — a variable that does not exist — so the
+  // swatch stayed blank. The first fix refused it outright, which took away a
+  // colour space that people were already using. It now resolves through
+  // Tailwind's own palette.
+  it('resolves a Tailwind colour to its hex value', () => {
+    expect(resolveColor('blue-400')).toBe('#60a5fa')
+    expect(resolveColor('gray-400')).toBe('#9ca3af')
+    expect(resolveColor('emerald-600')).toMatch(/^#[0-9a-f]{6}$/i)
+  })
+
+  it('still refuses a Tailwind CLASS, which is not a colour', () => {
+    // `bg-` and `text-` are utilities, not values; accepting them would store
+    // something no colour property can use.
     expect(resolveColor('bg-blue-500')).toBeUndefined()
     expect(resolveColor('text-red-600')).toBeUndefined()
+  })
+
+  it('refuses a shade that does not exist', () => {
+    expect(resolveColor('blue-999')).toBeUndefined()
+    expect(resolveColor('notahue-400')).toBeUndefined()
   })
 
   it('rejects malformed hex', () => {
@@ -41,11 +55,22 @@ describe('resolveColor', () => {
     expect(resolveColor(' #abc ')).toBe('#abc')
   })
 
-  // Deliberate: a browser paints "rebeccapurple", but the picker could never
-  // show it as selected, so a value the UI cannot represent is refused.
-  it('refuses CSS keywords outside the palette', () => {
-    expect(resolveColor('rebeccapurple')).toBeUndefined()
-    expect(resolveColor('transparent')).toBeUndefined()
+  // A bare hue means the CSS colour, not a Tailwind object: Tailwind has no
+  // single value for "blue", CSS does, and that is what someone typing it
+  // expects.
+  it('accepts CSS colour keywords', () => {
+    expect(resolveColor('blue')).toBe(PALETTE.blue) // ours wins — it is in PALETTE
+    expect(resolveColor('rebeccapurple')).toBe('rebeccapurple')
+    expect(resolveColor('teal')).toBe('teal')
+  })
+
+  it('refuses a word that is not a colour at all', () => {
+    // jsdom may not implement CSS.supports; when it does not, the fallback
+    // accepts bare words and this expectation is skipped rather than asserted
+    // falsely.
+    const canValidate = typeof CSS !== 'undefined' && typeof CSS.supports === 'function'
+    if (!canValidate) return
+    expect(resolveColor('notacolour')).toBeUndefined()
   })
 
   it('every palette entry is itself a valid colour', () => {
@@ -61,7 +86,8 @@ describe('isValidColor', () => {
   it('agrees with resolveColor', () => {
     expect(isValidColor('blue')).toBe(true)
     expect(isValidColor('#abc')).toBe(true)
-    expect(isValidColor('blue-400')).toBe(false)
+    expect(isValidColor('blue-400')).toBe(true)
+    expect(isValidColor('bg-blue-500')).toBe(false)
     expect(isValidColor('')).toBe(false)
   })
 })

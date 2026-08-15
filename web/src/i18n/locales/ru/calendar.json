@@ -37,7 +37,7 @@
   "advanced.reminderOptions.30min": "30 мин",
   "advanced.reminderOptions.1hour": "1 час",
   "advanced.color": "Цвет (необязательно)",
-  "advanced.colorPlaceholder": "#3b82f6 или blue-500",
+  "advanced.colorPlaceholder": "blue-400, #7c3aed, teal",
   "repeat.repeat": "Повтор:",
   "repeat.none": "Нет",
   "repeat.daily": "Ежедневно",
