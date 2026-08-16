@@ -34,3 +34,27 @@ export function localWeekday(timeZone: string): number {
   const name = new Intl.DateTimeFormat('en-US', { timeZone, weekday: 'short' }).format(new Date())
   return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(name)
 }
+
+/**
+ * A local midnight with BOTH of its days inside the week the grid draws.
+ *
+ * The grid renders Monday..Sunday of the current week. `nextLocalMidnightUtc`
+ * is the Sunday/Monday boundary when run on a Sunday, so the half of an event
+ * that lands after it belongs to next week and is never drawn — a two-segment
+ * event renders as one, and the spec asserting two segments fails for a reason
+ * that has nothing to do with what it guards.
+ *
+ * That is not hypothetical: it turned CI red for every run on 2026-08-16, a
+ * Sunday, while the last green run had been on the Saturday. It is the same
+ * class as the mobile baseline recorded on a Monday, where "start of week" and
+ * "today" happened to be the same column.
+ *
+ * On a Sunday this therefore steps BACK to the Saturday/Sunday boundary rather
+ * than forward. The event lands in the past; the grid draws the whole week
+ * regardless, and the segment still starts at the top of its column.
+ */
+export function midnightInsideRenderedWeek(timeZone: string): number {
+  return localWeekday(timeZone) === 0
+    ? localMidnightUtc(timeZone, 0)
+    : localMidnightUtc(timeZone, 1)
+}

@@ -23,7 +23,7 @@ async function apiContext(token: string): Promise<APIRequestContext> {
   })
 }
 
-import { nextLocalMidnightUtc } from './fixtures/localTime'
+import { midnightInsideRenderedWeek } from './fixtures/localTime'
 
 test.describe('multi-day resize', () => {
   // Desktop only, and not for convenience: at 375px the calendar shows a single
@@ -62,7 +62,7 @@ test.describe('multi-day resize', () => {
     // at 01:15, and an overlapping block shares the column in a narrower lane —
     // the first version of this test reached across into it and started a drag
     // on somebody else's repeating event instead.
-    const midnight = nextLocalMidnightUtc(timeZone)
+    const midnight = midnightInsideRenderedWeek(timeZone)
     const startMs = midnight - 2 * 3600 * 1000
     const endMs = midnight + 1 * 3600 * 1000
     const title = `E2E multiday ${Date.now()}`

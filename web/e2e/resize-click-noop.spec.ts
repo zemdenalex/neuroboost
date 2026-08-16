@@ -1,6 +1,6 @@
 import { test, expect } from './fixtures/auth'
 import { request as playwrightRequest, type APIRequestContext } from '@playwright/test'
-import { localMidnightUtc, localWeekday } from './fixtures/localTime'
+import { localMidnightUtc } from './fixtures/localTime'
 
 /**
  * Drag plan step 6 — a click on a resize handle is a click, not a resize.
@@ -52,8 +52,21 @@ test.describe('clicking a resize handle', () => {
     const me = (await (await ctx.get('/api/auth/me')).json()).data
     const timeZone = me.timezone || 'Europe/Moscow'
 
-    const dayOffset = localWeekday(timeZone) === 0 ? -1 : 0
-    const dayStart = localMidnightUtc(timeZone, dayOffset)
+    // Today, on every weekday including Sunday.
+    //
+    // 🔴 This used to step back a day on Sundays. Nothing justified it in the
+    // file, and it is wrong twice over: computeWeekRange keeps Sunday in the
+    // CURRENT week by design (weekRange.ts documents the off-by-one that used
+    // to send Sunday to the next Monday and emptied the calendar), so an event
+    // today is drawn on the desktop grid on a Sunday like any other day; and
+    // this spec also runs on the mobile viewport, which draws exactly ONE day —
+    // today — so moving the event to yesterday put it off screen entirely.
+    // That is what "element(s) not found" meant in every mobile run on
+    // 2026-08-16.
+    //
+    // A workaround that outlived the bug it was written for, and which then
+    // became the bug.
+    const dayStart = localMidnightUtc(timeZone, 0)
     const startMs = dayStart + 3 * HOUR
     const endMs = dayStart + 5 * HOUR
 
