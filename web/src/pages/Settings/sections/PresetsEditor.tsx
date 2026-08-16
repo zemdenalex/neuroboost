@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Plus, Trash2 } from 'lucide-react'
 import { ReminderOffsets } from '../../../components/ReminderOffsets/ReminderOffsets'
 import type { ReminderSettings } from '../../../lib/reminders/offsets'
+import { presetLabel } from '../../../lib/reminders/presetLabel'
 import {
   addPreset,
   deletePreset,
@@ -91,7 +92,14 @@ export function PresetsEditor({ settings, onChange }: Props) {
 
       {duplicates.map(group => (
         <p key={group.join(',')} className="mb-2 text-xs text-amber-400">
-          {tr('settings.presetDuplicateWarning', { names: group.join(', ') })}
+          {/* Through presetLabel: the warning names presets, and the two
+              dropdowns 30px above show those same presets by their TRANSLATED
+              names. Printing the stored ones would tell an English reader that
+              "важное, обычное" collide when the screen only ever says
+              "Important" and "Normal". */}
+          {tr('settings.presetDuplicateWarning', {
+            names: group.map(name => presetLabel(name, tr)).join(', '),
+          })}
         </p>
       ))}
 

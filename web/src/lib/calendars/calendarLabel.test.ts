@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import { calendarLabel, SEEDED_PERSONAL_NAME } from './calendarLabel'
+// The shipped files, not a hand-written copy.
+import enSettings from '../../i18n/locales/en/settings.json'
+import ruSettings from '../../i18n/locales/ru/settings.json'
 
 function translator(dict: Record<string, string>) {
   return (key: string) => dict[key] ?? key
@@ -26,5 +29,22 @@ describe('calendarLabel', () => {
 
   it('falls back to the stored name when the translation is missing', () => {
     expect(calendarLabel({ name: SEEDED_PERSONAL_NAME, kind: 'personal' }, translator({}))).toBe(SEEDED_PERSONAL_NAME)
+  })
+})
+
+// 🔴 Every assertion above uses a hand-written dictionary, so all of them stay
+// green if calendars.personalName is missing from the shipped locale and the
+// interface quietly reverts to Russian. These read the real files.
+describe('the shipped locales carry the personal-calendar name', () => {
+  it('English translates it', () => {
+    const label = calendarLabel(
+      { name: SEEDED_PERSONAL_NAME, kind: 'personal' },
+      key => (key === 'calendars.personalName' ? enSettings.calendars?.personalName ?? key : key),
+    )
+    expect(label, 'en settings.json has no calendars.personalName').not.toBe(SEEDED_PERSONAL_NAME)
+  })
+
+  it('Russian has the key too', () => {
+    expect(ruSettings.calendars?.personalName, 'ru settings.json has no calendars.personalName').toBeTruthy()
   })
 })

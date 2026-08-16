@@ -45,8 +45,17 @@ const (
 func BodyLimit(n int64) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// GET and DELETE carry no body worth capping, and wrapping them
-			// costs an allocation per request for nothing.
+			// A nil-safety guard, nothing more.
+			//
+			// ⚠ It used to claim "GET and DELETE carry no body worth capping,
+			// and wrapping them costs an allocation per request for nothing".
+			// The condition tests the BODY, not the METHOD, and on the server
+			// side net/http never hands us a nil Body and does not use
+			// http.NoBody for a bodyless request — it substitutes a reader of
+			// its own type. So GET and DELETE are wrapped like everything else
+			// and always were. The behaviour is harmless; the explanation was
+			// not, and a comment describing a restriction the code does not
+			// implement is read as if it did.
 			if r.Body != nil && r.Body != http.NoBody {
 				r.Body = http.MaxBytesReader(w, r.Body, n)
 			}

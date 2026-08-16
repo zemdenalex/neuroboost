@@ -22,30 +22,53 @@ import { DEFAULT_REMINDER_PRESETS } from './offsets'
  * silently renaming `важное` to `Important`.
  */
 
-/** Translation keys, by stored preset name. */
-const BUILT_IN_LABELS: Record<string, string> = {
+/**
+ * Translation keys, by stored preset name.
+ *
+ * 🔴 Object.create(null), not `{}`. A plain object literal inherits from
+ * Object.prototype, so `BUILT_IN_LABELS['toString']` returns
+ * Object.prototype.toString — truthy — and a preset a user actually can create
+ * (validatePresetName rejects only blank and duplicate names) rendered as
+ * "function toString() { [native code] }" in every picker. Reproduced, not
+ * reasoned about.
+ *
+ * A prototype-less table makes the whole class impossible rather than guarding
+ * one lookup and leaving the next one to remember.
+ */
+const BUILT_IN_LABELS: Record<string, string> = Object.assign(Object.create(null), {
   'важное': 'presetName.important',
   'обычное': 'presetName.normal',
   'без': 'presetName.none',
-}
+})
 
 /**
  * @param name  the stored preset name
  * @param t     a translator for the `reminders` namespace
  */
 export function presetLabel(name: string, t: (key: string) => string): string {
+  if (!isBuiltInPreset(name)) return name
   const key = BUILT_IN_LABELS[name]
-  if (!key) return name
   const translated = t(key)
   // i18next returns the key itself when a translation is missing. Showing
   // "presetName.important" to a user would be worse than showing the Russian.
   return translated === key ? name : translated
 }
 
-/** True when the name is one of the three shipped presets. */
+/**
+ * True when the name is one of the three shipped presets.
+ *
+ * The correct predicate, and it existed with zero production callers while
+ * presetLabel did the lookup itself and got it wrong — a helper written for
+ * exactly this and then not used.
+ */
 export function isBuiltInPreset(name: string): boolean {
   return Object.prototype.hasOwnProperty.call(BUILT_IN_LABELS, name)
 }
+
+// ⚠ Known and accepted: someone may name their own preset "Important", and the
+// picker will then show two options reading "Important". Refusing that would
+// mean validation that depends on the interface language, so the name a person
+// typed wins over tidiness.
 
 // A typo in BUILT_IN_LABELS would silently stop translating one preset while
 // looking correct. This keeps the two lists tied together.
