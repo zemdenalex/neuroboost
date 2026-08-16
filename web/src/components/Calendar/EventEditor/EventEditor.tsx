@@ -23,7 +23,10 @@ export function EventEditor({
   const { t: tc } = useTranslation('common');
   const reminderSettings = useReminderSettings();
   const { state, actions, isEditing, hasReflection, canSave } = useEditorForm(
-    draft, range, timezone, onCreated, onPatched, onDelete, withScope
+    draft, range, timezone, onCreated, onPatched, onDelete, withScope,
+    // A new event opens with the default preset already applied, so the form
+    // shows the reminders it is about to create rather than "No reminders".
+    reminderSettings.presets[reminderSettings.default_event_preset] ?? []
   );
 
   return (

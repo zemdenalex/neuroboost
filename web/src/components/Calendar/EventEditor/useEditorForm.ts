@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { createEvent, updateEvent, saveReflection } from '../../../api';
 import { describeSaveError } from '../../../lib/calendar/saveError';
 import { 
@@ -52,7 +52,13 @@ export function useEditorForm(
   onCreated: () => void,
   onPatched: () => void,
   onDelete: (id: string) => Promise<void>,
-  withScope: EditorProps['withScope']
+  withScope: EditorProps['withScope'],
+  /**
+   * Offsets a NEW event should start with — the user's default preset,
+   * resolved by the caller (it already holds useReminderSettings for the
+   * preset picker). Ignored when editing: an existing event's own offsets win.
+   */
+  defaultReminderOffsets: number[] = []
 ): { state: EditorFormState; actions: EditorFormActions; isEditing: boolean; hasReflection: boolean; canSave: boolean } {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -67,6 +73,12 @@ export function useEditorForm(
   // would ask the backend for its default preset; sending [] would mean
   // "none". We send what the control shows, so the two never disagree.
   const [reminderOffsets, setReminderOffsets] = useState<number[]>([]);
+
+  // Read through a ref so the init effect above does not have to list it as a
+  // dependency: settings arrive asynchronously, and re-running that effect on
+  // their arrival would wipe whatever the user had already typed into the form.
+  const defaultOffsetsRef = useRef<number[]>([]);
+  defaultOffsetsRef.current = defaultReminderOffsets;
   const [startTimeInput, setStartTimeInput] = useState('');
   const [endTimeInput, setEndTimeInput] = useState('');
   const [startDateLocal, setStartDateLocal] = useState('');
@@ -151,6 +163,25 @@ export function useEditorForm(
       const rangeAllDay = !!range.allDay;
       const looksAllDay = start.time === '00:00' && end.time === '00:00' && range.end.getTime() > range.start.getTime();
       setIsAllDay(rangeAllDay || looksAllDay);
+
+      // 🔴 A NEW event starts with the user's default preset already applied.
+      //
+      // Without this, every event created in the web was stored with
+      // reminder_offsets = [] no matter what the default preset said, and an
+      // empty array is not "use the default" — the scanner skips those rows
+      // outright (cardinality(reminder_offsets) > 0), so the event never
+      // reminded and nothing reported it.
+      //
+      // The server's fallback cannot help: createEvent applies
+      // DefaultEventOffsets only when the field is ABSENT, and this form always
+      // sends it. That fallback exists for the bot and the importer, which
+      // genuinely omit it — the comment beside it says so.
+      //
+      // Filling it here rather than dropping the field from the request is
+      // deliberate: the user then SEES the reminders they are about to get and
+      // can change them, instead of the form saying "No reminders" while the
+      // server quietly adds three.
+      setReminderOffsets(defaultOffsetsRef.current);
     }
   }, [draft, range, timezone, hasReflection]);
 
