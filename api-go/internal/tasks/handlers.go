@@ -661,12 +661,22 @@ func scheduleTask(ctx context.Context, userID, taskID string, startsAt, endsAt t
 
 	// The event this task turns into belongs in the task's OWN calendar, not
 	// unconditionally the caller's personal one — a task living in a shared
-	// calendar must schedule its event into that same calendar. getTask above
-	// already proved userID has access to this row, so a plain read is safe.
+	// calendar must schedule its event into that same calendar.
 	var calID string
 	if err := db.Pool.QueryRow(ctx,
 		`SELECT calendar_id::text FROM task WHERE id = $1`, taskID,
 	).Scan(&calID); err != nil {
+		return nil, err
+	}
+
+	// 🔴 The comment here used to say "getTask above already proved userID has
+	// access to this row, so a plain read is safe". getTask proves READ access -
+	// it scopes by CalendarIDsFor - and what follows is an INSERT. Being shown a
+	// shared calendar was therefore enough to create events in it.
+	//
+	// events.createEvent has always asked WritableIDFor for exactly this; this
+	// path simply never did.
+	if _, err := calendars.WritableIDFor(ctx, userID, calID); err != nil {
 		return nil, err
 	}
 

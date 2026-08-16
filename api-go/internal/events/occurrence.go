@@ -3,6 +3,7 @@ package events
 import (
 	"context"
 	"errors"
+	"neuroboost/api-go/internal/calendars"
 	"time"
 )
 
@@ -146,6 +147,19 @@ func detachOccurrence(ctx context.Context, userID string, e Event, parentID stri
 	// for everyone else who could see the series.
 	var calendarID string
 	if err := tx.QueryRow(ctx, `SELECT calendar_id FROM event WHERE id = $1`, parentID).Scan(&calendarID); err != nil {
+		return nil, err
+	}
+
+	// 🔴 Detaching is a WRITE to somebody else's series, and until 2026-08-16
+	// nothing on this path checked for more than read access. loadOccurrence
+	// reaches the parent through getEvent, which scopes by CalendarIDsFor - every
+	// calendar the caller may READ. So a viewer on a shared calendar could
+	// PATCH .../{id}:{date}?scope=occurrence and both hide the real occurrence
+	// (via the event_exception below) and substitute a row of their own. To the
+	// other members that looks like the owner moved the meeting.
+	//
+	// Latent only until invitations create the first viewer membership.
+	if _, err := calendars.WritableIDFor(ctx, userID, calendarID); err != nil {
 		return nil, err
 	}
 

@@ -27,6 +27,11 @@ var lineCommentRe = regexp.MustCompile(`(?m)^\s*//.*$`)
 // sqlConstRe finds a package-level identifier bound to a backtick string:
 // `const q = ` + "`...`" + ` and `var q = ` + "`...`" + ` alike, with or
 // without an explicit type. Group 1 is the name, group 2 the SQL.
+// insertsIntoEventOrTaskRe distinguishes a function that CREATES a row from one
+// that changes or removes an existing one. The two ask different access
+// questions and need different resolvers — see the check below.
+var insertsIntoEventOrTaskRe = regexp.MustCompile(`(?is)INSERT\s+INTO\s+(event|task)\b`)
+
 var sqlConstRe = regexp.MustCompile("(?s)(?:const|var)\\s+([A-Za-z_][A-Za-z0-9_]*)\\s*(?:string\\s*)?=\\s*`([^`]*)`")
 
 // A function that CHANGES an event or a task must scope by WritableIDsFor, not
@@ -81,6 +86,12 @@ var mutatesEventOrTaskRe = regexp.MustCompile(`(?i)\b(?:UPDATE\s+(event|task)\b|
 // would let an entire subsystem's worth of writes disappear unnoticed.
 const minWriteFunctionsScanned = 8
 
+// Mutating functions whose access check genuinely lives elsewhere, each with
+// the reason it is safe. Adding a name here is a claim that has to be true;
+// the value of the list is that the claim is written down and reviewable
+// instead of being implied by the guard's silence.
+var delegatesAccessCheck = map[string]bool{}
+
 func TestWritesScopeByWritableCalendars(t *testing.T) {
 	var scanned int
 	var offenders []string
@@ -129,17 +140,50 @@ func TestWritesScopeByWritableCalendars(t *testing.T) {
 			if !mutates {
 				continue
 			}
-			// Only functions that resolve a calendar list at all are in scope —
-			// a mutation reached through some other guard is not this test's
-			// business.
-			if !strings.Contains(fn, "CalendarIDsFor") && !strings.Contains(fn, "WritableIDsFor") {
+			scanned++
+			name := strings.TrimSpace(strings.SplitN(fn, "(", 2)[0])
+
+			// 🔴 Two escapes used to exist here, and a code-audit on 16.08 found
+			// real defects hiding in both.
+			//
+			// The first: functions resolving NO calendar list were skipped, on
+			// the theory that their check lived in a caller. detachOccurrence
+			// does exactly that and has no check anywhere — it inserts an event
+			// row and an event_exception that hides someone else's occurrence
+			// from every member of a shared calendar.
+			//
+			// The second: mentioning WritableIDsFor ANYWHERE marked a function
+			// clean. scheduleTask calls it to update the task's status at the
+			// end, while the INSERT above it takes the destination calendar from
+			// a plain read justified by "getTask already proved access" — which
+			// proved READ access.
+			//
+			// So a mutating function must now name a WRITE resolver, or be
+			// listed below with the reason. The point is not that the allowlist
+			// is safe; it is that the set of unchecked writers stops being
+			// invisible.
+			if delegatesAccessCheck[name] {
 				continue
 			}
-			scanned++
 
-			if strings.Contains(fn, "CalendarIDsFor") {
-				name := strings.SplitN(fn, "(", 2)[0]
-				offenders = append(offenders, path+": "+strings.TrimSpace(name))
+			// INSERT and UPDATE/DELETE need DIFFERENT resolvers, and conflating
+			// them is what let scheduleTask through. WritableIDsFor (plural)
+			// answers "which calendars may I write in" and scopes a WHERE — it
+			// says nothing about a destination. WritableIDFor (singular) and
+			// PersonalIDFor answer "may I write in THIS one", which is the
+			// question an INSERT asks.
+			//
+			// scheduleTask called the plural one to update the task's status and
+			// took the INSERT's calendar from a plain read. Under the old
+			// single-set rule that read as clean.
+			if insertsIntoEventOrTaskRe.MatchString(fn) {
+				if !strings.Contains(fn, "WritableIDFor") && !strings.Contains(fn, "PersonalIDFor") {
+					offenders = append(offenders, path+": "+name+" (INSERT without a checked destination)")
+				}
+				continue
+			}
+			if !strings.Contains(fn, "WritableIDsFor") || strings.Contains(fn, "CalendarIDsFor") {
+				offenders = append(offenders, path+": "+name+" (write scoped by read access)")
 			}
 		}
 	})
