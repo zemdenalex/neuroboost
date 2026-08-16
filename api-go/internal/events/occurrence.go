@@ -3,6 +3,8 @@ package events
 import (
 	"context"
 	"errors"
+	"github.com/jackc/pgx/v5"
+
 	"neuroboost/api-go/internal/calendars"
 	"time"
 )
@@ -163,6 +165,28 @@ func detachOccurrence(ctx context.Context, userID string, e Event, parentID stri
 		return nil, err
 	}
 
+	// Whatever this occurrence was already detached into, if anything.
+	//
+	// 🔴 Read BEFORE inserting the new replacement, and inside the same
+	// transaction. The upsert below repoints the exception at the new row, which
+	// leaves the previous replacement with nothing pointing at it — but it stays
+	// in `event`, has no rrule, and therefore keeps rendering. Migration 000013
+	// stops the second member creating a second EXCEPTION; only this stops them
+	// creating a second visible EVENT. The test asserts both counts separately
+	// for exactly that reason: the row count was already right while the
+	// calendar still showed two copies.
+	//
+	// FOR UPDATE also serialises two members detaching the same occurrence at
+	// once. When no row exists yet it locks nothing, and the unique constraint
+	// makes the loser fail rather than duplicate.
+	var previousReplacement *string
+	if err := tx.QueryRow(ctx,
+		`SELECT replacement_event_id::text FROM event_exception
+		  WHERE event_id = $1 AND occurrence = $2 FOR UPDATE`,
+		parentID, occurrence).Scan(&previousReplacement); err != nil && err != pgx.ErrNoRows {
+		return nil, err
+	}
+
 	var created Event
 	var tags []string
 	err = tx.QueryRow(ctx, `
@@ -188,14 +212,36 @@ func detachOccurrence(ctx context.Context, userID string, e Event, parentID stri
 
 	// ON CONFLICT: re-editing an occurrence that is already detached must point
 	// the exception at the new replacement rather than fail on the unique key.
+	//
+	// 🔴 The conflict target is (event_id, occurrence) — WITHOUT user_id — and
+	// migration 000013 makes the constraint match. An exception is shared state
+	// of the series: fetchExceptions reads it by calendar and ignores user_id on
+	// purpose, because one member moving next Tuesday moves it for everyone who
+	// can see the calendar. While the key included user_id, a second writing
+	// member detaching the same occurrence did NOT conflict, so the calendar
+	// grew a second replacement event while the original was hidden once.
+	//
+	// user_id is still written: it records who made the exception. It just does
+	// not decide whether the exception is the same one.
 	_, err = tx.Exec(ctx, `
 		INSERT INTO event_exception (event_id, user_id, occurrence, skipped, replacement_event_id)
 		VALUES ($1, $2, $3, true, $4)
-		ON CONFLICT (user_id, event_id, occurrence)
-		DO UPDATE SET skipped = true, replacement_event_id = EXCLUDED.replacement_event_id
+		ON CONFLICT (event_id, occurrence)
+		DO UPDATE SET skipped = true,
+		              user_id = EXCLUDED.user_id,
+		              replacement_event_id = EXCLUDED.replacement_event_id
 	`, parentID, userID, occurrence, created.ID)
 	if err != nil {
 		return nil, err
+	}
+
+	// Remove the copy this detach supersedes. Guarded against deleting the row
+	// just created, which would happen if the same replacement were somehow
+	// reused.
+	if previousReplacement != nil && *previousReplacement != created.ID {
+		if _, err := tx.Exec(ctx, `DELETE FROM event WHERE id = $1`, *previousReplacement); err != nil {
+			return nil, err
+		}
 	}
 
 	if err := tx.Commit(ctx); err != nil {
