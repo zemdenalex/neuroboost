@@ -7,14 +7,27 @@ import (
 	"testing"
 )
 
-// lineCommentRe strips `//` comments before the scan below.
+// lineCommentRe strips whole-line `//` comments before the scan below.
 //
 // Not cosmetic: the first version of this test read comments as code and
 // flagged reminders/action.go for the sentence EXPLAINING that it had just
 // been moved off CalendarIDsFor. A guard that cannot tell a call from a
 // mention of a call gets silenced by whoever meets it next, which costs more
 // than the guard is worth.
-var lineCommentRe = regexp.MustCompile(`(?m)//.*$`)
+//
+// 🔴 Anchored at the start of the line on purpose. An unanchored `//.*$` also
+// matches inside a string — a SQL block containing 'http://...' would have
+// been truncated at that slash, taking its own closing backtick with it, and
+// the block would then not be recognised as SQL at all. Trading a possible
+// false POSITIVE (a trailing comment that mentions the helper) for a possible
+// false NEGATIVE is the wrong way round: a noisy guard gets read, a blind one
+// gets trusted.
+var lineCommentRe = regexp.MustCompile(`(?m)^\s*//.*$`)
+
+// sqlConstRe finds a package-level identifier bound to a backtick string:
+// `const q = ` + "`...`" + ` and `var q = ` + "`...`" + ` alike, with or
+// without an explicit type. Group 1 is the name, group 2 the SQL.
+var sqlConstRe = regexp.MustCompile("(?s)(?:const|var)\\s+([A-Za-z_][A-Za-z0-9_]*)\\s*(?:string\\s*)?=\\s*`([^`]*)`")
 
 // A function that CHANGES an event or a task must scope by WritableIDsFor, not
 // by CalendarIDsFor.
@@ -76,13 +89,41 @@ func TestWritesScopeByWritableCalendars(t *testing.T) {
 		// Split on top-level func declarations. Crude, and adequate: every
 		// query in this codebase lives inside one, and a split that occasionally
 		// over-groups can only make this test stricter, never blinder.
-		for _, fn := range strings.Split(lineCommentRe.ReplaceAllString(src, ""), "\nfunc ") {
+		clean := lineCommentRe.ReplaceAllString(src, "")
+
+		// Package-level identifiers whose backtick value mutates event or task.
+		//
+		// 🔴 Without this the guard had a hole big enough to drive the defect
+		// through, demonstrated rather than reasoned about: a function calling
+		// db.Pool.Exec(ctx, someConst, ...) has no backtick block of its own, so
+		// it was never scanned, and a probe function doing exactly that with
+		// CalendarIDsFor passed silently. Moving a query into a named constant
+		// is an ordinary, praiseworthy refactor — a guard it switches off is a
+		// guard that will be switched off.
+		mutatingConsts := map[string]bool{}
+		for _, m := range sqlConstRe.FindAllStringSubmatch(clean, -1) {
+			if mutatesEventOrTaskRe.MatchString(m[2]) {
+				mutatingConsts[m[1]] = true
+			}
+		}
+
+		for _, fn := range strings.Split(clean, "\nfunc ") {
 			mutates := false
 			for _, m := range sqlBlockRe.FindAllString(fn, -1) {
 				block := m[1 : len(m)-1]
 				if mutatesEventOrTaskRe.MatchString(block) {
 					mutates = true
 					break
+				}
+			}
+			if !mutates {
+				for name := range mutatingConsts {
+					// Word-bounded so a const named `updateSQL` is not matched by
+					// a mention of `updateSQLBuilder`.
+					if regexp.MustCompile(`\b` + regexp.QuoteMeta(name) + `\b`).MatchString(fn) {
+						mutates = true
+						break
+					}
 				}
 			}
 			if !mutates {
