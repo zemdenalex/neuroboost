@@ -70,11 +70,22 @@ func deliverBatch(bot *tgbotapi.BotAPI, client *api.Client, serviceToken string)
 		delivered := sendErr == nil
 		reason := ""
 		if sendErr != nil {
-			reason = sendErr.Error()
-			// Redacted: sendErr is a *url.Error from the Telegram client on a
-			// transport failure, and its message carries the API URL — token
-			// included. This ticks once a minute, so an outage used to write
-			// the token to the log every sixty seconds.
+			// 🔴 Redacted HERE, not only in the log line below. Until 2026-08-16
+			// this read `reason = sendErr.Error()` — raw — one line above a
+			// carefully redacted log call, and that raw string was then POSTed
+			// to /api/svc/notifications/{id}/ack and written to the API's
+			// structured log (api-go/internal/reminders/service.go:247).
+			//
+			// api-go has no redaction of its own — `grep -rn logsafe api-go/`
+			// finds nothing — so the token landed in a second process's logs,
+			// one whose readers do not apply the sed rule because "that's the
+			// bot's problem". The fix belongs at the source: the token must not
+			// leave this process at all.
+			reason = deliveryReason(sendErr)
+			// sendErr is a *url.Error from the Telegram client on a transport
+			// failure, and its message carries the API URL — token included.
+			// This ticks once a minute, so an outage used to write the token to
+			// the log every sixty seconds.
 			log.Printf("notifier: send to %d failed: %s", n.TgID, logsafe.Redact(sendErr))
 		}
 		// Ack even on failure. An un-acked row is retried forever, so a user
@@ -84,4 +95,14 @@ func deliverBatch(bot *tgbotapi.BotAPI, client *api.Client, serviceToken string)
 			log.Printf("notifier: ack for %s failed: %v", n.ID, err)
 		}
 	}
+}
+
+// deliveryReason is what the API is told about a failed send.
+//
+// A named function rather than an inline call so it can be tested: the value
+// crosses a process boundary and is written to another service's log, which is
+// exactly the kind of path where an unredacted string goes unnoticed for
+// months. See notifier_reason_test.go.
+func deliveryReason(err error) string {
+	return logsafe.Redact(err)
 }
