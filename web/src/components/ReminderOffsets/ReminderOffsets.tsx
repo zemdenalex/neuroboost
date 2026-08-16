@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { presetLabel } from '../../lib/reminders/presetLabel'
 import { Bell, BellOff, Plus, X } from 'lucide-react'
 import {
   addOffset,
@@ -101,7 +102,7 @@ export function ReminderOffsets({
                 the select never silently reports a preset the user is not on. */}
             {activePreset === null && <option value="">{t('preset.custom')}</option>}
             {Object.keys(presets).map(name => (
-              <option key={name} value={name}>{name}</option>
+              <option key={name} value={name}>{presetLabel(name, t)}</option>
             ))}
           </select>
         )}

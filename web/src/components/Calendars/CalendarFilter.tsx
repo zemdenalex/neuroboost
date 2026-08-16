@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Layers, X } from 'lucide-react'
 import type { Calendar } from '../../api/calendars'
 import { resolveColor } from '../../lib/calendar/palette'
+import { calendarLabel } from '../../lib/calendars/calendarLabel'
 import { CalendarsSection } from './CalendarsSection'
 
 interface Props {
@@ -31,6 +32,9 @@ interface Props {
  */
 export function CalendarFilter({ calendars, hidden, onToggle, onCalendarsChanged }: Props) {
   const { t } = useTranslation('calendar')
+  // The personal calendar's display name lives in the settings namespace,
+  // beside the rest of the calendar management copy.
+  const { t: tSettings } = useTranslation('settings')
   const [open, setOpen] = useState(false)
   const [managing, setManaging] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
@@ -120,7 +124,9 @@ export function CalendarFilter({ calendars, hidden, onToggle, onCalendarsChanged
                       className="h-3 w-3 shrink-0 rounded-full border border-zinc-600"
                       style={{ backgroundColor: resolveColor(cal.color) ?? 'transparent' }}
                     />
-                    <span className="min-w-0 flex-1 truncate text-sm text-zinc-200">{cal.name}</span>
+                    <span className="min-w-0 flex-1 truncate text-sm text-zinc-200">
+                      {calendarLabel(cal, tSettings)}
+                    </span>
                   </label>
                 </li>
               ))}

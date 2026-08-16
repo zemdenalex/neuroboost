@@ -11,6 +11,7 @@ import {
 import { sortCalendars } from '../../lib/calendars/order'
 import { defaultCalendarColor, resolveColor, PALETTE, PALETTE_NAMES, type PaletteName } from '../../lib/calendar/palette'
 import { describeCalendarError } from '../../lib/calendars/errors'
+import { calendarLabel } from '../../lib/calendars/calendarLabel'
 import { showToast } from '../ui/Toast'
 
 type LoadStatus = 'loading' | 'error' | 'loaded'
@@ -272,7 +273,11 @@ export function CalendarsSection({ onCalendarsChanged }: Props = {}) {
                   />
                 ) : (
                   <span data-testid="calendar-name" className="flex-1 text-sm text-zinc-200">
-                    {cal.name}
+                    {/* The displayed name only. startRename below deliberately
+                        seeds the field with cal.name, the stored one: the input
+                        edits the real value, so showing a translation there
+                        would rename the calendar on a focus and a blur. */}
+                    {calendarLabel(cal, t)}
                     {cal.kind === 'personal' && (
                       <span className="ml-2 px-1.5 py-0.5 text-xs font-mono text-zinc-500 bg-zinc-800 rounded">
                         {t('calendars.personalBadge')}

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { calendarLabel } from '../../../lib/calendars/calendarLabel'
 import { CalendarDays } from 'lucide-react'
 import { listCalendars, type Calendar } from '../../../api/calendars'
 
@@ -67,7 +68,7 @@ export function CalendarField({ value, onChange, disabled = false }: Props) {
       >
         {calendars.map((c) => (
           <option key={c.id} value={c.id}>
-            {c.name}
+            {calendarLabel(c, t)}
           </option>
         ))}
       </select>

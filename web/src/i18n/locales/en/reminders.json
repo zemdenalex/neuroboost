@@ -48,5 +48,10 @@
       "unknown": "That preset no longer exists.",
       "last": "This is the last preset — an empty list is read as “not set” and brings the built-in presets back."
     }
+  },
+  "presetName": {
+    "important": "Important",
+    "normal": "Normal",
+    "none": "None"
   }
 }

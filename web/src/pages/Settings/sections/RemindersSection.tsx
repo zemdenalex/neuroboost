@@ -4,6 +4,7 @@ import { Bell } from 'lucide-react'
 import { useAuthContext } from '../../../contexts/AuthContext'
 import { resolveReminderSettings, type ReminderSettings } from '../../../lib/reminders/offsets'
 import { PresetsEditor } from './PresetsEditor'
+import { presetLabel } from '../../../lib/reminders/presetLabel'
 import type { UserSettings } from '../../../api/auth'
 
 interface Props {
@@ -88,7 +89,7 @@ export function RemindersSection({ autoSave }: Props) {
           >
             {Object.keys(reminders.presets).map((name) => (
               <option key={name} value={name}>
-                {name}
+                {presetLabel(name, tr)}
               </option>
             ))}
           </select>
@@ -106,7 +107,7 @@ export function RemindersSection({ autoSave }: Props) {
           >
             {Object.keys(reminders.presets).map((name) => (
               <option key={name} value={name}>
-                {name}
+                {presetLabel(name, tr)}
               </option>
             ))}
           </select>
