@@ -140,10 +140,21 @@ func PersonalIDFor(ctx context.Context, userID string) (string, error) {
 		return "", err
 	}
 
+	// 🔴 DO UPDATE, not DO NOTHING. This function's whole promise is that it
+	// REPAIRS a broken personal calendar, and DO NOTHING left two broken states
+	// exactly as it found them: a membership row stuck at status 'invited', or
+	// one whose role is not owner. In either case readHealthyPersonalID keeps
+	// failing, this branch keeps doing nothing, and PersonalIDFor still returns
+	// the id — so the caller believes it is repaired while CalendarIDsFor,
+	// which filters on status, shows the user none of their own events.
+	//
+	// Safe to force here and nowhere else: this is the owner's OWN personal
+	// calendar, and owner+active is the only state it may be in.
 	if _, err := db.Pool.Exec(ctx,
 		`INSERT INTO calendar_member (calendar_id, user_id, role, status)
 		 VALUES ($1, $2, $3, $4)
-		 ON CONFLICT DO NOTHING`,
+		 ON CONFLICT (calendar_id, user_id)
+		 DO UPDATE SET role = EXCLUDED.role, status = EXCLUDED.status`,
 		id, userID, RoleOwner, StatusActive); err != nil {
 		return "", err
 	}
@@ -152,17 +163,23 @@ func PersonalIDFor(ctx context.Context, userID string) (string, error) {
 }
 
 // readHealthyPersonalID returns the personal calendar id only when both the
-// calendar and an active owner membership exist. pgx.ErrNoRows means either
-// piece (or both) is missing.
+// calendar and an active OWNER membership exist. pgx.ErrNoRows means either
+// piece (or both) is missing, or the membership is there in the wrong shape.
+//
+// 🔴 The role check matters as much as the status one. WritableIDsFor filters
+// on role, so an owner whose own membership said 'viewer' could read their
+// personal calendar and not write to it — and without this clause PersonalIDFor
+// would call that healthy and repair nothing.
 func readHealthyPersonalID(ctx context.Context, userID string) (string, error) {
 	var id string
 	err := db.Pool.QueryRow(ctx,
 		`SELECT c.id::text
 		 FROM calendar c
 		 JOIN calendar_member m ON m.calendar_id = c.id AND m.user_id = c.owner_id
-		 WHERE c.owner_id = $1 AND c.kind = 'personal' AND m.status = $2
+		 WHERE c.owner_id = $1 AND c.kind = 'personal'
+		   AND m.status = $2 AND m.role = $3
 		 LIMIT 1`,
-		userID, StatusActive).Scan(&id)
+		userID, StatusActive, RoleOwner).Scan(&id)
 	return id, err
 }
 
