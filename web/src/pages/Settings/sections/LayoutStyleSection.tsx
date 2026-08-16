@@ -35,7 +35,19 @@ export function LayoutStyleSection() {
   // the user is loaded, and refreshUser() can bring a change made elsewhere.
   useEffect(() => {
     if (user?.settings?.header_variant) setStyle(user.settings.header_variant)
-  }, [user])
+  // 🔴 Keyed on the account, not on the `user` OBJECT. updateSettings calls
+  // setUser after every save, so a dependency on `user` re-ran this on every
+  // server response — including one answering an EARLIER save, which then
+  // overwrote a change the user had made in the meantime. On its own that
+  // looked like a flicker; it lost the change for good as soon as the next
+  // edit was built from the reverted state. Reproduced in
+  // web/e2e/settings-race.spec.ts (expected 07:11, got the stored 08:00).
+  //
+  // Cost of the narrower key: settings changed on another device no longer
+  // appear without a reload. They did not appear reliably before either — this
+  // effect only ever fired on this tab's own saves.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id])
 
   const change = async (next: HeaderVariant) => {
     // Optimistic: the layout switches under the user's hand, and reverting on
