@@ -1,6 +1,7 @@
 import { memo } from 'react';
 import type { ProcessedEvent, NbEvent } from './weekgrid.types';
 import { formatTimeFromUtc } from './weekgrid.utils';
+import { resolveColor } from '../../../lib/calendar/palette';
 
 interface EventBlockProps {
   event: ProcessedEvent;
@@ -57,10 +58,12 @@ export const EventBlock = memo(function EventBlock({
         left: `calc(${(event.leftPct ?? 0) * 100}% + 2px)`,
         width: `calc(${(event.widthPct ?? 1) * 100}% - 4px)`,
         borderRadius,
-        // displayColor already resolved the event-over-calendar precedence
-        // (lib/calendar/eventColor.ts); event.color is the fallback for callers
-        // that build a ProcessedEvent without going through processEventsForWeek.
-        backgroundColor: event.displayColor || event.color || undefined,
+        // displayColor already resolved the event-over-calendar precedence AND
+        // turned the stored value into paintable CSS (lib/calendar/eventColor.ts).
+        // The fallback is for callers that build a ProcessedEvent without going
+        // through processEventsForWeek — it must resolve too, or `blue-400`
+        // reaches backgroundColor raw and the block silently stays grey.
+        backgroundColor: event.displayColor ?? resolveColor(event.color),
       }}
       onClick={(e) => {
         e.stopPropagation();

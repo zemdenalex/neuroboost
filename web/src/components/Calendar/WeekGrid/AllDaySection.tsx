@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { ALL_DAY_HEIGHT, DAY_MS } from './weekgrid.constants';
 import type { ProcessedEvent, DragState, NbEvent, DayInfo } from './weekgrid.types';
 import { getTimezoneOffsetMs, formatAllDayGhostLabel } from './weekgrid.utils';
+import { resolveColor } from '../../../lib/calendar/palette';
 
 interface AllDaySectionProps {
   days: DayInfo[];
@@ -75,7 +76,13 @@ export function AllDaySection({
                       borderRadius: isStartDay && isEndDay ? '6px' :
                                   isStartDay ? '6px 0 0 6px' :
                                   isEndDay ? '0 6px 6px 0' : '0',
-                      backgroundColor: e.color || undefined,
+                      // displayColor, not e.color: all-day rows get one from
+                      // processEventsForWeek like every other event, and it is
+                      // the only value that carries the calendar's colour AND
+                      // is resolved to paintable CSS. Reading e.color here meant
+                      // an all-day event ignored its calendar entirely and
+                      // painted nothing for `blue-400`.
+                      backgroundColor: e.displayColor ?? resolveColor(e.color),
                     }}
                     onClick={(ev) => {
                       ev.stopPropagation();
