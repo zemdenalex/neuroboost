@@ -180,7 +180,10 @@ func PendingHandler(w http.ResponseWriter, r *http.Request) {
 		  AND u.id = r.user_id
 		  AND u.tg_id IS NOT NULL
 		RETURNING r.id, u.tg_id, COALESCE(r.message, ''), r.source_kind,
-		          COALESCE(r.event_id::text, r.task_id::text, '')`,
+		          -- calendar_id last: an INVITE row has neither event nor task,
+		          -- and the bot needs SOMETHING to name the subject of the
+		          -- buttons it renders.
+		          COALESCE(r.event_id::text, r.task_id::text, r.calendar_id::text, '')`,
 		pendingBatchLimit)
 	if err != nil {
 		if svcLog != nil {

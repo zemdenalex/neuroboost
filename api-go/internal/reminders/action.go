@@ -15,6 +15,11 @@ const (
 	ActionAck    = "ack"
 	ActionSnooze = "snooze"
 	ActionDone   = "done"
+	// Answering a calendar invitation from the notification itself. Added
+	// 17.08 with INVITE notifications: an invitation that can only be accepted
+	// by opening the web is a notification that creates a chore.
+	ActionAccept  = "accept"
+	ActionDecline = "decline"
 )
 
 const (
@@ -53,7 +58,7 @@ func ValidateAction(req ActionRequest) (ActionRequest, error) {
 		return req, ErrInvalidAction
 	}
 	switch req.Action {
-	case ActionAck, ActionDone:
+	case ActionAck, ActionDone, ActionAccept, ActionDecline:
 		req.Minutes = 0
 	case ActionSnooze:
 		if req.Minutes <= 0 {
@@ -87,18 +92,18 @@ func ActionHandler(w http.ResponseWriter, r *http.Request) {
 	// what stops one user's callback acting on another's reminder: the service
 	// token authenticates the bot, not the person who pressed the button.
 	var userID, sourceKind string
-	var eventID, taskID *string
+	var eventID, taskID, calendarID *string
 	var occurrenceStart *string
 	var message string
 	err = db.Pool.QueryRow(ctx, `
 		SELECT r.user_id::text, r.source_kind,
-		       r.event_id::text, r.task_id::text,
+		       r.event_id::text, r.task_id::text, r.calendar_id::text,
 		       r.occurrence_start::text, COALESCE(r.message, '')
 		FROM reminder r
 		JOIN "user" u ON u.id = r.user_id
 		WHERE r.id = $1 AND u.tg_id = $2`,
 		req.ReminderID, req.TgID).
-		Scan(&userID, &sourceKind, &eventID, &taskID, &occurrenceStart, &message)
+		Scan(&userID, &sourceKind, &eventID, &taskID, &calendarID, &occurrenceStart, &message)
 	if err != nil {
 		// Not found and not-yours are deliberately the same answer: telling the
 		// caller which one it was would confirm that a reminder id exists.
@@ -143,6 +148,37 @@ func ActionHandler(w http.ResponseWriter, r *http.Request) {
 		util.RespondJSON(w, http.StatusOK, map[string]any{
 			"ok": true, "action": ActionSnooze, "minutes": req.Minutes,
 		})
+
+	case ActionAccept, ActionDecline:
+		// Answering an invitation from the chat. The reminder row was already
+		// matched against tg_id above, so the calendar here is one this person
+		// was genuinely invited to — but RespondToInvitation checks
+		// status='invited' again anyway, and that second check is the
+		// authorisation, not a formality: it is what makes a replayed callback
+		// harmless.
+		if calendarID == nil {
+			util.RespondError(w, http.StatusBadRequest, "NOT_AN_INVITE", "This notification is not an invitation")
+			return
+		}
+		accept := req.Action == ActionAccept
+		if err := calendars.RespondToInvitation(ctx, userID, *calendarID, accept); err != nil {
+			if errors.Is(err, calendars.ErrNoInvitation) {
+				// Already answered — in the web, or by pressing twice. Not an
+				// error to report to the person: the outcome they wanted has
+				// happened. Reported as ok so the bot can edit the message.
+				util.RespondJSON(w, http.StatusOK, map[string]any{
+					"ok": true, "action": req.Action, "already": true,
+				})
+				return
+			}
+			if svcLog != nil {
+				svcLog.Error("invitation response failed",
+					slog.String("reminder_id", req.ReminderID), slog.String("error", err.Error()))
+			}
+			util.RespondError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to answer the invitation")
+			return
+		}
+		util.RespondJSON(w, http.StatusOK, map[string]any{"ok": true, "action": req.Action})
 
 	case ActionDone:
 		// Only a task can be completed. An event reminder's "done" is an ack.

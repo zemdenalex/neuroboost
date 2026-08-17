@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 )
@@ -558,4 +559,115 @@ func TestInviteEmailIsCaseInsensitive(t *testing.T) {
 	if _, err := InviteByEmail(ctx, ownerID, c.ID, upper, RoleEditor); err != nil {
 		t.Fatalf("invite with a differently-cased address: %v", err)
 	}
+}
+
+// TestInviteNotifiesOnlyTelegramUsers.
+//
+// Denis asked for the invitation to reach Telegram (17.08). The delivery
+// pipeline addresses rows in `reminder`, so inviting enqueues one — but only
+// when the invitee actually has a tg_id.
+//
+// 🔴 The second half is the one that matters. PendingHandler filters out rows
+// whose user has no tg_id AT CLAIM TIME, so a row written for someone without
+// Telegram is never delivered and never cleaned up: the queue fills with
+// messages for people who cannot receive them. That is the state Lizok is in
+// today — an account with an email and no Telegram.
+func TestInviteNotifiesOnlyTelegramUsers(t *testing.T) {
+	ownerID, cleanup := setupTestDB(t)
+	defer cleanup()
+	ctx := context.Background()
+
+	c, err := Create(ctx, ownerID, "Уведомить", nil)
+	if err != nil {
+		t.Fatalf("create: %v", err)
+	}
+
+	// Someone without Telegram: no row.
+	silentID, silentEmail := seedPerson(t, "no-telegram")
+	if _, err := InviteByEmail(ctx, ownerID, c.ID, silentEmail, RoleEditor); err != nil {
+		t.Fatalf("invite: %v", err)
+	}
+	if n := countInviteRows(t, silentID, c.ID); n != 0 {
+		t.Errorf("queued %d notifications for a user with no tg_id — they can never be delivered", n)
+	}
+
+	// Someone with Telegram: exactly one row, carrying the calendar.
+	chattyID, chattyEmail := seedPerson(t, "telegram")
+	if _, err := db.Pool.Exec(ctx,
+		`UPDATE "user" SET tg_id = $2 WHERE id = $1`, chattyID, time.Now().UnixNano()%1_000_000_000); err != nil {
+		t.Fatalf("set tg_id: %v", err)
+	}
+	if _, err := InviteByEmail(ctx, ownerID, c.ID, chattyEmail, RoleEditor); err != nil {
+		t.Fatalf("invite: %v", err)
+	}
+	if n := countInviteRows(t, chattyID, c.ID); n != 1 {
+		t.Fatalf("want exactly one queued notification, got %d", n)
+	}
+
+	// And it says who and which calendar — a notification that reads "you were
+	// invited" and nothing else makes the person open the app to find out what
+	// they are answering, which is the chore this was meant to remove.
+	var message string
+	if err := db.Pool.QueryRow(ctx,
+		`SELECT COALESCE(message, '') FROM reminder
+		  WHERE user_id = $1 AND calendar_id = $2 AND source_kind = 'INVITE'`,
+		chattyID, c.ID).Scan(&message); err != nil {
+		t.Fatalf("read message: %v", err)
+	}
+	if !strings.Contains(message, "Уведомить") {
+		t.Errorf("the notification does not name the calendar: %q", message)
+	}
+}
+
+// TestTwoInvitationsForOnePersonBothSurvive is the reason migration 000015
+// rebuilt idx_reminder_dedupe.
+//
+// An INVITE row has NULL for event_id, task_id, occurrence_start AND
+// minutes_before. Under the old key — which does not include calendar_id and
+// is NULLS NOT DISTINCT — two invitations to two different calendars for the
+// same person collide, and the second one is silently swallowed by
+// ON CONFLICT DO NOTHING. Nothing errors; the message simply never arrives.
+func TestTwoInvitationsForOnePersonBothSurvive(t *testing.T) {
+	ownerID, cleanup := setupTestDB(t)
+	defer cleanup()
+	ctx := context.Background()
+
+	first, err := Create(ctx, ownerID, "Первый общий", nil)
+	if err != nil {
+		t.Fatalf("create first: %v", err)
+	}
+	second, err := Create(ctx, ownerID, "Второй общий", nil)
+	if err != nil {
+		t.Fatalf("create second: %v", err)
+	}
+
+	inviteeID, inviteeEmail := seedPerson(t, "two-invites")
+	if _, err := db.Pool.Exec(ctx,
+		`UPDATE "user" SET tg_id = $2 WHERE id = $1`, inviteeID, time.Now().UnixNano()%1_000_000_000+1); err != nil {
+		t.Fatalf("set tg_id: %v", err)
+	}
+
+	for _, cal := range []Calendar{first, second} {
+		if _, err := InviteByEmail(ctx, ownerID, cal.ID, inviteeEmail, RoleEditor); err != nil {
+			t.Fatalf("invite to %s: %v", cal.Name, err)
+		}
+	}
+
+	for _, cal := range []Calendar{first, second} {
+		if n := countInviteRows(t, inviteeID, cal.ID); n != 1 {
+			t.Errorf("calendar %q: want one notification, got %d", cal.Name, n)
+		}
+	}
+}
+
+func countInviteRows(t *testing.T, userID, calendarID string) int {
+	t.Helper()
+	var n int
+	if err := db.Pool.QueryRow(context.Background(),
+		`SELECT count(*) FROM reminder
+		  WHERE user_id = $1 AND calendar_id = $2 AND source_kind = 'INVITE'`,
+		userID, calendarID).Scan(&n); err != nil {
+		t.Fatalf("count invite rows: %v", err)
+	}
+	return n
 }

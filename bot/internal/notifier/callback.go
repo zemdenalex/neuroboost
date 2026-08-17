@@ -19,14 +19,20 @@ const (
 	codeAck    = "a"
 	codeSnooze = "s"
 	codeDone   = "d"
+	// Answering a calendar invitation. One letter each, for the same reason as
+	// the rest: 64 bytes total and 36 of them are a UUID.
+	codeAccept  = "y"
+	codeDecline = "n"
 )
 
 // Action names as the API expects them. Kept separate from the wire codes so
 // shortening the wire format can never silently rename an API action.
 const (
-	ActionAck    = "ack"
-	ActionSnooze = "snooze"
-	ActionDone   = "done"
+	ActionAck     = "ack"
+	ActionSnooze  = "snooze"
+	ActionDone    = "done"
+	ActionAccept  = "accept"
+	ActionDecline = "decline"
 )
 
 // SnoozeMinutes is what the "later" button asks for.
@@ -64,6 +70,10 @@ func ParseCallback(data string) (Callback, bool) {
 		return Callback{Action: ActionSnooze, ReminderID: id, Minutes: SnoozeMinutes}, true
 	case codeDone:
 		return Callback{Action: ActionDone, ReminderID: id}, true
+	case codeAccept:
+		return Callback{Action: ActionAccept, ReminderID: id}, true
+	case codeDecline:
+		return Callback{Action: ActionDecline, ReminderID: id}, true
 	}
 	return Callback{}, false
 }
@@ -81,6 +91,16 @@ func Keyboard(sourceKind, reminderID string) *tgbotapi.InlineKeyboardMarkup {
 			tgbotapi.NewInlineKeyboardButtonData("✅ Готово", EncodeCallback(codeDone, reminderID)),
 			tgbotapi.NewInlineKeyboardButtonData("⏰ +10 мин", EncodeCallback(codeSnooze, reminderID)),
 		}
+	case "INVITE":
+		// 🔴 No snooze. Snoozing re-sends the same notification later, and an
+		// invitation is not a reminder — the answer is yes or no, and a third
+		// button offering neither would make the message look like a chore to
+		// postpone rather than a question to answer.
+		row = []tgbotapi.InlineKeyboardButton{
+			tgbotapi.NewInlineKeyboardButtonData("✅ Принять", EncodeCallback(codeAccept, reminderID)),
+			tgbotapi.NewInlineKeyboardButtonData("✖ Отклонить", EncodeCallback(codeDecline, reminderID)),
+		}
+
 	case "DIGEST":
 		return nil
 	default:
@@ -94,6 +114,30 @@ func Keyboard(sourceKind, reminderID string) *tgbotapi.InlineKeyboardMarkup {
 
 	kb := tgbotapi.NewInlineKeyboardMarkup(tgbotapi.NewInlineKeyboardRow(row...))
 	return &kb
+}
+
+// KeyboardFits reports whether every button in a keyboard is inside Telegram's
+// callback_data cap.
+//
+// Telegram rejects the WHOLE message when one button is over the limit, so a
+// notification with an oversized button is a notification that never arrives.
+// Checking the real buttons rather than a representative one means a keyboard
+// that stops carrying the button we happened to sample cannot slip past.
+func KeyboardFits(kb *tgbotapi.InlineKeyboardMarkup) bool {
+	if kb == nil {
+		return false
+	}
+	for _, row := range kb.InlineKeyboard {
+		for _, b := range row {
+			if b.CallbackData == nil {
+				continue
+			}
+			if !FitsCallbackLimit(*b.CallbackData) {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 // CallbackDataLimit is Telegram's hard cap on callback_data.

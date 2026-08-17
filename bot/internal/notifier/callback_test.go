@@ -1,6 +1,9 @@
 package notifier
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 // A real reminder id: 36 characters, which is what makes the 64-byte cap tight.
 const sampleID = "e2b1c0de-1111-2222-3333-444455556666"
@@ -91,5 +94,65 @@ func TestParseMinutesFallsBackToTheDefault(t *testing.T) {
 	}
 	if got := ParseMinutes("30"); got != 30 {
 		t.Errorf("ParseMinutes(\"30\") = %d, want 30", got)
+	}
+}
+
+// An invitation gets yes/no, and no snooze.
+//
+// 🔴 Snooze is deliberately absent: it re-sends the same notification later,
+// and an invitation is a question, not a reminder. A third button offering
+// neither answer would make the message read as a chore to postpone.
+func TestKeyboardForInvite(t *testing.T) {
+	kb := Keyboard("INVITE", "11111111-2222-3333-4444-555555555555")
+	if kb == nil {
+		t.Fatal("an invitation must carry buttons — answering it in the chat is the point")
+	}
+
+	var codes []string
+	for _, row := range kb.InlineKeyboard {
+		for _, b := range row {
+			if b.CallbackData != nil {
+				codes = append(codes, *b.CallbackData)
+			}
+		}
+	}
+	if len(codes) != 2 {
+		t.Fatalf("want accept and decline, got %d buttons", len(codes))
+	}
+
+	for _, data := range codes {
+		cb, ok := ParseCallback(data)
+		if !ok {
+			t.Fatalf("the button we just built does not parse: %q", data)
+		}
+		if cb.Action != ActionAccept && cb.Action != ActionDecline {
+			t.Errorf("unexpected action on an invitation: %q", cb.Action)
+		}
+		if cb.Action == ActionSnooze {
+			t.Error("an invitation must not offer snooze")
+		}
+	}
+}
+
+// KeyboardFits asks the real buttons rather than a representative one.
+//
+// The old check sampled EncodeCallback(codeSnooze, id), which was right only
+// because every action code happens to be one byte — and the INVITE keyboard
+// has no snooze button at all.
+func TestKeyboardFitsChecksEveryButton(t *testing.T) {
+	ok := Keyboard("INVITE", "11111111-2222-3333-4444-555555555555")
+	if !KeyboardFits(ok) {
+		t.Error("a normal UUID must fit inside the callback limit")
+	}
+
+	// The negative control: something long enough to be refused. Without it,
+	// a KeyboardFits that always returned true would pass the line above.
+	tooLong := Keyboard("INVITE", strings.Repeat("x", CallbackDataLimit+10))
+	if KeyboardFits(tooLong) {
+		t.Error("an oversized payload must be refused — Telegram rejects the whole message")
+	}
+
+	if KeyboardFits(nil) {
+		t.Error("no keyboard is not a keyboard that fits")
 	}
 }

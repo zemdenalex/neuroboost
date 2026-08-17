@@ -201,7 +201,43 @@ func InviteByEmail(ctx context.Context, ownerID, calendarID, email, role string)
 	).Scan(&mem.UserID, &mem.Email, &mem.DisplayName, &mem.Role, &mem.Status); err != nil {
 		return Member{}, err
 	}
+
+	// Tell them in Telegram, if we can. Not fatal: the invitation exists either
+	// way and is visible in the app, so a failure to enqueue a message must not
+	// undo it. Logged by the caller's error path only when it is fatal — here
+	// the honest outcome is "invited, possibly unnoticed".
+	if err := enqueueInviteNotification(ctx, ownerID, inviteeID, calendarID); err != nil {
+		return mem, nil
+	}
 	return mem, nil
+}
+
+// enqueueInviteNotification puts an invitation into the P2 delivery pipeline.
+//
+// 🔴 It writes to `reminder` with raw SQL instead of calling the reminders
+// package, and that is deliberate: reminders imports calendars (for the write
+// scoping on the "done" button), so calendars importing reminders would be an
+// import cycle. A single INSERT is a much smaller price than inverting that
+// dependency, and the notification pipeline is a queue — writing a row into it
+// is its public interface as much as any function would be.
+//
+// 🔴 Only when the invitee actually has a tg_id. PendingHandler filters those
+// rows out at claim time, so without this check the row would sit PENDING for
+// ever, never delivered and never cleaned up — a queue that quietly fills with
+// messages for people who cannot receive them. Lizok is exactly that case
+// today: an account with an email and no Telegram.
+func enqueueInviteNotification(ctx context.Context, inviterID, inviteeID, calendarID string) error {
+	_, err := db.Pool.Exec(ctx, `
+		INSERT INTO reminder (user_id, source_kind, calendar_id, remind_at, status, channel, message)
+		SELECT $2, 'INVITE', $3, NOW(), 'PENDING', 'TELEGRAM',
+		       '📅 ' || COALESCE(inviter.display_name, inviter.email, 'Кто-то') ||
+		       ' приглашает вас в календарь «' || c.name || '»'
+		  FROM "user" invitee, "user" inviter, calendar c
+		 WHERE invitee.id = $2 AND inviter.id = $1 AND c.id = $3
+		   AND invitee.tg_id IS NOT NULL
+		ON CONFLICT DO NOTHING`,
+		inviterID, inviteeID, calendarID)
+	return err
 }
 
 // RespondToInvitation turns a pending invitation into membership, or removes it.

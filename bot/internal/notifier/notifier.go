@@ -62,7 +62,12 @@ func deliverBatch(bot *tgbotapi.BotAPI, client *api.Client, serviceToken string)
 		// Buttons are best-effort: if the payload could not be kept inside
 		// Telegram's 64-byte callback_data cap, send the text alone rather than
 		// lose the notification to a rejected message.
-		if kb := Keyboard(n.SourceKind, n.ID); kb != nil && FitsCallbackLimit(EncodeCallback(codeSnooze, n.ID)) {
+		// ⚠ This used to test EncodeCallback(codeSnooze, …) as a stand-in for
+		// whatever the keyboard actually contains. Every action code is one
+		// byte, so it gave the right answer — by coincidence, not by
+		// construction, and the INVITE keyboard added on 17.08 does not carry a
+		// snooze button at all. Ask the buttons themselves.
+		if kb := Keyboard(n.SourceKind, n.ID); kb != nil && KeyboardFits(kb) {
 			msg.ReplyMarkup = *kb
 		}
 		_, sendErr := bot.Send(msg)
