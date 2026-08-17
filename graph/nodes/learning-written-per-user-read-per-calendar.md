@@ -6,7 +6,7 @@ status: verified
 verified_by: session-e49293fc
 verified_at: 2026-08-16
 tags: [neuroboost, database, p3, calendars, recurrence]
-weight: { importance: 5, connectivity: 4, access: 1, last_accessed: 2026-08-17 }
+weight: { importance: 5, connectivity: 6, access: 2, last_accessed: 2026-08-17 }
 sources:
   - file: "api-go/migrations/000001_baseline.up.sql:146 — UNIQUE (user_id, event_id, occurrence)"
   - file: "api-go/internal/events/recurrence.go — fetchExceptions фильтрует по calendar_id, без user_id"

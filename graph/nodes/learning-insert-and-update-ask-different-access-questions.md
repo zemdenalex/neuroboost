@@ -6,7 +6,7 @@ status: verified
 verified_by: session-e49293fc
 verified_at: 2026-08-16
 tags: [neuroboost, security, access, p3, testing]
-weight: { importance: 5, connectivity: 3, access: 1, last_accessed: 2026-08-17 }
+weight: { importance: 5, connectivity: 5, access: 2, last_accessed: 2026-08-17 }
 sources:
   - file: "api-go/internal/calendars/writescoping_test.go — ветка INSERT требует WritableIDFor/PersonalIDFor"
   - file: "api-go/internal/tasks/handlers.go — scheduleTask брала calendar_id простым чтением"

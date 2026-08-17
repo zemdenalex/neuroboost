@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-08-10
 tags: [neuroboost, telegram, infra, deploy, nivium]
-weight: { importance: 5, connectivity: 14, access: 5, last_accessed: 2026-08-11 }
+weight: { importance: 5, connectivity: 14, access: 6, last_accessed: 2026-08-17 }
 sources:
   - command: "ssh -i ~/.ssh/ufo_servers root@185.214.10.107 'docker logs neuroboost-dev-bot'  # → Bot authorized as @NeuroBoost_dev_bot; notifier: polling every 1m0s"
   - command: "docker exec neuroboost-dev-db psql -d neuroboost_dev -c 'select status, sent_at from reminder order by created_at desc limit 1'  # → SENT, 2026-08-10 01:34:39Z"

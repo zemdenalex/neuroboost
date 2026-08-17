@@ -641,3 +641,50 @@ e2e **62** в двух проектах · lint 0 errors · миграций **1
 
 **Читать первым:** `docs/ochered-2026-08-17.md` → `docs/staging-proyden-2026-08-16.md` →
 `learning-one-component-in-two-containers-trades-drift-for-fit`.
+
+## [2026-08-17] recall | learning-a-test-that-cannot-fail-guards-nothing, learning-one-component-in-two-containers-trades-drift-for-fit, learning-stale-comment-outlived-its-constraint, learning-e2e-baseline-recorded-on-a-monday, learning-written-per-user-read-per-calendar, learning-insert-and-update-ask-different-access-questions, entity-bot-runs-on-nl2, entity-bot-deploys-by-hand-not-by-ci, entity-bot-creates-events-from-one-line, learning-merge-to-main-is-the-release
+
+---
+
+## [2026-08-17, вечер] Пять жалоб закрыты, общие календари сделаны целиком
+
+**Сделано, 14 коммитов** (`415a08d` → `acd9460`, 292 впереди `main`, всё запушено, CI зелёный):
+
+| Жалоба Дениса | Итог |
+|---|---|
+| 1. Панель выбора календаря | Один список, отращивающий управление (его форма: «как расширенное создание события»). `dcbc3fd` |
+| 2. Нечем поделиться | **Сделано целиком** — см. `entity-p3-sharing-shipped-2026-08-17` |
+| 3. Tailwind-классы не красят блок | Гипотеза подтвердилась: сетка рисовала сырой `color`. Три места, не одно. `ddd3595` |
+| 4. Подсказки | Метки на всех 12 страницах (было 4), тексты переписаны на «зачем и как». `c0b8a63` |
+| 5. Новый чеклист | `docs/staging-check-2026-08-17.md` — у каждого предупреждения дата и команда проверки. `4320fce` |
+
+**Найдено попутно, дороже самих правок:**
+- **Три записи в `CLAUDE.md` оказались ложными** → `learning-three-known-defects-were-already-fixed`.
+  Все три исправлены в `CLAUDE.md`.
+- **Блокера среза 3 не существовало** → `learning-a-mechanism-is-not-a-state`.
+- **`/profile` уезжал за экран месяцами при зелёной спеке** → `learning-fixture-data-can-disarm-a-control`.
+- **Бот молчал на нажатие, Денис нажал семь раз** → `learning-a-silent-success-reads-as-a-failure`.
+
+**Числа на конец сессии** (пересчитывать, не переносить): фронт **581** тест · e2e **14** спек ·
+миграций **15** (прод на 8) · `pnpm lint` 0 errors.
+
+**Открыто:**
+1. 🔴 **Релиз в прод не сделан.** 292 коммита, накатятся **7** миграций (не 5 —
+   `docs/runbook-posle-merzha-2026-08-16.md` протух на этом числе, переписать).
+   В силе: ротация токена бота как предусловие, ручная пересборка **прод**-бота.
+2. **Срез 4** — признака «общее» на событии нет; создавать в общий календарь уже можно.
+3. **Срез 5** — оба участника получают напоминание (доказано `shared_scan_test.go`), но
+   **одинаковое**: смещения на событии, а не на паре «событие + человек».
+4. **Регистрация по приглашению** — приглашение по email требует существующего аккаунта.
+5. Денис 17.08: *«вижу уже много чего еще поправить»* — список не назван, спросить.
+
+**Состояние сред:** staging = `develop`, миграция 15, чисто; тестовые календари и 18
+одноразовых аккаунтов убраны, осталось 3 пользователя. **dev-бот пересобран вручную**
+(`/opt/neuroboost-bot` на `185.214.10.107`, ключ `~/.ssh/ufo_servers`, прежний `src` в
+`src.bak-2026-08-17`). **Прод-бот НЕ трогали.**
+
+**Читать первым:** `entity-p3-sharing-shipped-2026-08-17` → `learning-a-mechanism-is-not-a-state`
+→ `learning-a-silent-success-reads-as-a-failure` → `docs/staging-check-2026-08-17.md`.
+
+**Навыки на следующую сессию:** ничего специального; если релиз — `docs/release-checklist-2026-08-14.md`
+плюс переписанный runbook.

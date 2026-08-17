@@ -6,7 +6,7 @@ status: verified
 verified_by: session-e49293fc
 verified_at: 2026-08-16
 tags: [neuroboost, frontend, calendars, testing, method]
-weight: { importance: 5, connectivity: 4, access: 1, last_accessed: 2026-08-17 }
+weight: { importance: 5, connectivity: 5, access: 2, last_accessed: 2026-08-17 }
 sources:
   - quote: "this calendar chooser"
   - file: "web/src/components/Calendars/CalendarFilter.tsx — CalendarsSection смонтирована в поповер"

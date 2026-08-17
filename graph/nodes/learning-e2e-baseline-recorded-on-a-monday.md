@@ -6,13 +6,14 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-08-11
 tags: [neuroboost, e2e, calendar, mobile, testing]
-weight: { importance: 5, connectivity: 6, access: 3, last_accessed: 2026-08-17 }
+weight: { importance: 5, connectivity: 7, access: 4, last_accessed: 2026-08-17 }
 sources:
   - command: "corepack pnpm exec playwright test recurring-scope --project=mobile  # 2 failed, воспроизводимо"
   - command: "web/e2e-results/.../test-failed-1.png  # заголовок «Monday, August 10» при сегодня 11.08"
   - command: "cd web && corepack pnpm test --run mobileDayOffset  # 6 тестов"
 stakes: medium
 links:
+  - relates-to: learning-fixture-data-can-disarm-a-control
   - relates-to: learning-two-neighbouring-paths-one-broken-reading-finds-neither
   - relates-to: learning-stale-comment-outlived-its-constraint
   - relates-to: entity-e2e-playwright-harness
