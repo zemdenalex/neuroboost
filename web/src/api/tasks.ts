@@ -46,6 +46,12 @@ export interface Task {
 
 export interface CreateTaskRequest {
   title: string
+  /**
+   * Which calendar the task goes into. Omitted means the author's personal
+   * one — what quick-add and the bot send. Creation only: there is no
+   * calendar_id on UpdateTaskRequest, so an existing task cannot be moved.
+   */
+  calendar_id?: string
   description?: string
   status?: TaskStatus
   category?: TaskCategory
