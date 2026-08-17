@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-08-15
 tags: [neuroboost, calendars, p3, security]
-weight: { importance: 5, connectivity: 5, access: 1, last_accessed: 2026-08-15 }
+weight: { importance: 5, connectivity: 8, access: 1, last_accessed: 2026-08-17 }
 sources:
   - file: "api-go/internal/calendars/store.go — WritableIDFor + writable_test.go"
   - file: "web/src/components/Calendar/EventEditor/CalendarField.tsx"
@@ -14,6 +14,7 @@ sources:
   - command: "саботаж: вернуть присланный id без проверки → падают 2 теста"
 stakes: high
 links:
+  - relates-to: learning-one-component-in-two-containers-trades-drift-for-fit
   - relates-to: entity-p3-slice2-calendar-crud
   - relates-to: learning-a-duplicated-type-breaks-when-one-copy-is-extended
   - relates-to: learning-the-deploy-job-swallowed-two-failures-for-months

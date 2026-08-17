@@ -5,8 +5,8 @@
 - [[learning-merge-to-main-is-the-release]] — Тег — это метка постфактум, а не спусковой крючок: продакшен уезжает в момент
 - [[learning-green-because-skipped-proves-nothing]] — "«Зелено» из-за t.Skip ничего не доказывает — CI с DATABASE_URL уронил то, что локально проходило 12 задач подряд"
 - [[learning-stale-comment-outlived-its-constraint]] — "Комментарий пережил своё ограничение и читался как действующий запрет — MD1 был открыт зря"
-- [[learning-four-of-my-own-defects-in-one-session]] — "Четыре моих собственных дефекта за сессию, и все — тот класс, который я в ней же искал в чужом коде"
 - [[learning-a-control-nobody-runs-hides-a-control-that-cannot-work]] — "Контроль, который никто не запускает, прячет внутри себя контроль, который не мог сработать — e2e нашли посев локали, проигрывавший серверу, первым же прогоном"
+- [[learning-four-of-my-own-defects-in-one-session]] — "Четыре моих собственных дефекта за сессию, и все — тот класс, который я в ней же искал в чужом коде"
 - [[learning-e2e-baseline-recorded-on-a-monday]] — "Базовая линия e2e снята в понедельник — во вторник две спеки упали и вскрыли настоящий баг мобильного календаря"
 - [[learning-digest-sent-empty-text]] — "Утренний дайджест уходил с пустым текстом — Telegram отбивал его каждое утро, следов кроме строки FAILED не было"
 - [[learning-prod-has-no-svc-routes]] — "Prod — это v0.4.9 без P2: /api/svc отдаёт 404, значит уведомления возможны только на staging"
@@ -18,6 +18,7 @@
 - [[learning-sent-measures-delivery-not-usefulness]] — "Статус SENT меряет доставку, а не пользу: три напоминания дошли и были бесполезны, потому что текстом был голый заголовок"
 - [[learning-a-stand-in-kinder-than-the-real-thing-is-not-a-test]] — "Подмена, которая добрее настоящего, — не тест: фальшивый i18next вернул ту же ссылку, что и ключ, и спрятал дефект"
 - [[learning-insert-and-update-ask-different-access-questions]] — "INSERT и UPDATE задают разные вопросы о доступе: множественное число скоупит WHERE, единственное проверяет назначение"
+- [[learning-one-component-in-two-containers-trades-drift-for-fit]] — "Один компонент в двух контейнерах меняет расхождение на непомещаемость — и спека, мерявшая документ, этого не видела"
 - [[learning-redaction-at-the-output-does-not-protect-a-value-that-leaves-the-process]] — "Редакция на выводе защищает читателя, а не значение: токен уехал в лог второго процесса через переменную строкой выше"
 - [[learning-the-deploy-job-swallowed-two-failures-for-months]] — "Job деплоя глотал два отказа месяцами: бэкапов нет с апреля, синк прод→dev не работает — оба писали строчку в лог, которую никто не читал"
 - [[learning-fix-in-the-wrong-container-looks-like-a-broken-fix]] — "Починка, уехавшая не в тот контейнер, неотличима от неработающей — сначала установить, какой бинарь ответил"
@@ -45,8 +46,8 @@
 - [[entity-server-topology]] — "Топология: prod и staging на одной машине 62.76.228.106; бот уезжает на nl-2 (Нидерланды)"
 - [[entity-bot-deploys-by-hand-not-by-ci]] — "Бот не входит в CI: живёт на другой машине, исходники лежат копией без git, деплой руками — правки молча отстают"
 - [[entity-e2e-playwright-harness]] — "Визуальная проверка: Playwright в репозитории, два вьюпорта, 6/6 зелёные против staging"
-- [[entity-p3-slice1-calendar-foundation]] — "P3 срез 1 собран: доступ к событиям и задачам даёт членство в календаре, а не колонка user_id"
 - [[entity-calendars-hold-events-since-slice2plus]] — "Календарь перестал быть украшением: событие создаётся в выбранном календаре и красится его цветом — проверка доступа на сервере, не в UI"
+- [[entity-p3-slice1-calendar-foundation]] — "P3 срез 1 собран: доступ к событиям и задачам даёт членство в календаре, а не колонка user_id"
 - [[entity-neuroboost-docs-map]] — В проекте 27 markdown-документов на ~14 000 строк, и половина из них врёт о статусе.
 - [[entity-bot-creates-events-from-one-line]] — "Бот умеет заводить события одной строкой: «Ужин завтра 19:00», а без времени спрашивает кнопками, а не угадывает"
 
