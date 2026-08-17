@@ -509,7 +509,7 @@ export default function Kanban() {
   return (
     <div className="flex flex-col h-[calc(100vh-56px)] overflow-hidden">
       {/* Top bar */}
-      <div className="flex-shrink-0 flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-b border-zinc-800">
+      <div data-hint="tools.kanban.board" className="flex-shrink-0 flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-b border-zinc-800">
         <div className="flex flex-wrap items-center gap-3 min-w-0">
           <h1 className="text-lg font-bold text-zinc-100 shrink-0">{t('kanban.title')}</h1>
           <FilterBar priorityFilter={priorityFilter} onPriorityChange={setPriorityFilter} />

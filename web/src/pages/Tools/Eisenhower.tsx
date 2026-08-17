@@ -265,7 +265,7 @@ export default function Eisenhower() {
   return (
     <div className="flex flex-col h-[calc(100vh-56px)] overflow-hidden">
       {/* Top bar */}
-      <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-zinc-800">
+      <div data-hint="tools.eisenhower.matrix" className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-zinc-800">
         <div className="flex items-center gap-2.5">
           <Grid2X2 className="w-5 h-5 text-yellow-400" />
           <h1 className="text-lg font-bold text-zinc-100">{t('eisenhower.title')}</h1>

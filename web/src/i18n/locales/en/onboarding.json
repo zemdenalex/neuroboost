@@ -63,23 +63,108 @@
     "step": "Step {{n}} of {{total}}",
     "reveal": "Show this hint",
     "home": {
-      "quickAdd": { "title": "Quick actions", "body": "Jump straight to adding an event or task, or start a focus timer." },
-      "schedule": { "title": "Today's schedule", "body": "Everything you've planned for today, in order." },
-      "tasks": { "title": "Task summary", "body": "A quick count of what's on your plate, by status." }
+      "quickAdd": {
+        "title": "Quick actions",
+        "body": "Start here when something lands in your head. Capture it as a task if it has no time yet, or as an event if it does — deciding which is the only thinking this step needs, and doing it now is what keeps it out of your head."
+      },
+      "schedule": {
+        "title": "Today's schedule",
+        "body": "Today in the order it will actually happen, so you see the shape of the day rather than a list of intentions. If it looks impossibly full, that is the point: move something now, on the calendar, rather than discovering it at 4pm."
+      },
+      "tasks": {
+        "title": "Task summary",
+        "body": "How much is waiting, split by priority. Use it as a pressure gauge, not a to-do list: a growing Emergency count means the plan is drifting, and the fix is on the calendar — schedule some of it — not in working faster."
+      }
     },
     "calendar": {
-      "newEvent": { "title": "Add an event", "body": "Create a time block right away, without clicking the grid." },
-      "grid": { "title": "Your week", "body": "Click an empty slot to create an event, or drag one to move it." },
-      "taskSidebar": { "title": "Your tasks", "body": "Drag a task onto the grid to schedule it as an event." }
+      "newEvent": {
+        "title": "Add an event",
+        "body": "Creates a time block without hunting for the right slot first, which helps when you know what but not yet when. It lands at a default time and you drag it where it belongs — easier than picking a time from a blank form."
+      },
+      "grid": {
+        "title": "Your week",
+        "body": "The calendar is the plan; the task list is only a waiting room. Click an empty slot to block time, drag an event to move it, drag its top or bottom edge to change how long it takes. A plan you can see is a plan you can argue with."
+      },
+      "taskSidebar": {
+        "title": "Your tasks",
+        "body": "Drag a task onto the grid and it becomes a real time block, with a start, an end and a reminder. This is the moment a task stops being a wish: until it has a slot, nothing about it has been decided."
+      }
     },
     "tasks": {
-      "new": { "title": "New task", "body": "Capture anything you need to do. You can schedule it later." },
-      "schedule": { "title": "Schedule it", "body": "Drop this task onto your calendar with one tap." },
-      "complete": { "title": "Mark it done", "body": "Tick the circle when you finish a task." }
+      "new": {
+        "title": "New task",
+        "body": "Write it down badly and quickly — the point is to stop carrying it, not to describe it well. Priority and duration can be wrong for now; you will fix both when you drag it onto the calendar and see what it actually costs."
+      },
+      "schedule": {
+        "title": "Schedule it",
+        "body": "Puts this task on the calendar as a block of real time. Do it as soon as a task matters, because scheduling is where you find out whether the day has room — a list will happily hold forty hours of work in one afternoon."
+      },
+      "complete": {
+        "title": "Mark it done",
+        "body": "Ticking it here also closes its calendar block, so what you planned and what happened stay one story. That comparison is what the reflections page reads later, and it is worthless if completion only ever happened in your head."
+      }
     },
     "planning": {
-      "unscheduled": { "title": "Unscheduled tasks", "body": "Tasks waiting for a place in your week. Drag one onto a day." },
-      "day": { "title": "Plan a day", "body": "Drop a task here to plan it, or open the day in your calendar." }
+      "unscheduled": {
+        "title": "Unscheduled tasks",
+        "body": "Everything with no place in the week yet. Work top-down and drop each one onto a day; whatever is still here when you finish is your honest overflow, and it is better to see it now than to meet it on Thursday."
+      },
+      "day": {
+        "title": "Plan a day",
+        "body": "Drop a task here to give it a day without committing to an hour — a lighter decision than the calendar asks for. Open the day itself when you want to pin down the time, once you can see how full it already is."
+      }
+    },
+    "reflections": {
+      "list": {
+        "title": "What actually happened",
+        "body": "Each entry pairs what you planned with what you did, so the gap is visible rather than remembered. Read them in a run rather than one at a time: the useful pattern is which kinds of task always take longer than you allow them."
+      }
+    },
+    "tools": {
+      "pick": {
+        "title": "Pick a tool",
+        "body": "These are different ways of looking at the same tasks, not extra places to store them. Reach for one when planning stalls: Eisenhower when everything feels urgent, Kanban when too much is half-done, Pomodoro when starting is the problem."
+      },
+      "pomodoro": {
+        "timer": {
+          "title": "Focus timer",
+          "body": "A fixed run at one thing, then a real break. It works because the commitment is to the time rather than to finishing, which is what makes a task you have been avoiding possible to start. Choose the task before you start the clock."
+        }
+      },
+      "kanban": {
+        "board": {
+          "title": "Work in progress",
+          "body": "Columns show how much is started but unfinished. A crowded middle column is the thing to fix: it means work is being started faster than it is finished, and the cure is to move something to done before pulling anything new in."
+        }
+      },
+      "eisenhower": {
+        "matrix": {
+          "title": "Urgent against important",
+          "body": "Place tasks by two questions that usually get answered together and should not be. The quadrant that changes your week is important-but-not-urgent: those tasks never shout, and they are the ones to put on the calendar first."
+        }
+      },
+      "timeBlocking": {
+        "grid": {
+          "title": "Block out the week",
+          "body": "Assign whole stretches of the week to kinds of work rather than to single tasks — deep work here, admin there. New tasks then have an obvious home, so scheduling stops being a decision you make forty separate times a week."
+        }
+      }
+    },
+    "settings": {
+      "sections": {
+        "title": "Everything you can change",
+        "body": "Work days and hours shape the calendar, reminder presets decide what reaches your phone, and feature toggles hide the parts you do not use. Changes save as you make them and follow your account onto every device."
+      },
+      "hintStyle": {
+        "title": "How hints appear",
+        "body": "Bubbles show one hint at a time on hover, walkthrough steps through a page in order, and markers leave a small permanent dot beside anything explainable. Choose markers if you want hints to stay available rather than appear once."
+      }
+    },
+    "profile": {
+      "identity": {
+        "title": "Your account",
+        "body": "Timezone is the setting that matters here: every event you have already created is stored in absolute time, so changing it moves your whole calendar on screen. Set it when you actually move, rather than to correct a single event."
+      }
     }
   }
 }

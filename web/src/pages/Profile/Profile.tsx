@@ -74,7 +74,7 @@ export default function Profile() {
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-8">
         {/* Profile Header */}
-        <div className="bg-gradient-to-r from-zinc-900 via-zinc-900 to-blue-900/20 border border-zinc-800 rounded-lg p-6">
+        <div data-hint="profile.identity" className="bg-gradient-to-r from-zinc-900 via-zinc-900 to-blue-900/20 border border-zinc-800 rounded-lg p-6">
           <div className="flex items-start gap-6">
             {/* Avatar */}
             <div className="relative">

@@ -55,7 +55,7 @@ export default function Pomodoro() {
 
   return (
     <div className="min-h-screen bg-zinc-950 px-4 py-8 text-zinc-100">
-      <div className="mx-auto flex w-full max-w-lg flex-col items-center gap-6">
+      <div data-hint="tools.pomodoro.timer" className="mx-auto flex w-full max-w-lg flex-col items-center gap-6">
         <div className="flex w-full items-center gap-2">
           <Timer className="h-5 w-5 text-zinc-400" />
           <h1 className="text-xl font-semibold">{t('pomodoro.title')}</h1>

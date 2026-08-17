@@ -412,7 +412,7 @@ export default function TimeBlocking() {
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
     <div className="min-h-[calc(100vh-56px)] bg-zinc-950 p-4 sm:p-6">
-      <div className="max-w-2xl mx-auto space-y-6">
+      <div data-hint="tools.timeBlocking.grid" className="max-w-2xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center gap-2.5">
           <Clock className="w-5 h-5 text-green-400" />

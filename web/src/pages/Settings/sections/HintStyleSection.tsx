@@ -27,7 +27,7 @@ export function HintStyleSection() {
   }
 
   return (
-    <section className="bg-zinc-900 border border-zinc-800 rounded-lg p-5">
+    <section data-hint="settings.hintStyle" className="bg-zinc-900 border border-zinc-800 rounded-lg p-5">
       <div className="flex items-center gap-2 mb-4">
         <Lightbulb className="w-5 h-5 text-zinc-400" />
         <h2 className="text-lg font-mono font-semibold text-white">{t('hints.title')}</h2>

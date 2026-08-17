@@ -12,11 +12,14 @@ describe('hintsForRoute', () => {
   it('ignores sub-paths and resolves by the first segment', () => {
     expect(hintsForRoute('/tasks/123').map(h => h.anchor)).toEqual(['tasks.new', 'tasks.schedule', 'tasks.complete'])
   })
-  it('returns [] for the root and for routes without hints', () => {
+  it('returns [] for the root and for routes that do not exist', () => {
     expect(hintsForRoute('/')).toEqual([])
     expect(hintsForRoute('')).toEqual([])
-    expect(hintsForRoute('/settings')).toEqual([])
     expect(hintsForRoute('/nope')).toEqual([])
+    // ⚠ /settings used to be asserted empty here. It was not a decision, it
+    // was the gap Denis reported on 16.08 — markers on four pages out of nine
+    // — written down as if it were intended. Coverage now belongs to
+    // hintsCoverage.test.ts, which measures against the Help list.
   })
   it('derives every anchor key under the hints namespace with .title/.body', () => {
     for (const path of ['/home', '/calendar', '/tasks', '/planning']) {

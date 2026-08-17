@@ -266,7 +266,7 @@ export default function Reflections() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <header className="px-4 sm:px-6 py-4 border-b border-zinc-800 bg-zinc-900">
+      <header data-hint="reflections.list" className="px-4 sm:px-6 py-4 border-b border-zinc-800 bg-zinc-900">
         <div className="flex items-center justify-between mb-3">
           <div>
             <h1 className="text-xl font-mono font-semibold text-white">{t('title')}</h1>
