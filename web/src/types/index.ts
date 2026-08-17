@@ -61,6 +61,8 @@ export interface ApiEvent {
   is_work_event?: boolean;
   recurring_event_id?: string;
   reminder_offsets?: number[];
+  is_shared?: boolean;
+  author_name?: string;
   created_at?: string;
   updated_at?: string;
   reflections?: ApiReflection[];
@@ -87,6 +89,18 @@ export interface NbEvent {
   recurringEventId?: string;
   /** Minutes before start, one entry per reminder. */
   reminderOffsets?: number[];
+  /**
+   * Somebody else can see this event: its calendar has another active member.
+   * Derived by the API on every read — membership moves, so a value cached
+   * anywhere goes stale the moment an invitation is accepted or a member leaves.
+   */
+  isShared?: boolean;
+  /**
+   * Who created it, and ONLY when that is not the current user. The API decides
+   * this per viewer: the same event is "mine" to one member and "hers" to the
+   * other, so this field cannot be cached across accounts.
+   */
+  authorName?: string;
   createdAt?: string;
   updatedAt?: string;
   reflections?: Reflection[];
@@ -112,6 +126,8 @@ export function toNbEvent(api: ApiEvent): NbEvent {
     isWorkEvent: api.is_work_event,
     recurringEventId: api.recurring_event_id,
     reminderOffsets: api.reminder_offsets || [],
+    isShared: api.is_shared,
+    authorName: api.author_name,
     createdAt: api.created_at,
     updatedAt: api.updated_at,
     reflections: api.reflections?.map(r => ({

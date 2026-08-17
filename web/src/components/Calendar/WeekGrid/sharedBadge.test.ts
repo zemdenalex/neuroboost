@@ -1,0 +1,141 @@
+import { describe, it, expect } from 'vitest';
+import { EventBlock } from './EventBlock';
+import type { ProcessedEvent } from './weekgrid.types';
+
+/**
+ * Does an event in a shared calendar actually look different?
+ *
+ * Denis, 17.08: "кнопки поделиться нет, тогда смысл теряется". Sharing now
+ * works end to end, but until this the grid drew a shared event and a private
+ * one identically — the collaboration was real and invisible, which is the same
+ * thing to the person looking at the screen.
+ *
+ * Two facts are drawn, and they are NOT the same fact:
+ *   isShared    somebody else can see this — true for your own events too
+ *   authorName  somebody else wrote this — present only when that is not you
+ */
+
+function block(over: Partial<ProcessedEvent>): ProcessedEvent {
+  return {
+    id: 'evt-1',
+    title: 'Ужин',
+    startsAt: '2026-08-17T18:00:00Z',
+    endsAt: '2026-08-17T19:00:00Z',
+    dayUtc0: Date.UTC(2026, 7, 17),
+    top: 0,
+    height: 60,
+    ...over,
+  } as ProcessedEvent;
+}
+
+type Node = { props?: { children?: unknown; [k: string]: unknown } } | unknown;
+
+/** Every rendered descendant, flattened — the badge is nested a few levels in. */
+function descendants(node: Node): Array<{ [k: string]: unknown }> {
+  const out: Array<{ [k: string]: unknown }> = [];
+  const visit = (n: unknown) => {
+    if (Array.isArray(n)) return n.forEach(visit);
+    if (!n || typeof n !== 'object') return;
+    const props = (n as { props?: Record<string, unknown> }).props;
+    if (!props) return;
+    out.push(props);
+    visit(props.children);
+  };
+  visit(node);
+  return out;
+}
+
+/** EventBlock is memo()-wrapped and hookless, so its inner function is callable. */
+function render(event: ProcessedEvent) {
+  const inner = (EventBlock as unknown as { type: (p: unknown) => unknown }).type;
+  return inner({
+    event,
+    selected: false,
+    timezone: 'Europe/Moscow',
+    isMobile: false,
+    onSelect: () => {},
+    onClick: () => {},
+    onMouseDown: () => {},
+  });
+}
+
+function testIds(event: ProcessedEvent): string[] {
+  return descendants(render(event))
+    .map((p) => p['data-testid'])
+    .filter((v): v is string => typeof v === 'string');
+}
+
+/** The author line renders as "· Настя"; this pulls the name back out. */
+function authorText(event: ProcessedEvent): string | undefined {
+  const found = descendants(render(event)).find((p) => p['data-testid'] === 'event-author');
+  if (!found) return undefined;
+  const children = found.children;
+  return (Array.isArray(children) ? children.join('') : String(children ?? '')).trim();
+}
+
+describe('an event block shows whether anyone else sees it', () => {
+  it('draws nothing extra for a private event', () => {
+    expect(testIds(block({}))).not.toContain('shared-badge');
+    expect(testIds(block({}))).not.toContain('event-author');
+  });
+
+  it('badges a shared event that the viewer wrote themselves', () => {
+    // The badge answers "can someone else see this", so it appears on your own
+    // events too. Tying it to authorship would have meant your own entries in a
+    // shared calendar looked private — the exact confusion this closes.
+    expect(testIds(block({ isShared: true }))).toContain('shared-badge');
+    expect(testIds(block({ isShared: true }))).not.toContain('event-author');
+  });
+
+  it('names the author when somebody else wrote it', () => {
+    const shared = block({ isShared: true, authorName: 'Настя' });
+    expect(testIds(shared)).toContain('shared-badge');
+    expect(authorText(shared)).toContain('Настя');
+  });
+
+  it('keeps the author on the time line rather than adding a row', () => {
+    // A 40px block shows a title and a time and nothing else. If the author
+    // took its own line it would be clipped exactly when the day is busiest.
+    const short = block({ height: 40, isShared: true, authorName: 'Настя' });
+    expect(authorText(short)).toContain('Настя');
+  });
+});
+
+/**
+ * The guard that actually matters, and the reason this file exists at all.
+ *
+ * 🔴 An event is drawn in TWO components. `AllDaySection` was the half forgotten
+ * when calendar colours landed — it read `e.color` while EventBlock read
+ * `displayColor`, so all-day events silently ignored their calendar. The work
+ * looked complete because the file nobody opened was the file that was wrong.
+ *
+ * So: any component in this folder that renders an event title must also
+ * mention isShared. It cannot check that the badge is drawn correctly — only
+ * that the author of a new painter was made to think about it.
+ */
+describe('every painter of an event title also draws the shared badge', () => {
+  const sources = import.meta.glob('./*.tsx', {
+    query: '?raw',
+    import: 'default',
+    eager: true,
+  }) as Record<string, string>;
+
+  const painters = Object.entries(sources).filter(([, s]) => s.includes("|| '(untitled)'"));
+
+  it('found the painters to check', () => {
+    // The floor. A rename of the placeholder string would otherwise leave this
+    // scanning nothing and reporting success.
+    expect(
+      painters.length,
+      'the scan matched no event painters — it is no longer guarding anything',
+    ).toBeGreaterThanOrEqual(2);
+  });
+
+  it('no painter renders a title without considering isShared', () => {
+    const offenders = painters
+      .filter(([, source]) => !source.includes('isShared'))
+      .map(([file]) => file);
+
+    expect(offenders, 'this component draws events but says nothing about sharing').toEqual([]);
+  });
+});

@@ -24,6 +24,10 @@ export interface NbEvent {
   tags?: string[];
   taskId?: string | null;
   isWorkEvent?: boolean;
+  /** Another active member of this calendar can see the event. */
+  isShared?: boolean;
+  /** Who created it — present only when that is somebody other than the viewer. */
+  authorName?: string;
 }
 
 // Day span info for multi-day events

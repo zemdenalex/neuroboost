@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import { Users } from 'lucide-react';
 import { ALL_DAY_HEIGHT, DAY_MS } from './weekgrid.constants';
 import type { ProcessedEvent, DragState, NbEvent, DayInfo } from './weekgrid.types';
 import { getTimezoneOffsetMs, formatAllDayGhostLabel } from './weekgrid.utils';
@@ -97,8 +98,26 @@ export function AllDaySection({
                     title={`${e.title} • All-day event`}
                   >
                     {isStartDay && (
-                      <span className="break-words text-white font-medium">
-                        {e.title || '(untitled)'}
+                      // 🔴 The second place an event is drawn. The calendar
+                      // colour bug lived here for exactly this reason: work
+                      // done in EventBlock was assumed to cover the grid, and
+                      // this strip was never opened. Whatever an event block
+                      // shows about sharing, this must show too.
+                      <span className="break-words text-white font-medium inline-flex items-center gap-1 min-w-0">
+                        <span className="min-w-0 break-words">{e.title || '(untitled)'}</span>
+                        {e.isShared && (
+                          <Users
+                            size={11}
+                            aria-label="Общий календарь"
+                            data-testid="shared-badge"
+                            className="text-zinc-200 flex-shrink-0"
+                          />
+                        )}
+                        {e.authorName && (
+                          <span className="min-w-0 truncate text-zinc-300 font-normal" data-testid="event-author">
+                            · {e.authorName}
+                          </span>
+                        )}
                       </span>
                     )}
                   </div>
