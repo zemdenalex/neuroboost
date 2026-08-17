@@ -1,0 +1,6 @@
+-- Deliberately empty.
+--
+-- The up migration only ADDs columns the baseline always intended `reminder` to
+-- have and that the Go code reads on every scan. Dropping them would not
+-- restore a previous state — it would recreate the 2026-08-18 outage on a
+-- database that had been repaired.

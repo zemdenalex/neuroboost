@@ -4,7 +4,8 @@ Calendar-first productivity app for neurodivergent users. Go backend + React/Typ
 PostgreSQL + Telegram bot. "The calendar is truth; tasks exist to support scheduling and reflection."
 
 **Live:** https://neuroboost.website · **Staging:** https://dev.neuroboost.website
-**Released:** `v0.4.9` · **Unreleased:** всё, что после, — на `develop`
+**Released:** `v0.4.10` (18.08.2026 — P1 + P2 + P3 срезы 1–4, 16 миграций) · **Unreleased:**
+всё, что после, — на `develop`
 
 > ⚠️ **Прочитать до всего остального:**
 > - **Работа идёт на `develop`**, далеко впереди `main`. Свежий клон приземляется на `main` и не
@@ -195,6 +196,34 @@ cd web && pnpm test --run                      # сколько тестов н�
     **0 errors, 4 warnings** (`react-hooks/exhaustive-deps`), а живых `any` в `web/src/` —
     **ноль**: единственное вхождение `: any` лежит внутри комментария в `lib/errorMessage.ts`.
     ⚠ В CI линт **не** вызывается — проверить: `grep -n "pnpm lint" .github/workflows/ci.yml`.
+
+18. 🔴 **`CREATE TABLE IF NOT EXISTS` в baseline принимает ЧУЖУЮ таблицу и молчит.** Уронило
+    прод 18.08 при релизе `v0.4.10`. `000001_baseline` объявляет `reminder` с
+    `minutes_before/channel/status/message/sent_at`, а на проде таблица с таким именем уже
+    существовала **до системы миграций** — с колонкой `method` и без этих пяти. Baseline
+    ничего не создала и записала успех. Через пять миграций `000010` построила индекс по
+    `minutes_before`, упала, оставила `schema_migrations` в `dirty = 10` — после чего
+    golang-migrate **отказывается стартовать вообще**, и API ушёл в crash-loop.
+    - 🔴 **Проверять форму, а не количество строк.** Я считал строки в `reminder` (ноль) и
+      заключил, что перестройка индекса безопасна. «Таблица пуста» и «таблица нужной формы» —
+      разные утверждения. Колонки надо сравнивать.
+    - 🔴 **Тесты этого не ловят по построению**: каждая тестовая база собирается прогоном
+      миграций с нуля, а с нуля baseline создаёт таблицу правильно. Расхождение невидимо
+      именно для того механизма, который должен его находить. Лечится
+      `internal/reminders/schema_shape_test.go` — он спрашивает у базы, какие колонки есть,
+      вместо доверия цепочке, которая её построила.
+    - **Восстановление** (если снова: dirty на версии N): доложить недостающие колонки →
+      `UPDATE schema_migrations SET version = N-1, dirty = false` → перезапустить API.
+      SQL записан в `api-go/migrations/000016_repair_reminder_baseline.up.sql`.
+19. ⚠ **Прод-бот живёт на nl-2 и НЕ в git.** `/opt/neuroboost-bot-prod` — это `.env`,
+    `docker-compose.yml` и **скопированная** папка `src`. Обновление:
+    `git archive --prefix=src/ <tag>:bot | ssh …`, затем `docker compose up -d --build`.
+    `API_BASE=https://neuroboost.website`. Ключ — `~/.ssh/ufo_servers`, `root@185.214.10.107`.
+    До 18.08 там лежали исходники **от 17 июня**.
+20. ⚠ **`git pull` на проде падает от ручных правок на сервере.** Деплой `v0.4.10` сорвался
+    первым заходом: `scripts/backup.sh` чинили руками на хосте 14.08, в `main` починка не
+    доезжала, и `git pull` отказался перезаписывать. Бэкап при этом снялся — падение было
+    **до** сборки, прод остался цел. Проверять `git status` на хосте перед релизом.
 
 ## Known Broken
 
