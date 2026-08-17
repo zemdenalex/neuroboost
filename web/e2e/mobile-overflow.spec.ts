@@ -146,27 +146,43 @@ test.describe('375px layout', () => {
    * layout shrink an unbreakable value or let it push — and mutating a shared
    * staging account to ask it would be both slower and worse.
    */
-  test('the profile header survives a long email, whoever is logged in', async ({ authedPage }) => {
+  test('the profile header survives a long unbreakable value, whoever is logged in', async ({
+    authedPage,
+  }) => {
     await authedPage.goto('/profile')
     await authedPage.waitForLoadState('networkidle')
 
     const header = authedPage.locator('[data-hint="profile.identity"]')
     await expect(header).toBeVisible()
 
-    const replaced = await header.evaluate((el) => {
-      const target = Array.from(el.querySelectorAll('span, h1')).find((n) =>
-        (n.textContent ?? '').includes('@'),
-      )
-      if (!target) return false
-      target.textContent = 'a.very.long.address.that.does.not.break@some-long-domain.example.com'
-      return true
-    })
-    // Without this the test would pass by having found nothing to lengthen.
-    expect(replaced, 'no email-shaped text in the profile header to lengthen').toBe(true)
+    // ⚠ The first version of this test lengthened the EMAIL, and failed in CI
+    // with "nothing to lengthen" — the CI account signs in through Telegram and
+    // has no email at all. Which is the same lesson one layer down: a test
+    // written around the data in front of you inherits that data's shape. The
+    // display name is the value every account has.
+    const LONG = 'Wolfeschlegelsteinhausenbergerdorffvoralternwarengewissenhaftschaferswessen'
+    const lengthened = await header.evaluate((el, long) => {
+      // 🔴 LEAF elements only. The first version matched any span containing
+      // "@", which included the WRAPPER around the icon and the truncating
+      // span — and setting textContent on a wrapper deletes its children. The
+      // test dismantled the exact structure it was checking and then reported
+      // the page as broken: an overflow of 822px that the app never produces.
+      // A control that fails for its own reason is worse than no control.
+      const nodes = [
+        el.querySelector('h1'),
+        ...Array.from(el.querySelectorAll('span')).filter(
+          (n) => n.childElementCount === 0 && (n.textContent ?? '').includes('@'),
+        ),
+      ].filter((n): n is HTMLElement => n !== null && n.childElementCount === 0)
+      for (const n of nodes) n.textContent = long
+      return nodes.length
+    }, LONG)
+    // Without this the test could pass by having found nothing to lengthen.
+    expect(lengthened, 'nothing in the profile header to lengthen').toBeGreaterThan(0)
 
     expect(
       await horizontalOverflow(authedPage),
-      'a long email pushes the profile header past the right edge',
+      'a long unbreakable value pushes the profile header past the right edge',
     ).toBe(0)
   })
 
