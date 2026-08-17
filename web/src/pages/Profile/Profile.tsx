@@ -77,7 +77,7 @@ export default function Profile() {
         <div data-hint="profile.identity" className="bg-gradient-to-r from-zinc-900 via-zinc-900 to-blue-900/20 border border-zinc-800 rounded-lg p-6">
           <div className="flex items-start gap-6">
             {/* Avatar */}
-            <div className="relative">
+            <div className="relative shrink-0">
               {user?.tg_photo_url ? (
                 <img
                   src={user.tg_photo_url}
@@ -95,9 +95,17 @@ export default function Profile() {
               </div>
             </div>
 
-            {/* User info */}
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-1">
+            {/* User info.
+                🔴 min-w-0 is load-bearing. A flex item defaults to
+                min-width:auto, so it refuses to shrink below its content — and
+                an email address has no break opportunities. At 375px the whole
+                row grew wider than the card and the address, the XP figures and
+                the progress bar ran off the right of the screen.
+                Found by e2e on 17.08, and only because the run used a real
+                account: the CI test account's address is short enough to fit,
+                so the same spec had been passing on the same defect. */}
+            <div className="flex-1 min-w-0">
+              <div className="flex min-w-0 items-center gap-2 mb-1">
                 {isEditingName ? (
                   <div className="flex items-center gap-2">
                     <input
@@ -126,10 +134,10 @@ export default function Profile() {
                   </div>
                 ) : (
                   <>
-                    <h1 className="text-2xl font-mono font-bold text-white">{userName}</h1>
+                    <h1 className="truncate text-2xl font-mono font-bold text-white" title={userName}>{userName}</h1>
                     <button
                       onClick={() => setIsEditingName(true)}
-                      className="p-1 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded"
+                      className="shrink-0 p-1 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded"
                     >
                       <Edit2 className="w-4 h-4" />
                     </button>
@@ -139,9 +147,12 @@ export default function Profile() {
 
               <div className="flex flex-wrap items-center gap-4 text-sm text-zinc-400">
                 {user?.email && (
-                  <span className="flex items-center gap-1">
-                    <Mail className="w-4 h-4" />
-                    {user.email}
+                  <span className="flex min-w-0 max-w-full items-center gap-1">
+                    <Mail className="w-4 h-4 shrink-0" />
+                    {/* Truncated rather than wrapped: an address broken across
+                        two lines is harder to read than one with an ellipsis,
+                        and the full value is in the title. */}
+                    <span className="truncate" title={user.email}>{user.email}</span>
                   </span>
                 )}
                 {user?.tg_username && (

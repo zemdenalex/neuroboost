@@ -131,6 +131,45 @@ test.describe('375px layout', () => {
     }
   })
 
+  /**
+   * 🔴 The route sweep above passes or fails on WHOSE data it is looking at.
+   *
+   * /profile overflowed at 375px for months and this suite was green the whole
+   * time: the CI account's email is short enough to fit, and the defect only
+   * appears when a value has no break opportunity and no room. Running the same
+   * spec against a real account (zemdenalex@gmail.com) failed it on the first
+   * try — the address, the XP figures and the progress bar all ran off the
+   * right edge. Same code, same assertion, different fixture data.
+   *
+   * So the length is supplied here rather than hoped for. The text is replaced
+   * in the DOM, not on the server: this is a question about CSS — does the
+   * layout shrink an unbreakable value or let it push — and mutating a shared
+   * staging account to ask it would be both slower and worse.
+   */
+  test('the profile header survives a long email, whoever is logged in', async ({ authedPage }) => {
+    await authedPage.goto('/profile')
+    await authedPage.waitForLoadState('networkidle')
+
+    const header = authedPage.locator('[data-hint="profile.identity"]')
+    await expect(header).toBeVisible()
+
+    const replaced = await header.evaluate((el) => {
+      const target = Array.from(el.querySelectorAll('span, h1')).find((n) =>
+        (n.textContent ?? '').includes('@'),
+      )
+      if (!target) return false
+      target.textContent = 'a.very.long.address.that.does.not.break@some-long-domain.example.com'
+      return true
+    })
+    // Without this the test would pass by having found nothing to lengthen.
+    expect(replaced, 'no email-shaped text in the profile header to lengthen').toBe(true)
+
+    expect(
+      await horizontalOverflow(authedPage),
+      'a long email pushes the profile header past the right edge',
+    ).toBe(0)
+  })
+
   test('every reminder preset keeps its delete button on screen', async ({ authedPage }) => {
     await authedPage.goto('/settings')
     await authedPage.waitForLoadState('networkidle')
