@@ -139,6 +139,106 @@ test.describe('sharing a calendar with another person', () => {
     }
   })
 
+  test('is_shared and author_name are answered per viewer', async ({ session }) => {
+    // Slice 4. The badge in the grid is only as good as the two fields behind
+    // it, and both are decided per VIEWER — the same row is "mine" to one
+    // member and "hers" to the other. A single-account test cannot see that
+    // distinction at all: every event would be its own author's.
+    const owner = await playwrightRequest.newContext({
+      baseURL: API_BASE,
+      extraHTTPHeaders: {
+        Authorization: `Bearer ${session.token}`,
+        'Content-Type': 'application/json',
+      },
+    })
+    const guest = await registerSecondPerson('badge')
+
+    let calendarId: string | undefined
+    let byOwner: string | undefined
+    let byGuest: string | undefined
+    let personal: string | undefined
+
+    const window = `start=${new Date(Date.now() - 86400_000).toISOString()}&end=${new Date(Date.now() + 86400_000).toISOString()}`
+    const start = new Date(Date.now() + 3600_000).toISOString()
+    const end = new Date(Date.now() + 7200_000).toISOString()
+
+    try {
+      const created = await owner.post('/api/calendars', {
+        data: { name: `E2E Badge ${Date.now()}` },
+      })
+      expect(created.status(), await created.text()).toBe(201)
+      calendarId = (await created.json()).data.id
+
+      const invited = await owner.post(`/api/calendars/${calendarId}/invites`, {
+        data: { email: guest.email, role: 'editor' },
+      })
+      expect(invited.status(), await invited.text()).toBe(201)
+      const accepted = await guest.api.post(`/api/calendars/${calendarId}/invitation`, {
+        data: { accept: true },
+      })
+      expect(accepted.status(), await accepted.text()).toBe(204)
+
+      const mk = async (who: APIRequestContext, title: string, cal?: string) => {
+        const res = await who.post('/api/events', {
+          data: { title, starts_at: start, ends_at: end, ...(cal ? { calendar_id: cal } : {}) },
+        })
+        expect(res.status(), await res.text()).toBe(201)
+        return (await res.json()).data.id as string
+      }
+
+      byOwner = await mk(owner, `E2E owner ${Date.now()}`, calendarId)
+      byGuest = await mk(guest.api, `E2E guest ${Date.now()}`, calendarId)
+      // No calendar_id: the personal one, which must never be marked shared.
+      personal = await mk(owner, `E2E private ${Date.now()}`)
+
+      const load = async (who: APIRequestContext) => {
+        const rows = (await (await who.get(`/api/events?${window}`)).json()).data ?? []
+        const byId: Record<string, { is_shared?: boolean; author_name?: string }> = {}
+        for (const e of rows) byId[e.id] = e
+        return byId
+      }
+
+      const asOwner = await load(owner)
+      const asGuest = await load(guest.api)
+
+      // The fixture has to have produced the rows, or everything below passes
+      // by finding nothing.
+      expect(asOwner[byOwner], 'the owner cannot see their own event').toBeTruthy()
+      expect(asOwner[byGuest], 'the owner cannot see the guest event').toBeTruthy()
+      expect(asGuest[byOwner], 'the guest cannot see the owner event').toBeTruthy()
+
+      // The badge is about audience, not authorship: it is on your own events too.
+      expect(asOwner[byOwner].is_shared, 'own event in a shared calendar is not badged').toBe(true)
+      expect(asOwner[byGuest].is_shared).toBe(true)
+      expect(asOwner[personal].is_shared, 'a personal event is badged as shared').toBeFalsy()
+
+      // The half a stored column could never do.
+      expect(asOwner[byOwner].author_name, 'the owner was named as the author to themselves').toBeFalsy()
+      expect(asOwner[byGuest].author_name, 'the owner was not told who wrote the guest event').toBeTruthy()
+      expect(asGuest[byGuest].author_name, 'the guest was named as the author to themselves').toBeFalsy()
+      expect(asGuest[byOwner].author_name, 'the guest was not told who wrote the owner event').toBeTruthy()
+
+      // And the two viewers were told DIFFERENT names, not the same one twice.
+      expect(asOwner[byGuest].author_name).not.toBe(asGuest[byOwner].author_name)
+
+      // A task lands in the shared calendar too — the other half of slice 4,
+      // which used to be pinned to the personal calendar no matter what.
+      const task = await guest.api.post('/api/tasks', {
+        data: { title: `E2E shared task ${Date.now()}`, calendar_id: calendarId },
+      })
+      expect(task.status(), await task.text()).toBe(201)
+      const taskBody = (await task.json()).data
+      expect(taskBody.calendar_id, 'the task ignored the calendar it was given').toBe(calendarId)
+      await guest.api.delete(`/api/tasks/${taskBody.id}`)
+    } finally {
+      for (const id of [byOwner, personal]) if (id) await owner.delete(`/api/events/${id}`)
+      if (byGuest) await guest.api.delete(`/api/events/${byGuest}`)
+      if (calendarId) await owner.delete(`/api/calendars/${calendarId}`)
+      await owner.dispose()
+      await guest.api.dispose()
+    }
+  })
+
   test('a personal calendar cannot be shared', async ({ session }) => {
     const owner = await playwrightRequest.newContext({
       baseURL: API_BASE,
