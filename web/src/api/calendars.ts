@@ -43,3 +43,59 @@ export function updateCalendar(
 export function deleteCalendar(id: string): Promise<void> {
   return api.delete(`/calendars/${id}`)
 }
+
+/** Someone on a calendar. `status` tells an accepted member from an invitee. */
+export interface CalendarMember {
+  user_id: string
+  email: string | null
+  display_name: string | null
+  role: 'owner' | 'editor' | 'viewer'
+  status: 'invited' | 'active'
+}
+
+/** A share link. Two hours, one use — see the API's members.go. */
+export interface CalendarInvite {
+  token: string
+  role: 'editor' | 'viewer'
+  expires_at: string
+}
+
+/** Roles that can be granted to someone else. Owner is not one of them. */
+export type ShareRole = 'editor' | 'viewer'
+
+export function listMembers(calendarId: string): Promise<CalendarMember[]> {
+  return api.get<CalendarMember[]>(`/calendars/${calendarId}/members`)
+}
+
+export function inviteByEmail(
+  calendarId: string,
+  email: string,
+  role: ShareRole,
+): Promise<CalendarMember> {
+  return api.post<CalendarMember>(`/calendars/${calendarId}/invites`, { email, role })
+}
+
+export function createInviteLink(calendarId: string, role: ShareRole): Promise<CalendarInvite> {
+  return api.post<CalendarInvite>(`/calendars/${calendarId}/invite-links`, { role })
+}
+
+/** Accept or decline an invitation addressed to me. */
+export function respondToInvitation(calendarId: string, accept: boolean): Promise<void> {
+  return api.post(`/calendars/${calendarId}/invitation`, { accept })
+}
+
+/**
+ * Redeem a share link.
+ *
+ * The token goes in the BODY even though the page received it in a URL — a
+ * token in a request path lands in the API's access logs, and this one grants
+ * access to someone's calendar.
+ */
+export function acceptInviteLink(token: string): Promise<Calendar> {
+  return api.post<Calendar>('/calendars/invite-links/accept', { token })
+}
+
+/** Remove someone from a calendar, or leave it yourself (same id twice). */
+export function removeMember(calendarId: string, userId: string): Promise<void> {
+  return api.delete(`/calendars/${calendarId}/members/${userId}`)
+}

@@ -45,6 +45,18 @@ export function describeCalendarError(err: unknown, fallbackKey: string): Calend
     if (err.code === 'NOT_CALENDAR_OWNER') {
       return { key: 'calendars.notOwner' }
     }
+    // Sharing (slice 3). CALENDAR_IS_PERSONAL above is the delete path's
+    // message; sharing needs its own wording, because "cannot be deleted" is
+    // useless advice when the user was trying to share.
+    if (err.code === 'INVITEE_NOT_FOUND') {
+      return { key: 'share.inviteeNotFound' }
+    }
+    if (err.code === 'ALREADY_MEMBER') {
+      return { key: 'share.alreadyMember' }
+    }
+    if (err.code === 'INVITE_INVALID') {
+      return { key: 'share.linkInvalid' }
+    }
     if (err.code === 'CALENDAR_NOT_FOUND') {
       // Reachable today: the calendar was deleted in another tab/device
       // between load and this action. The row on screen is now a lie —

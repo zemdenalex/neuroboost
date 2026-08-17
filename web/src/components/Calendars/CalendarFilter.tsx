@@ -1,10 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Layers, Pencil, Plus, Trash2, X } from 'lucide-react'
+import { Check, Layers, Pencil, Plus, Trash2, Users, X } from 'lucide-react'
 import type { Calendar } from '../../api/calendars'
 import { resolveColor, PALETTE, PALETTE_NAMES, type PaletteName } from '../../lib/calendar/palette'
 import { calendarLabel } from '../../lib/calendars/calendarLabel'
+import { describeCalendarError } from '../../lib/calendars/errors'
+import { respondToInvitation } from '../../api/calendars'
+import { useAuthContext } from '../../contexts/AuthContext'
+import { showToast } from '../ui/Toast'
 import { useCalendarManager } from './useCalendarManager'
+import { CalendarShare } from './CalendarShare'
 
 interface Props {
   calendars: Calendar[]
@@ -36,8 +41,11 @@ interface Props {
  * His words for the shape, 17.08: like the extended event editor — simple to
  * just pick, expandable when you want to manage.
  *
- * Sharing is deliberately absent — it is slice 3 of the P3 spec (invitations,
- * their own migration and endpoints), not a control that can be added here.
+ * Sharing lives here too since 17.08 (P3 slice 3), behind the 👥 button on a
+ * shared row: his question that evening was "их вообще можно с кем-то вместе
+ * использовать?", and the honest answer was no. An invitation addressed to YOU
+ * appears at the top of this same panel — one place for "what am I looking at"
+ * and "who else is looking at it".
  */
 export function CalendarFilter({ calendars, hidden, onToggle, onCalendarsChanged }: Props) {
   const { t } = useTranslation('calendar')
@@ -46,7 +54,12 @@ export function CalendarFilter({ calendars, hidden, onToggle, onCalendarsChanged
   const { t: tSettings } = useTranslation('settings')
   const [open, setOpen] = useState(false)
   const [managing, setManaging] = useState(false)
+  // Which calendar's sharing panel is expanded. One at a time: two open
+  // rosters in a 20rem popover is the crowding this panel was just rebuilt to
+  // stop.
+  const [sharingId, setSharingId] = useState<string | null>(null)
   const rootRef = useRef<HTMLDivElement>(null)
+  const { user } = useAuthContext()
 
   const {
     calendars: managed,
@@ -64,7 +77,25 @@ export function CalendarFilter({ calendars, hidden, onToggle, onCalendarsChanged
     submitColor,
     handleDelete,
     busyId,
+    fetchCalendars,
   } = useCalendarManager({ onCalendarsChanged, initial: calendars })
+
+  // An invitation is a calendar in the list whose membership is still pending.
+  // ListFor returns those deliberately (it does not filter by status) while
+  // CalendarIDsFor does not — so an invitation is visible without granting a
+  // thing. Nothing new had to be fetched to show these.
+  const invitations = managed.filter(c => c.status === 'invited')
+  const mine = managed.filter(c => c.status !== 'invited')
+
+  const respond = async (calendarId: string, accept: boolean) => {
+    try {
+      await respondToInvitation(calendarId, accept)
+      await fetchCalendars()
+    } catch (err) {
+      const msg = describeCalendarError(err, 'share.respondFailed')
+      showToast(tSettings(msg.key, msg.params))
+    }
+  }
 
   // Close on an outside click or Escape. Without this the panel covers the
   // grid, and the grid is what the panel is for.
@@ -133,13 +164,47 @@ export function CalendarFilter({ calendars, hidden, onToggle, onCalendarsChanged
             </button>
           </div>
 
-          {managed.length === 0 ? (
+          {invitations.length > 0 && (
+            <div data-testid="calendar-invitations" className="mb-3 rounded border border-amber-500/30 bg-amber-500/10 p-2">
+              <h4 className="mb-1 text-xs font-semibold uppercase tracking-wide text-amber-400">
+                {tSettings('share.invitationsTitle')}
+              </h4>
+              <ul className="space-y-2">
+                {invitations.map(cal => (
+                  <li key={cal.id} data-testid="calendar-invitation" data-calendar-name={cal.name}>
+                    <p className="truncate text-sm text-zinc-100">{cal.name}</p>
+                    <div className="mt-1 flex gap-2">
+                      <button
+                        type="button"
+                        data-testid="invitation-accept"
+                        onClick={() => void respond(cal.id, true)}
+                        className="flex items-center gap-1 rounded bg-blue-600 px-2 py-1 text-xs text-white hover:bg-blue-700"
+                      >
+                        <Check className="h-3 w-3" />
+                        {tSettings('share.accept')}
+                      </button>
+                      <button
+                        type="button"
+                        data-testid="invitation-decline"
+                        onClick={() => void respond(cal.id, false)}
+                        className="rounded border border-zinc-700 px-2 py-1 text-xs text-zinc-300 hover:bg-zinc-800"
+                      >
+                        {tSettings('share.decline')}
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {mine.length === 0 ? (
             <p className="text-xs text-zinc-500">
               {status === 'error' ? tSettings('calendars.loadFailed') : t('filter.empty')}
             </p>
           ) : (
             <ul className="space-y-1">
-              {managed.map(cal => {
+              {mine.map(cal => {
                 const canDelete = cal.kind === 'shared' && cal.role === 'owner'
                 const canEdit = cal.role === 'owner'
                 const isRenaming = renamingId === cal.id
@@ -252,6 +317,24 @@ export function CalendarFilter({ calendars, hidden, onToggle, onCalendarsChanged
                         </>
                       ) : (
                         <>
+                          {/* Sharing is per shared calendar and owner-only:
+                              only the owner can invite, and the personal
+                              calendar cannot be shared at all (the API refuses
+                              it — this just does not offer it). */}
+                          {cal.kind === 'shared' && canEdit && (
+                            <button
+                              type="button"
+                              data-testid="calendar-share-toggle"
+                              aria-expanded={sharingId === cal.id}
+                              onClick={() => setSharingId(id => (id === cal.id ? null : cal.id))}
+                              title={tSettings('share.title')}
+                              className={`shrink-0 rounded p-1 transition-colors hover:text-blue-400 ${
+                                sharingId === cal.id ? 'text-blue-400' : 'text-zinc-400'
+                              }`}
+                            >
+                              <Users className="h-3.5 w-3.5" />
+                            </button>
+                          )}
                           {canEdit && (
                             <button
                               type="button"
@@ -277,6 +360,15 @@ export function CalendarFilter({ calendars, hidden, onToggle, onCalendarsChanged
                           )}
                         </>
                       )
+                    )}
+
+                    {managing && sharingId === cal.id && (
+                      // Full width of the row, below it: the roster is a list,
+                      // and squeezing a list into the tail of a flex row is
+                      // exactly what made the old panel scroll sideways.
+                      <div className="w-full">
+                        <CalendarShare calendar={cal} meId={user?.id} />
+                      </div>
                     )}
                   </li>
                 )
