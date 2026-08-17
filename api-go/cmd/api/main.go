@@ -179,6 +179,17 @@ func main() {
 		r.Patch("/api/calendars/{id}", calendars.UpdateHandler)
 		r.Delete("/api/calendars/{id}", calendars.DeleteHandler)
 
+		// Sharing (P3 slice 3). Two channels: by email for someone who already
+		// has an account, by link for someone who may not.
+		r.Get("/api/calendars/{id}/members", calendars.ListMembersHandler)
+		r.Post("/api/calendars/{id}/invites", calendars.InviteHandler)
+		r.Post("/api/calendars/{id}/invite-links", calendars.InviteLinkHandler)
+		r.Post("/api/calendars/{id}/invitation", calendars.RespondInvitationHandler)
+		r.Delete("/api/calendars/{id}/members/{userId}", calendars.RemoveMemberHandler)
+		// Not /{token} in the path: a token in a URL lands in access logs,
+		// browser history and referrer headers, and this one is a credential.
+		r.Post("/api/calendars/invite-links/accept", calendars.AcceptInviteLinkHandler)
+
 		// Export (Import lives in its own group below — see there)
 		r.Get("/api/export", exp.ExportHandler)
 	})
