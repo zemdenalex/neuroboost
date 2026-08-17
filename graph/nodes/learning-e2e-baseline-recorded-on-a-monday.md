@@ -6,13 +6,15 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-08-11
 tags: [neuroboost, e2e, calendar, mobile, testing]
-weight: { importance: 4, connectivity: 4, access: 2, last_accessed: 2026-08-12 }
+weight: { importance: 5, connectivity: 6, access: 3, last_accessed: 2026-08-17 }
 sources:
   - command: "corepack pnpm exec playwright test recurring-scope --project=mobile  # 2 failed, воспроизводимо"
   - command: "web/e2e-results/.../test-failed-1.png  # заголовок «Monday, August 10» при сегодня 11.08"
   - command: "cd web && corepack pnpm test --run mobileDayOffset  # 6 тестов"
 stakes: medium
 links:
+  - relates-to: learning-two-neighbouring-paths-one-broken-reading-finds-neither
+  - relates-to: learning-stale-comment-outlived-its-constraint
   - relates-to: entity-e2e-playwright-harness
   - relates-to: learning-stale-comment-outlived-its-constraint
 ---
@@ -44,3 +46,27 @@ offset * DAY_MS`. Мобильный вид **всегда открывался 
 
 ⚠️ Мобильные виды календаря (MV1) по-прежнему не написаны — починен день открытия, а не
 отсутствующие виды.
+
+---
+
+## Второй случай, 16.08 — и обход, переживший свой баг
+
+CI покраснел в полночь с субботы на воскресенье, и **ни один коммит в этом не виноват**: упал в
+том числе прогон коммита, который трогал только Go-тест и документ.
+
+- `multiday-resize.spec.ts` строила событие вокруг `nextLocalMidnightUtc`. В воскресенье это
+  граница вс→пн, и половина события уезжает в **следующую** неделю, которую сетка не рисует:
+  два сегмента становятся одним. Лечится `midnightInsideRenderedWeek` — в воскресенье шаг
+  **назад**, к границе сб→вс, чтобы обе стороны были внутри отрисованной недели.
+- 🔴 У `resize-click-noop.spec.ts` **обход для воскресенья уже был** — шаг на день назад — и он
+  и оказался дефектом. Ничто в файле его не обосновывало, а `weekRange.ts` прямо документирует,
+  что воскресенье остаётся в **текущей** неделе (тот самый off-by-one, который когда-то отправлял
+  воскресенье на следующий понедельник и опустошал календарь). Обход был написан против уже
+  починенного бага, а спека вдобавок идёт на мобильном вьюпорте, который рисует **один день,
+  сегодня** — то есть обход уносил событие с экрана. Это и означало «element(s) not found».
+
+**Обход, переживший свой баг, — не возможность, а дефект.** Снимая его, надо проверить не
+«работает ли он», а «существует ли ещё то, против чего он написан».
+
+Доказательство диагноза: прогон починки **в то же воскресенье** зелёный — единственное окно,
+в котором это можно было проверить.

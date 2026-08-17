@@ -541,3 +541,70 @@ is missaligned, then merge and push to prod»*.
 
 **Скиллы:** `code-audit` для §2 · `/code-review` перед мержем ·
 `superpowers:finishing-a-development-branch` на мерже.
+
+## [2026-08-16] recall | learning-a-control-nobody-runs-hides-a-control-that-cannot-work, preference-never-replace-a-working-capability-with-a-simpler-one, learning-four-of-my-own-defects-in-one-session, learning-e2e-baseline-recorded-on-a-monday, learning-a-test-that-cannot-fail-guards-nothing, learning-stale-comment-outlived-its-constraint, learning-green-because-skipped-proves-nothing, learning-merge-to-main-is-the-release
+
+---
+
+# [2026-08-16] Продолжение — очередь до релиза пройдена, релиз ждёт Дениса
+
+## 1. Что сделано (15 тиков лупа, `f0bff79` → `10f6dec`)
+
+**Обещанное Денису — закрыто целиком:** пресеты напоминаний add/rename/delete (`935a6d5`) ·
+фильтр видимости календарей на `/calendar` с правкой там же (`22eb25d`) · перенос события между
+календарями, бэкенд + фронт (`228979e`, `b2db805`) · русские имена в данных **слоем
+отображения, а не переименованием** (`62634d0`, `384e986`).
+
+**Четыре дефекта доступа на запись.** Записи скоупились через `CalendarIDsFor` — право
+**чтения**: читатель мог править, двигать, удалять и создавать чужое (`4cf1e86`, `0b3a430`).
+Статический тест `writescoping_test.go` держит правило и **сам чинился трижды** — см.
+`learning-insert-and-update-ask-different-access-questions`.
+
+**Утечка токена бота в лог второго процесса** (`5bcb043`) — запись 14.08 «свой код больше не
+течёт» была ложной, `CLAUDE.md` gotcha 14 исправлен. Узел:
+`learning-redaction-at-the-output-does-not-protect-a-value-that-leaves-the-process`.
+
+**Исключение раз на серию + миграция `000013`** (`90435ef`) — первая миграция, которая трогает
+данные. **Гонка настроек** (`ccf2dea` красная → `7f3aad0` зелёная). **Зависимость e2e от дня
+недели** (`77e007b`) — CI был красным с полуночи не по вине кода.
+
+**Staging-проход сделан мной** на отдельном тестовом аккаунте через публичную регистрацию —
+`docs/staging-proyden-2026-08-16.md`. На первом же по-настоящему непроверенном пункте нашёлся
+дефект: новое событие не получало пресет по умолчанию (`c2817c4`).
+
+## 2. Что открыто
+
+- 🔴 **Релиз ждёт Дениса.** Мерж = прод. Осталось на нём: 4 визуальных пункта из
+  `docs/staging-proyden-2026-08-16.md` §«что осталось тебе» · сам мерж · затем
+  `docs/runbook-posle-merzha-2026-08-16.md` (миграции + пересборка бота) · 🔴 **ротация токена
+  бота — предусловие, а не долг:** токен лежал в логах ДВУХ процессов.
+- 🟡 **Долг, записанный а не починенный:** `RespondDecodeError` зовётся в 1 месте из 25 —
+  превышение размера отвечает 400, а не 413, везде кроме `/api/import`.
+- 🟡 Под `/settings` нет unit-тестов (Денис 16.08: **только e2e, зависимости не добавлять**).
+- 🟡 Бот не умеет создавать события; четырёх мобильных видов календаря нет. Приглашения =
+  срез 3 P3, не начинались.
+- ⚠ `docs/staging-check-v0.4.10.md` местами протух: предупреждение «recurring не двигай, вернёт
+  500» описывает R1, починенный 28.07.
+- Тестовый аккаунт `claude-check-1608@example.com` оставлен на staging.
+
+## 3. Числа на конец сессии
+
+`develop` = `10f6dec`, **277** коммитов впереди `main`, 0 незапушенных · фронт **495** тестов ·
+e2e **62** в двух проектах · lint 0 errors · миграций **13**, прод на **8** · оба Go-модуля
+зелёные без кэша против настоящей базы.
+
+## 4. Что читать первым
+
+`docs/staging-proyden-2026-08-16.md` (что закрыто и что осталось глазам) →
+`docs/runbook-posle-merzha-2026-08-16.md` → `docs/release-checklist-2026-08-14.md` →
+`preference-do-the-work-hand-over-only-what-eyes-must-settle` →
+`learning-two-neighbouring-paths-one-broken-reading-finds-neither` →
+`learning-a-stand-in-kinder-than-the-real-thing-is-not-a-test`.
+
+🔴 **Метод, окупившийся и в этой сессии:** доказывать контроль **падением по нужной причине**.
+Трижды сорвалось на моём собственном коде — regexp с байтом backspace вместо `\b`, подставной
+переводчик добрее настоящего, тест, связавший две таблицы в коде и не открывший файл локали.
+Дважды саботаж давал **не тот** отказ (ошибка типа, ошибка схемы) — это тоже не доказательство.
+
+**Скиллы:** `superpowers:finishing-a-development-branch` на мерже · `code-audit` для остатка
+непроверенного из `docs/audit-backend-dobor-2026-08-16.md` §«что осталось непроверенным».

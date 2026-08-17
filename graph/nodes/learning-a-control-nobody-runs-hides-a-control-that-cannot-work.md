@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-08-13
 tags: [neuroboost, ci, e2e, testing, verification]
-weight: { importance: 5, connectivity: 8, access: 1, last_accessed: 2026-08-15 }
+weight: { importance: 5, connectivity: 9, access: 2, last_accessed: 2026-08-17 }
 sources:
   - command: "grep playwright/e2e по .github/workflows/ci.yml → 0 вхождений при 10 спеках"
   - command: "gh run 31732533007 → e2e failure, снимок страницы: button \"Редактировать задачу\""

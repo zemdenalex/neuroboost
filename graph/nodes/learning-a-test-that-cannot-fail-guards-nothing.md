@@ -6,13 +6,14 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-08-12
 tags: [neuroboost, testing, review, method]
-weight: { importance: 5, connectivity: 13, access: 5, last_accessed: 2026-08-14 }
+weight: { importance: 5, connectivity: 18, access: 6, last_accessed: 2026-08-17 }
 sources:
   - command: "swap ErrCalendarNotFound/ErrNotCalendarOwner arms → FAIL ровно 2 теста; restore → ok"
   - file: "api-go/internal/calendars/handlers_test.go"
   - file: "api-go/internal/calendars/crud_test.go"
 stakes: high
 links:
+  - relates-to: learning-a-stand-in-kinder-than-the-real-thing-is-not-a-test
   - relates-to: learning-green-because-skipped-proves-nothing
   - relates-to: entity-p3-slice2-calendar-crud
   - relates-to: learning-checkbox-in-a-plan-is-a-claim-not-evidence

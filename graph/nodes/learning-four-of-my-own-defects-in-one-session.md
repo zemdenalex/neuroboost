@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-08-14
 tags: [neuroboost, testing, method, self-review]
-weight: { importance: 5, connectivity: 4, access: 2, last_accessed: 2026-08-15 }
+weight: { importance: 5, connectivity: 8, access: 3, last_accessed: 2026-08-17 }
 sources:
   - command: "go test -v ./internal/admin/ → --- SKIP: тест не исполнялся"
   - command: "typecheck → Tasks.tsx: has no exported member 'scheduleTaskAt'"

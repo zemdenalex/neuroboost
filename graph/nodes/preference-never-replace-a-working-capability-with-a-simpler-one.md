@@ -6,11 +6,12 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-08-15
 tags: [neuroboost, product, method, denis]
-weight: { importance: 5, connectivity: 3, access: 1, last_accessed: 2026-08-15 }
+weight: { importance: 5, connectivity: 3, access: 2, last_accessed: 2026-08-17 }
 sources:
   - quote: "Bruh you just removed the infinite color range to make the picker, create the rule to never remove working function to replace it with simpler one"
 stakes: high
 links:
+  - relates-to: preference-do-the-work-hand-over-only-what-eyes-must-settle
   - relates-to: learning-four-of-my-own-defects-in-one-session
 ---
 **Слова Дениса, дословно (15.08):** *«Bruh you just removed the infinite color range to make the
