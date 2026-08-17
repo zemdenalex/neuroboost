@@ -158,3 +158,40 @@ func ParseMinutes(raw string) int {
 	}
 	return n
 }
+
+// ActionReply is what the chat says after a button press succeeded.
+//
+// 🔴 It exists because of what happened on 17.08, the first time an INVITE
+// notification was pressed for real. The API answered 200 to every press and
+// the membership flipped to active — and the bot said NOTHING, because the
+// switch that produces this text had cases for snooze, done and ack and none
+// for accept or decline. From the chat it looked broken, so Denis pressed
+// seven times.
+//
+// The action worked and the screen stayed silent: the same defect as an event
+// colour that is stored and never painted, one layer out. A silent success is
+// indistinguishable from a failure, and the user's only move is to press again.
+//
+// A pure function, so ActionsAllHaveReplies can hold it against the buttons the
+// keyboards actually emit. A switch buried in a handler that needs a live bot
+// could not be tested, which is why the gap shipped.
+func ActionReply(action string) string {
+	switch action {
+	case ActionSnooze:
+		return "⏰ Напомню через 10 минут."
+	case ActionDone:
+		return "✅ Готово."
+	case ActionAck:
+		return "👌"
+	case ActionAccept:
+		return "✅ Календарь добавлен — он появится в списке."
+	case ActionDecline:
+		return "Приглашение отклонено."
+	}
+	return ""
+}
+
+// KnownSourceKinds is every source_kind the API can send. Kept here so the test
+// that checks "every button has a reply" iterates the real set rather than a
+// list written beside it, which would agree with itself by construction.
+var KnownSourceKinds = []string{"EVENT", "TASK", "DIGEST", "INVITE"}

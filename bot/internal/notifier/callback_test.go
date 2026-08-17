@@ -156,3 +156,45 @@ func TestKeyboardFitsChecksEveryButton(t *testing.T) {
 		t.Error("no keyboard is not a keyboard that fits")
 	}
 }
+
+// Every button any keyboard can produce must have something to say back.
+//
+// 🔴 This is the test that would have caught the 17.08 silence. The INVITE
+// keyboard shipped with Accept and Decline buttons; the handler's switch had
+// cases for snooze, done and ack only. The API returned 200, the membership
+// changed, and the chat said nothing — so it looked broken and got pressed
+// seven times.
+//
+// It walks the REAL keyboards for every source kind and parses the REAL
+// callback data, rather than a list of actions written beside it: a list would
+// have been written from the same mistaken idea of which actions exist.
+func TestEveryButtonHasAReply(t *testing.T) {
+	seen := 0
+	for _, kind := range KnownSourceKinds {
+		kb := Keyboard(kind, sampleID)
+		if kb == nil {
+			continue // a digest has no buttons, deliberately
+		}
+		for _, row := range kb.InlineKeyboard {
+			for _, b := range row {
+				if b.CallbackData == nil {
+					continue
+				}
+				cb, ok := ParseCallback(*b.CallbackData)
+				if !ok {
+					t.Fatalf("%s: button data does not parse: %q", kind, *b.CallbackData)
+				}
+				if ActionReply(cb.Action) == "" {
+					t.Errorf("%s: pressing %q says nothing back — a silent success reads as a failure",
+						kind, cb.Action)
+				}
+				seen++
+			}
+		}
+	}
+	// The floor: if Keyboard ever stops returning buttons, the loop above
+	// asserts nothing and passes. That is the shape of the original defect.
+	if seen < 6 {
+		t.Fatalf("only %d buttons examined — the sweep is no longer covering the keyboards", seen)
+	}
+}

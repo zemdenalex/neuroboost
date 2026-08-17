@@ -20,7 +20,7 @@ import (
 // Runs on the service token rather than a user session: the API identifies the
 // person by the Telegram id that pressed the button and checks that the
 // reminder is theirs.
-func (h *Handler) handleNotificationAction(chatID int64, from *tgbotapi.User, action notifier.Callback) {
+func (h *Handler) handleNotificationAction(chatID int64, from *tgbotapi.User, msg *tgbotapi.Message, action notifier.Callback) {
 	if from == nil {
 		h.sendText(chatID, "⚠️ Не понимаю, от кого это сообщение.")
 		return
@@ -40,13 +40,30 @@ func (h *Handler) handleNotificationAction(chatID int64, from *tgbotapi.User, ac
 		return
 	}
 
-	switch action.Action {
-	case notifier.ActionSnooze:
-		h.sendText(chatID, "⏰ Напомню через 10 минут.")
-	case notifier.ActionDone:
-		h.sendText(chatID, "✅ Готово.")
-	case notifier.ActionAck:
-		h.sendText(chatID, "👌")
+	// 🔴 One line, from a pure function, instead of a switch that has to be
+	// remembered. The switch that used to live here covered snooze, done and
+	// ack — and when INVITE buttons arrived on 17.08 it covered neither of
+	// them. The API answered 200 to every press and the chat said nothing, so
+	// the feature looked broken and got pressed seven times. The set of replies
+	// is now held against the set of buttons by TestEveryButtonHasAReply.
+	if reply := notifier.ActionReply(action.Action); reply != "" {
+		h.sendText(chatID, reply)
+	}
+
+	// Take the buttons off the message that was just answered. Leaving them
+	// invites a second press, and a second press cannot undo the first — an
+	// accepted invitation stays accepted, so "Отклонить" underneath it is a
+	// control that no longer does what it says.
+	if msg != nil {
+		empty := tgbotapi.NewInlineKeyboardMarkup()
+		edit := tgbotapi.NewEditMessageReplyMarkup(chatID, msg.MessageID, empty)
+		if _, err := h.bot.Request(edit); err != nil {
+			// Not worth telling the user: the action itself succeeded and the
+			// reply above already said so. Telegram refuses an edit for its own
+			// reasons (message too old, identical markup) and none of them mean
+			// the press failed.
+			log.Printf("clearing buttons on message %d failed: %s", msg.MessageID, logsafe.Redact(err))
+		}
 	}
 }
 
@@ -179,7 +196,7 @@ func (h *Handler) HandleCallback(cb *tgbotapi.CallbackQuery) {
 	// service token, not on a user JWT, so a failure to mint a user session must
 	// not stop someone snoozing a reminder.
 	if action, ok := notifier.ParseCallback(data); ok {
-		h.handleNotificationAction(chatID, cb.From, action)
+		h.handleNotificationAction(chatID, cb.From, cb.Message, action)
 		return
 	}
 
