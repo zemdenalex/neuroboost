@@ -688,3 +688,30 @@ e2e **62** в двух проектах · lint 0 errors · миграций **1
 
 **Навыки на следующую сессию:** ничего специального; если релиз — `docs/release-checklist-2026-08-14.md`
 плюс переписанный runbook.
+
+## [2026-08-18] recall | learning-a-mechanism-is-not-a-state, learning-a-test-that-cannot-fail-guards-nothing, learning-merge-to-main-is-the-release, entity-p3-sharing-shipped-2026-08-17, learning-stale-comment-outlived-its-constraint, learning-three-known-defects-were-already-fixed, learning-fixture-data-can-disarm-a-control
+
+## [2026-08-18] Срез 4 P3 сделан, v0.4.10 в проде, прод падал
+
+**Сделано.** Срез 4 целиком: `is_shared` + `author_name` на событиях (вычисляются на чтение,
+per-viewer — колонкой быть не могут), 👥 и автор в сетке в обоих рисующих компонентах, задача
+создаётся в общем календаре, выбор календаря в форме задачи (только при создании — переносить
+задачу API не умеет). Затем **релиз в прод по явному «да» Дениса**: 299 коммитов, миграции
+8 → 15, тег `v0.4.10`, прод-бот пересобран на nl-2.
+
+🔴 **Прод лежал ~4 минуты.** `000010` упала на несуществующей колонке `minutes_before`,
+`dirty = 10`, API в crash-loop. Корень — `CREATE TABLE IF NOT EXISTS` в baseline поверх
+таблицы, существовавшей до системы миграций. Разбор и урок:
+`learning-empty-is-not-the-same-shape` (я посчитал строки вместо колонок и написал вывод,
+который из этого не следовал). Починено: `000016` + `internal/reminders/schema_shape_test.go`,
+проверенный падением.
+
+**Открыто.** Ротация токена бота (только Денис, BotFather) · ночного бэкапа прода нет ·
+`000016` доедет следующим релизом · срез 5 · задачу нельзя перенести между календарями.
+
+**Следующая сессия — фокус задан Денисом:** бот должен уметь то, что умеет веб, и то, что умел
+**сам бот в v0.2.1**. Открывать сначала `docs/analiz-bot-vs-web-2026-08-18.md`, затем
+`.remember/loop-prompt-2026-08-18-bot-parity.md` (готовый промпт лупа, вне git).
+Читать первыми: `learning-a-rewrite-can-drop-features-silently`,
+`learning-empty-is-not-the-same-shape`, `entity-v0410-released-with-an-outage`.
+Вторичный фокус — мобильный веб на 375px.

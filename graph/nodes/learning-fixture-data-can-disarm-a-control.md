@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-08-17
 tags: [neuroboost, e2e, css, evidence, ci]
-weight: { importance: 4, connectivity: 4, access: 5, last_accessed: 2026-08-17 }
+weight: { importance: 4, connectivity: 3, access: 6, last_accessed: 2026-08-18 }
 sources:
   - file: "web/e2e/mobile-overflow.spec.ts — «the profile header survives a long unbreakable value»"
   - commit: "911bf9e, d0b5249"

@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-08-17
 tags: [neuroboost, docs, evidence, method]
-weight: { importance: 5, connectivity: 4, access: 5, last_accessed: 2026-08-17 }
+weight: { importance: 5, connectivity: 5, access: 6, last_accessed: 2026-08-18 }
 sources:
   - file: "docs/staging-check-2026-08-17.md §3"
   - commit: "4320fce"
