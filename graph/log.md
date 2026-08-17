@@ -715,3 +715,14 @@ per-viewer — колонкой быть не могут), 👥 и автор в
 Читать первыми: `learning-a-rewrite-can-drop-features-silently`,
 `learning-empty-is-not-the-same-shape`, `entity-v0410-released-with-an-outage`.
 Вторичный фокус — мобильный веб на 375px.
+
+## [2026-08-18] recall | learning-a-rewrite-can-drop-features-silently, learning-stale-comment-outlived-its-constraint
+
+**Решение Дениса в конце сессии:** месячный календарь в боте — **вернуть**, запись
+`CLAUDE.md` «не планируется» отменена как протухшая (`decision-restore-what-the-rewrite-dropped`).
+Она превратила отсутствие в решение, которого никто не принимал.
+
+🔴 **Ждут его слова 4 предложения в promote-очереди** (старшему 9 дней):
+`decision-graph-now-enabled`, `memory-split-claude-graph-remember`,
+`peer-project-lessons-for-ci-and-testing`, `workitem-p2-notifications-last-mile`.
+Команда: `python .../promote.py <root> --review`, затем `--confirm`/`--drop` по каждому.

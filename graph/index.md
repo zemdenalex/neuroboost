@@ -1,6 +1,7 @@
 # Index — V003 - NeuroBoost
 
 ## Decisions
+- [[decision-restore-what-the-rewrite-dropped]] — "Денис 18.08: месячный календарь в боте вернуть — запись «не планируется» протухла"
 - [[decision-sharing-shape-and-colour-defaults]] — "Денис: приглашение в приложении + ссылка на 2 часа; цвет личного календаря не навязывать, но дать менять"
 
 ## Learnings
@@ -10,12 +11,12 @@
 - [[learning-green-because-skipped-proves-nothing]] — "«Зелено» из-за t.Skip ничего не доказывает — CI с DATABASE_URL уронил то, что локально проходило 12 задач подряд"
 - [[learning-a-mechanism-is-not-a-state]] — "Механизм — не состояние: я подтвердил, что раздвоение аккаунтов ВОЗМОЖНО, и доложил, что оно ЕСТЬ"
 - [[learning-e2e-baseline-recorded-on-a-monday]] — "Базовая линия e2e снята в понедельник — во вторник две спеки упали и вскрыли настоящий баг мобильного календаря"
+- [[learning-a-rewrite-can-drop-features-silently]] — "Переписывание бота с Node.js на Go молча потеряло пять возможностей — и это читается как «ещё не сделали»"
 - [[learning-three-known-defects-were-already-fixed]] — "Три «известных дефекта» из CLAUDE.md оказались протухшими — нашлись только потому, что новый чеклист требовал способ проверки"
 - [[learning-empty-is-not-the-same-shape]] — "«Таблица пуста» — не «таблица нужной формы»: я посчитал строки, а надо было сравнить колонки, и прод лёг"
 - [[learning-a-control-nobody-runs-hides-a-control-that-cannot-work]] — "Контроль, который никто не запускает, прячет внутри себя контроль, который не мог сработать — e2e нашли посев локали, проигрывавший серверу, первым же прогоном"
 - [[learning-four-of-my-own-defects-in-one-session]] — "Четыре моих собственных дефекта за сессию, и все — тот класс, который я в ней же искал в чужом коде"
 - [[learning-a-silent-success-reads-as-a-failure]] — "Молчаливый успех неотличим от отказа: API отвечал 200, бот молчал, Денис нажал семь раз"
-- [[learning-a-rewrite-can-drop-features-silently]] — "Переписывание бота с Node.js на Go молча потеряло пять возможностей — и это читается как «ещё не сделали»"
 - [[learning-digest-sent-empty-text]] — "Утренний дайджест уходил с пустым текстом — Telegram отбивал его каждое утро, следов кроме строки FAILED не было"
 - [[learning-prod-has-no-svc-routes]] — "Prod — это v0.4.9 без P2: /api/svc отдаёт 404, значит уведомления возможны только на staging"
 - [[learning-null-key-passes-a-unique-index]] — В Postgres два NULL не равны друг другу, поэтому уникальный индекс не защищает

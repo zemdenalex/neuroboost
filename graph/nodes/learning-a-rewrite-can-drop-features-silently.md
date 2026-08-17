@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-08-18
 tags: [neuroboost, bot, regression, docs]
-weight: { importance: 5, connectivity: 4, access: 5, last_accessed: 2026-08-18 }
+weight: { importance: 5, connectivity: 4, access: 6, last_accessed: 2026-08-18 }
 sources:
   - file: "docs/analiz-bot-vs-web-2026-08-18.md §2"
   - file: "_legacy/snapshots-v0.0.1-v0.4.0/v0.2.1/apps/bot/src/keyboards.mjs"
@@ -15,6 +15,7 @@ links:
   - relates-to: learning-stale-comment-outlived-its-constraint
   - relates-to: learning-three-known-defects-were-already-fixed
   - relates-to: entity-bot-creates-events-from-one-line
+  - relates-to: decision-restore-what-the-rewrite-dropped
 ---
 Сравнение поверхности нынешнего Go-бота с его же предшественником v0.2.1 (Telegraf, 3130
 строк) показало **регрессию по пяти позициям**: отметить задачу выполненной из списка,
@@ -35,3 +36,6 @@ links:
 
 ⚠ Старый код лежит в `_legacy/snapshots-v0.0.1-v0.4.0/v0.2.1/` — **внутри проекта**; запись в
 локальной памяти три месяца указывала на мёртвый путь в `000 - Personal`.
+
+🟢 **Денис 18.08 решил вернуть месячный календарь** — первую из пяти
+(`decision-restore-what-the-rewrite-dropped`). Остальные четыре в очереди бота.
