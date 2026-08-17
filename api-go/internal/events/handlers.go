@@ -696,6 +696,10 @@ func listEvents(ctx context.Context, userID string, start, end time.Time) ([]Eve
 		events = []Event{}
 	}
 
+	if err := decorateSharingSlice(ctx, userID, events); err != nil {
+		return nil, err
+	}
+
 	return events, nil
 }
 
@@ -744,6 +748,9 @@ func createEvent(ctx context.Context, userID string, req CreateEventRequest, sta
 	}
 
 	e.Tags = resultTags
+	if err := decorateSharing(ctx, userID, []*Event{&e}); err != nil {
+		return nil, err
+	}
 	return &e, nil
 }
 
@@ -774,6 +781,9 @@ func getEvent(ctx context.Context, userID, eventID string) (*Event, error) {
 	}
 
 	e.Tags = tags
+	if err := decorateSharing(ctx, userID, []*Event{&e}); err != nil {
+		return nil, err
+	}
 	return &e, nil
 }
 
@@ -900,6 +910,9 @@ func updateEvent(ctx context.Context, userID, eventID string, req UpdateEventReq
 	}
 
 	e.Tags = tags
+	if err := decorateSharing(ctx, userID, []*Event{&e}); err != nil {
+		return nil, err
+	}
 	return &e, nil
 }
 

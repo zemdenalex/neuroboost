@@ -26,6 +26,16 @@ type Event struct {
 	RecurringEventID *string   `json:"recurring_event_id,omitempty"`
 	CreatedAt        time.Time `json:"created_at"`
 	UpdatedAt        time.Time `json:"updated_at"`
+
+	// IsShared reports that somebody else can see this event: its calendar has
+	// at least one other active member. Derived on read, never stored — a column
+	// would go stale the moment someone accepts an invitation or leaves, and
+	// nothing would say so.
+	IsShared bool `json:"is_shared"`
+	// AuthorName is set only when the event was created by somebody other than
+	// the caller. It is therefore per-viewer and could not be a column even in
+	// principle: the same row is "mine" to one member and "hers" to the other.
+	AuthorName *string `json:"author_name,omitempty"`
 }
 
 // CreateEventRequest represents the request to create an event
