@@ -3,6 +3,7 @@ package tasks
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -95,11 +96,31 @@ func CreateHandler(w http.ResponseWriter, r *http.Request) {
 
 	task, err := insertTask(r.Context(), userID, req, dueDate)
 	if err != nil {
-		util.RespondError(w, http.StatusInternalServerError, "CREATE_ERROR", "Failed to create task")
+		status, code, msg := calendarWriteError(err, "CREATE_ERROR", "Failed to create task")
+		util.RespondError(w, status, code, msg)
 		return
 	}
 
 	util.RespondJSON(w, http.StatusCreated, task)
+}
+
+// calendarWriteError translates a refusal from WritableIDFor into the status the
+// caller deserves, falling back to the supplied server error for anything else.
+//
+// A refused calendar is the caller's mistake, not the server's. Left as a flat
+// 500 it reads as "the app is broken" for what is really "you cannot write
+// there". Events already answer this way; tasks matching them is the point.
+func calendarWriteError(err error, fallbackCode, fallbackMsg string) (int, string, string) {
+	switch {
+	case errors.Is(err, calendars.ErrCalendarNotFound):
+		// 404 rather than 403 on purpose: a permission error would confirm to a
+		// stranger that the calendar exists.
+		return http.StatusNotFound, "CALENDAR_NOT_FOUND", "Calendar not found"
+	case errors.Is(err, calendars.ErrNotCalendarOwner):
+		return http.StatusForbidden, "CALENDAR_READ_ONLY", "You can read this calendar but not add to it"
+	default:
+		return http.StatusInternalServerError, fallbackCode, fallbackMsg
+	}
 }
 
 // insertTask applies the create defaults and writes one row. Shared by the
@@ -176,7 +197,11 @@ func BatchCreateHandler(w http.ResponseWriter, r *http.Request) {
 
 		task, err := insertTask(r.Context(), userID, row, dueDate)
 		if err != nil {
-			resp.Errors = append(resp.Errors, BatchRowError{Index: i, Code: "CREATE_ERROR", Message: "Failed to create task"})
+			// A row aimed at a calendar the caller cannot write to says so.
+			// Reporting every failure as CREATE_ERROR would tell someone pasting
+			// twenty lines that the server broke, when the fix is theirs.
+			_, code, msg := calendarWriteError(err, "CREATE_ERROR", "Failed to create task")
+			resp.Errors = append(resp.Errors, BatchRowError{Index: i, Code: code, Message: msg})
 			continue
 		}
 		resp.Tasks = append(resp.Tasks, *task)
@@ -433,9 +458,20 @@ func createTask(ctx context.Context, userID string, req CreateTaskRequest, statu
 		reminderOffsets = usersettings.DefaultTaskOffsets(ctx, userID)
 	}
 
-	// New tasks land in the author's personal calendar. user_id stays on the
-	// row too — it means authorship now, not access.
-	calID, err := calendars.PersonalIDFor(ctx, userID)
+	// The calendar the caller asked for, or their personal one when they asked
+	// for none. user_id stays on the row either way — it means authorship now,
+	// not access.
+	//
+	// 🔴 Until slice 4 this was an unconditional PersonalIDFor, while
+	// CreateTaskRequest.CalendarID sat in the struct being decoded and ignored.
+	// A field that looks supported and silently does nothing is worse than an
+	// absent one: the caller gets a 201 and a task in the wrong calendar.
+	//
+	// Checked, never trusted — WritableIDFor refuses a viewer and answers
+	// NotFound (not Forbidden) for a calendar the caller is no member of, so a
+	// stranger cannot probe for existence. Events resolve their calendar the
+	// same way; the two paths agreeing is the point.
+	calID, err := calendars.WritableIDFor(ctx, userID, req.CalendarID)
 	if err != nil {
 		return nil, err
 	}

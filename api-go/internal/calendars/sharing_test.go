@@ -10,9 +10,9 @@ func ptr(s string) *string { return &s }
 // of them at once.
 func TestDisplayLabelPrefersTheShortestNameAvailable(t *testing.T) {
 	cases := []struct {
-		name                                      string
+		name                                       string
 		displayName, tgFirstName, tgUsername, mail *string
-		want                                      string
+		want                                       string
 	}{
 		{"display name wins", ptr("Настя"), ptr("Anastasia"), ptr("nastya"), ptr("a@b.com"), "Настя"},
 		{"telegram first name is next", nil, ptr("Anastasia"), ptr("nastya"), ptr("a@b.com"), "Anastasia"},

@@ -51,7 +51,16 @@ type Task struct {
 
 // CreateTaskRequest represents the request to create a task
 type CreateTaskRequest struct {
-	Title            string        `json:"title"`
+	Title string `json:"title"`
+	// Which calendar the task goes in. Absent or empty means the author's
+	// personal calendar — the behaviour every creation had before shared
+	// calendars, and the one quick-add, the bot and the importer still rely on.
+	//
+	// 🔴 Checked, never trusted: calendars.WritableIDFor verifies the caller is
+	// an active owner or editor. The row's user_id records authorship, not
+	// access, so an unchecked id would write into someone else's calendar with
+	// nothing downstream objecting. Same rule, same helper as events.
+	CalendarID       string        `json:"calendar_id,omitempty"`
 	Description      *string       `json:"description,omitempty"`
 	Status           *TaskStatus   `json:"status,omitempty"`
 	Category         *TaskCategory `json:"category,omitempty"`
