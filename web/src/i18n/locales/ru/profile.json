@@ -1,4 +1,6 @@
 {
+  "anonymous": "Пользователь",
+  "unknownDate": "Неизвестно",
   "memberSince": "Участник с {{date}}",
   "level": "Уровень {{level}}",
   "xp": "{{current}} / {{max}} XP",

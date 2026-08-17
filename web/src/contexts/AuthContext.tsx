@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import i18n from '../i18n'
+import { errorMessage } from '../lib/errorMessage'
 import {
   User,
   UserSettings,
@@ -104,8 +105,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (response.user.settings) {
           applySettingsToLocalStorage(response.user.settings)
         }
-      } catch (err: any) {
-        setError(err?.message || 'Login failed')
+      } catch (err) {
+        setError(errorMessage(err, 'Login failed'))
         throw err
       } finally {
         setLoading(false)
@@ -129,8 +130,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (response.user.settings) {
           applySettingsToLocalStorage(response.user.settings)
         }
-      } catch (err: any) {
-        setError(err?.message || 'Registration failed')
+      } catch (err) {
+        setError(errorMessage(err, 'Registration failed'))
         throw err
       } finally {
         setLoading(false)
@@ -154,8 +155,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (response.user.settings) {
           applySettingsToLocalStorage(response.user.settings)
         }
-      } catch (err: any) {
-        setError(err?.message || 'Telegram login failed')
+      } catch (err) {
+        setError(errorMessage(err, 'Telegram login failed'))
         throw err
       } finally {
         setLoading(false)

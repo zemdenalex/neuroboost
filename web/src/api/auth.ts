@@ -25,8 +25,39 @@ export interface UserSettings {
   work_start?: string
   work_end?: string
   features?: Record<string, boolean>
+  /**
+   * Which scope to use when editing a recurring event, or 'ask' to prompt.
+   *
+   * Declared here on 2026-08-14. The settings blob is free-form JSONB and the
+   * Go side has no field for it, so the frontend was writing and reading it
+   * through casts on BOTH sides — `as Partial<UserSettings>` when saving and a
+   * `Record<string, unknown>` widening when reading. The value was real and
+   * only the type system was unaware; naming it removes both casts.
+   */
+  recurring_scope?: 'ask' | 'occurrence' | 'series'
   quiet_hours_start?: string
   quiet_hours_end?: string
+  quick_task?: {
+    default_due?: 'today' | 'tomorrow' | 'none'
+    default_priority?: number
+    default_estimate_minutes?: number | null
+    inherit_filters?: boolean
+    keys?: Partial<Record<'submit' | 'submit_expanded' | 'expand' | 'global_capture' | 'indent' | 'outdent', string>>
+  }
+  /**
+   * Mirrors the Go `reminders` settings section. quiet_hours_start/end above
+   * finally do something now: a reminder landing in that window is delayed to
+   * the end of it, unless it has 15 minutes' notice or less, in which case it
+   * is skipped — delaying that one would deliver it after the event.
+   */
+  reminders?: {
+    presets?: Record<string, number[]>
+    default_event_preset?: string
+    default_task_preset?: string
+    digest_at?: string
+    digest_enabled?: boolean
+    quiet_hours_respected?: boolean
+  }
 }
 
 export interface AuthResponse {

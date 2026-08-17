@@ -2,7 +2,13 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Plus, Settings, X, GripVertical, Clock, Calendar } from 'lucide-react'
 import { listTasks, createTask, updateTask } from '../../api/tasks'
-import type { Task, TaskStatus } from '../../api/tasks'
+import type { Task } from '../../api/tasks'
+import { PRIORITY_DOT_COLORS } from '../../lib/priority'
+import { describeDueDate, dueDateColorClass, formatDueDateLabel } from '../../lib/dueDate'
+// Column rules live in a leaf module so they can be tested; this page renders
+// them. KanbanColumnId stays derived from COLUMN_DEFS below, so if the two
+// ever disagree the compiler says so instead of the board quietly misfiling.
+import { COLUMN_TO_STATUS, statusToColumn } from '../../lib/tools/kanban'
 
 // ─── Column definitions ──────────────────────────────────────────────────────
 
@@ -16,38 +22,8 @@ const COLUMN_DEFS = [
 
 type KanbanColumnId = typeof COLUMN_DEFS[number]['id']
 
-// Map KanbanColumnId → TaskStatus accepted by backend
-// INBOX is treated as TODO on creation; SCHEDULED is set by backend, but we allow manual drag
-const COLUMN_TO_STATUS: Record<KanbanColumnId, TaskStatus> = {
-  INBOX: 'TODO',
-  TODO: 'TODO',
-  IN_PROGRESS: 'IN_PROGRESS',
-  SCHEDULED: 'SCHEDULED',
-  DONE: 'DONE',
-}
-
-// Map TaskStatus → which column to render it in
-function statusToColumn(status: TaskStatus): KanbanColumnId {
-  switch (status) {
-    case 'TODO': return 'TODO'
-    case 'IN_PROGRESS': return 'IN_PROGRESS'
-    case 'SCHEDULED': return 'SCHEDULED'
-    case 'DONE': return 'DONE'
-    case 'CANCELLED': return 'DONE'
-    default: return 'TODO'
-  }
-}
-
 // ─── Priority dot ─────────────────────────────────────────────────────────────
-
-const PRIORITY_DOT_COLORS: Record<number, string> = {
-  0: 'bg-zinc-500',
-  1: 'bg-red-500',
-  2: 'bg-orange-500',
-  3: 'bg-yellow-500',
-  4: 'bg-green-500',
-  5: 'bg-blue-500',
-}
+// Colors come from lib/priority (shared across Tasks, calendar, sidebar, Eisenhower).
 
 function PriorityDot({ priority }: { priority: number }) {
   const color = PRIORITY_DOT_COLORS[priority] ?? PRIORITY_DOT_COLORS[3]
@@ -109,29 +85,6 @@ function saveColumnVisibility(visibility: Record<KanbanColumnId, boolean>) {
   localStorage.setItem(LS_KEY, JSON.stringify(visibility))
 }
 
-// ─── Due date helpers ─────────────────────────────────────────────────────────
-
-function formatDueDate(dueDate: string): string {
-  const due = new Date(dueDate)
-  const now = new Date()
-  const diffDays = Math.ceil((due.getTime() - now.getTime()) / (24 * 60 * 60 * 1000))
-  if (diffDays < 0) return `${Math.abs(diffDays)}d late`
-  if (diffDays === 0) return 'today'
-  if (diffDays === 1) return 'tmrw'
-  if (diffDays < 7) return `${diffDays}d`
-  return due.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
-}
-
-function getDueDateColor(dueDate: string): string {
-  const due = new Date(dueDate)
-  const now = new Date()
-  const diffDays = Math.ceil((due.getTime() - now.getTime()) / (24 * 60 * 60 * 1000))
-  if (diffDays < 0) return 'text-red-400'
-  if (diffDays === 0) return 'text-orange-400'
-  if (diffDays <= 1) return 'text-yellow-400'
-  return 'text-zinc-500'
-}
-
 // ─── Task Card ────────────────────────────────────────────────────────────────
 
 interface TaskCardProps {
@@ -140,6 +93,8 @@ interface TaskCardProps {
 }
 
 function TaskCard({ task, onDragStart }: TaskCardProps) {
+  const { t, i18n } = useTranslation('common')
+  const dueInfo = task.due_date ? describeDueDate(task.due_date) : null
   return (
     <div
       draggable
@@ -174,10 +129,10 @@ function TaskCard({ task, onDragStart }: TaskCardProps) {
                   {task.estimated_minutes}m
                 </span>
               )}
-              {task.due_date && (
-                <span className={`flex items-center gap-0.5 ${getDueDateColor(task.due_date)}`}>
+              {dueInfo && (
+                <span className={`flex items-center gap-0.5 ${dueDateColorClass(dueInfo)}`}>
                   <Calendar className="w-3 h-3" />
-                  {formatDueDate(task.due_date)}
+                  {formatDueDateLabel(dueInfo, t, i18n.language)}
                 </span>
               )}
             </div>
@@ -400,14 +355,11 @@ interface FilterBarProps {
   onPriorityChange: (p: number | null) => void
 }
 
-const PRIORITY_OPTIONS = [
-  { value: 1, label: 'P1', dotColor: 'bg-red-500' },
-  { value: 2, label: 'P2', dotColor: 'bg-orange-500' },
-  { value: 3, label: 'P3', dotColor: 'bg-yellow-500' },
-  { value: 4, label: 'P4', dotColor: 'bg-green-500' },
-  { value: 5, label: 'P5', dotColor: 'bg-blue-500' },
-  { value: 0, label: 'P0', dotColor: 'bg-zinc-500' },
-]
+const PRIORITY_OPTIONS = [1, 2, 3, 4, 5, 0].map((value) => ({
+  value,
+  label: `P${value}`,
+  dotColor: PRIORITY_DOT_COLORS[value],
+}))
 
 function FilterBar({ priorityFilter, onPriorityChange }: FilterBarProps) {
   return (
@@ -557,7 +509,7 @@ export default function Kanban() {
   return (
     <div className="flex flex-col h-[calc(100vh-56px)] overflow-hidden">
       {/* Top bar */}
-      <div className="flex-shrink-0 flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-b border-zinc-800">
+      <div data-hint="tools.kanban.board" className="flex-shrink-0 flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-b border-zinc-800">
         <div className="flex flex-wrap items-center gap-3 min-w-0">
           <h1 className="text-lg font-bold text-zinc-100 shrink-0">{t('kanban.title')}</h1>
           <FilterBar priorityFilter={priorityFilter} onPriorityChange={setPriorityFilter} />

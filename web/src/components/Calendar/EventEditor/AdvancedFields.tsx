@@ -1,31 +1,31 @@
-import { useTranslation } from 'react-i18next';
-import { REMINDER_OPTIONS } from './editor.types';
+import { useTranslation } from 'react-i18next'
+import { PALETTE, PALETTE_NAMES, resolveColor } from '../../../lib/calendar/palette';
+import { ReminderOffsets } from '../../ReminderOffsets/ReminderOffsets';
+import type { ReminderPresets } from '../../../lib/reminders/offsets';
 
 interface AdvancedFieldsProps {
   isAllDay: boolean;
-  reminderMinutes: number;
+  /**
+   * Minutes before start, one entry per reminder. This replaced a single
+   * `reminderMinutes` dropdown that sent a `reminders` array the Go API never
+   * declared — the field was silently discarded, so that control had never
+   * scheduled anything.
+   */
+  reminderOffsets: number[];
+  presets: ReminderPresets;
   color: string;
   onAllDayChange: (value: boolean) => void;
-  onReminderChange: (value: number) => void;
+  onReminderOffsetsChange: (value: number[]) => void;
   onColorChange: (value: string) => void;
 }
 
-const REMINDER_KEYS: Record<number, string> = {
-  0: 'advanced.reminderOptions.none',
-  1: 'advanced.reminderOptions.1min',
-  3: 'advanced.reminderOptions.3min',
-  5: 'advanced.reminderOptions.5min',
-  10: 'advanced.reminderOptions.10min',
-  30: 'advanced.reminderOptions.30min',
-  60: 'advanced.reminderOptions.1hour',
-};
-
 export function AdvancedFields({
   isAllDay,
-  reminderMinutes,
+  reminderOffsets,
+  presets,
   color,
   onAllDayChange,
-  onReminderChange,
+  onReminderOffsetsChange,
   onColorChange,
 }: AdvancedFieldsProps) {
   const { t } = useTranslation('calendar');
@@ -43,41 +43,82 @@ export function AdvancedFields({
           <span className="text-zinc-300">{t('advanced.allDay')}</span>
         </label>
 
-        <div className="flex items-center gap-2 text-sm">
-          <label className="text-zinc-400">{t('advanced.reminder')}</label>
-          <select
-            value={reminderMinutes}
-            onChange={(e) => onReminderChange(Number(e.target.value))}
-            className="bg-zinc-800 border border-zinc-600 rounded px-2 py-1 text-white font-mono text-sm focus:outline-none focus:border-zinc-400"
-          >
-            {REMINDER_OPTIONS.map(opt => (
-              <option key={opt.value} value={opt.value}>
-                {t(REMINDER_KEYS[opt.value] ?? opt.label)}
-              </option>
-            ))}
-          </select>
-        </div>
       </div>
+
+      <ReminderOffsets
+        value={reminderOffsets}
+        onChange={onReminderOffsetsChange}
+        presets={presets}
+      />
 
       <div>
         <label className="block text-xs text-zinc-400 mb-1">{t('advanced.color')}</label>
-        <div className="flex items-center gap-2">
+        {/* Swatches, not a text field.
+            🔴 It was free text, and Denis reported that "blue" and "blue-400"
+            did nothing — correctly, because a Tailwind class is not a CSS
+            colour and the preview turned it into `var(--blue-400)`, which does
+            not exist. A value the picker cannot show as selected is a value
+            nobody can correct later, so the input now offers only colours this
+            app can render. */}
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => onColorChange('')}
+            aria-label={t('advanced.colorNone')}
+            title={t('advanced.colorNone')}
+            className={`w-6 h-6 rounded-full border grid place-items-center text-xs ${
+              resolveColor(color) === undefined
+                ? 'border-blue-400 ring-2 ring-blue-400/50 text-blue-300'
+                : 'border-zinc-600 text-zinc-500 hover:border-zinc-400'
+            }`}
+          >
+            ×
+          </button>
+          {PALETTE_NAMES.map((name) => {
+            const hex = PALETTE[name]
+            const selected = resolveColor(color) === hex
+            return (
+              <button
+                key={name}
+                type="button"
+                onClick={() => onColorChange(name)}
+                aria-label={name}
+                title={name}
+                className={`w-6 h-6 rounded-full border transition-transform ${
+                  selected ? 'border-white ring-2 ring-white/60 scale-110' : 'border-zinc-600 hover:scale-105'
+                }`}
+                style={{ backgroundColor: hex }}
+              />
+            )
+          })}
+        </div>
+        {/* 🔴 The text field stays. The swatches were added beside it, not in
+            place of it: an earlier version of this change replaced the field
+            and quietly took away hex, Tailwind and CSS colours that already
+            worked. Never remove a working capability to make room for a
+            simpler one — the picker is the fast path, this is the full one. */}
+        <div className="flex items-center gap-2 mt-2">
           <input
             type="text"
             placeholder={t('advanced.colorPlaceholder')}
             value={color}
             onChange={(e) => onColorChange(e.target.value)}
-            className="flex-1 px-3 py-2 bg-zinc-800 border border-zinc-600 rounded text-white placeholder-zinc-400 focus:outline-none focus:border-zinc-400 font-mono"
+            className={`flex-1 px-3 py-2 bg-zinc-800 border rounded text-white placeholder-zinc-400 focus:outline-none font-mono ${
+              color && resolveColor(color) === undefined
+                ? 'border-red-500 focus:border-red-400'
+                : 'border-zinc-600 focus:border-zinc-400'
+            }`}
           />
-          {color && (
-            <div
-              className="w-8 h-8 rounded border border-zinc-600"
-              style={{ backgroundColor: color.startsWith('#') ? color : `var(--${color})` }}
-            />
-          )}
+          <div
+            className="w-8 h-8 rounded border border-zinc-600 shrink-0"
+            style={{ backgroundColor: resolveColor(color) ?? 'transparent' }}
+          />
         </div>
         <div className="text-xs text-zinc-500 mt-1">
-          {t('colorHint')}
+          {/* The event's own colour wins over its calendar's — stated here
+              because the swatch row otherwise implies "no colour" means grey
+              rather than "inherit from the calendar". */}
+          {t('advanced.colorInherits')}
         </div>
       </div>
     </>

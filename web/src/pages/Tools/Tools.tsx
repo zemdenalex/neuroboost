@@ -56,7 +56,7 @@ export default function Tools() {
         <p className="text-zinc-400 mt-1">{t('hub.subtitle')}</p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div data-hint="tools.pick" className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {tools.map((tool) =>
           tool.available ? (
             <Link

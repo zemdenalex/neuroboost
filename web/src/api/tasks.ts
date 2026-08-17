@@ -1,3 +1,16 @@
+/**
+ * THE snake_case TASK STACK — the complete one, used by Tasks, Planning and
+ * QuickAdd.
+ *
+ * Its counterpart is api/index.ts, which wraps the same endpoints for the
+ * calendar's camelCase `Task` type. See the header there for why both exist and
+ * why they have not been merged.
+ *
+ * 🔴 `scheduleTask` here takes an OBJECT — `(id, { starts_at, ends_at, all_day })`.
+ * The positional one, `(id, startsAt, minutes)`, is `scheduleTaskAt` in
+ * api/index.ts. They shared the name `scheduleTask` until 2026-08-14, and a
+ * blind rename during that very cleanup renamed a call to the wrong one.
+ */
 import { api } from './client'
 
 export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'SCHEDULED' | 'DONE' | 'CANCELLED'
@@ -6,12 +19,14 @@ export type TaskCategory = 'EMERGENCY' | 'ASAP' | 'MUST_TODAY' | 'DEADLINE_SOON'
 export interface Task {
   id: string
   user_id: string
+  calendar_id?: string
   title: string
   description?: string
   status: TaskStatus
   category?: TaskCategory
   priority: number
   estimated_minutes?: number
+  actual_minutes: number
   due_date?: string
   tags: string[]
   contexts: string[]
@@ -20,10 +35,23 @@ export interface Task {
   completed_at?: string
   created_at: string
   updated_at: string
+  /**
+   * Minutes before due_date to remind, e.g. [10, 60]. The API has returned this
+   * since migration 000010; the type omitted it, so the task editor could not
+   * read back what quick-add had set and a task's reminders could never be
+   * changed after creation.
+   */
+  reminder_offsets?: number[]
 }
 
 export interface CreateTaskRequest {
   title: string
+  /**
+   * Which calendar the task goes into. Omitted means the author's personal
+   * one — what quick-add and the bot send. Creation only: there is no
+   * calendar_id on UpdateTaskRequest, so an existing task cannot be moved.
+   */
+  calendar_id?: string
   description?: string
   status?: TaskStatus
   category?: TaskCategory
@@ -34,6 +62,11 @@ export interface CreateTaskRequest {
   contexts?: string[]
   energy?: number
   parent_id?: string
+  /**
+   * Minutes before due_date, one entry per reminder. Omitting the field asks
+   * the backend for the user's default preset; an explicit [] means none.
+   */
+  reminder_offsets?: number[]
 }
 
 export interface UpdateTaskRequest {
@@ -48,6 +81,7 @@ export interface UpdateTaskRequest {
   contexts?: string[]
   energy?: number
   parent_id?: string
+  reminder_offsets?: number[]
 }
 
 export interface ScheduleTaskRequest {
@@ -88,6 +122,25 @@ export async function createTask(data: CreateTaskRequest): Promise<Task> {
   return api.post<Task>('/tasks', data)
 }
 
+export interface BatchRowError {
+  index: number
+  code: string
+  message: string
+}
+
+export interface BatchCreateResponse {
+  tasks: Task[]
+  errors: BatchRowError[]
+}
+
+/**
+ * Create many tasks in one round-trip. Rows fail independently: valid rows are
+ * created and invalid ones come back in `errors` with their index.
+ */
+export async function createTasksBatch(tasks: CreateTaskRequest[]): Promise<BatchCreateResponse> {
+  return api.post<BatchCreateResponse>('/tasks/batch', { tasks })
+}
+
 export async function getTask(id: string): Promise<Task> {
   return api.get<Task>(`/tasks/${id}`)
 }
@@ -104,25 +157,13 @@ export async function scheduleTask(id: string, data: ScheduleTaskRequest): Promi
   return api.post<ScheduledEvent>(`/tasks/${id}/schedule`, data)
 }
 
-// Priority labels
-export const PRIORITY_LABELS: Record<number, string> = {
-  1: 'Emergency',
-  2: 'ASAP',
-  3: 'Must Today',
-  4: 'Deadline Soon',
-  5: 'If Possible',
-  0: 'Buffer',
+export async function logTaskTime(id: string, minutes: number): Promise<Task> {
+  return api.post<Task>(`/tasks/${id}/log-time`, { minutes })
 }
 
-// Priority colors
-export const PRIORITY_COLORS: Record<number, string> = {
-  1: 'bg-red-600',
-  2: 'bg-orange-500',
-  3: 'bg-yellow-500',
-  4: 'bg-blue-500',
-  5: 'bg-green-500',
-  0: 'bg-zinc-600',
-}
+// Priority display metadata is centralized in lib/priority (single source of truth).
+// PRIORITY_COLORS maps to the solid dot/badge variant used by the task list.
+export { PRIORITY_LABELS, PRIORITY_DOT_COLORS as PRIORITY_COLORS } from '../lib/priority'
 
 // Context icons (using emoji for now, can be replaced with Lucide icons)
 export const CONTEXT_ICONS: Record<string, string> = {

@@ -85,18 +85,45 @@ func expandRecurrence(event Event, rangeStart, rangeEnd time.Time, exceptions []
 	}
 
 	duration := event.EndsAt.Sub(event.StartsAt)
-	var instances []Event
-	count := 0
-	maxExpansions := 366
 
-	for occurrence := event.StartsAt; ; {
+	// Advance occurrences in the event's own timezone so a recurring "09:00 local"
+	// event keeps its local clock time across DST transitions, instead of holding a
+	// fixed UTC instant (which drifts ±1h after spring-forward / fall-back). Empty or
+	// invalid timezone falls back to explicit UTC — reproducible and identical to the
+	// prior behaviour. Instances are still emitted in UTC (below), so the wire format
+	// and the date basis used for IDs / exceptions are unchanged.
+	loc, locErr := time.LoadLocation(event.Timezone)
+	if locErr != nil {
+		loc = time.UTC
+	}
+	startLocal := event.StartsAt.In(loc)
+
+	var instances []Event
+	count := 0     // occurrence index from StartsAt — drives COUNT
+	monthStep := 0 // months advanced from StartsAt, for MONTHLY day-of-month anchoring
+
+	// maxInstances bounds the instances RETURNED for one event in one query (so a
+	// huge window can't produce an unbounded payload). It is deliberately a cap on
+	// emitted-in-window instances, NOT on occurrences-from-start: the latter made a
+	// long-running event (e.g. a daily one viewed >366 days after its start) exhaust
+	// the budget before the loop reached the window, silently dropping it.
+	// maxIterations is an absolute loop ceiling — it MUST stay comfortably larger
+	// than the largest realistic event-age-in-steps (100000 ≈ 273 years of daily),
+	// or this exact vanishing bug returns.
+	const maxInstances = 366
+	const maxIterations = 100000
+
+	occurrence := startLocal
+	for iter := 0; iter < maxIterations; iter++ {
 		// Stop if past range end
 		if occurrence.After(rangeEnd) {
 			break
 		}
 
-		// Stop if past UNTIL
-		if rule.Until != nil && occurrence.After(*rule.Until) {
+		// Stop once past the UNTIL day. UNTIL is a DATE value (parsed at midnight)
+		// and, per iCalendar, the whole UNTIL day is inclusive — so compare against
+		// the start of the following day rather than the bare midnight instant.
+		if rule.Until != nil && !occurrence.Before(rule.Until.AddDate(0, 0, 1)) {
 			break
 		}
 
@@ -105,8 +132,8 @@ func expandRecurrence(event Event, rangeStart, rangeEnd time.Time, exceptions []
 			break
 		}
 
-		// Safety cap
-		if count >= maxExpansions {
+		// Stop once the response is full
+		if len(instances) >= maxInstances {
 			break
 		}
 
@@ -114,12 +141,15 @@ func expandRecurrence(event Event, rangeStart, rangeEnd time.Time, exceptions []
 
 		// Check if this occurrence is within the range
 		if occurrenceEnd.After(rangeStart) && occurrence.Before(rangeEnd) {
+			// Emit in UTC: the instant is timezone-correct, while the representation
+			// and the date basis for the ID / exception match stay UTC as before.
+			occUTC := occurrence.UTC()
 			// Check if this occurrence is an exception (compare dates only)
-			if !isException(occurrence, exceptions) {
+			if !isException(occUTC, exceptions) {
 				inst := event
-				inst.StartsAt = occurrence
-				inst.EndsAt = occurrenceEnd
-				inst.ID = fmt.Sprintf("%s:%s", event.ID, occurrence.Format("2006-01-02"))
+				inst.StartsAt = occUTC
+				inst.EndsAt = occurrenceEnd.UTC()
+				inst.ID = fmt.Sprintf("%s:%s", event.ID, occUTC.Format("2006-01-02"))
 				parentID := event.ID
 				inst.RecurringEventID = &parentID
 				instances = append(instances, inst)
@@ -135,11 +165,45 @@ func expandRecurrence(event Event, rangeStart, rangeEnd time.Time, exceptions []
 		case "WEEKLY":
 			occurrence = occurrence.AddDate(0, 0, rule.Interval*7)
 		case "MONTHLY":
-			occurrence = occurrence.AddDate(0, rule.Interval, 0)
+			// Anchor each occurrence to the original start day-of-month and SKIP
+			// months that lack it (RFC 5545 §3.3.10), instead of letting AddDate
+			// drift (e.g. Jan-31 + 1mo → Mar-3). Skipped months emit no instance.
+			advanced := false
+			for tries := 0; tries < 120; tries++ {
+				monthStep += rule.Interval
+				if next, ok := monthlyOccurrence(startLocal, monthStep); ok {
+					occurrence = next
+					advanced = true
+					break
+				}
+			}
+			if !advanced {
+				return instances // no valid month within the lookahead window
+			}
 		}
 	}
 
 	return instances
+}
+
+// daysInMonth returns the number of days in the given month, handling leap February.
+func daysInMonth(year int, month time.Month) int {
+	// Day 0 of the following month is the last day of this month.
+	return time.Date(year, month+1, 0, 0, 0, 0, 0, time.UTC).Day()
+}
+
+// monthlyOccurrence returns the instant `months` months after start, preserving the
+// start's day-of-month and clock time. ok is false when the target month has no such
+// day (e.g. the 31st of a 30-day month) — signaling that month should be skipped.
+func monthlyOccurrence(start time.Time, months int) (time.Time, bool) {
+	total := int(start.Month()) - 1 + months
+	year := start.Year() + total/12
+	month := time.Month(total%12 + 1)
+	day := start.Day()
+	if day > daysInMonth(year, month) {
+		return time.Time{}, false
+	}
+	return time.Date(year, month, day, start.Hour(), start.Minute(), start.Second(), start.Nanosecond(), start.Location()), true
 }
 
 // isException checks if the given occurrence date matches any exception date (date-only comparison)
@@ -153,24 +217,48 @@ func isException(occurrence time.Time, exceptions []time.Time) bool {
 	return false
 }
 
-// fetchExceptions retrieves skipped exception dates for a recurring event
-func fetchExceptions(ctx context.Context, userID, eventID string) []time.Time {
+// fetchExceptions retrieves skipped exception dates for a recurring event.
+//
+// Scoped by calendar membership, not by who wrote the exception: exceptions
+// are shared series state, same as the event itself. Filtering by user_id
+// here made a skip written by one calendar member invisible to every other
+// member — they would see an occurrence that was, in fact, already deleted.
+//
+// Takes calIDs rather than a userID, and returns an error rather than nil.
+// Both changes fix the same defect from opposite ends.
+//
+// It used to call calendars.CalendarIDsFor itself and return nil when that
+// failed. Since nil means "no exceptions", a momentary pool failure put every
+// deleted occurrence of a series back on the calendar — silently, with nothing
+// in the log. And because the caller loops over events, that lookup ran once
+// per recurring event: 2+2R queries per GET /api/events where R is the number
+// of recurring events in the window.
+//
+// Same shape as reminders.fetchSkippedOccurrences (scan.go:182), which already
+// takes calIDs for exactly this reason.
+func fetchExceptions(ctx context.Context, calIDs []string, eventID string) ([]time.Time, error) {
 	rows, err := db.Pool.Query(ctx,
-		`SELECT occurrence FROM event_exception WHERE user_id = $1 AND event_id = $2 AND skipped = true`,
-		userID, eventID)
+		`SELECT ee.occurrence
+		 FROM event_exception ee
+		 JOIN event e ON e.id = ee.event_id
+		 WHERE e.calendar_id = ANY($1) AND ee.event_id = $2 AND ee.skipped = true`,
+		calIDs, eventID)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	defer rows.Close()
 
 	var exceptions []time.Time
 	for rows.Next() {
 		var t time.Time
-		if err := rows.Scan(&t); err == nil {
-			exceptions = append(exceptions, t)
+		if err := rows.Scan(&t); err != nil {
+			// A row that will not scan is not "no exception" — returning it as
+			// such is how a deleted occurrence reappears.
+			return nil, err
 		}
+		exceptions = append(exceptions, t)
 	}
-	return exceptions
+	return exceptions, rows.Err()
 }
 
 // buildRRule builds an RRULE string from components

@@ -1,1 +1,0 @@
-export default function MatrixQuadrant({title,description}:{title:string;description:string}){return <div className='p-2 border border-zinc-700 rounded'><div className='font-semibold'>{title}</div><div className='text-xs text-zinc-500'>{description}</div></div>}

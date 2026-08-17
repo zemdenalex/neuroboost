@@ -1,8 +1,13 @@
 import { lazy, Suspense } from 'react'
-import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom'
+import { createBrowserRouter, Navigate, Outlet, useSearchParams } from 'react-router-dom'
 import { useAuthContext } from './contexts/AuthContext'
+import { safeNextPath } from './lib/auth/nextPath'
 import { Layout } from './components/Layout'
+import { QuickAddModal } from './components/QuickAdd/QuickAddModal'
+import { useGlobalQuickAdd } from './hooks/useGlobalQuickAdd'
 import { FeedbackButton } from './components/FeedbackButton'
+import { PomodoroWidget } from './components/Pomodoro/PomodoroWidget'
+import { PomodoroToasts } from './components/Pomodoro/PomodoroToasts'
 
 // Lazy-loaded pages
 const Home = lazy(() => import('./pages/Home'))
@@ -19,6 +24,7 @@ const Pomodoro = lazy(() => import('./pages/Tools/Pomodoro'))
 const Kanban = lazy(() => import('./pages/Tools/Kanban'))
 const Eisenhower = lazy(() => import('./pages/Tools/Eisenhower'))
 const TimeBlocking = lazy(() => import('./pages/Tools/TimeBlocking'))
+const AcceptInvite = lazy(() => import('./pages/Invite'))
 
 // Suspense fallback
 function PageLoader() {
@@ -51,6 +57,7 @@ function ProtectedRoute({ children }: { children?: React.ReactNode }) {
 // Public route wrapper (redirects to /home if logged in)
 function PublicRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, loading } = useAuthContext()
+  const [params] = useSearchParams()
 
   if (loading) {
     return (
@@ -61,7 +68,11 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   }
 
   if (isAuthenticated) {
-    return <Navigate to="/home" replace />
+    // ?next= survives the trip through login. Without it an invite link opened
+    // while signed out lands on /home and the invitation is lost — and the
+    // token that was going to grant it is single-use and two hours old.
+    // safeNextPath refuses anything that is not a same-site path.
+    return <Navigate to={safeNextPath(params.get('next'))} replace />
   }
 
   return <>{children}</>
@@ -69,6 +80,7 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 
 // Layout with feedback button and Suspense
 function AppLayout() {
+  const quickAdd = useGlobalQuickAdd()
   return (
     <>
       <Layout>
@@ -76,7 +88,10 @@ function AppLayout() {
           <Outlet />
         </Suspense>
       </Layout>
+      <PomodoroWidget />
+      <PomodoroToasts />
       <FeedbackButton />
+      <QuickAddModal open={quickAdd.open} onClose={quickAdd.close} />
     </>
   )
 }
@@ -104,6 +119,18 @@ export const router = createBrowserRouter([
           <Home />
         </Suspense>
       </PublicRoute>
+    ),
+  },
+
+  // Redeeming a calendar invite link. Public in the router because the page
+  // handles the signed-out case itself — it must send the visitor to login
+  // WITH the token preserved, and a bare ProtectedRoute redirect would drop it.
+  {
+    path: '/i/:token',
+    element: (
+      <Suspense fallback={<PageLoader />}>
+        <AcceptInvite />
+      </Suspense>
     ),
   },
 

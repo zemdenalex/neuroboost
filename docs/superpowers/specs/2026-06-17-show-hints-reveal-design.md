@@ -1,3 +1,5 @@
+<!-- паспорт: тип=спека | статус=справка | строк=159 | ~токенов=2795 | обновлён=по git -->
+
 # Phase 5 — "Show hints" reveal (element-level contextual hints)
 
 > Design spec. Extends the approved onboarding/help design

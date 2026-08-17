@@ -2,6 +2,8 @@ package util
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"net/http"
 )
 
@@ -40,6 +42,27 @@ func RespondError(w http.ResponseWriter, status int, code, message string) {
 			Message: message,
 		},
 	})
+}
+
+// RespondDecodeError answers a failed json.Decode of a request body.
+//
+// It exists to separate two failures that json.Decode reports identically. When
+// middleware.BodyLimit caps a body, http.MaxBytesReader tears the stream, and
+// the decoder sees truncated input — indistinguishable, at the call site, from
+// a genuinely malformed payload. Answering both with 400 "Invalid request body"
+// is how an import that is merely too large gets reported as broken JSON, which
+// tells the user nothing about what to do next.
+//
+// 413 says the body was too large and names the ceiling; everything else keeps
+// the previous 400.
+func RespondDecodeError(w http.ResponseWriter, err error) {
+	var maxErr *http.MaxBytesError
+	if errors.As(err, &maxErr) {
+		RespondError(w, http.StatusRequestEntityTooLarge, "BODY_TOO_LARGE",
+			fmt.Sprintf("Request body exceeds the %d byte limit for this endpoint", maxErr.Limit))
+		return
+	}
+	RespondError(w, http.StatusBadRequest, "INVALID_BODY", "Invalid request body")
 }
 
 // Write501 sends a 501 Not Implemented response (for stubs)

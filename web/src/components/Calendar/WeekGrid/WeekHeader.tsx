@@ -1,6 +1,8 @@
+import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getTimezoneOffsetMs } from './weekgrid.utils';
 import { DAY_MS } from './weekgrid.constants';
+import { dateLocale } from '../../../utils/date';
 
 interface WeekHeaderProps {
   mondayUtc0: number;
@@ -12,6 +14,8 @@ interface WeekHeaderProps {
   onMobileNav?: (direction: 'prev' | 'next') => void;
   onToday?: () => void;
   onQuickCreate: () => void;
+  /** Extra controls for the right-hand button row (the calendar filter). */
+  headerExtra?: ReactNode;
 }
 
 export function WeekHeader({
@@ -24,9 +28,10 @@ export function WeekHeader({
   onMobileNav,
   onToday,
   onQuickCreate,
+  headerExtra,
 }: WeekHeaderProps) {
   const { t, i18n } = useTranslation('calendar');
-  const dateLocale = i18n.language === 'ru' ? 'ru-RU' : 'en-US';
+  const locale = dateLocale(i18n.language);
 
   const offset = getTimezoneOffsetMs(timezone);
   const startDate = new Date(mondayUtc0 + offset);
@@ -34,16 +39,16 @@ export function WeekHeader({
 
   const weekLabel = (() => {
     if (visibleDays === 1) {
-      return startDate.toLocaleDateString(dateLocale, {
+      return startDate.toLocaleDateString(locale, {
         weekday: 'long',
         month: 'long',
         day: 'numeric'
       });
     } else if (visibleDays === 3) {
       const rangeEnd = new Date(mondayUtc0 + (visibleDays - 1) * DAY_MS + offset);
-      return `${startDate.toLocaleDateString(dateLocale, { month: 'short', day: 'numeric' })} – ${rangeEnd.toLocaleDateString(dateLocale, { month: 'short', day: 'numeric' })}`;
+      return `${startDate.toLocaleDateString(locale, { month: 'short', day: 'numeric' })} – ${rangeEnd.toLocaleDateString(locale, { month: 'short', day: 'numeric' })}`;
     }
-    return `${startDate.toLocaleDateString(dateLocale, { month: 'short', day: 'numeric' })} – ${endDate.toLocaleDateString(dateLocale, { month: 'short', day: 'numeric', year: 'numeric' })}`;
+    return `${startDate.toLocaleDateString(locale, { month: 'short', day: 'numeric' })} – ${endDate.toLocaleDateString(locale, { month: 'short', day: 'numeric', year: 'numeric' })}`;
   })();
 
   return (
@@ -100,12 +105,21 @@ export function WeekHeader({
           )}
           {!isMobile && (
             <button
+              data-hint="calendar.newEvent"
               onClick={onQuickCreate}
               className="px-2 py-1 text-xs rounded bg-zinc-800 border border-zinc-700 hover:bg-zinc-700 transition-colors"
             >
               + {t('quickCreate')}
             </button>
           )}
+          {/* Last on purpose. This slot holds the calendar filter, whose panel
+              is `absolute right-0` — anchored to its own button, not to the
+              screen. Sitting before the Today button put that anchor 62px in
+              from the right edge, so a 320px panel started at x = -13 and ran
+              off a 375px screen. Anything added after this will push it back
+              off; add it before, not after. Measured by
+              web/e2e/mobile-overflow.spec.ts. */}
+          {headerExtra}
         </div>
       </div>
       

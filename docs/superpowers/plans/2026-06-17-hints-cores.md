@@ -1,3 +1,5 @@
+<!-- паспорт: тип=план | статус=архив | строк=333 | ~токенов=3242 | обновлён=по git -->
+
 # Phase 5 "Show Hints" — Pure Cores (5a) Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.

@@ -7,6 +7,10 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0"
     />
+    <!-- Without this the browser asks for /favicon.ico on every page load and
+         the SPA fallback answers 404, which is a console error on every single
+         view. An SVG rather than an .ico so the file is readable and diffable. -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>NeuroBoost</title>
   </head>
   <body class="bg-black text-zinc-100">

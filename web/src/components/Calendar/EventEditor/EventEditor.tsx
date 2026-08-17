@@ -1,10 +1,12 @@
 import { useTranslation } from 'react-i18next';
 import { DateTimeFields } from './DateTimeFields';
 import { BasicFields } from './BasicFields';
+import { CalendarField } from './CalendarField';
 import { AdvancedFields } from './AdvancedFields';
 import { RepeatFields } from './RepeatFields';
 import { ReflectionFields } from './ReflectionFields';
 import { useEditorForm } from './useEditorForm';
+import { useReminderSettings } from '../../../hooks/useReminderSettings';
 import type { EditorProps } from './editor.types';
 
 export function EventEditor({ 
@@ -14,12 +16,17 @@ export function EventEditor({
   onClose, 
   onCreated, 
   onPatched, 
-  onDelete 
+  onDelete,
+  withScope
 }: EditorProps) {
   const { t } = useTranslation('calendar');
   const { t: tc } = useTranslation('common');
+  const reminderSettings = useReminderSettings();
   const { state, actions, isEditing, hasReflection, canSave } = useEditorForm(
-    draft, range, timezone, onCreated, onPatched, onDelete
+    draft, range, timezone, onCreated, onPatched, onDelete, withScope,
+    // A new event opens with the default preset already applied, so the form
+    // shows the reminders it is about to create rather than "No reminders".
+    reminderSettings.presets[reminderSettings.default_event_preset] ?? []
   );
 
   return (
@@ -73,15 +80,26 @@ export function EventEditor({
           onDescriptionCtrlEnter={actions.handleSave}
         />
 
+        {/* Which calendar. Choosable while editing too since 2026-08-15 —
+            moving an event between calendars is the whole point of having more
+            than one. Still renders nothing when the list cannot be loaded or
+            when there is only one writable calendar: a select with a single
+            option is noise in an already long form. */}
+        <CalendarField
+          value={state.calendarId}
+          onChange={actions.setCalendarId}
+        />
+
         {/* Advanced fields (all-day, reminder, color, repeat) */}
         {state.showAdvanced && (
           <>
             <AdvancedFields
               isAllDay={state.isAllDay}
-              reminderMinutes={state.reminderMinutes}
+              reminderOffsets={state.reminderOffsets}
+              presets={reminderSettings.presets}
               color={state.color}
               onAllDayChange={actions.setIsAllDay}
-              onReminderChange={actions.setReminderMinutes}
+              onReminderOffsetsChange={actions.setReminderOffsets}
               onColorChange={actions.setColor}
             />
             <RepeatFields

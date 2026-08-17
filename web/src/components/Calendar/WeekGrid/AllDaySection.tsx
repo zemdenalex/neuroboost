@@ -1,7 +1,9 @@
 import { useTranslation } from 'react-i18next';
+import { Users } from 'lucide-react';
 import { ALL_DAY_HEIGHT, DAY_MS } from './weekgrid.constants';
 import type { ProcessedEvent, DragState, NbEvent, DayInfo } from './weekgrid.types';
-import { getTimezoneOffsetMs, formatDayLabel } from './weekgrid.utils';
+import { getTimezoneOffsetMs, formatAllDayGhostLabel } from './weekgrid.utils';
+import { resolveColor } from '../../../lib/calendar/palette';
 
 interface AllDaySectionProps {
   days: DayInfo[];
@@ -28,7 +30,7 @@ export function AllDaySection({
   onSelectId,
   onDragStart,
 }: AllDaySectionProps) {
-  const { t } = useTranslation('calendar');
+  const { t, i18n } = useTranslation('calendar');
   const offset = getTimezoneOffsetMs(timezone);
 
   return (
@@ -75,7 +77,13 @@ export function AllDaySection({
                       borderRadius: isStartDay && isEndDay ? '6px' :
                                   isStartDay ? '6px 0 0 6px' :
                                   isEndDay ? '0 6px 6px 0' : '0',
-                      backgroundColor: e.color || undefined,
+                      // displayColor, not e.color: all-day rows get one from
+                      // processEventsForWeek like every other event, and it is
+                      // the only value that carries the calendar's colour AND
+                      // is resolved to paintable CSS. Reading e.color here meant
+                      // an all-day event ignored its calendar entirely and
+                      // painted nothing for `blue-400`.
+                      backgroundColor: e.displayColor ?? resolveColor(e.color),
                     }}
                     onClick={(ev) => {
                       ev.stopPropagation();
@@ -90,8 +98,26 @@ export function AllDaySection({
                     title={`${e.title} • All-day event`}
                   >
                     {isStartDay && (
-                      <span className="break-words text-white font-medium">
-                        {e.title || '(untitled)'}
+                      // 🔴 The second place an event is drawn. The calendar
+                      // colour bug lived here for exactly this reason: work
+                      // done in EventBlock was assumed to cover the grid, and
+                      // this strip was never opened. Whatever an event block
+                      // shows about sharing, this must show too.
+                      <span className="break-words text-white font-medium inline-flex items-center gap-1 min-w-0">
+                        <span className="min-w-0 break-words">{e.title || '(untitled)'}</span>
+                        {e.isShared && (
+                          <Users
+                            size={11}
+                            aria-label="Общий календарь"
+                            data-testid="shared-badge"
+                            className="text-zinc-200 flex-shrink-0"
+                          />
+                        )}
+                        {e.authorName && (
+                          <span className="min-w-0 truncate text-zinc-300 font-normal" data-testid="event-author">
+                            · {e.authorName}
+                          </span>
+                        )}
                       </span>
                     )}
                   </div>
@@ -104,37 +130,41 @@ export function AllDaySection({
       
       {/* Multi-day create ghost in all-day section */}
       {drag && drag.kind === 'create' && drag.allDay && drag.crossDay && (
-        <AllDayCreateGhost 
-          drag={drag} 
-          mondayUtc0={mondayUtc0} 
+        <AllDayCreateGhost
+          drag={drag}
+          mondayUtc0={mondayUtc0}
           visibleDays={visibleDays}
           offset={offset}
+          language={i18n.language}
         />
       )}
-      
+
       {/* Single-day all-day create ghost */}
       {drag && drag.kind === 'create' && drag.allDay && !drag.crossDay && (
-        <SingleAllDayGhost 
-          drag={drag} 
-          mondayUtc0={mondayUtc0} 
+        <SingleAllDayGhost
+          drag={drag}
+          mondayUtc0={mondayUtc0}
           visibleDays={visibleDays}
           offset={offset}
+          language={i18n.language}
         />
       )}
     </div>
   );
 }
 
-function AllDayCreateGhost({ 
-  drag, 
-  mondayUtc0, 
+function AllDayCreateGhost({
+  drag,
+  mondayUtc0,
   visibleDays,
-  offset 
-}: { 
-  drag: NonNullable<DragState> & { kind: 'create' }; 
-  mondayUtc0: number; 
+  offset,
+  language,
+}: {
+  drag: NonNullable<DragState> & { kind: 'create' };
+  mondayUtc0: number;
   visibleDays: number;
   offset: number;
+  language: string;
 }) {
   const startDayIndex = Math.max(0, Math.min(visibleDays - 1, 
     Math.floor((Math.min(drag.startDayUtc0, drag.endDayUtc0) - mondayUtc0) / DAY_MS)));
@@ -144,9 +174,7 @@ function AllDayCreateGhost({
   const leftPercent = (startDayIndex / visibleDays) * 100;
   const widthPercent = ((endDayIndex - startDayIndex + 1) / visibleDays) * 100;
   
-  const startDate = new Date(Math.min(drag.startDayUtc0, drag.endDayUtc0) + offset);
-  const endDate = new Date(Math.max(drag.startDayUtc0, drag.endDayUtc0) + offset);
-  const label = `${startDate.toLocaleDateString('ru-RU', { month: 'short', day: 'numeric' })} — ${endDate.toLocaleDateString('ru-RU', { month: 'short', day: 'numeric' })}`;
+  const label = formatAllDayGhostLabel(drag.startDayUtc0, drag.endDayUtc0, offset, language);
   
   return (
     <div 
@@ -167,11 +195,11 @@ function AllDayCreateGhost({
   );
 }
 
-function SingleAllDayGhost({ drag, mondayUtc0, visibleDays, offset }: { 
-  drag: NonNullable<DragState> & { kind: 'create' }; mondayUtc0: number; visibleDays: number; offset: number;
+function SingleAllDayGhost({ drag, mondayUtc0, visibleDays, offset, language }: {
+  drag: NonNullable<DragState> & { kind: 'create' }; mondayUtc0: number; visibleDays: number; offset: number; language: string;
 }) {
   const dayIndex = Math.max(0, Math.min(visibleDays - 1, Math.floor((drag.startDayUtc0 - mondayUtc0) / DAY_MS)));
-  const label = new Date(drag.startDayUtc0 + offset).toLocaleDateString('ru-RU', { month: 'short', day: 'numeric' });
+  const label = formatAllDayGhostLabel(drag.startDayUtc0, drag.startDayUtc0, offset, language);
   
   return (
     <div className="absolute bg-emerald-400/40 border border-emerald-400/60 pointer-events-none flex items-center justify-center"

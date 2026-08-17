@@ -1,5 +1,7 @@
 import { HOUR_PX, MIN_SLOT_MIN, DAY_MS } from './weekgrid.constants';
+import { resolveEventColor } from '../../../lib/calendar/eventColor';
 import type { NbEvent, ProcessedEvent, DayInfo, DaySpan } from './weekgrid.types';
+import { dateLocale } from '../../../utils/date';
 
 // Re-export timezone utilities
 export {
@@ -46,6 +48,28 @@ export function formatDayLabel(date: Date, isMobile: boolean, locale: string = '
   return date.toLocaleDateString(locale, { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
+/**
+ * Label for the all-day drag-to-create ghost. Renders the user's locale (was
+ * hardcoded to 'ru-RU', so English users saw Russian dates). startDayUtc0 and
+ * endDayUtc0 are day-anchor UTC ms; offsetMs shifts them into the user's tz the
+ * same way the rest of the all-day section does. A same-day range collapses to a
+ * single date; a multi-day range renders "start — end" (em-dash, as before).
+ */
+export function formatAllDayGhostLabel(
+  startDayUtc0: number,
+  endDayUtc0: number,
+  offsetMs: number,
+  language: string | undefined,
+): string {
+  const locale = dateLocale(language);
+  const lo = Math.min(startDayUtc0, endDayUtc0);
+  const hi = Math.max(startDayUtc0, endDayUtc0);
+  const fmt = (utc0: number) =>
+    new Date(utc0 + offsetMs).toLocaleDateString(locale, { month: 'short', day: 'numeric' });
+  const start = fmt(lo);
+  return lo === hi ? start : `${start} — ${fmt(hi)}`;
+}
+
 // === EVENT PROCESSING ===
 
 /**
@@ -71,6 +95,63 @@ export function getDaySpan(
   };
 }
 
+export interface LaneInput {
+  startMin: number;
+  endMin: number;
+}
+
+export interface Lane {
+  leftPct: number;
+  widthPct: number;
+}
+
+/**
+ * Assigns side-by-side lanes so overlapping events render in equal-width columns,
+ * while events that overlap nothing span the full width. Operates on real start/end
+ * minutes (never clamped render heights), so adjacent short events are not falsely
+ * merged. Events are grouped into transitive-overlap clusters; within a cluster each
+ * event greedily takes the first free column, and width = 1/columns. Returns lanes
+ * in input order.
+ */
+export function assignLanes(items: LaneInput[]): Lane[] {
+  const result: Lane[] = new Array(items.length);
+  const order = items
+    .map((_, i) => i)
+    .sort((a, b) => items[a].startMin - items[b].startMin || items[a].endMin - items[b].endMin);
+
+  let i = 0;
+  while (i < order.length) {
+    // Extend a cluster while events overlap the running cluster end.
+    const cluster: number[] = [];
+    let clusterEnd = -Infinity;
+    while (i < order.length) {
+      const idx = order[i];
+      if (cluster.length > 0 && items[idx].startMin >= clusterEnd) break;
+      cluster.push(idx);
+      clusterEnd = Math.max(clusterEnd, items[idx].endMin);
+      i++;
+    }
+    // Greedy column packing within the cluster.
+    const colEnds: number[] = [];
+    const colOf = new Map<number, number>();
+    for (const idx of cluster) {
+      let c = colEnds.findIndex((end) => items[idx].startMin >= end);
+      if (c === -1) {
+        c = colEnds.length;
+        colEnds.push(items[idx].endMin);
+      } else {
+        colEnds[c] = items[idx].endMin;
+      }
+      colOf.set(idx, c);
+    }
+    const numCols = colEnds.length;
+    for (const idx of cluster) {
+      result[idx] = { leftPct: colOf.get(idx)! / numCols, widthPct: 1 / numCols };
+    }
+  }
+  return result;
+}
+
 /**
  * Process events for rendering, handling multi-day splitting
  */
@@ -78,11 +159,14 @@ export function processEventsForWeek(
   events: NbEvent[],
   mondayUtc0: number,
   timezone: string,
-  visibleDays: number
+  visibleDays: number,
+  calendarColors: Record<string, string | null> = {}
 ): { allDayEvents: ProcessedEvent[]; timedPerDay: Map<number, ProcessedEvent[]> } {
   const allDayEvents: ProcessedEvent[] = [];
   const timedPerDay = new Map<number, ProcessedEvent[]>();
-  
+  // Single-day events per day, with REAL minutes, collected for overlap laning.
+  const singleDayLayout = new Map<number, { proc: ProcessedEvent; startMin: number; endMin: number }[]>();
+
   // Initialize day maps
   for (let i = 0; i < visibleDays; i++) {
     timedPerDay.set(mondayUtc0 + i * DAY_MS, []);
@@ -96,6 +180,7 @@ export function processEventsForWeek(
       if (span.startDay >= visibleDays || span.endDay < 0) continue;
       allDayEvents.push({
         ...event,
+        displayColor: resolveEventColor(event, calendarColors),
         dayUtc0: mondayUtc0 + Math.max(0, span.startDay) * DAY_MS,
         top: 0,
         height: 0,
@@ -124,6 +209,9 @@ export function processEventsForWeek(
         } else if (isLast) {
           startMin = 0; // Start of day
           endMin = utcToLocalMinutes(event.endsAt, timezone);
+          // getDaySpan shifts a midnight end back to the previous day, so this
+          // last segment's day is fully covered — render it whole, not zero-height.
+          if (endMin === 0) endMin = 1440;
         } else {
           startMin = 0;
           endMin = 1440;
@@ -132,6 +220,7 @@ export function processEventsForWeek(
         const segment: ProcessedEvent = {
           ...event,
           dayUtc0,
+          displayColor: resolveEventColor(event, calendarColors),
           top: minsToTop(startMin),
           height: minsToTop(endMin - startMin),
           span: {
@@ -150,17 +239,36 @@ export function processEventsForWeek(
         const dayUtc0 = mondayUtc0 + dayIndex * DAY_MS;
         const startMin = utcToLocalMinutes(event.startsAt, timezone);
         const endMin = utcToLocalMinutes(event.endsAt, timezone);
-        
-        timedPerDay.get(dayUtc0)?.push({
+
+        const proc: ProcessedEvent = {
           ...event,
           dayUtc0,
+          displayColor: resolveEventColor(event, calendarColors),
           top: minsToTop(startMin),
           height: Math.max(minsToTop(endMin - startMin), minsToTop(MIN_SLOT_MIN)),
-        });
+        };
+        timedPerDay.get(dayUtc0)?.push(proc);
+        // Record REAL minutes (not the clamped height) for overlap lane assignment.
+        let layout = singleDayLayout.get(dayUtc0);
+        if (!layout) {
+          layout = [];
+          singleDayLayout.set(dayUtc0, layout);
+        }
+        layout.push({ proc, startMin, endMin });
       }
     }
   }
-  
+
+  // Assign side-by-side lanes for overlapping single-day events. Multi-day segments
+  // are intentionally excluded — they stay full-width behind the laned events.
+  for (const items of singleDayLayout.values()) {
+    const lanes = assignLanes(items.map((it) => ({ startMin: it.startMin, endMin: it.endMin })));
+    items.forEach((it, idx) => {
+      it.proc.leftPct = lanes[idx].leftPct;
+      it.proc.widthPct = lanes[idx].widthPct;
+    });
+  }
+
   return { allDayEvents, timedPerDay };
 }
 

@@ -3,32 +3,12 @@ import { useTranslation } from 'react-i18next'
 import { Grid2X2, RefreshCw, AlertCircle } from 'lucide-react'
 import { getTasks, updateTask } from '../../api'
 import type { Task } from '../../types'
+import { PRIORITY_DOT_COLORS } from '../../lib/priority'
+// The matrix rule lives in a leaf module so it can be tested; this page
+// renders it. Do not re-declare it here — two copies would drift.
+import { priorityToQuadrant, QUADRANT_TO_PRIORITY, type QuadrantId } from '../../lib/tools/eisenhower'
 
 // ─── Priority → Quadrant mapping ─────────────────────────────────────────────
-
-type QuadrantId = 'q1' | 'q2' | 'q3' | 'q4'
-
-// Priority 1 (Emergency) → Q1 Do First
-// Priority 2 (ASAP) → Q1 Do First
-// Priority 3 (Normal) → Q2 Schedule
-// Priority 4 (Low) → Q3 Delegate
-// Priority 5 (If Possible) → Q4 Eliminate
-// Priority 0 (Buffer) → Q4 Eliminate
-function priorityToQuadrant(priority: number): QuadrantId {
-  if (priority === 1 || priority === 2) return 'q1'
-  if (priority === 3) return 'q2'
-  if (priority === 4) return 'q3'
-  return 'q4'
-}
-
-// What priority value to assign when dropped into a quadrant
-// We pick the most representative priority for each quadrant
-const QUADRANT_TO_PRIORITY: Record<QuadrantId, number> = {
-  q1: 1,
-  q2: 3,
-  q3: 4,
-  q4: 5,
-}
 
 // ─── Quadrant definitions ─────────────────────────────────────────────────────
 
@@ -86,17 +66,6 @@ const QUADRANT_DEFS: QuadrantDef[] = [
   },
 ]
 
-// ─── Priority dot colors ──────────────────────────────────────────────────────
-
-const PRIORITY_DOT: Record<number, string> = {
-  0: 'bg-zinc-500',
-  1: 'bg-red-500',
-  2: 'bg-orange-500',
-  3: 'bg-yellow-500',
-  4: 'bg-green-500',
-  5: 'bg-blue-500',
-}
-
 // ─── Task Card ────────────────────────────────────────────────────────────────
 
 interface TaskCardProps {
@@ -106,7 +75,7 @@ interface TaskCardProps {
 }
 
 function TaskCard({ task, dotColor, onDragStart }: TaskCardProps) {
-  const dotClass = PRIORITY_DOT[task.priority] ?? dotColor
+  const dotClass = PRIORITY_DOT_COLORS[task.priority] ?? dotColor
 
   return (
     <div
@@ -296,7 +265,7 @@ export default function Eisenhower() {
   return (
     <div className="flex flex-col h-[calc(100vh-56px)] overflow-hidden">
       {/* Top bar */}
-      <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-zinc-800">
+      <div data-hint="tools.eisenhower.matrix" className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-zinc-800">
         <div className="flex items-center gap-2.5">
           <Grid2X2 className="w-5 h-5 text-yellow-400" />
           <h1 className="text-lg font-bold text-zinc-100">{t('eisenhower.title')}</h1>

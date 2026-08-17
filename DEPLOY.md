@@ -1,5 +1,10 @@
 # Foundation Fixes - Deployment Guide
 
+> 🔴 **Артефакт декабря 2025, для деплоя НЕ использовать.** Пути вида `neuroboost-api-go/` в
+> репозитории не существуют. Как устроен деплой сегодня: `develop` → staging, push в `main` →
+> продакшен (`.github/workflows/ci.yml`, job `deploy`). Тег ставится постфактум и ничего не
+> запускает. Карта документов — `docs/DOCS-MAP.md`.
+
 ## What's Included
 
 This package contains foundation fixes for NeuroBoost v0.4.0:

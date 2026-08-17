@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { Task } from '../../types';
 import { PriorityGroup } from './PriorityGroup';
@@ -91,7 +91,7 @@ export function TaskSidebar({
   }
 
   return (
-    <div className="w-72 h-full flex flex-col bg-zinc-900 border-r border-zinc-700 font-mono">
+    <div data-hint="calendar.taskSidebar" className="w-72 h-full flex flex-col bg-zinc-900 border-r border-zinc-700 font-mono">
       {/* Header */}
       <div className="p-3 border-b border-zinc-700 flex items-center justify-between">
         <h2 className="font-semibold text-sm">{t('title')} ({todoCount})</h2>

@@ -1,19 +1,20 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { MOBILE_BREAKPOINT, TABLET_BREAKPOINT, ALL_DAY_HEIGHT, DAY_HEADER_HEIGHT, DAY_MS } from './weekgrid.constants';
 import { getMondayUtcMs, getMidnightUtcMs, utcToLocalMinutes, generateDays, processEventsForWeek } from './weekgrid.utils';
-import type { WeekGridProps, TouchStart, DayInfo, ProcessedEvent, NbEvent } from './weekgrid.types';
+import type { WeekGridProps, TouchStart, DayInfo, ProcessedEvent } from './weekgrid.types';
 import { WeekHeader } from './WeekHeader';
 import { AllDaySection } from './AllDaySection';
 import { DayColumn } from './DayColumn';
 import { useWeekGridDrag } from './useWeekGridDrag';
 import { useKeyboardNav } from './useKeyboardNav';
+import { initialMobileDayOffset } from '../../../lib/calendar/mobileDayOffset';
 
 export function WeekGrid({
   events,
   currentWeekOffset = 0,
-  deadlineTasks = [],
-  showDeadlineTasks = false,
   timezone,
+  calendarColors,
+  headerExtra,
   onCreate,
   onMoveOrResize,
   onSelect,
@@ -29,7 +30,10 @@ export function WeekGrid({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [touchStart, setTouchStart] = useState<TouchStart | null>(null);
   const [visibleDays, setVisibleDays] = useState(7);
-  const [mobileDayOffset, setMobileDayOffset] = useState(0);
+  // Today, not the week's Monday — see initialMobileDayOffset.
+  const [mobileDayOffset, setMobileDayOffset] = useState(
+    () => initialMobileDayOffset(currentWeekOffset, timezone)
+  );
   const isMobile = visibleDays < 7;
 
   // Calculate Monday timestamp
@@ -43,10 +47,19 @@ export function WeekGrid({
     ? mondayUtc0 + mobileDayOffset * DAY_MS
     : mondayUtc0;
 
-  // Reset mobileDayOffset when week changes
+  // Reset mobileDayOffset when the week changes. Returning to the current week
+  // lands on today; any other week has no "today" and opens on its Monday.
+  //
+  // ⚠ This also fires on the rollover below, when swiping day-by-day crosses a
+  // week boundary. Swiping backwards INTO the current week therefore lands on
+  // today rather than on the day adjacent to the one just left. That is the
+  // deliberate trade: the "Today" control and a cold open are the common paths
+  // and must show today, while day-swiping across a boundary already jumped
+  // (it landed on Monday before this change). Not covered by the mobile specs —
+  // both drag specs skip at 375px and recurring-scope never swipes.
   useEffect(() => {
-    setMobileDayOffset(0);
-  }, [currentWeekOffset]);
+    setMobileDayOffset(initialMobileDayOffset(currentWeekOffset, timezone));
+  }, [currentWeekOffset, timezone]);
 
   // When mobileDayOffset goes beyond week boundary, advance the week and reset offset
   useEffect(() => {
@@ -69,8 +82,8 @@ export function WeekGrid({
 
   // Process events for rendering
   const { allDayEvents, timedPerDay } = useMemo(
-    () => processEventsForWeek(events, adjustedStart, timezone, visibleDays),
-    [events, adjustedStart, timezone, visibleDays]
+    () => processEventsForWeek(events, adjustedStart, timezone, visibleDays, calendarColors),
+    [events, adjustedStart, timezone, visibleDays, calendarColors]
   );
   
   // Current time tracking
@@ -123,7 +136,8 @@ export function WeekGrid({
       startMin: number,
       action: 'create' | 'move' | 'resize-start' | 'resize-end',
       eventId?: string,
-      event?: ProcessedEvent
+      event?: ProcessedEvent,
+      grabMin?: number
     ) => {
       if (action === 'create') {
         startCreate(day, startMin);
@@ -132,7 +146,7 @@ export function WeekGrid({
 
       if (!eventId || !event) return;
 
-      if (action === 'move') startMove(day, event);
+      if (action === 'move') startMove(day, event, grabMin);
       if (action === 'resize-start') startResizeStart(day, event);
       if (action === 'resize-end') startResizeEnd(day, event);
     },
@@ -143,11 +157,26 @@ export function WeekGrid({
   const handleAllDayDragStart = useCallback((dayUtc0: number, eventId?: string) => {
     const day = days.find(d => d.dayUtc0 === dayUtc0);
     if (!day) return;
+
+    // 🔴 Without this the drag is dead on arrival: onMove returns immediately
+    // while dragMeta is null, and nothing else on the all-day row ever set it.
+    // So the FIRST all-day drag of a session did nothing at all, and later ones
+    // only worked because a timed drag had left its own dragMeta behind.
+    //
+    // An all-day move commits whole days and ignores the Y coordinate, so the
+    // grid's own top is a good enough origin — it exists to make the guard pass
+    // and to keep auto-scroll arithmetic sane.
+    dragMeta.current = {
+      colTop: containerRef.current?.getBoundingClientRect().top ?? 0,
+      scrollStart: scrollRef.current?.scrollTop ?? 0,
+      allDayTop: ALL_DAY_HEIGHT,
+    };
+
     if (eventId) {
       const event = allDayEvents.find(e => e.id === eventId);
       if (event) startMove(day, event);
     } else startCreate(day, 0, true);
-  }, [days, allDayEvents, startCreate, startMove]);
+  }, [days, allDayEvents, startCreate, startMove, dragMeta, containerRef, scrollRef]);
   
   const handleQuickCreate = useCallback(() => {
     const start = new Date(), end = new Date(start.getTime() + 3600000);
@@ -216,10 +245,12 @@ export function WeekGrid({
         onMobileNav={visibleDays < 7 ? handleMobileNav : undefined}
         onToday={handleToday}
         onQuickCreate={handleQuickCreate}
+        headerExtra={headerExtra}
       />
 
       <div
         ref={scrollRef}
+        data-hint="calendar.grid"
         className="flex-1 overflow-x-auto overflow-y-auto outline-none relative"
         tabIndex={0}
         role="application"

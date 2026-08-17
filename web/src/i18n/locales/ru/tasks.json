@@ -1,5 +1,16 @@
 {
   "title": "Задачи",
+  "quickAdd": {
+    "placeholder": "Новая задача — введи и нажми Enter",
+    "full": "Полная задача",
+    "expand": "Больше полей (Ctrl+E)",
+    "tags": "Теги",
+    "tagsPlaceholder": "через, запятую",
+    "subtask": "Подзадача",
+    "globalTitle": "Быстрый захват",
+    "globalHint": "Enter создаёт и оставляет фокус · Esc закрывает",
+    "close": "Закрыть"
+  },
   "newTask": "Новая задача",
   "editTask": "Редактировать задачу",
   "searchPlaceholder": "Поиск задач...",
@@ -7,6 +18,7 @@
   "noTasksYet": "Пока нет задач",
   "noTasksMatch": "Нет задач по вашему запросу",
   "createFirst": "Создайте первую задачу",
+  "schedule": "Запланировать в календаре",
   "dragHint": "Перетащите задачи в календарь для планирования",
   "showCompleted": "Показать выполненные",
   "addTask": "Добавить задачу",
@@ -43,7 +55,22 @@
   "context.personal": "@личное",
   "context.routine": "@рутина",
   "confirmDelete": "Удалить «{{title}}»?",
+  "error.saveFailed": "Не удалось сохранить задачу. Попробуйте ещё раз.",
+  "error.deleteFailed": "Не удалось удалить задачу. Попробуйте ещё раз.",
   "taskCount_one": "{{count}} задача",
   "taskCount_few": "{{count}} задачи",
-  "taskCount_many": "{{count}} задач"
+  "taskCount_many": "{{count}} задач",
+  "toast": {
+    "closed": "Закрыто «{{title}}»",
+    "undo": "Вернуть",
+    "bulkClosed": "Закрыто: {{count}}",
+    "bulkMoved": "Перенесено на завтра: {{count}}"
+  },
+  "bulk": {
+    "count": "Выбрано: {{count}}",
+    "close": "Закрыть",
+    "tomorrow": "На завтра",
+    "clear": "Снять",
+    "select": "Выбрать {{title}}"
+  }
 }

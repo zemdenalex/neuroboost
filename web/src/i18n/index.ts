@@ -13,6 +13,8 @@ import enHome from './locales/en/home.json'
 import enPlanning from './locales/en/planning.json'
 import enReflections from './locales/en/reflections.json'
 import enTools from './locales/en/tools.json'
+import enOnboarding from './locales/en/onboarding.json'
+import enReminders from './locales/en/reminders.json'
 
 import ruCommon from './locales/ru/common.json'
 import ruAuth from './locales/ru/auth.json'
@@ -25,8 +27,10 @@ import ruHome from './locales/ru/home.json'
 import ruPlanning from './locales/ru/planning.json'
 import ruReflections from './locales/ru/reflections.json'
 import ruTools from './locales/ru/tools.json'
+import ruOnboarding from './locales/ru/onboarding.json'
+import ruReminders from './locales/ru/reminders.json'
 
-const ns = ['common', 'auth', 'calendar', 'tasks', 'settings', 'profile', 'feedback', 'home', 'planning', 'reflections', 'tools'] as const
+const ns = ['common', 'auth', 'calendar', 'tasks', 'settings', 'profile', 'feedback', 'home', 'planning', 'reflections', 'tools', 'onboarding', 'reminders'] as const
 
 i18n
   .use(LanguageDetector)
@@ -45,6 +49,8 @@ i18n
         planning: enPlanning,
         reflections: enReflections,
         tools: enTools,
+        onboarding: enOnboarding,
+        reminders: enReminders,
       },
       ru: {
         common: ruCommon,
@@ -58,6 +64,8 @@ i18n
         planning: ruPlanning,
         reflections: ruReflections,
         tools: ruTools,
+        onboarding: ruOnboarding,
+        reminders: ruReminders,
       },
     },
     fallbackLng: 'en',

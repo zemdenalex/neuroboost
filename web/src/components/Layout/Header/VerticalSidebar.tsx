@@ -1,5 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuthContext } from '../../../contexts/AuthContext'
+import { HelpButton } from '../../Help/HelpButton'
 import {
   Calendar,
   CheckSquare,
@@ -37,8 +38,12 @@ export default function VerticalSidebar() {
   const displayName = user?.display_name || user?.email?.split('@')[0] || 'User'
   const initials = displayName.slice(0, 2).toUpperCase()
 
+  // Hidden below md: at 375px this sidebar measured 246px wide (w-56 scaled by
+  // the interface-size setting), leaving 129px of usable content and pushing
+  // every card off the right edge. Small screens navigate via the bottom tab
+  // bar, which renders regardless of the chosen layout variant.
   return (
-    <aside className="fixed left-0 top-0 w-56 h-screen bg-zinc-900 border-r border-zinc-800 flex flex-col">
+    <aside className="hidden md:flex fixed left-0 top-0 w-56 h-screen bg-zinc-900 border-r border-zinc-800 flex-col">
       {/* Logo */}
       <div className="p-4 border-b border-zinc-800">
         <Link to="/calendar" className="text-lg font-mono font-bold text-white hover:text-blue-400 transition-colors">
@@ -104,6 +109,9 @@ export default function VerticalSidebar() {
             <p className="text-xs text-zinc-500 truncate">{user?.email}</p>
           </div>
         </div>
+
+        {/* Contextual help for the current page */}
+        <HelpButton variant="sidebar" />
 
         {/* Logout button */}
         <button

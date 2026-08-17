@@ -1,3 +1,5 @@
+<!-- паспорт: тип=спека | статус=справка | строк=214 | ~токенов=3523 | обновлён=по git -->
+
 # Pomodoro / Focus Timer — Rebuild Design
 
 > **Status:** Approved design, pending implementation plan

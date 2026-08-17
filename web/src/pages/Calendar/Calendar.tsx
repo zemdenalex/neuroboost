@@ -1,19 +1,29 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ListTodo } from 'lucide-react';
 import { WeekGrid } from '../../components/Calendar/WeekGrid';
 import { TaskSidebar } from '../../components/TaskSidebar';
 import { MobileTaskPanel } from '../../components/TaskSidebar/MobileTaskPanel';
 import { EventEditor } from '../../components/Calendar/EventEditor';
+import { useRecurringScope } from '../../components/Calendar/useRecurringScope';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { computeWeekRange } from '../../lib/calendar/weekRange';
 import { createTask } from '../../api';
+import { listCalendars, type Calendar as NbCalendar } from '../../api/calendars';
+import { CalendarFilter } from '../../components/Calendars/CalendarFilter';
+import { sortCalendars } from '../../lib/calendars/order';
+import {
+  loadHiddenCalendars,
+  saveHiddenCalendars,
+  toggleHidden,
+  visibleEvents,
+} from '../../lib/calendars/visibility';
 import {
   getEvents,
   getTasks,
   moveEvent,
   deleteEvent,
-  scheduleTask,
+  scheduleTaskAt,
   updateTask,
 } from '../../api';
 import type { NbEvent, Task } from '../../types';
@@ -22,6 +32,7 @@ export function Calendar() {
   const { t } = useTranslation('calendar');
   const { user } = useAuthContext();
   const timezone = user?.timezone || 'Europe/Moscow';
+  const { withScope, dialog: recurringScopeDialog } = useRecurringScope();
   const [events, setEvents] = useState<NbEvent[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,6 +44,51 @@ export function Calendar() {
     return localStorage.getItem('nb-sidebar-open') === 'true';
   });
   const [mobileTasksOpen, setMobileTasksOpen] = useState(false);
+  // The calendar list drives two things on this page: the colour an event with
+  // no colour of its own is drawn in, and the filter's checkboxes. Loaded once
+  // — the list is short and changes rarely — and a failure is not worth
+  // reporting: events keep the grid's default styling, which is exactly how
+  // they looked before calendars existed.
+  const [calendars, setCalendars] = useState<NbCalendar[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    listCalendars()
+      .then(list => {
+        if (cancelled) return;
+        setCalendars(sortCalendars(list));
+      })
+      .catch(() => { /* keep the default styling */ });
+    return () => { cancelled = true; };
+  }, []);
+
+  const calendarColors = useMemo(
+    () => Object.fromEntries(calendars.map(c => [c.id, c.color])),
+    [calendars]
+  );
+
+  // Read once from localStorage rather than on every render: the lazy
+  // initialiser runs on mount only, so a re-render cannot resurrect a choice
+  // the user just undid.
+  const [hiddenCalendars, setHiddenCalendars] = useState<Set<string>>(loadHiddenCalendars);
+
+  const handleToggleCalendar = useCallback((id: string) => {
+    setHiddenCalendars(prev => {
+      const next = toggleHidden(prev, id);
+      saveHiddenCalendars(next);
+      return next;
+    });
+  }, []);
+
+  // 🔴 Filtered for DRAWING only. `events` stays whole everywhere else: the
+  // drag, delete and edit handlers look events up by id, and filtering their
+  // input would make an event that is merely hidden behave as if it had been
+  // deleted.
+  const shownEvents = useMemo(
+    () => visibleEvents(events, hiddenCalendars),
+    [events, hiddenCalendars]
+  );
+
   const [quickTaskOpen, setQuickTaskOpen] = useState(false);
   const [quickTaskTitle, setQuickTaskTitle] = useState('');
 
@@ -82,28 +138,51 @@ export function Calendar() {
   }, []);
 
   const handleMoveOrResize = useCallback(async (data: { id: string; startsAt: string; endsAt: string }) => {
+    // Draw the event where it was dropped, before the request goes out.
+    //
+    // Measured, not assumed: between mouseup and the refetch landing the block
+    // sat at its OLD position (`web/e2e/drag-commit-repaint.spec.ts` recorded
+    // delta = 0px), so letting go made the event snap back and then jump. The
+    // comment that used to sit here claimed the opposite.
+    //
+    // 🔴 Non-recurring only. Editing one occurrence of a series can split it,
+    // and which occurrences move is the scope dialog's answer, not ours — an
+    // optimistic guess there would show something the server will not agree
+    // with. Recurring events keep waiting for the refetch.
+    //
+    // Functional form so this never reads a stale `events` from the closure.
+    setEvents(prev => prev.map(event =>
+      event.id === data.id && !event.rrule
+        ? { ...event, startsAt: data.startsAt, endsAt: data.endsAt }
+        : event
+    ));
+
     try {
-      await moveEvent(data.id, data.startsAt, data.endsAt);
+      await withScope(data.id, 'move', scope => moveEvent(data.id, data.startsAt, data.endsAt, scope).then(() => undefined));
+      // Still reloaded, and still on the cancel path: the optimistic patch above
+      // is a guess about one event, and the reload is what reconciles it — including
+      // putting the event back when the scope dialog was dismissed.
       await loadEvents();
     } catch (error) {
       console.error('Failed to move/resize event:', error);
+      await loadEvents();
     }
-  }, [loadEvents]);
+  }, [loadEvents, withScope]);
 
   const handleDelete = useCallback(async (id: string) => {
     try {
-      await deleteEvent(id);
+      await withScope(id, 'delete', scope => deleteEvent(id, scope));
       await loadEvents();
       setEditorOpen(false);
     } catch (error) {
       console.error('Failed to delete event:', error);
       throw error;
     }
-  }, [loadEvents]);
+  }, [loadEvents, withScope]);
 
   const handleTaskDrop = useCallback(async (task: { id: string; estimatedMinutes?: number }, startTime: Date) => {
     try {
-      await scheduleTask(task.id, startTime.toISOString(), task.estimatedMinutes);
+      await scheduleTaskAt(task.id, startTime.toISOString(), task.estimatedMinutes);
       await Promise.all([loadEvents(), loadTasks()]);
     } catch (error) {
       console.error('Failed to schedule task:', error);
@@ -179,7 +258,19 @@ export function Calendar() {
   }
 
   return (
-    <div className="flex h-screen bg-black text-white font-mono">
+    // Height is the viewport MINUS the app chrome, not the whole viewport.
+    //
+    // h-screen here is nested inside a <main> that already carries pt-14 for the
+    // fixed header and pb-16 for the mobile tab bar. Being an absolute 100vh, it
+    // ignored that padding and overhung the bottom by exactly the bar's height,
+    // so the last hour label sat underneath the tab bar and could not be read.
+    //
+    // The subtracted values mirror Layout's padding and are in rem, so they
+    // track the interface-size setting (which is why the bar measures 70.4px at
+    // 110%, not 64px). With the vertical-sidebar variant there is no top bar and
+    // the grid comes out 3.5rem shorter than it could be — visibly fine, and far
+    // better than overflowing.
+    <div className="flex h-[calc(100vh-3.5rem-4rem)] md:h-[calc(100vh-3.5rem)] bg-black text-white font-mono">
       {/* Task sidebar - hidden on mobile */}
       <div className="hidden lg:block">
         <TaskSidebar
@@ -196,9 +287,18 @@ export function Calendar() {
       {/* Main calendar area */}
       <div className="flex-1 flex flex-col min-w-0">
         <WeekGrid
-          events={events}
+          events={shownEvents}
           currentWeekOffset={currentWeekOffset}
           timezone={timezone}
+          calendarColors={calendarColors}
+          headerExtra={
+            <CalendarFilter
+              calendars={calendars}
+              hidden={hiddenCalendars}
+              onToggle={handleToggleCalendar}
+              onCalendarsChanged={setCalendars}
+            />
+          }
           onCreate={handleCreate}
           onSelect={handleSelect}
           onMoveOrResize={handleMoveOrResize}
@@ -243,9 +343,17 @@ export function Calendar() {
             onCreated={handleEditorCreated}
             onPatched={handleEditorPatched}
             onDelete={handleDelete}
+            withScope={withScope}
           />
         </div>
       )}
+
+      {/*
+        A sibling of the editor overlay, never a child: nested backdrops would
+        make a click on this dialog's backdrop bubble up and close the editor
+        underneath it, losing the edit the user is being asked about.
+      */}
+      {recurringScopeDialog}
 
       {/* Quick task creation modal */}
       {quickTaskOpen && (

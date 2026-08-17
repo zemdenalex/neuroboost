@@ -7,6 +7,7 @@ import { HourGrid } from './HourGrid';
 import { TimeIndicator } from './TimeIndicator';
 import { EventBlock } from './EventBlock';
 import { GhostPreview, MultiDayTimedGhost } from './GhostPreview';
+import { dateLocale } from '../../../utils/date';
 
 interface DayColumnProps {
   day: DayInfo;
@@ -29,7 +30,9 @@ interface DayColumnProps {
     startMin: number,
     action: 'create' | 'move' | 'resize-start' | 'resize-end',
     eventId?: string,
-    event?: ProcessedEvent
+    event?: ProcessedEvent,
+    /** Minute the cursor sits on, unsnapped. Move only. */
+    grabMin?: number
   ) => void;
   onTouchStart: (info: TouchStart) => void;
   onTouchEnd: (day: DayInfo, startMin: number) => void;
@@ -60,9 +63,9 @@ export const DayColumn = memo(function DayColumn({
   stopAutoScroll,
 }: DayColumnProps) {
   const { i18n } = useTranslation();
-  const dateLocale = i18n.language === 'ru' ? 'ru-RU' : 'en-US';
+  const locale = dateLocale(i18n.language);
   const { dayUtc0, dayLocal } = day;
-  const dayLabel = formatDayLabel(dayLocal, isMobile, dateLocale);
+  const dayLabel = formatDayLabel(dayLocal, isMobile, locale);
   const isToday = dayUtc0 === currentDayUtc0;
 
   const handleMouseDown = (ev: React.MouseEvent) => {
@@ -129,9 +132,13 @@ export const DayColumn = memo(function DayColumn({
       ev.stopPropagation();
       onDragStart(day, startMin, 'resize-end', event.id, event);
     } else if (!isTopHandle && !isBottomHandle) {
-      // Body drag = move
+      // Body drag = move. The cursor's own minute goes along so the event can
+      // keep its grip on the point that was grabbed; startMin is the event's
+      // start, which is a different thing and cannot stand in for it.
       ev.preventDefault();
-      onDragStart(day, startMin, 'move', event.id, event);
+      const grabYLocal = (ev.clientY - rect.top) +
+        ((scrollContainer.current?.scrollTop ?? 0) - dragMeta.current.scrollStart);
+      onDragStart(day, startMin, 'move', event.id, event, topToMins(grabYLocal));
     }
     ev.stopPropagation();
   };

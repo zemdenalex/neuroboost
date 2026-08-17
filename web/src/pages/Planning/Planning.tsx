@@ -9,22 +9,10 @@ import {
 } from 'lucide-react'
 import { getWeekPlan, WeekPlan, PlanningTask, PlanningEvent } from '../../api/planning'
 import { scheduleTask } from '../../api/tasks'
-import { toLocalDateKey } from '../../utils/date'
+import { toLocalDateKey, startOfWeek, dateLocale } from '../../utils/date'
 import { UnscheduledList } from './UnscheduledList'
 import { CapacityMeter } from './CapacityMeter'
 import { WeekOverviewGrid } from './WeekOverviewGrid'
-
-// Compute the Monday of the week that contains `date`.
-// Note: this differs from utils/date.ts `startOfWeek` because it also normalizes
-// to start-of-day (00:00:00.000). Keep both — semantics differ.
-function getMondayOf(date: Date): Date {
-  const d = new Date(date)
-  const day = d.getDay() // 0 = Sun, 1 = Mon, ...
-  const daysToMonday = day === 0 ? -6 : 1 - day
-  d.setDate(d.getDate() + daysToMonday)
-  d.setHours(0, 0, 0, 0)
-  return d
-}
 
 export default function Planning() {
   const { t, i18n } = useTranslation('planning')
@@ -37,7 +25,7 @@ export default function Planning() {
 
   // Compute the Monday for this week offset
   const monday = useMemo(() => {
-    const m = getMondayOf(new Date())
+    const m = startOfWeek(new Date())
     m.setDate(m.getDate() + weekOffset * 7)
     return m
   }, [weekOffset])
@@ -59,8 +47,7 @@ export default function Planning() {
     } finally {
       setLoading(false)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [monday])
+  }, [monday, t])
 
   useEffect(() => {
     fetchPlan()
@@ -68,7 +55,7 @@ export default function Planning() {
 
   // Format week range label
   const weekLabel = useMemo(() => {
-    const locale = i18n.language
+    const locale = dateLocale(i18n.language)
     const startLabel = monday.toLocaleDateString(locale, { month: 'short', day: 'numeric' })
     const endLabel = sunday.toLocaleDateString(locale, {
       month: 'short',
@@ -120,7 +107,9 @@ export default function Planning() {
       // Schedule at 09:00 local time on the dropped date
       const start = new Date(date)
       start.setHours(9, 0, 0, 0)
-      const durationMin = task.estimated_minutes ?? 60
+      // Clamp to a 15-min minimum so a task with no/zero estimate still schedules a
+      // real block instead of a zero-length event (matches the Calendar scheduler).
+      const durationMin = Math.max(15, task.estimated_minutes ?? 60)
       const end = new Date(start.getTime() + durationMin * 60000)
       try {
         await scheduleTask(task.id, {
@@ -142,7 +131,11 @@ export default function Planning() {
   return (
     <div className="flex flex-col h-full min-h-0 gap-3 p-4 md:p-6">
       {/* Header */}
-      <header className="flex items-center justify-between gap-3 shrink-0">
+      {/* Stacked below md. Side by side, the week controls left the title 179px
+          for 181px of text, so "Weekly Planning" rendered as "Weekly Planni…" —
+          truncated by two pixels, with empty space directly beneath it. Stacking
+          also holds for longer translations rather than only for this string. */}
+      <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-3 shrink-0">
         <div className="min-w-0">
           <h1 className="text-xl font-mono text-white truncate">{t('title')}</h1>
           <p className="text-sm text-zinc-400 font-mono truncate">{weekLabel}</p>
@@ -203,6 +196,7 @@ export default function Planning() {
           <div className="lg:w-1/3 lg:min-w-[280px] max-h-[40vh] lg:max-h-none">
             <UnscheduledList
               tasks={plan.unscheduledTasks}
+              scheduledHours={plan.scheduledHours}
               onDragStart={handleTaskDragStart}
             />
           </div>

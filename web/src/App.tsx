@@ -1,5 +1,6 @@
 import { RouterProvider } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
+import { PomodoroProvider } from './contexts/PomodoroContext'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { router } from './router'
 import { useUIScale } from './hooks/useUIScale'
@@ -17,7 +18,9 @@ export default function App() {
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <AppShell />
+        <PomodoroProvider>
+          <AppShell />
+        </PomodoroProvider>
       </AuthProvider>
     </ErrorBoundary>
   )

@@ -1,6 +1,8 @@
 import { memo } from 'react';
+import { Users } from 'lucide-react';
 import type { ProcessedEvent, NbEvent } from './weekgrid.types';
 import { formatTimeFromUtc } from './weekgrid.utils';
+import { resolveColor } from '../../../lib/calendar/palette';
 
 interface EventBlockProps {
   event: ProcessedEvent;
@@ -49,13 +51,20 @@ export const EventBlock = memo(function EventBlock({
         }
         ${isMultiDaySegment ? 'border-l-4 border-l-purple-400' : ''}
         ${zIndexClass}`}
-      style={{ 
-        top: event.top, 
-        height: event.height, 
-        left: 2, 
-        right: 2,
+      style={{
+        top: event.top,
+        height: event.height,
+        // Horizontal lane from overlap layout (defaults to full width). The 2px
+        // insets reproduce the previous left:2/right:2 gap when width is full.
+        left: `calc(${(event.leftPct ?? 0) * 100}% + 2px)`,
+        width: `calc(${(event.widthPct ?? 1) * 100}% - 4px)`,
         borderRadius,
-        backgroundColor: event.color || undefined,
+        // displayColor already resolved the event-over-calendar precedence AND
+        // turned the stored value into paintable CSS (lib/calendar/eventColor.ts).
+        // The fallback is for callers that build a ProcessedEvent without going
+        // through processEventsForWeek — it must resolve too, or `blue-400`
+        // reaches backgroundColor raw and the block silently stays grey.
+        backgroundColor: event.displayColor ?? resolveColor(event.color),
       }}
       onClick={(e) => {
         e.stopPropagation();
@@ -88,15 +97,36 @@ export const EventBlock = memo(function EventBlock({
             <span className="text-purple-300 flex-shrink-0">←</span>
           )}
           <span className="min-w-0 break-words">{event.title || '(untitled)'}</span>
+          {event.isShared && (
+            <Users
+              size={12}
+              aria-label="Общий календарь"
+              data-testid="shared-badge"
+              className="text-zinc-300 flex-shrink-0"
+            />
+          )}
           {isMultiDaySegment && !isLastSegment && (
             <span className="text-purple-300 flex-shrink-0">→</span>
           )}
         </div>
-        
-        {/* Time info */}
+
+        {/* Time info, and who wrote this if it was not the viewer.
+            The author shares the time's line rather than taking one of its
+            own: at 375px a block is often 35–55px tall, and a second line
+            would either be clipped or push the description out. */}
         {event.height > 35 && !isMultiDaySegment && (
-          <div className="text-zinc-300 text-xs leading-tight">
-            {formatTimeFromUtc(event.startsAt, timezone)}–{formatTimeFromUtc(event.endsAt, timezone)}
+          <div className="text-zinc-300 text-xs leading-tight flex items-center gap-1 min-w-0">
+            <span className="flex-shrink-0">
+              {formatTimeFromUtc(event.startsAt, timezone)}–{formatTimeFromUtc(event.endsAt, timezone)}
+            </span>
+            {event.authorName && (
+              // min-w-0 + truncate: a flex item refuses to shrink below its
+              // content by default, and a long name has no break opportunity —
+              // the same pair that overflowed the /profile header at 375px.
+              <span className="min-w-0 truncate text-zinc-400" data-testid="event-author">
+                · {event.authorName}
+              </span>
+            )}
           </div>
         )}
         {event.height > 35 && isMultiDaySegment && (

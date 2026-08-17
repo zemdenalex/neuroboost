@@ -106,14 +106,12 @@ export function validateDateRange(
   
   const isCrossMidnight = startDate === endDate && endTime < startTime;
   
-  let startDt = localDateTimeToUtc(startDate, startTime, timezone);
+  const startDt = localDateTimeToUtc(startDate, startTime, timezone);
   let endDt = localDateTimeToUtc(endDate, endTime, timezone);
   
   // Handle cross-midnight on same date
   if (isCrossMidnight) {
-    const nextDay = new Date(endDate);
-    nextDay.setDate(nextDay.getDate() + 1);
-    endDt = localDateTimeToUtc(nextDay.toISOString().slice(0, 10), endTime, timezone);
+    endDt = localDateTimeToUtc(nextDateStr(endDate), endTime, timezone);
   }
   
   if (endDt <= startDt) {
@@ -136,6 +134,18 @@ export function formatDateForDisplay(dateStr: string): string {
 }
 
 /**
+ * Returns the calendar date one day after `dateStr` (YYYY-MM-DD), timezone-safe.
+ * Parses and advances purely in UTC so the result never drifts with the runtime
+ * timezone (the old `new Date(str+'T00:00:00')` + `toISOString()` mix returned the
+ * wrong day for positive-offset users such as Moscow).
+ */
+function nextDateStr(dateStr: string): string {
+  const d = new Date(dateStr + 'T00:00:00Z');
+  d.setUTCDate(d.getUTCDate() + 1);
+  return d.toISOString().slice(0, 10);
+}
+
+/**
  * Calculate adjusted end date for cross-midnight events
  */
 export function getAdjustedEndDate(
@@ -145,9 +155,7 @@ export function getAdjustedEndDate(
   endTime: string
 ): string {
   if (startDate === endDate && endTime < startTime) {
-    const nextDay = new Date(endDate + 'T00:00:00');
-    nextDay.setDate(nextDay.getDate() + 1);
-    return nextDay.toISOString().slice(0, 10);
+    return nextDateStr(endDate);
   }
   return endDate;
 }

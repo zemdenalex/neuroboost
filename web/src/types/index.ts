@@ -2,6 +2,8 @@
 export interface Task {
   id: string;
   userId?: string;
+  /** Calendar this task belongs to. Access is governed by membership in it. */
+  calendarId?: string;
   title: string;
   description?: string;
   priority: number; // 0-5: Buffer, Emergency, ASAP, Must today, Deadline soon, If possible
@@ -44,6 +46,7 @@ export interface Reflection {
 export interface ApiEvent {
   id: string;
   user_id?: string;
+  calendar_id?: string;
   title: string;
   description?: string;
   starts_at: string;
@@ -57,6 +60,9 @@ export interface ApiEvent {
   task_id?: string | null;
   is_work_event?: boolean;
   recurring_event_id?: string;
+  reminder_offsets?: number[];
+  is_shared?: boolean;
+  author_name?: string;
   created_at?: string;
   updated_at?: string;
   reflections?: ApiReflection[];
@@ -66,6 +72,8 @@ export interface ApiEvent {
 export interface NbEvent {
   id: string;
   userId?: string;
+  /** Calendar this event belongs to. Access is governed by membership in it. */
+  calendarId?: string;
   title: string;
   description?: string;
   startsAt: string;
@@ -79,6 +87,20 @@ export interface NbEvent {
   taskId?: string | null;
   isWorkEvent?: boolean;
   recurringEventId?: string;
+  /** Minutes before start, one entry per reminder. */
+  reminderOffsets?: number[];
+  /**
+   * Somebody else can see this event: its calendar has another active member.
+   * Derived by the API on every read — membership moves, so a value cached
+   * anywhere goes stale the moment an invitation is accepted or a member leaves.
+   */
+  isShared?: boolean;
+  /**
+   * Who created it, and ONLY when that is not the current user. The API decides
+   * this per viewer: the same event is "mine" to one member and "hers" to the
+   * other, so this field cannot be cached across accounts.
+   */
+  authorName?: string;
   createdAt?: string;
   updatedAt?: string;
   reflections?: Reflection[];
@@ -89,6 +111,7 @@ export function toNbEvent(api: ApiEvent): NbEvent {
   return {
     id: api.id,
     userId: api.user_id,
+    calendarId: api.calendar_id,
     title: api.title,
     description: api.description,
     startsAt: api.starts_at,
@@ -102,6 +125,9 @@ export function toNbEvent(api: ApiEvent): NbEvent {
     taskId: api.task_id,
     isWorkEvent: api.is_work_event,
     recurringEventId: api.recurring_event_id,
+    reminderOffsets: api.reminder_offsets || [],
+    isShared: api.is_shared,
+    authorName: api.author_name,
     createdAt: api.created_at,
     updatedAt: api.updated_at,
     reflections: api.reflections?.map(r => ({

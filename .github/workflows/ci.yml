@@ -30,11 +30,12 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
           go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: api-go/go.sum
 
       - name: Install golang-migrate
         run: |
@@ -72,18 +73,30 @@ jobs:
           DATABASE_URL: postgres://test:test@localhost:5432/neuroboost_test?sslmode=disable
           JWT_SECRET: test-secret-minimum-32-characters-long
 
+      # bot/ is a SEPARATE Go module (github.com/zemdenalex/neuroboost-bot), so
+      # none of the api-go steps above compile it. Without this, a bot that does
+      # not build ships green and reminder delivery stops silently.
+      - name: Build and test bot
+        run: |
+          cd bot
+          go build ./...
+          go vet ./...
+          go test ./...
+
   frontend:
     runs-on: ubuntu-latest
     
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: ${{ env.NODE_VERSION }}
 
+      # Keep this pinned to the `packageManager` field in web/package.json.
+      # CI previously installed pnpm@9 against a pnpm@10 declaration.
       - name: Install pnpm
-        run: npm i -g pnpm@9
+        run: npm i -g pnpm@10.12.0
 
       - name: Install dependencies
         run: |
@@ -94,6 +107,19 @@ jobs:
         run: |
           cd web
           pnpm typecheck
+
+      # `typecheck` cannot stand in for this: `any` is type-safe by definition,
+      # so tsc is silent on exactly the thing the project's rules forbid. Before
+      # 2026-08-13 web/ had no ESLint at all and the ban lived only in prose.
+      - name: Lint
+        run: |
+          cd web
+          pnpm lint
+
+      - name: Run tests
+        run: |
+          cd web
+          pnpm test --run
 
       - name: Build
         run: |
@@ -106,7 +132,7 @@ jobs:
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
     
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Create test .env file
         run: |
@@ -174,6 +200,11 @@ jobs:
     needs: [docker]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
+    # Same reasoning as deploy-dev, on the machine where it matters more.
+    concurrency:
+      group: deploy-prod
+      cancel-in-progress: false
+
     steps:
       - name: Deploy to production
         uses: appleboy/ssh-action@v1
@@ -183,11 +214,23 @@ jobs:
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           script: |
             set -e
+            # Retry git over transient DNS/network blips on the host (a failed
+            # `git pull` here has aborted a deploy with "Could not resolve host").
+            retry() { for i in 1 2 3; do "$@" && return 0; echo "attempt $i failed, retrying in 5s..."; sleep 5; done; return 1; }
             cd /opt/neuroboost
-            # Backup before deploy
-            ./scripts/backup.sh || echo "Backup failed, continuing deploy..."
+            # 🔴 A failed backup STOPS the deploy. It used to be
+            # `|| echo "Backup failed, continuing deploy..."`, and that line ran
+            # on every release from 2026-04-23 to 2026-08-14 — the script had no
+            # execute bit, so it failed instantly and the swallow hid it. Four
+            # months of production deploys, each applying migrations, with the
+            # newest backup dating from April. Nobody read the log line, which
+            # is the whole problem with logging a failure instead of raising it.
+            #
+            # This deploy applies migrations. Refusing to run without a verified
+            # backup is the only version of this step worth having.
+            bash ./scripts/backup.sh
             # Pull and rebuild
-            git pull origin main
+            retry git pull origin main
             docker compose build --pull
             docker compose down
             docker compose up -d
@@ -217,6 +260,16 @@ jobs:
     needs: [docker]
     if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
 
+    # Serialise, do not cancel. Two runs of this job collided on 13.08: one tore
+    # the dev stack down while the other was recreating it, and the deploy died
+    # on "container name /neuroboost-dev-db is already in use" — leaving staging
+    # down rather than merely stale. cancel-in-progress would be worse: killing
+    # a deploy mid-teardown leaves the host half-dismantled with nobody
+    # finishing the job.
+    concurrency:
+      group: deploy-dev
+      cancel-in-progress: false
+
     steps:
       - name: Deploy to dev
         uses: appleboy/ssh-action@v1
@@ -226,10 +279,13 @@ jobs:
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           script: |
             set -e
+            # Retry git over transient DNS/network blips on the host (a failed
+            # `git fetch` here has aborted a deploy with "Could not resolve host").
+            retry() { for i in 1 2 3; do "$@" && return 0; echo "attempt $i failed, retrying in 5s..."; sleep 5; done; return 1; }
             cd /root/neuroboost-dev
-            git fetch origin develop
+            retry git fetch origin develop
             git checkout develop
-            git pull origin develop
+            retry git pull origin develop
 
             # Sync production DB → dev DB (both containers must be running)
             echo "Syncing production database to dev..."
@@ -263,3 +319,99 @@ jobs:
             -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
             -d parse_mode=HTML \
             -d text="❌ <b>NeuroBoost DEV deploy FAILED</b>%0ACommit: <code>${{ github.sha }}</code>%0ABranch: develop%0A<a href='https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'>View logs</a>"
+
+  # Playwright, against the build that was just deployed.
+  #
+  # Added 2026-08-13. web/e2e/ held ten specs and no job ran any of them, while
+  # CLAUDE.md cited three of those specs as the proof that MD1 and MD2 were
+  # fixed. That is a control which cannot fail: the specs would have caught a
+  # regression, and nothing was asking them.
+  #
+  # Placed AFTER deploy-dev on purpose. These specs assert against a running
+  # deployment, not a dev server — running them before the deploy would test
+  # yesterday's staging and report it as today's verdict.
+  e2e:
+    runs-on: ubuntu-latest
+    needs: [deploy-dev]
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+
+    # These specs share one staging environment and one test account: they pin
+    # that account's locale and create tasks under it. Two runs at once would
+    # interfere the same way the deploys did, only quietly — as an unrelated
+    # "element not found" rather than an obvious conflict.
+    concurrency:
+      group: e2e-staging
+      cancel-in-progress: false
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install pnpm
+        run: npm i -g pnpm@10.12.0
+
+      # 🔴 The fixture SKIPS every authenticated spec when these are unset
+      # (web/e2e/fixtures/auth.ts) — the suite would report green while proving
+      # nothing, which is the precise failure this job exists to end. So the
+      # absence of the secrets fails the job loudly instead.
+      - name: Require e2e credentials
+        env:
+          E2E_TG_BOT_TOKEN: ${{ secrets.E2E_TG_BOT_TOKEN }}
+          E2E_TG_ID: ${{ secrets.E2E_TG_ID }}
+        run: |
+          missing=""
+          [ -n "$E2E_TG_BOT_TOKEN" ] || missing="$missing E2E_TG_BOT_TOKEN"
+          [ -n "$E2E_TG_ID" ] || missing="$missing E2E_TG_ID"
+          if [ -n "$missing" ]; then
+            echo "::error::Missing repository secret(s):$missing"
+            echo "Without them web/e2e/fixtures/auth.ts skips every authenticated"
+            echo "spec and this job would pass without testing anything."
+            echo "Set them under Settings → Secrets and variables → Actions."
+            echo "E2E_TG_BOT_TOKEN is the DEV bot token (used to mint a login hash);"
+            echo "E2E_TG_ID is the numeric Telegram id of the test account."
+            exit 1
+          fi
+
+      - name: Install dependencies
+        run: |
+          cd web
+          pnpm install
+
+      # Chromium only: playwright.config.ts runs both the desktop and the 375px
+      # mobile project on Chromium precisely to avoid a second ~100MB browser.
+      - name: Install Playwright browser
+        run: |
+          cd web
+          pnpm exec playwright install --with-deps chromium
+
+      - name: Run e2e against staging
+        env:
+          E2E_BASE_URL: https://dev.neuroboost.website
+          E2E_TG_BOT_TOKEN: ${{ secrets.E2E_TG_BOT_TOKEN }}
+          E2E_TG_ID: ${{ secrets.E2E_TG_ID }}
+        run: |
+          cd web
+          pnpm e2e
+
+      # Traces and screenshots are retained on failure by the config; without
+      # this upload they die with the runner and the failure is unreadable.
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            web/playwright-report/
+            web/e2e-results/
+          retention-days: 7
+
+      - name: Notify Telegram (e2e failed)
+        if: failure()
+        run: |
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+            -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
+            -d parse_mode=HTML \
+            -d text="🔴 <b>NeuroBoost e2e FAILED on staging</b>%0ACommit: <code>${{ github.sha }}</code>%0A<a href='https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'>View logs</a>"

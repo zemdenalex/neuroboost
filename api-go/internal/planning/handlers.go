@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"neuroboost/api-go/internal/calendars"
 	"neuroboost/api-go/internal/database"
 	"neuroboost/api-go/internal/middleware"
 	"neuroboost/api-go/internal/util"
@@ -117,15 +118,22 @@ func GetWeekHandler(w http.ResponseWriter, r *http.Request) {
 
 // listUnscheduledTasks returns tasks that are not DONE or SCHEDULED
 func listUnscheduledTasks(ctx context.Context, userID string) ([]PlanningTask, error) {
+	calIDs, err := calendars.CalendarIDsFor(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	// An empty list is a legitimate "nothing visible", not an error:
+	// ANY('{}') returns zero rows.
 	rows, err := db.Pool.Query(ctx, `
 		SELECT id, title, priority, estimated_minutes,
 		       CASE WHEN due_date IS NOT NULL THEN to_char(due_date, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') END,
 		       category
 		FROM task
-		WHERE user_id = $1
+		WHERE calendar_id = ANY($1)
 		  AND status NOT IN ('DONE', 'SCHEDULED', 'CANCELLED')
 		ORDER BY priority ASC, due_date ASC NULLS LAST, created_at DESC
-	`, userID)
+	`, calIDs)
 	if err != nil {
 		return nil, err
 	}
@@ -149,14 +157,21 @@ func listUnscheduledTasks(ctx context.Context, userID string) ([]PlanningTask, e
 
 // listWeekEvents returns events within the week and computes total scheduled hours
 func listWeekEvents(ctx context.Context, userID string, weekStart, weekEnd time.Time) ([]PlanningEvent, float64, error) {
+	calIDs, err := calendars.CalendarIDsFor(ctx, userID)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// An empty list is a legitimate "nothing visible", not an error:
+	// ANY('{}') returns zero rows.
 	rows, err := db.Pool.Query(ctx, `
 		SELECT id, title, starts_at, ends_at, all_day, color
 		FROM event
-		WHERE user_id = $1
+		WHERE calendar_id = ANY($1)
 		  AND starts_at >= $2
 		  AND starts_at < $3
 		ORDER BY starts_at ASC
-	`, userID, weekStart, weekEnd)
+	`, calIDs, weekStart, weekEnd)
 	if err != nil {
 		return nil, 0, err
 	}

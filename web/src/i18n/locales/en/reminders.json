@@ -1,0 +1,57 @@
+{
+  "title": "Reminders",
+  "empty": "No reminders",
+  "disabled": "Set a due date to add reminders",
+  "remove": "Remove reminder {{offset}}",
+  "offset": {
+    "atStart": "At start time",
+    "minute_one": "{{count}} minute before",
+    "minute_other": "{{count}} minutes before",
+    "hour_one": "{{count}} hour before",
+    "hour_other": "{{count}} hours before",
+    "day_one": "{{count}} day before",
+    "day_other": "{{count}} days before",
+    "week_one": "{{count}} week before",
+    "week_other": "{{count}} weeks before",
+    "month_one": "{{count}} month before",
+    "month_other": "{{count}} months before"
+  },
+  "preset": {
+    "label": "Reminder preset",
+    "custom": "Custom"
+  },
+  "add": {
+    "label": "New reminder offset",
+    "placeholder": "30, 2h, 3d, 1w",
+    "button": "Add",
+    "invalid": "Use minutes, or a number with m / h / d / w — up to 1 month"
+  },
+  "settings": {
+    "title": "Reminders",
+    "description": "Defaults applied to new events and tasks, plus your daily digest.",
+    "defaultEventPreset": "Default preset for events",
+    "defaultTaskPreset": "Default preset for tasks",
+    "digestEnabled": "Send a daily digest",
+    "digestAt": "Digest time",
+    "quietHoursRespected": "Respect quiet hours",
+    "quietHoursHint": "Reminders landing in quiet hours are delayed to the end of the window. Reminders with 15 minutes' notice or less are skipped instead — delaying those would deliver them after the thing they warn about.",
+    "presetsTitle": "Presets",
+    "presetsHint": "Each preset is a list of offsets you can apply in one click.",
+    "presetAdd": "Add preset",
+    "presetNamePlaceholder": "New preset name",
+    "presetNameLabel": "Preset name",
+    "presetDelete": "Delete preset",
+    "presetDuplicateWarning": "These presets hold the same offsets: {{names}}. Choosing either shows the first one, so they are hard to tell apart in the dropdown.",
+    "presetError": {
+      "empty": "Give the preset a name.",
+      "duplicate": "A preset by that name already exists.",
+      "unknown": "That preset no longer exists.",
+      "last": "This is the last preset — an empty list is read as “not set” and brings the built-in presets back."
+    }
+  },
+  "presetName": {
+    "important": "Important",
+    "normal": "Normal",
+    "none": "None"
+  }
+}

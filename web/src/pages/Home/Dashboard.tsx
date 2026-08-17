@@ -3,9 +3,11 @@ import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { CalendarPlus, ListTodo, Timer, Clock } from 'lucide-react'
 import { useAuthContext } from '../../contexts/AuthContext'
+import { EmptyState } from '../../components/ui/EmptyState'
 import { getEvents, getTasks } from '../../api'
 import type { NbEvent } from '../../types'
 import type { Task } from '../../types'
+import { dateLocale } from '../../utils/date'
 
 function formatTime(iso: string): string {
   return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -52,7 +54,7 @@ export function Dashboard() {
 
   const displayName = user?.display_name || user?.tg_first_name || user?.email?.split('@')[0] || 'User'
   const today = new Date()
-  const todayLabel = formatDate(today, i18n.language)
+  const todayLabel = formatDate(today, dateLocale(i18n.language))
 
   const todayEvents = events
     .slice()
@@ -75,7 +77,7 @@ export function Dashboard() {
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-3 gap-4">
+        <div data-hint="home.quickAdd" className="grid grid-cols-3 gap-4">
           <Link
             to="/calendar"
             className="flex flex-col items-center gap-2 p-4 bg-zinc-900 border border-zinc-800 hover:border-blue-600 rounded-xl transition-colors"
@@ -102,7 +104,7 @@ export function Dashboard() {
         {/* Today's Schedule + Task Summary */}
         <div className="grid md:grid-cols-2 gap-6">
           {/* Today's Schedule */}
-          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
+          <div data-hint="home.schedule" className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
             <h2 className="font-semibold text-zinc-100 mb-4 flex items-center gap-2">
               <Clock size={18} className="text-blue-400" />
               {t('dashboard.todaySchedule')}
@@ -113,7 +115,12 @@ export function Dashboard() {
                 <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-500" />
               </div>
             ) : todayEvents.length === 0 ? (
-              <p className="text-zinc-500 text-sm py-4 text-center">{t('dashboard.noEvents')}</p>
+              <EmptyState
+                icon={CalendarPlus}
+                title={t('dashboard.noEvents')}
+                description={t('dashboard.noEventsHint')}
+                className="py-6"
+              />
             ) : (
               <ul className="space-y-2">
                 {todayEvents.map(event => (
@@ -136,7 +143,7 @@ export function Dashboard() {
           </div>
 
           {/* Task Summary */}
-          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
+          <div data-hint="home.tasks" className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
             <h2 className="font-semibold text-zinc-100 mb-4 flex items-center gap-2">
               <ListTodo size={18} className="text-green-400" />
               {t('dashboard.taskSummary')}
@@ -146,6 +153,13 @@ export function Dashboard() {
               <div className="flex justify-center py-6">
                 <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-green-500" />
               </div>
+            ) : tasks.length === 0 ? (
+              <EmptyState
+                icon={ListTodo}
+                title={t('dashboard.noTasks')}
+                description={t('dashboard.noTasksHint')}
+                className="py-6"
+              />
             ) : (
               <div className="grid grid-cols-3 gap-3">
                 <div className="bg-zinc-800 rounded-lg p-4 text-center">
@@ -167,7 +181,7 @@ export function Dashboard() {
               to="/tasks"
               className="mt-4 block text-xs text-green-400 hover:text-green-300 transition-colors text-right"
             >
-              {t('dashboard.events')} →
+              {t('dashboard.allTasks')} →
             </Link>
           </div>
         </div>

@@ -2,17 +2,26 @@ package export
 
 import (
 	"context"
+
+	"neuroboost/api-go/internal/calendars"
 )
 
 func queryEvents(ctx context.Context, userID string) ([]EventRow, error) {
+	calIDs, err := calendars.CalendarIDsFor(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	// An empty list is a legitimate "nothing visible", not an error:
+	// ANY('{}') returns zero rows.
 	rows, err := db.Pool.Query(ctx, `
 		SELECT id, user_id, title, description, starts_at, ends_at, all_day, rrule,
 		       COALESCE(timezone, 'Europe/Moscow'), location, color, COALESCE(tags, '{}'),
 		       task_id, COALESCE(is_work_event, true), created_at, updated_at
 		FROM event
-		WHERE user_id = $1
+		WHERE calendar_id = ANY($1)
 		ORDER BY starts_at ASC
-	`, userID)
+	`, calIDs)
 	if err != nil {
 		return nil, err
 	}
@@ -42,14 +51,19 @@ func queryEvents(ctx context.Context, userID string) ([]EventRow, error) {
 }
 
 func queryTasks(ctx context.Context, userID string) ([]TaskRow, error) {
+	calIDs, err := calendars.CalendarIDsFor(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
 	rows, err := db.Pool.Query(ctx, `
 		SELECT id, user_id, title, description, status, category, priority,
-		       estimated_minutes, due_date, COALESCE(tags, '{}'), COALESCE(contexts, '{}'),
+		       estimated_minutes, actual_minutes, due_date, COALESCE(tags, '{}'), COALESCE(contexts, '{}'),
 		       energy, parent_id, completed_at, created_at, updated_at
 		FROM task
-		WHERE user_id = $1
+		WHERE calendar_id = ANY($1)
 		ORDER BY created_at ASC
-	`, userID)
+	`, calIDs)
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +75,7 @@ func queryTasks(ctx context.Context, userID string) ([]TaskRow, error) {
 		var tags, contexts []string
 		err := rows.Scan(
 			&tk.ID, &tk.UserID, &tk.Title, &tk.Description, &tk.Status, &tk.Category,
-			&tk.Priority, &tk.EstimatedMinutes, &tk.DueDate, &tags, &contexts,
+			&tk.Priority, &tk.EstimatedMinutes, &tk.ActualMinutes, &tk.DueDate, &tags, &contexts,
 			&tk.Energy, &tk.ParentID, &tk.CompletedAt, &tk.CreatedAt, &tk.UpdatedAt,
 		)
 		if err != nil {

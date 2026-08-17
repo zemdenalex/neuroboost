@@ -1,8 +1,25 @@
+<!-- паспорт: тип=документ | статус=архив | строк=339 | ~токенов=3035 | обновлён=по git -->
+
 # NeuroBoost v0.4.0 Feature List
 
+> ## ⚠️ HISTORICAL DOCUMENT — DO NOT READ STATUS FROM THIS FILE
+>
+> This is the **original v0.4.0 planning document** (Dec 2025 – Mar 2026). It is kept for the
+> feature inventory and the original prioritisation, **not** as a status record.
+>
+> **Its per-row statuses are wrong across the board.** Verified against the codebase on
+> 2026-07-19: it marks the entire Events API, Tasks API, WeekGrid, EventEditor, TaskSidebar,
+> admin panel and feedback system as 📋 *planned* — all of them shipped in v0.4.2 → v0.4.9.
+> The "17 of 117 done" summary predates six released versions. Recurring events (rrule) are
+> listed as planned but are built and tested (`api-go/internal/events/recurrence.go`).
+>
+> 👉 **For real status, read [`ROADMAP.md`](ROADMAP.md) and [`../PROGRESS.md`](../PROGRESS.md).**
+>
+> ---
+>
 > Priority: 🔴 Critical | 🟠 High | 🟡 Medium | 🟢 Low | ⚪ Future
 > Status: ✅ Done | 🔧 In Progress | 📋 Planned | 💭 Idea
-> Last Updated: March 13, 2026
+> Last Updated: March 13, 2026 (statuses frozen — superseded by ROADMAP.md)
 
 ---
 

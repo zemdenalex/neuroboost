@@ -34,6 +34,8 @@ services:
       LOG_LEVEL: debug
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
       TELEGRAM_NOTIFICATION_BOT_TOKEN: ${TELEGRAM_NOTIFICATION_BOT_TOKEN}
+      # Guards /api/svc/*. Unset closes those endpoints with 503.
+      SERVICE_TOKEN: ${SERVICE_TOKEN}
       FRONTEND_URL: ${FRONTEND_URL:-https://dev.neuroboost.website}
     depends_on:
       db:
@@ -70,11 +72,23 @@ services:
     build:
       context: ./bot
     container_name: neuroboost-dev-bot
+    # Not started by `up -d`. The staging bot runs off-site (nl-2, Netherlands)
+    # because Telegram is unreachable from this host; a second container here
+    # would long-poll getUpdates on the SAME token, and Telegram hands each
+    # update to exactly one consumer — delivery would flap rather than fail,
+    # which is harder to notice. Stopping it by hand is not durable: deploy-dev
+    # runs `down --remove-orphans && up -d` on every push to develop and would
+    # bring it straight back. Run it here only if the bot ever moves back:
+    #   docker compose -f docker-compose.dev.yml --profile local-bot up -d bot
+    profiles: [local-bot]
     environment:
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
       - API_BASE=http://api:8080
       - BOT_PORT=3002
       - TIMEZONE=Europe/Moscow
+      # Same value as the API's SERVICE_TOKEN. Unset disables the notifier.
+      - SERVICE_TOKEN=${SERVICE_TOKEN}
+      - TELEGRAM_PROXY=${TELEGRAM_PROXY}
     depends_on:
       api:
         condition: service_healthy

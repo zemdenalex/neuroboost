@@ -1,1 +1,0 @@
-import KanbanCard from './KanbanCard'; export default function KanbanColumn({title}:{title:string}){return <div className='p-2 border border-zinc-700 rounded'><div className='text-sm mb-2'>{title}</div><KanbanCard card={{id:'1',title:'Example'}}/></div>}

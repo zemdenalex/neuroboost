@@ -111,11 +111,3 @@ export function BasicFields({
     </>
   );
 }
-
-export function getTitleRef() {
-  return useRef<HTMLInputElement>(null);
-}
-
-export function getDescriptionRef() {
-  return useRef<HTMLTextAreaElement>(null);
-}

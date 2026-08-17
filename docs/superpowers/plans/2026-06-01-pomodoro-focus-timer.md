@@ -1,3 +1,5 @@
+<!-- паспорт: тип=план | статус=архив | строк=2220 | ~токенов=18354 | обновлён=по git -->
+
 # Pomodoro / Focus Timer Rebuild — Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.

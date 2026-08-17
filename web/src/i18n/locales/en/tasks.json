@@ -1,5 +1,16 @@
 {
   "title": "Tasks",
+  "quickAdd": {
+    "placeholder": "New task — type and press Enter",
+    "full": "Full task",
+    "expand": "More fields (Ctrl+E)",
+    "tags": "Tags",
+    "tagsPlaceholder": "comma, separated",
+    "subtask": "Subtask",
+    "globalTitle": "Quick capture",
+    "globalHint": "Enter creates and keeps the field focused · Esc closes",
+    "close": "Close"
+  },
   "newTask": "New Task",
   "editTask": "Edit Task",
   "searchPlaceholder": "Search tasks...",
@@ -7,6 +18,7 @@
   "noTasksYet": "No tasks yet",
   "noTasksMatch": "No tasks match your search",
   "createFirst": "Create your first task",
+  "schedule": "Schedule on calendar",
   "dragHint": "Drag tasks to calendar to schedule",
   "showCompleted": "Show completed",
   "addTask": "Add task",
@@ -43,6 +55,21 @@
   "context.personal": "@personal",
   "context.routine": "@routine",
   "confirmDelete": "Delete \"{{title}}\"?",
+  "error.saveFailed": "Could not save the task. Please try again.",
+  "error.deleteFailed": "Could not delete the task. Please try again.",
   "taskCount_one": "{{count}} task",
-  "taskCount_other": "{{count}} tasks"
+  "taskCount_other": "{{count}} tasks",
+  "toast": {
+    "closed": "Closed “{{title}}”",
+    "undo": "Undo",
+    "bulkClosed": "Closed {{count}}",
+    "bulkMoved": "Moved {{count}} to tomorrow"
+  },
+  "bulk": {
+    "count": "{{count}} selected",
+    "close": "Close",
+    "tomorrow": "Move to tomorrow",
+    "clear": "Clear",
+    "select": "Select {{title}}"
+  }
 }

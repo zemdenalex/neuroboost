@@ -1,4 +1,6 @@
+import { useTranslation } from 'react-i18next';
 import type { Task } from '../../types';
+import { describeDueDate, dueDateColorClass, formatDueDateLabel } from '../../lib/dueDate';
 
 interface TaskItemProps {
   task: Task;
@@ -20,8 +22,10 @@ export function TaskItem({
   onDragStart,
   onStatusToggle,
 }: TaskItemProps) {
+  const { t, i18n } = useTranslation('common');
   const isDone = task.status === 'DONE';
   const isScheduled = task.status === 'SCHEDULED';
+  const dueInfo = task.dueDate ? describeDueDate(task.dueDate) : null;
 
   return (
     <div
@@ -65,13 +69,13 @@ export function TaskItem({
             {task.estimatedMinutes && (
               <span>{task.estimatedMinutes}m</span>
             )}
-            {task.dueDate && (
-              <span className={getDueDateColor(task.dueDate)}>
-                {formatDueDate(task.dueDate)}
+            {dueInfo && (
+              <span className={dueDateColorClass(dueInfo)}>
+                {formatDueDateLabel(dueInfo, t, i18n.language)}
               </span>
             )}
             {isScheduled && (
-              <span className="text-blue-400">scheduled</span>
+              <span className="text-blue-400">{t('task.scheduled')}</span>
             )}
           </div>
 
@@ -97,27 +101,4 @@ export function TaskItem({
       </div>
     </div>
   );
-}
-
-function formatDueDate(dueDate: string): string {
-  const due = new Date(dueDate);
-  const now = new Date();
-  const diffDays = Math.ceil((due.getTime() - now.getTime()) / (24 * 60 * 60 * 1000));
-
-  if (diffDays < 0) return `${Math.abs(diffDays)}d overdue`;
-  if (diffDays === 0) return 'today';
-  if (diffDays === 1) return 'tomorrow';
-  if (diffDays < 7) return `${diffDays}d`;
-  return due.toLocaleDateString('ru-RU', { month: 'short', day: 'numeric' });
-}
-
-function getDueDateColor(dueDate: string): string {
-  const due = new Date(dueDate);
-  const now = new Date();
-  const diffDays = Math.ceil((due.getTime() - now.getTime()) / (24 * 60 * 60 * 1000));
-
-  if (diffDays < 0) return 'text-red-400';
-  if (diffDays === 0) return 'text-orange-400';
-  if (diffDays === 1) return 'text-yellow-400';
-  return 'text-zinc-500';
 }

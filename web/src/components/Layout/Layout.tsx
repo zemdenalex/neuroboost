@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react'
 import Header from './Header'
 import { MobileNavigation } from './MobileNav'
 import { ToastHost } from '../ui/Toast'
+import { OnboardingProvider } from '../../contexts/OnboardingContext'
+import { OnboardingOverlay } from '../Onboarding/OnboardingOverlay'
+import { HintsLayer } from '../Hints/HintsLayer'
 
 type HeaderVariant = 'horizontal' | 'vertical'
 
@@ -34,20 +37,27 @@ export function Layout({ children }: { children: React.ReactNode }) {
   }, [])
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 font-mono">
-      <Header />
-      <main
-        className={
-          variant === 'horizontal'
-            ? 'pt-14 pb-16 md:pb-0' // Top padding for horizontal header, bottom padding for mobile nav
-            : 'pl-56' // Left padding for vertical sidebar
-        }
-      >
-        {children}
-      </main>
-      <MobileNavigation />
-      <ToastHost />
-    </div>
+    <OnboardingProvider>
+      <div className="min-h-screen bg-zinc-950 text-zinc-100 font-mono">
+        <Header />
+        <main
+          className={
+            variant === 'horizontal'
+              ? 'pt-14 pb-16 md:pb-0' // Top padding for horizontal header, bottom padding for mobile nav
+              // The sidebar is hidden below md, so its left padding must be too —
+              // unconditional pl-56 squeezed a 375px screen down to 129px of
+              // content. The bottom tab bar still renders here, hence pb-16.
+              : 'pb-16 md:pb-0 md:pl-56'
+          }
+        >
+          {children}
+        </main>
+        <MobileNavigation />
+        <ToastHost />
+        <OnboardingOverlay />
+        <HintsLayer />
+      </div>
+    </OnboardingProvider>
   )
 }
 

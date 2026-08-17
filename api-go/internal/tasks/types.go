@@ -29,25 +29,38 @@ const (
 type Task struct {
 	ID               string        `json:"id"`
 	UserID           string        `json:"user_id"`
+	CalendarID       string        `json:"calendar_id"`
 	Title            string        `json:"title"`
 	Description      *string       `json:"description,omitempty"`
 	Status           TaskStatus    `json:"status"`
 	Category         *TaskCategory `json:"category,omitempty"`
 	Priority         int           `json:"priority"`
 	EstimatedMinutes *int          `json:"estimated_minutes,omitempty"`
+	ActualMinutes    int           `json:"actual_minutes"`
 	DueDate          *time.Time    `json:"due_date,omitempty"`
 	Tags             []string      `json:"tags"`
 	Contexts         []string      `json:"contexts"`
 	Energy           *int          `json:"energy,omitempty"`
 	ParentID         *string       `json:"parent_id,omitempty"`
-	CompletedAt      *time.Time    `json:"completed_at,omitempty"`
-	CreatedAt        time.Time     `json:"created_at"`
-	UpdatedAt        time.Time     `json:"updated_at"`
+	// ReminderOffsets holds minutes-before-due_date for each reminder.
+	ReminderOffsets []int      `json:"reminder_offsets"`
+	CompletedAt     *time.Time `json:"completed_at,omitempty"`
+	CreatedAt       time.Time  `json:"created_at"`
+	UpdatedAt       time.Time  `json:"updated_at"`
 }
 
 // CreateTaskRequest represents the request to create a task
 type CreateTaskRequest struct {
-	Title            string        `json:"title"`
+	Title string `json:"title"`
+	// Which calendar the task goes in. Absent or empty means the author's
+	// personal calendar — the behaviour every creation had before shared
+	// calendars, and the one quick-add, the bot and the importer still rely on.
+	//
+	// 🔴 Checked, never trusted: calendars.WritableIDFor verifies the caller is
+	// an active owner or editor. The row's user_id records authorship, not
+	// access, so an unchecked id would write into someone else's calendar with
+	// nothing downstream objecting. Same rule, same helper as events.
+	CalendarID       string        `json:"calendar_id,omitempty"`
 	Description      *string       `json:"description,omitempty"`
 	Status           *TaskStatus   `json:"status,omitempty"`
 	Category         *TaskCategory `json:"category,omitempty"`
@@ -58,7 +71,36 @@ type CreateTaskRequest struct {
 	Contexts         []string      `json:"contexts,omitempty"`
 	Energy           *int          `json:"energy,omitempty"`
 	ParentID         *string       `json:"parent_id,omitempty"`
+	// Pointer, not a bare slice: an absent field means "apply the user's
+	// default preset", an explicitly empty array means "deliberately no
+	// reminders".
+	ReminderOffsets *[]int `json:"reminder_offsets,omitempty"`
 }
+
+// BatchCreateRequest creates many tasks in one round-trip, so pasting a list
+// of twenty is one request rather than twenty.
+type BatchCreateRequest struct {
+	Tasks []CreateTaskRequest `json:"tasks"`
+}
+
+// BatchRowError reports a single row that could not be created.
+// Index is the row's position in the submitted Tasks slice.
+type BatchRowError struct {
+	Index   int    `json:"index"`
+	Code    string `json:"code"`
+	Message string `json:"message"`
+}
+
+// BatchCreateResponse carries the tasks that were created plus the rows that
+// failed. Rows are independent: one bad line does not discard a whole paste.
+type BatchCreateResponse struct {
+	Tasks  []Task          `json:"tasks"`
+	Errors []BatchRowError `json:"errors"`
+}
+
+// MaxBatchTasks caps one batch request, guarding against an accidental paste
+// of a very large document.
+const MaxBatchTasks = 100
 
 // UpdateTaskRequest represents the request to update a task
 type UpdateTaskRequest struct {
@@ -73,6 +115,13 @@ type UpdateTaskRequest struct {
 	Contexts         []string      `json:"contexts,omitempty"`
 	Energy           *int          `json:"energy,omitempty"`
 	ParentID         *string       `json:"parent_id,omitempty"`
+	ReminderOffsets  *[]int        `json:"reminder_offsets,omitempty"`
+}
+
+// LogTimeRequest adds (or, with a negative value, removes) focused minutes
+// to a task's actual_minutes total. Used by the Pomodoro timer + undo.
+type LogTimeRequest struct {
+	Minutes int `json:"minutes"`
 }
 
 // ScheduleTaskRequest represents scheduling a task as an event

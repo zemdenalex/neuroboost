@@ -89,7 +89,3 @@ export function TimeInput({
     </div>
   );
 }
-
-export function getTimeInputRef() {
-  return useRef<HTMLInputElement>(null);
-}

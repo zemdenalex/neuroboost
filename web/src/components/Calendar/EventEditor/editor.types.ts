@@ -1,4 +1,6 @@
 import type { NbEvent } from '../../../types';
+import type { MutationScope } from '../../../lib/recurrence/scope';
+import type { RecurringAction } from '../RecurringScopeDialog';
 
 export interface EditorProps {
   /** Time range for new event creation (null when editing) */
@@ -15,6 +17,16 @@ export interface EditorProps {
   onPatched: () => void;
   /** Delete event by ID */
   onDelete: (id: string) => Promise<void>;
+  /**
+   * Runs a mutation, first asking "this event / all events" when the ID names a
+   * recurring instance. Owned by the calendar page so the editor, the drag layer
+   * and delete all share one dialog and one remembered answer.
+   */
+  withScope: (
+    id: string,
+    action: RecurringAction,
+    run: (scope?: MutationScope) => Promise<void>,
+  ) => Promise<void>;
 }
 
 export interface TimeValidation {
@@ -33,7 +45,7 @@ export interface EditorState {
   tags: string;
   isAllDay: boolean;
   color: string;
-  reminderMinutes: number;
+  reminderOffsets: number[];
   startTimeInput: string;
   endTimeInput: string;
   startDateLocal: string;
@@ -77,18 +89,27 @@ export interface CreateEventBody {
   color?: string;
   timezone?: string;
   rrule?: string;
-  reminders?: Array<{ minutesBefore: number; channel: 'TELEGRAM' | 'WEB' }>;
+  /**
+   * Minutes before start, one entry per reminder. Replaced a `reminders`
+   * array of {minutesBefore, channel} objects that the Go API never declared
+   * and therefore silently discarded.
+   */
+  reminderOffsets?: number[];
+  /**
+   * Which calendar to create in; omitted means the author's personal one.
+   * The backend verifies membership — a supplied id is never trusted.
+   */
+  calendarId?: string;
 }
 
-export const REMINDER_OPTIONS = [
-  { value: 0, label: 'None' },
-  { value: 1, label: '1 min' },
-  { value: 3, label: '3 min' },
-  { value: 5, label: '5 min' },
-  { value: 10, label: '10 min' },
-  { value: 30, label: '30 min' },
-  { value: 60, label: '1 hour' },
-] as const;
+/**
+ * ⚠ This interface is a SECOND declaration of the one in api/index.ts, same
+ * name and same shape, and the two must be kept in step by hand: a field added
+ * to one and not the other fails at the call site with a message about an
+ * unknown property, which is what happened while adding calendarId on
+ * 2026-08-15. Same class as the duplicate task stacks — see the headers in
+ * api/index.ts and api/tasks.ts.
+ */
 
 export const DEFAULT_REFLECTION: ReflectionState = {
   focus: 7,
