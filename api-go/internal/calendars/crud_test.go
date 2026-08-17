@@ -286,6 +286,55 @@ func TestUpdatePreservesUntouchedFields(t *testing.T) {
 	}
 }
 
+// TestClearColorSetsNull covers the one thing COALESCE cannot express.
+//
+// Denis, 17.08: the personal calendar keeps starting with no colour, and its
+// colour must be changeable — which has to include changing it back, or the
+// first pick is permanent. A nil *string already means "leave unchanged", so
+// clearing needed its own flag; this asserts the flag reaches SQL and that it
+// does not take the name down with it.
+func TestClearColorSetsNull(t *testing.T) {
+	userID, cleanup := setupTestDB(t)
+	defer cleanup()
+	ctx := context.Background()
+
+	color := "#7c3aed"
+	c, err := Create(ctx, userID, "Цветной", &color)
+	if err != nil {
+		t.Fatalf("create: %v", err)
+	}
+
+	cleared, err := Update(ctx, userID, c.ID, UpdateFields{ClearColor: true})
+	if err != nil {
+		t.Fatalf("clear color: %v", err)
+	}
+	if cleared.Color != nil {
+		t.Errorf("color must be null after a clear, got %v", *cleared.Color)
+	}
+	if cleared.Name != "Цветной" {
+		t.Errorf("name must survive a clear, got %q", cleared.Name)
+	}
+
+	// The negative half: without it, a CASE branch that always cleared would
+	// pass everything above. A plain update must still leave the colour alone.
+	back := "#22c55e"
+	restored, err := Update(ctx, userID, c.ID, UpdateFields{Color: &back})
+	if err != nil {
+		t.Fatalf("set color again: %v", err)
+	}
+	if restored.Color == nil || *restored.Color != back {
+		t.Errorf("colour must be settable again after a clear, got %v", restored.Color)
+	}
+	renamedOnly := "Переименован"
+	kept, err := Update(ctx, userID, c.ID, UpdateFields{Name: &renamedOnly})
+	if err != nil {
+		t.Fatalf("rename: %v", err)
+	}
+	if kept.Color == nil || *kept.Color != back {
+		t.Errorf("a rename must not clear the colour, got %v", kept.Color)
+	}
+}
+
 // TestListForIncludesInvitedButAccessDoesNot pins the I3 decision: ListFor
 // deliberately does not filter by membership status, so an invited-but-not-
 // accepted user sees the calendar (with Status == StatusInvited) — but

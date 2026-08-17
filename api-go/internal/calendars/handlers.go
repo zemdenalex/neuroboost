@@ -22,20 +22,35 @@ type updateRequest struct {
 	Color *string `json:"color"`
 }
 
-// hexColorRE matches a strict 6-digit hex colour, e.g. #7c3aed. An empty
-// string does not match, so it cannot be used to clear a colour — clearing is
-// deliberately not expressible in v1 (see UpdateFields doc comment).
+// hexColorRE matches a strict 6-digit hex colour, e.g. #7c3aed.
 var hexColorRE = regexp.MustCompile(`^#[0-9a-fA-F]{6}$`)
 
-// validColor reports whether a supplied colour is acceptable. A nil pointer
-// is always valid — it means "not supplied" (absent on create, unchanged on
-// update). A non-nil pointer must be a strict hex colour; an empty string is
-// rejected rather than treated as "no colour".
+// validColor reports whether a supplied colour is acceptable on CREATE. A nil
+// pointer is always valid — it means "not supplied". A non-nil pointer must be
+// a strict hex colour; the empty string is rejected rather than taken as "no
+// colour", because omitting the field already says that and one meaning per
+// value is cheaper than two.
 func validColor(color *string) bool {
 	if color == nil {
 		return true
 	}
 	return hexColorRE.MatchString(*color)
+}
+
+// validColorOrClear is the same check for UPDATE, where the empty string is
+// meaningful: it CLEARS the colour.
+//
+// 🔴 The two endpoints differ on purpose. On create, nil already expresses "no
+// colour", so "" would be a second spelling of one thing. On update, nil is
+// taken — it means "leave unchanged" — so clearing needs a value of its own.
+// Added 2026-08-17: Denis asked that the personal calendar keep starting
+// colourless and that its colour be changeable, and changeable has to include
+// changeable back, or the first pick anyone makes there is permanent.
+func validColorOrClear(color *string) bool {
+	if color != nil && *color == "" {
+		return true
+	}
+	return validColor(color)
 }
 
 // caller resolves the authenticated user, writing the 401 itself. Returns ""
@@ -116,11 +131,18 @@ func UpdateHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	if !validColor(req.Color) {
-		util.RespondError(w, http.StatusBadRequest, "INVALID_COLOR", "Color must be a hex value like #7c3aed")
+	if !validColorOrClear(req.Color) {
+		util.RespondError(w, http.StatusBadRequest, "INVALID_COLOR", "Color must be a hex value like #7c3aed, or \"\" to clear it")
 		return
 	}
-	c, err := Update(r.Context(), userID, chi.URLParam(r, "id"), UpdateFields{Name: req.Name, Color: req.Color})
+	// "" on the wire is the clear; the store takes it as a flag rather than as
+	// a colour, because a nil *string there already means "leave unchanged".
+	fields := UpdateFields{Name: req.Name, Color: req.Color}
+	if req.Color != nil && *req.Color == "" {
+		fields.Color = nil
+		fields.ClearColor = true
+	}
+	c, err := Update(r.Context(), userID, chi.URLParam(r, "id"), fields)
 	if err != nil {
 		respondCalendarError(w, err)
 		return

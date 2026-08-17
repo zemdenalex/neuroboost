@@ -95,11 +95,40 @@ test.describe('375px layout', () => {
       VIEWPORT_WIDTH,
     )
 
-    // Expanding management is where the width actually gets tested: it mounts
-    // the full calendars section, with a colour field and rename/delete rows.
-    await authedPage.getByRole('button', { name: /manage calendars/i }).click()
-    await expect(authedPage.getByTestId('calendars-section')).toBeVisible()
+    // Expanding management is where the width actually gets tested: the rows
+    // grow a colour select, a rename button and a delete button, and a create
+    // field appears underneath.
+    await authedPage.getByTestId('calendar-filter-manage').click()
+    await expect(authedPage.getByTestId('calendar-create-input')).toBeVisible()
     expect(await horizontalOverflow(authedPage), 'managing calendars overflows the screen').toBe(0)
+
+    // 🔴 The document check above CANNOT see this, and that is why Denis found
+    // it and the suite did not. `horizontalOverflow` reads the document's
+    // scrollWidth; the panel has `overflow-y-auto`, so its own overflow is
+    // absorbed into a scrollbar inside the panel and the document stays calm.
+    // What he saw on 16.08 was exactly that: a horizontal scrollbar inside the
+    // panel and a create button clipped at its right edge, with the page
+    // itself perfectly still. Measure the panel against ITSELF.
+    const inner = await panel.evaluate((el) => ({
+      scrollWidth: el.scrollWidth,
+      clientWidth: el.clientWidth,
+    }))
+    expect(
+      inner.scrollWidth - inner.clientWidth,
+      `the panel's own content is wider than the panel (${inner.scrollWidth} > ${inner.clientWidth})`,
+    ).toBeLessThanOrEqual(1)
+
+    // And every control inside it must be reachable, not merely non-scrolling:
+    // a button clipped by the panel's right edge still "exists" to a locator.
+    const panelBox = await panel.boundingBox()
+    for (const testid of ['calendar-create-submit', 'calendar-create-input']) {
+      const box = await authedPage.getByTestId(testid).boundingBox()
+      expect(box, `${testid} has no box`).not.toBeNull()
+      expect(
+        box!.x + box!.width,
+        `${testid} is clipped by the panel's right edge`,
+      ).toBeLessThanOrEqual(panelBox!.x + panelBox!.width + 1)
+    }
   })
 
   test('every reminder preset keeps its delete button on screen', async ({ authedPage }) => {

@@ -214,14 +214,6 @@ func TestCreateHandler_RejectsMalformedColor(t *testing.T) {
 	assertErrorResponse(t, rec, http.StatusBadRequest, "INVALID_COLOR")
 }
 
-func TestCreateHandler_RejectsEmptyStringColor(t *testing.T) {
-	withDummyDB(t)
-	color := ""
-	rec := httptest.NewRecorder()
-	CreateHandler(rec, authedCreateRequest(createRequest{Name: "Team", Color: &color}))
-	assertErrorResponse(t, rec, http.StatusBadRequest, "INVALID_COLOR")
-}
-
 func TestUpdateHandler_RejectsMalformedColor(t *testing.T) {
 	withDummyDB(t)
 	color := "#zzzzzz"
@@ -230,10 +222,49 @@ func TestUpdateHandler_RejectsMalformedColor(t *testing.T) {
 	assertErrorResponse(t, rec, http.StatusBadRequest, "INVALID_COLOR")
 }
 
-func TestUpdateHandler_RejectsEmptyStringColor(t *testing.T) {
+// TestEmptyColorIsAClearOnUpdateOnly replaces an earlier pair of tests that
+// asserted "" is rejected everywhere. That v1 rule was deliberate and is
+// superseded by Denis's decision of 17.08: the personal calendar keeps
+// starting colourless, its colour must be changeable, and changeable includes
+// changeable back. Clearing needs a value of its own because nil already means
+// "leave unchanged".
+//
+// Tested at the validator rather than through UpdateHandler: withDummyDB
+// installs a db with a nil pool, so anything that now PASSES validation
+// panics in the store below. A handler test could only ever assert the
+// rejection, which is the half that no longer holds.
+func TestEmptyColorIsAClearOnUpdateOnly(t *testing.T) {
+	empty := ""
+	hex := "#7c3aed"
+	junk := "blue-400"
+
+	if validColor(&empty) {
+		t.Error("create must still reject \"\": omitting the field already means no colour")
+	}
+	if !validColorOrClear(&empty) {
+		t.Error("update must accept \"\" as a clear")
+	}
+
+	// The controls: a validator that accepted everything, or that only ever
+	// looked at "", would pass both assertions above.
+	if !validColor(&hex) || !validColorOrClear(&hex) {
+		t.Error("a hex colour must be valid on both endpoints")
+	}
+	if validColor(&junk) || validColorOrClear(&junk) {
+		t.Error("a Tailwind class name is not a colour and must be refused on both")
+	}
+	if !validColor(nil) || !validColorOrClear(nil) {
+		t.Error("nil means \"not supplied\" and is valid on both")
+	}
+}
+
+// The create side keeps the original rule, and this pins the asymmetry so it
+// reads as a choice rather than an oversight: on create, omitting the field
+// already means "no colour", so "" would be a second spelling of one thing.
+func TestCreateHandler_StillRejectsEmptyStringColor(t *testing.T) {
 	withDummyDB(t)
 	color := ""
 	rec := httptest.NewRecorder()
-	UpdateHandler(rec, authedUpdateRequest("some-id", updateRequest{Color: &color}))
+	CreateHandler(rec, authedCreateRequest(createRequest{Name: "Team", Color: &color}))
 	assertErrorResponse(t, rec, http.StatusBadRequest, "INVALID_COLOR")
 }

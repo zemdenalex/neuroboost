@@ -167,12 +167,14 @@ func Update(ctx context.Context, userID, calendarID string, p UpdateFields) (Cal
 
 	var c Calendar
 	if err := db.Pool.QueryRow(ctx,
+		// COALESCE cannot express "set to null" — that is exactly what it is
+		// for — so clearing takes its own branch rather than a magic value.
 		`UPDATE calendar
 		 SET name  = COALESCE($2, name),
-		     color = COALESCE($3, color)
+		     color = CASE WHEN $4 THEN NULL ELSE COALESCE($3, color) END
 		 WHERE id = $1
 		 RETURNING id::text, name, color, kind, created_at`,
-		calendarID, p.Name, p.Color,
+		calendarID, p.Name, p.Color, p.ClearColor,
 	).Scan(&c.ID, &c.Name, &c.Color, &c.Kind, &c.CreatedAt); err != nil {
 		// Can only happen if the row disappeared between the pre-flight
 		// requireOwner check above and this UPDATE (e.g. a concurrent delete).

@@ -1,188 +1,46 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { CalendarDays, Pencil, RefreshCw, Trash2 } from 'lucide-react'
-import {
-  listCalendars,
-  createCalendar,
-  updateCalendar,
-  deleteCalendar,
-  type Calendar,
-} from '../../api/calendars'
-import { sortCalendars } from '../../lib/calendars/order'
-import { defaultCalendarColor, resolveColor, PALETTE, PALETTE_NAMES, type PaletteName } from '../../lib/calendar/palette'
-import { describeCalendarError } from '../../lib/calendars/errors'
+import type { Calendar } from '../../api/calendars'
+import { resolveColor, PALETTE, PALETTE_NAMES, type PaletteName } from '../../lib/calendar/palette'
 import { calendarLabel } from '../../lib/calendars/calendarLabel'
-import { showToast } from '../ui/Toast'
-
-type LoadStatus = 'loading' | 'error' | 'loaded'
+import { useCalendarManager } from './useCalendarManager'
 
 /**
  * Calendar list + create/rename/delete, shown as its own settings section.
  *
  * Kept out of Settings.tsx (already 800+ lines, thirteen sections) — this is
  * the fourteenth, self-contained.
+ *
+ * All the behaviour lives in useCalendarManager, shared with the filter
+ * popover on the calendar page. This file is the full-width layout and nothing
+ * else; the popover writes its own, narrow one. See the hook's doc comment for
+ * why that split exists.
  */
 interface Props {
-  /**
-   * Told whenever the list settles, so a host that draws these calendars
-   * elsewhere (the grid's colours, the filter's checkboxes) stays in step with
-   * a rename, a recolour or a delete made here.
-   *
-   * Read through a ref rather than listed as an effect dependency: a caller
-   * that passes an inline arrow — the obvious way to write it — would
-   * otherwise hand a new identity every render, re-run the effect, set the
-   * caller's state, and loop forever. The ref makes the callback's identity
-   * irrelevant, so no caller can get this wrong.
-   */
+  /** Forwarded to the hook — see its doc comment for why it is ref-read. */
   onCalendarsChanged?: (list: Calendar[]) => void
 }
 
 export function CalendarsSection({ onCalendarsChanged }: Props = {}) {
   const { t } = useTranslation('settings')
-
-  const [status, setStatus] = useState<LoadStatus>('loading')
-  const [calendars, setCalendars] = useState<Calendar[]>([])
-  const [newName, setNewName] = useState('')
-  const [creating, setCreating] = useState(false)
-  const [renamingId, setRenamingId] = useState<string | null>(null)
-  const [renameValue, setRenameValue] = useState('')
-  const [busyId, setBusyId] = useState<string | null>(null)
-
-  // Shared by the initial load, the retry button, and a create that lands
-  // while the list is in an errored state (see handleCreate below) — one
-  // place that goes to the server and replaces local state with the truth.
-  const fetchCalendars = useCallback(() => {
-    setStatus('loading')
-    return listCalendars()
-      .then((list) => {
-        setCalendars(sortCalendars(list))
-        setStatus('loaded')
-      })
-      .catch(() => {
-        setStatus('error')
-      })
-  }, [])
-
-  useEffect(() => {
-    void fetchCalendars()
-  }, [fetchCalendars])
-
-  const notify = useRef(onCalendarsChanged)
-  notify.current = onCalendarsChanged
-  useEffect(() => {
-    // Only once the list is the server's answer. Reporting during 'loading'
-    // would hand the host an empty array and blank the grid's colours on every
-    // refetch.
-    if (status === 'loaded') notify.current?.(calendars)
-  }, [calendars, status])
-
-  const handleCreate = async () => {
-    // Guarded here, not just on the submit button: the Enter-key handler
-    // calls this directly and a held/repeated key must not fire twice.
-    //
-    // Also refuses to start unless the list has actually finished loading
-    // ('loaded'). Without this, a create submitted while the initial GET is
-    // still in flight would take the append branch below, and the in-flight
-    // GET's response — a snapshot from before the create — would then land
-    // and overwrite state, silently dropping the just-created row. Requiring
-    // 'loaded' up front means every append below is known-safe rather than
-    // merely likely-safe.
-    if (creating || status !== 'loaded') return
-    const name = newName.trim()
-    if (!name) return
-    setCreating(true)
-    try {
-      // Never colourless. A calendar with no colour is indistinguishable from
-      // every other one on the grid, which was the state of every calendar
-      // created before 2026-08-15 — createCalendar was called with a name only.
-      // Indexed by how many exist so two made in a row differ.
-      const created = await createCalendar(name, defaultCalendarColor(calendars.length))
-      if (status === 'loaded') {
-        setCalendars((prev) => sortCalendars([...prev, created]))
-      } else {
-        // Status moved on while the request was in flight (e.g. a retry
-        // fired concurrently) — local state may no longer be the base the
-        // append would assume. Get the truth from the server instead.
-        await fetchCalendars()
-      }
-      setNewName('')
-    } catch (err) {
-      const msg = describeCalendarError(err, 'calendars.createFailed')
-      showToast(t(msg.key, msg.params))
-    } finally {
-      setCreating(false)
-    }
-  }
-
-  const startRename = (cal: Calendar) => {
-    setRenamingId(cal.id)
-    setRenameValue(cal.name)
-  }
-
-  /**
-   * Change a calendar's colour.
-   *
-   * Optimistic like the rename beside it: the dot changes under the hand, and
-   * a failure rolls it back and says so. Waiting on the network to recolour a
-   * dot reads as a dead control.
-   */
-  const submitColor = async (id: string, color: string) => {
-    const previous = calendars.find((c) => c.id === id)?.color ?? null
-    setCalendars((prev) => prev.map((c) => (c.id === id ? { ...c, color } : c)))
-    setBusyId(id)
-    try {
-      await updateCalendar(id, { color })
-    } catch (err) {
-      setCalendars((prev) => prev.map((c) => (c.id === id ? { ...c, color: previous } : c)))
-      const msg = describeCalendarError(err, 'calendars.renameFailed')
-      showToast(t(msg.key, msg.params))
-    } finally {
-      setBusyId(null)
-    }
-  }
-
-  const cancelRename = () => {
-    setRenamingId(null)
-    setRenameValue('')
-  }
-
-  const submitRename = async (id: string) => {
-    if (busyId === id) return
-    const name = renameValue.trim()
-    if (!name) return
-    setBusyId(id)
-    try {
-      const updated = await updateCalendar(id, { name })
-      setCalendars((prev) => sortCalendars(prev.map((c) => (c.id === id ? updated : c))))
-      cancelRename()
-    } catch (err) {
-      const msg = describeCalendarError(err, 'calendars.renameFailed')
-      showToast(t(msg.key, msg.params))
-      // CALENDAR_NOT_FOUND: someone deleted this calendar elsewhere between
-      // load and this rename. The row on screen no longer matches the
-      // server — refetch instead of leaving a stale row in place.
-      if (msg.reconcile) void fetchCalendars()
-    } finally {
-      setBusyId(null)
-    }
-  }
-
-  const handleDelete = async (cal: Calendar) => {
-    if (busyId === cal.id) return
-    setBusyId(cal.id)
-    try {
-      await deleteCalendar(cal.id)
-      setCalendars((prev) => prev.filter((c) => c.id !== cal.id))
-    } catch (err) {
-      const msg = describeCalendarError(err, 'calendars.deleteFailed')
-      showToast(t(msg.key, msg.params))
-      // Already gone on the server (deleted elsewhere) — reconcile rather
-      // than leave a row on screen that no longer exists.
-      if (msg.reconcile) void fetchCalendars()
-    } finally {
-      setBusyId(null)
-    }
-  }
+  const {
+    status,
+    calendars,
+    fetchCalendars,
+    newName,
+    setNewName,
+    creating,
+    handleCreate,
+    renamingId,
+    renameValue,
+    setRenameValue,
+    startRename,
+    cancelRename,
+    submitRename,
+    submitColor,
+    handleDelete,
+    busyId,
+  } = useCalendarManager({ onCalendarsChanged })
 
   return (
     <section
@@ -243,15 +101,18 @@ export function CalendarsSection({ onCalendarsChanged }: Props = {}) {
                     data-testid="calendar-color-select"
                     aria-label={t('calendars.color')}
                     value={PALETTE_NAMES.find((n) => PALETTE[n] === resolveColor(cal.color)) ?? ''}
-                    onChange={(e) => void submitColor(cal.id, PALETTE[e.target.value as PaletteName])}
+                    onChange={(e) =>
+                      void submitColor(cal.id, e.target.value ? PALETTE[e.target.value as PaletteName] : null)
+                    }
                     disabled={isBusy}
                     className="bg-zinc-800 border border-zinc-700 rounded px-1 py-0.5 text-xs text-white disabled:opacity-40"
                   >
-                    {/* Only present while the stored colour is not one of ours —
-                        a hex typed in earlier, or nothing at all. */}
-                    {!PALETTE_NAMES.some((n) => PALETTE[n] === resolveColor(cal.color)) && (
-                      <option value="">—</option>
-                    )}
+                    {/* Always present, not only while the stored colour is
+                        foreign to the palette. The personal calendar starts
+                        with no colour on purpose (Denis, 17.08) and its colour
+                        must be changeable — which has to include changing it
+                        back, or the first pick anyone makes is permanent. */}
+                    <option value="">—</option>
                     {PALETTE_NAMES.map((n) => (
                       <option key={n} value={n}>{n}</option>
                     ))}

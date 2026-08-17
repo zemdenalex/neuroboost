@@ -28,11 +28,17 @@ type Calendar struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
-// UpdateFields carries a PATCH. A nil field means "leave unchanged" — clearing
-// a colour back to null is not expressible in v1 and no caller needs it.
+// UpdateFields carries a PATCH. A nil field means "leave unchanged".
+//
+// ClearColor is how a colour goes back to null, and it needs its own field
+// because a nil *string already means "unchanged" — the two cannot share one
+// pointer. Added 2026-08-17: the personal calendar is created colourless and
+// stays that way by design, so its colour is settable; without a way back, the
+// first pick a user makes there would be permanent.
 type UpdateFields struct {
-	Name  *string
-	Color *string
+	Name       *string
+	Color      *string
+	ClearColor bool
 }
 
 var (
