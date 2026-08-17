@@ -18,7 +18,7 @@
 `tg_id`. Вход через Telegram-виджет **создаёт новую запись**, а не привязывает к существующей.
 
 > ⚠ **Проверено 17.08.2026 чтением кода**, а не по памяти:
-> `api-go/internal/auth/handlers.go:559` — `createUserFromTelegram` делает
+> `api-go/internal/auth/handlers.go:560` — `createUserFromTelegram` делает
 > `INSERT INTO "user" (tg_id, …)`, и ни одной ветки, которая искала бы существующего
 > пользователя по email и дописывала бы ему `tg_id`, рядом нет.
 > Способ перепроверить позже: `grep -n "createUserFromTelegram" -A 20 api-go/internal/auth/handlers.go`.
