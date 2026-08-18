@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-08-17
 tags: [neuroboost, p3, calendars, ux, denis]
-weight: { importance: 4, connectivity: 4, access: 5, last_accessed: 2026-08-17 }
+weight: { importance: 4, connectivity: 3, access: 6, last_accessed: 2026-08-18 }
 sources:
   - quote: "приложение + ссылка токен которая работает 2 часа"
   - quote: "дать цвет, но изначально оставить как сейчас есть, добавить возможность менять"

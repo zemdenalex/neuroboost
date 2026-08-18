@@ -758,3 +758,37 @@ per-viewer — колонкой быть не могут), 👥 и автор в
 
 **Читать первыми в следующей сессии:** `learning-a-button-is-not-a-feature`,
 `learning-a-setting-with-no-reader`, `learning-explain-a-red-test-with-numbers`.
+
+## [2026-08-19] recall | learning-a-rewrite-can-drop-features-silently, decision-restore-what-the-rewrite-dropped, learning-a-test-that-cannot-fail-guards-nothing, learning-e2e-baseline-recorded-on-a-monday, learning-green-because-skipped-proves-nothing, learning-merge-to-main-is-the-release, learning-a-mechanism-is-not-a-state, decision-sharing-shape-and-colour-defaults
+
+## [2026-08-19] продолжение — бота выкатили, дальше проектируем его заново
+
+**Чем кончилась ночь.** Паритет с v0.2.1 закрыт (4 возможности), но Денис прошёл бота руками и
+увидел старое. Причина: **CI бота не выкатывает ни dev, ни прод** — оба на nl-2, руками.
+Выкатил dev вручную (`@NeuroBoost_dev_bot`, `/opt/neuroboost-bot`, старое в `src.bak-2026-08-19`).
+Урок — `learning-green-tests-are-not-a-deployed-bot`, механика — `CLAUDE.md` gotcha 19.
+
+**Что Денис назвал плохим** (`workitem-bot-what-denis-called-bad`): три претензии закрылись
+выкатом, три настоящие и не трогались — заметки становятся задачами, создание задачи убогое,
+меню отсылает к reply-кнопкам вместо действия.
+
+**Решение на следующую сессию** (`decision-brainstorm-the-bot-before-building-more`, его слова):
+сперва **brainstorming** — чем бот должен быть, — затем план, затем реализация. 🔴 Паритет как
+источник требований исчерпан: то, что он ругает, было плохим и в v0.2.1. Требования теперь от
+Дениса, не из `_legacy/`.
+
+**Читать первыми:** `decision-brainstorm-the-bot-before-building-more`,
+`workitem-bot-what-denis-called-bad`, `learning-green-tests-are-not-a-deployed-bot`,
+`learning-a-button-is-not-a-feature`, `learning-a-setting-with-no-reader`.
+
+**Навыки следующей сессии:** `superpowers:brainstorming` (спека в
+`docs/superpowers/specs/`), затем `superpowers:writing-plans`, затем
+`superpowers:subagent-driven-development`.
+
+**Состояние:** `develop` 319+ впереди `main`, 0 незапушенных, CI зелёный, 16 миграций, прод на
+`v0.4.10` — вся ночная работа **не в проде**. Фронт 594 теста, e2e 48 passed, оба Go-модуля
+зелёные (api-go — против настоящей Postgres).
+
+**На Денисе:** ротация токена бота (BotFather) · ночного бэкапа прода нет · форма мобильного
+календаря (`docs/razbor-mobilnyy-kalendar-2026-08-19.md`, рекомендован вариант A) · 4 узла в
+promote-очереди.

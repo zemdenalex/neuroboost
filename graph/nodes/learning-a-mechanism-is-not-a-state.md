@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-08-17
 tags: [neuroboost, evidence, p3, auth, method]
-weight: { importance: 5, connectivity: 7, access: 6, last_accessed: 2026-08-18 }
+weight: { importance: 5, connectivity: 8, access: 7, last_accessed: 2026-08-18 }
 sources:
   - file: "docs/ocenka-p3-srez3-2026-08-17.md §«ИСПРАВЛЕНО В ТОТ ЖЕ ДЕНЬ»"
   - command: "docker exec neuroboost-db psql -U neuroboost -d neuroboost -c 'SELECT display_name, email IS NOT NULL, tg_id IS NOT NULL FROM \"user\";'"

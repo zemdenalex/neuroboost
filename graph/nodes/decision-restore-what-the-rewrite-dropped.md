@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-08-18
 tags: [neuroboost, bot, denis, roadmap]
-weight: { importance: 4, connectivity: 3, access: 5, last_accessed: 2026-08-18 }
+weight: { importance: 4, connectivity: 5, access: 6, last_accessed: 2026-08-18 }
 sources:
   - quote: "Вернуть — запись протухла"
   - quote: "хочу уже на этой неделе использовать neuroboost по полной"

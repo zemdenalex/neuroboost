@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-08-18
 tags: [neuroboost, bot, regression, docs]
-weight: { importance: 5, connectivity: 4, access: 6, last_accessed: 2026-08-18 }
+weight: { importance: 5, connectivity: 9, access: 7, last_accessed: 2026-08-18 }
 sources:
   - file: "docs/analiz-bot-vs-web-2026-08-18.md §2"
   - file: "_legacy/snapshots-v0.0.1-v0.4.0/v0.2.1/apps/bot/src/index.mjs (bot.action registry)"
@@ -17,6 +17,7 @@ links:
   - relates-to: entity-bot-creates-events-from-one-line
   - relates-to: decision-restore-what-the-rewrite-dropped
   - relates-to: learning-a-button-is-not-a-feature
+  - relates-to: decision-brainstorm-the-bot-before-building-more
 ---
 Сравнение поверхности нынешнего Go-бота с его же предшественником v0.2.1 (Telegraf, 3130
 строк) показало регрессию по **трём** позициям: запланировать задачу на время кнопками
