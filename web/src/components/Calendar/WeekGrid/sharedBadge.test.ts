@@ -93,6 +93,39 @@ describe('an event block shows whether anyone else sees it', () => {
     expect(authorText(shared)).toContain('Настя');
   });
 
+  it('still names the author on a block too short for a time row', () => {
+    // 🔴 HOUR_PX is 44, so a 30-minute event is 22px and a 45-minute one 33px —
+    // both under the `height > 35` gate that draws the time. That gate predates
+    // sharing, and the result was a badge saying "shared" on a block that could
+    // never say by whom. Half an answer, on the commonest block size there is.
+    //
+    // Measured against a real e2e run on 19.08: the badge was visible at 375px
+    // and the author element did not exist at all.
+    const tiny = block({ height: 22, isShared: true, authorName: 'Настя' });
+    expect(testIds(tiny)).toContain('shared-badge');
+    expect(authorText(tiny), 'a 30-minute shared event does not say whose it is').toContain('Настя');
+  });
+
+  it('does not print the author twice when both rows could hold it', () => {
+    // The compact branch is exclusive with the time row. Two elements sharing
+    // one testid would make every later assertion here ambiguous, and on screen
+    // it reads as a rendering bug.
+    const roomy = block({ height: 60, isShared: true, authorName: 'Настя' });
+    const ids = testIds(roomy).filter((id) => id === 'event-author');
+    expect(ids).toHaveLength(1);
+
+    const tiny = block({ height: 22, isShared: true, authorName: 'Настя' });
+    expect(testIds(tiny).filter((id) => id === 'event-author')).toHaveLength(1);
+  });
+
+  it('says nothing extra on a short block the viewer wrote themselves', () => {
+    // No author means no compact branch: a shared block of your own keeps only
+    // the badge, exactly as a tall one does.
+    const own = block({ height: 22, isShared: true });
+    expect(testIds(own)).toContain('shared-badge');
+    expect(testIds(own)).not.toContain('event-author');
+  });
+
   it('keeps the author on the time line rather than adding a row', () => {
     // A 40px block shows a title and a time and nothing else. If the author
     // took its own line it would be clipped exactly when the day is busiest.

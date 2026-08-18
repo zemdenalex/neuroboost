@@ -35,6 +35,12 @@ export const EventBlock = memo(function EventBlock({
     zIndexClass = event.height < 60 ? 'z-20' : 'z-10';
   }
   
+  // The time row is gated on height below; when it will not render, the author
+  // has nowhere to go but the title line. Named here so the two places agree by
+  // construction rather than by two copies of the same number.
+  const showsTimeRow = event.height > 35;
+  const compactAuthor = !showsTimeRow && !isMultiDaySegment && Boolean(event.authorName);
+
   const borderRadius = isMultiDaySegment
     ? isFirstSegment ? '4px 4px 0 0' 
       : isLastSegment ? '0 0 4px 4px' 
@@ -100,10 +106,26 @@ export const EventBlock = memo(function EventBlock({
           {event.isShared && (
             <Users
               size={12}
-              aria-label="Общий календарь"
+              aria-label={event.authorName ? `Общий календарь · ${event.authorName}` : 'Общий календарь'}
               data-testid="shared-badge"
               className="text-zinc-300 flex-shrink-0"
             />
+          )}
+          {/* 🔴 The author moves up here when the time row will not be drawn.
+              HOUR_PX is 44, so a 30-minute block is 22px and a 45-minute one
+              33px — both below the `height > 35` gate below. That gate predates
+              sharing, and its effect was that every event shorter than ~48
+              minutes showed the 👥 badge and could never say whose it was: the
+              viewer learns the event is shared and not who put it there, which
+              is the half of the answer that is no use.
+
+              Only in that case. A normal block keeps the author on the time
+              line, where it has been since the badge shipped, and this branch
+              cannot touch it. */}
+          {compactAuthor && (
+            <span className="min-w-0 truncate text-xs font-normal text-zinc-400" data-testid="event-author">
+              · {event.authorName}
+            </span>
           )}
           {isMultiDaySegment && !isLastSegment && (
             <span className="text-purple-300 flex-shrink-0">→</span>
@@ -114,7 +136,7 @@ export const EventBlock = memo(function EventBlock({
             The author shares the time's line rather than taking one of its
             own: at 375px a block is often 35–55px tall, and a second line
             would either be clipped or push the description out. */}
-        {event.height > 35 && !isMultiDaySegment && (
+        {showsTimeRow && !isMultiDaySegment && (
           <div className="text-zinc-300 text-xs leading-tight flex items-center gap-1 min-w-0">
             <span className="flex-shrink-0">
               {formatTimeFromUtc(event.startsAt, timezone)}–{formatTimeFromUtc(event.endsAt, timezone)}
@@ -129,7 +151,7 @@ export const EventBlock = memo(function EventBlock({
             )}
           </div>
         )}
-        {event.height > 35 && isMultiDaySegment && (
+        {showsTimeRow && isMultiDaySegment && (
           <div className="text-purple-200 text-xs leading-tight">
             {isFirstSegment && `${formatTimeFromUtc(event.startsAt, timezone)} →`}
             {!isFirstSegment && !isLastSegment && '← →'}
