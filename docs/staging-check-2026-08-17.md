@@ -128,7 +128,7 @@ Settings → «Как показывать подсказки»: **bubbles** · 
 | 🔴 Ротация токена бота — **предусловие релиза**: он лежал в логах двух процессов | 16.08 | утечка закрыта `5bcb043`; прошлое редакция не лечит — ротация либо сделана, либо нет |
 | ❌ **ОТМЕНЕНО:** «из бота нельзя создать событие» | было в CLAUDE.md | Неверно с 13.08: `bot/internal/handlers/events.go` — `📅 New Event`, строка вида «Ужин завтра 19:00», время спрашивается кнопками. Проверить: `grep -n startNewEventFlow bot/internal/handlers/events.go` |
 | 🔴 Событие с пустым `reminder_offsets = {}` не напомнит никогда | 17.08 | `grep -n "cardinality(reminder_offsets)" api-go/internal/reminders/scan.go` |
-| 🟡 Четырёх мобильных видов календаря нет | 17.08 | `ls web/src/components/MobileCalendar` — нет каталога, значит в силе |
+| ⚠ Четырёх мобильных видов календаря нет — обещала спека, не план `v0.4.5` | 19.08 | `ls web/src/components/Calendar/MobileCalendar` — каталога нет; но план их и не брал, см. `razbor-mobilnyy-kalendar-2026-08-19.md` |
 | 🟡 Версия в `/api/health` захардкожена — по ней нельзя понять, какой билд выкачен | 17.08 | `grep -n '"0.4' api-go/internal/status/handlers.go` |
 | ❌ **ОТМЕНЕНО:** «ESLint отсутствует, запрет `any` не исполняется» | было в CLAUDE.md gotcha 17 | Неверно: `web/eslint.config.mjs` + скрипт `lint`. `cd web && pnpm lint` — **0 errors, 4 warnings**, живых `any` в `src/` ноль (единственное вхождение — внутри комментария) |
 | ❌ **ОТМЕНЕНО:** «recurring не трогай, вернёт 500 (R1)» | было в v0.4.10 | R1 починен 28.07; проверяется тем, что повторяющееся событие правится |

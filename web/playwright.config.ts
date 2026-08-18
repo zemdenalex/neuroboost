@@ -4,8 +4,14 @@ import { defineConfig, devices } from '@playwright/test'
  * Visual verification harness.
  *
  * Exists because green unit tests cannot see the screen: the R1 recurring-scope
- * dialog was "verified" by reading JSON and had never been clicked in a browser,
- * and v0.4.5 shipped as done while four mobile calendar views were never built.
+ * dialog was "verified" by reading JSON and had never been clicked in a browser.
+ *
+ * ⚠ This comment used to add "and v0.4.5 shipped as done while four mobile
+ * calendar views were never built". That was wrong about who dropped them: the
+ * SPEC named those views, and the v0.4.5 PLAN declined them in its Architecture
+ * section — "Fix existing mobile components rather than building new view
+ * systems". The plan shipped what it promised. See
+ * docs/razbor-mobilnyy-kalendar-2026-08-19.md.
  *
  * Target defaults to staging rather than a dev server: what matters is whether
  * the deployed build works, and the loop that uses this runs unattended, where
