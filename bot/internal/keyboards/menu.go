@@ -67,6 +67,33 @@ func CreateMenu() tgbotapi.InlineKeyboardMarkup {
 	)
 }
 
+// TaskListEmpty replaces the sentence "Use ➕ New Task to create one."
+func TaskListEmpty() tgbotapi.InlineKeyboardMarkup {
+	return tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("➕ Новая задача", "new_task"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("🏠 Меню", "main_menu"),
+		),
+	)
+}
+
+// RestartNewEvent replaces the sentence "Начни заново: 📅 New Event" — the
+// flow's own state was lost (a stale button press after a bot restart), and
+// the recovery is a button that starts a fresh new-event flow, not prose
+// telling the user which reply button to go press.
+func RestartNewEvent() tgbotapi.InlineKeyboardMarkup {
+	return tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("📅 Новое событие", "new_event"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("🏠 Меню", "main_menu"),
+		),
+	)
+}
+
 // AgendaActions sits under 📅 События. The screen offers what can be done from
 // it rather than naming a reply button.
 func AgendaActions() tgbotapi.InlineKeyboardMarkup {

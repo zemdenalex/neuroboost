@@ -41,7 +41,7 @@ func (h *Handler) handleNewEventFlow(chatID int64, text string) {
 	us := h.store.GetOrCreate(chatID)
 	if us.FlowStep != "line" {
 		h.store.ClearFlow(chatID)
-		h.sendText(chatID, "Something went wrong. Use /start")
+		h.sendHTMLWithKeyboard(chatID, "Что-то пошло не так.", keyboards.HomeInline())
 		return
 	}
 
@@ -75,7 +75,7 @@ func (h *Handler) handleWhenSelect(chatID int64, data string) {
 	title, _ := us.FlowData["title"].(string)
 	if title == "" {
 		h.store.ClearFlow(chatID)
-		h.sendText(chatID, "Не помню название. Начни заново: 📅 New Event")
+		h.sendHTMLWithKeyboard(chatID, "Не помню название.", keyboards.RestartNewEvent())
 		return
 	}
 

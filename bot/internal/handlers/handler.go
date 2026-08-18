@@ -137,7 +137,7 @@ func (h *Handler) HandleMessage(msg *tgbotapi.Message) {
 		case "start", "help":
 			h.handleStart(chatID)
 		default:
-			h.sendText(chatID, "Unknown command. Use /start to see the menu.")
+			h.sendHTMLWithKeyboard(chatID, "Неизвестная команда.", keyboards.HomeInline())
 		}
 		return
 	}

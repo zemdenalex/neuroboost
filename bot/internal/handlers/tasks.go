@@ -14,12 +14,13 @@ func (h *Handler) handleTasks(chatID int64, messageID int) {
 	us := h.store.GetOrCreate(chatID)
 	tasks, err := h.api.GetTasks(us.AuthToken, "TODO")
 	if err != nil {
-		h.sendText(chatID, "❌ Failed to load tasks: "+err.Error())
+		h.editOrSend(chatID, messageID,
+			"⚠️ Не дозвонился до сервера. Попробуй через минуту.", keyboards.HomeInline())
 		return
 	}
 
 	if len(tasks) == 0 {
-		h.sendHTMLWithKeyboard(chatID, "📋 <b>No tasks</b>\n\nUse ➕ New Task to create one.", keyboards.BackToMenu())
+		h.editOrSend(chatID, messageID, "📋 <b>Задач нет</b>", keyboards.TaskListEmpty())
 		return
 	}
 
@@ -46,7 +47,7 @@ func (h *Handler) handleTasks(chatID int64, messageID int) {
 	))
 
 	kb := tgbotapi.NewInlineKeyboardMarkup(rows...)
-	h.sendHTMLWithKeyboard(chatID, text, kb)
+	h.editOrSend(chatID, messageID, text, kb)
 }
 
 func (h *Handler) handleTaskAction(chatID int64, taskID string) {

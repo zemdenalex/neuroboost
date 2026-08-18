@@ -41,7 +41,7 @@ func (h *Handler) handleFlowInput(chatID int64, text string) {
 		h.handleNewEventFlow(chatID, text)
 	default:
 		h.store.ClearFlow(chatID)
-		h.sendText(chatID, "Something went wrong. Use /start")
+		h.sendHTMLWithKeyboard(chatID, "Что-то пошло не так.", keyboards.HomeInline())
 	}
 }
 
@@ -70,7 +70,7 @@ func (h *Handler) handleNewTaskFlow(chatID int64, text string) {
 		h.sendHTMLWithKeyboard(chatID, "Choose priority:", keyboards.TaskPriority())
 	default:
 		h.store.ClearFlow(chatID)
-		h.sendText(chatID, "Something went wrong. Use /start")
+		h.sendHTMLWithKeyboard(chatID, "Что-то пошло не так.", keyboards.HomeInline())
 	}
 }
 

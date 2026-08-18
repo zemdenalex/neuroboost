@@ -182,7 +182,7 @@ func (h *Handler) handleCalendarDay(chatID int64, date string) {
 
 	text := fmt.Sprintf("📅 <b>%d %s %d</b>\n\n", day.Day(), monthGenitive(day.Month()), day.Year())
 	if len(events) == 0 {
-		text += "Пусто. Создать — <b>📅 New Event</b>."
+		text += "Пусто."
 	} else {
 		sort.Slice(events, func(i, j int) bool { return events[i].StartsAt < events[j].StartsAt })
 		for _, e := range events {
