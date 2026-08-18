@@ -8,6 +8,7 @@ import (
 	"neuroboost/api-go/internal/calendars"
 	"neuroboost/api-go/internal/database"
 	"neuroboost/api-go/internal/middleware"
+	"neuroboost/api-go/internal/usersettings"
 	"neuroboost/api-go/internal/util"
 )
 
@@ -110,7 +111,15 @@ func GetWeekHandler(w http.ResponseWriter, r *http.Request) {
 		UnscheduledTasks: tasks,
 		WeekEvents:       events,
 		ScheduledHours:   scheduledHours,
-		AvailableHours:   40, // Default: 8h × 5 days
+		// 🔴 Was the literal 40, "8h × 5 days", for as long as this endpoint has
+		// existed. The user's own work_start/work_end/work_days were written by
+		// the Settings page, copied into localStorage by AuthContext, and read
+		// by nothing — this line is the reader they never had, and without it
+		// the setting is decorative in every client.
+		//
+		// Defaults to the same 40 when the blob is empty or unreadable, so the
+		// number does not move for anyone who has not set it.
+		AvailableHours: usersettings.LoadWorkWeek(r.Context(), userID).Hours(),
 	}
 
 	util.RespondJSON(w, http.StatusOK, plan)
