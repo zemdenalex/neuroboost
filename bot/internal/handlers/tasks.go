@@ -10,7 +10,7 @@ import (
 	"github.com/zemdenalex/neuroboost-bot/internal/keyboards"
 )
 
-func (h *Handler) handleTasks(chatID int64) {
+func (h *Handler) handleTasks(chatID int64, messageID int) {
 	us := h.store.GetOrCreate(chatID)
 	tasks, err := h.api.GetTasks(us.AuthToken, "TODO")
 	if err != nil {
@@ -88,7 +88,7 @@ func (h *Handler) handleTaskAction(chatID int64, taskID string) {
 	h.sendHTMLWithKeyboard(chatID, text, keyboards.TaskActions(taskID))
 }
 
-func (h *Handler) handleTaskDone(chatID int64, taskID string) {
+func (h *Handler) handleTaskDone(chatID int64, messageID int, taskID string) {
 	us := h.store.GetOrCreate(chatID)
 	err := h.api.UpdateTask(us.AuthToken, taskID, map[string]any{"status": "DONE"})
 	if err != nil {
@@ -96,10 +96,10 @@ func (h *Handler) handleTaskDone(chatID int64, taskID string) {
 		return
 	}
 	h.sendText(chatID, "✅ Task completed!")
-	h.handleTasks(chatID)
+	h.handleTasks(chatID, messageID)
 }
 
-func (h *Handler) handleTaskDelete(chatID int64, taskID string) {
+func (h *Handler) handleTaskDelete(chatID int64, messageID int, taskID string) {
 	us := h.store.GetOrCreate(chatID)
 	err := h.api.DeleteTask(us.AuthToken, taskID)
 	if err != nil {
@@ -107,5 +107,5 @@ func (h *Handler) handleTaskDelete(chatID int64, taskID string) {
 		return
 	}
 	h.sendText(chatID, "🗑 Task deleted")
-	h.handleTasks(chatID)
+	h.handleTasks(chatID, messageID)
 }

@@ -10,6 +10,7 @@ import (
 	"github.com/zemdenalex/neuroboost-bot/internal/api"
 	"github.com/zemdenalex/neuroboost-bot/internal/auth"
 	"github.com/zemdenalex/neuroboost-bot/internal/config"
+	"github.com/zemdenalex/neuroboost-bot/internal/keyboards"
 	"github.com/zemdenalex/neuroboost-bot/internal/logsafe"
 	"github.com/zemdenalex/neuroboost-bot/internal/notifier"
 	"github.com/zemdenalex/neuroboost-bot/internal/state"
@@ -142,26 +143,23 @@ func (h *Handler) HandleMessage(msg *tgbotapi.Message) {
 	}
 
 	switch msg.Text {
-	case "🎯 Today":
-		h.handleToday(chatID)
-	case "📋 Tasks":
-		h.handleTasks(chatID)
-	case "📝 Note":
-		h.startNoteFlow(chatID)
-	case "➕ New Task":
-		h.startNewTaskFlow(chatID)
-	case "📅 New Event":
-		h.startNewEventFlow(chatID)
-	case "🗓 Calendar":
+	case "🏠 Меню":
+		h.handleMenu(chatID, 0)
+	case "🗓 Календарь":
 		h.handleCalendar(chatID, time.Now())
-	case "🗂 Planning":
-		h.handlePlanning(chatID)
-	case "📊 Stats":
-		h.handleStats(chatID)
-	case "⚙️ Settings":
+	// AMENDED BY CONTROLLER RULING — see the ledger.
+	// "📅 События" is deliberately NOT routed here: handleAgenda is created in
+	// Task 3, and calling it now would stop this task compiling. A stub is worse
+	// — this plan forbids placeholder code. Until Task 3 the button falls to the
+	// default branch and shows the home screen, which is honest rather than broken.
+	case "📋 Задачи":
+		h.handleTasks(chatID, 0)
+	case "➕ Создать":
+		h.sendHTMLWithKeyboard(chatID, "Что создаём?", keyboards.CreateMenu())
+	case "⚙️ Настройки":
 		h.handleSettings(chatID)
 	default:
-		h.sendText(chatID, "Use the menu buttons or /start")
+		h.sendHTMLWithKeyboard(chatID, "Не понял. Вот меню:", keyboards.HomeInline())
 	}
 }
 
@@ -208,11 +206,21 @@ func (h *Handler) HandleCallback(cb *tgbotapi.CallbackQuery) {
 
 	switch {
 	case data == "main_menu":
-		h.handleStart(chatID)
+		h.handleMenu(chatID, cb.Message.MessageID)
+	case data == "stats":
+		h.handleStats(chatID)
+	case data == "create_menu":
+		h.editOrSend(chatID, cb.Message.MessageID, "Что создаём?", keyboards.CreateMenu())
+	case data == "new_task":
+		h.startNewTaskFlow(chatID)
+	case data == "new_event":
+		h.startNewEventFlow(chatID)
+	case data == "new_note":
+		h.startNoteFlow(chatID)
 	case data == "today_focus":
 		h.handleToday(chatID)
 	case data == "top_tasks":
-		h.handleTasks(chatID)
+		h.handleTasks(chatID, cb.Message.MessageID)
 	case strings.HasPrefix(data, "task_action_"):
 		h.handleTaskAction(chatID, strings.TrimPrefix(data, "task_action_"))
 	// The three scheduling steps, in the order they fire. They sit above
@@ -227,9 +235,9 @@ func (h *Handler) HandleCallback(cb *tgbotapi.CallbackQuery) {
 	case strings.HasPrefix(data, "task_plan_"):
 		h.handleTaskSchedule(chatID, strings.TrimPrefix(data, "task_plan_"))
 	case strings.HasPrefix(data, "task_done_"):
-		h.handleTaskDone(chatID, strings.TrimPrefix(data, "task_done_"))
+		h.handleTaskDone(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "task_done_"))
 	case strings.HasPrefix(data, "task_delete_"):
-		h.handleTaskDelete(chatID, strings.TrimPrefix(data, "task_delete_"))
+		h.handleTaskDelete(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "task_delete_"))
 	// The month grid. cal_back_ re-renders as a NEW message rather than editing:
 	// it is pressed from a day view, which is its own message, and editing that
 	// into a grid would destroy what the user was reading.

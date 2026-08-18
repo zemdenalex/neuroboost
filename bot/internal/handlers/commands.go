@@ -7,13 +7,11 @@ import (
 )
 
 func (h *Handler) handleStart(chatID int64) {
-	text := "🧠 <b>NeuroBoost</b>\n\n" +
-		"Calendar-first productivity for neurodivergent minds.\n\n" +
-		"Use the menu below to get started:"
-	msg := tgbotapi.NewMessage(chatID, text)
+	msg := tgbotapi.NewMessage(chatID, "🧠 <b>NeuroBoost</b>")
 	msg.ParseMode = "HTML"
 	msg.ReplyMarkup = keyboards.MainMenu()
-	h.bot.Send(msg)
+	h.send(chatID, msg)
+	h.handleMenu(chatID, 0)
 }
 
 // handleSettings moved to settings.go when it stopped being a link.
