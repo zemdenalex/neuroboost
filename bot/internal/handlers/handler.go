@@ -147,11 +147,8 @@ func (h *Handler) HandleMessage(msg *tgbotapi.Message) {
 		h.handleMenu(chatID, 0)
 	case "🗓 Календарь":
 		h.handleCalendar(chatID, time.Now())
-	// AMENDED BY CONTROLLER RULING — see the ledger.
-	// "📅 События" is deliberately NOT routed here: handleAgenda is created in
-	// Task 3, and calling it now would stop this task compiling. A stub is worse
-	// — this plan forbids placeholder code. Until Task 3 the button falls to the
-	// default branch and shows the home screen, which is honest rather than broken.
+	case "📅 События":
+		h.handleAgenda(chatID, 0)
 	case "📋 Задачи":
 		h.handleTasks(chatID, 0)
 	case "➕ Создать":
@@ -253,6 +250,8 @@ func (h *Handler) HandleCallback(cb *tgbotapi.CallbackQuery) {
 	// callback has already been answered above.
 	case data == "noop":
 		return
+	case data == "cal_open":
+		h.handleCalendar(chatID, time.Now())
 	case data == "planning":
 		h.handlePlanning(chatID)
 	case data == "settings_menu":

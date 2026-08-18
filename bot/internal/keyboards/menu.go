@@ -66,3 +66,17 @@ func CreateMenu() tgbotapi.InlineKeyboardMarkup {
 		),
 	)
 }
+
+// AgendaActions sits under 📅 События. The screen offers what can be done from
+// it rather than naming a reply button.
+func AgendaActions() tgbotapi.InlineKeyboardMarkup {
+	return tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("➕ Событие", "new_event"),
+			tgbotapi.NewInlineKeyboardButtonData("🗓 Календарь", "cal_open"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("🏠 Меню", "main_menu"),
+		),
+	)
+}
