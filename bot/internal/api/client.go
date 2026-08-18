@@ -209,8 +209,15 @@ func (c *Client) DeleteTask(token string, id string) error {
 	return c.del("/api/tasks/"+id, token)
 }
 
-func (c *Client) ScheduleTask(token string, id string, startTime string, durationMin int) error {
-	body := map[string]any{"start_time": startTime, "estimated_minutes": durationMin}
+// ScheduleTask turns a task into a calendar block.
+//
+// The body is ScheduleTaskRequest (api-go/internal/tasks/types.go:128). Until
+// 18.08 this method sent {"start_time", "estimated_minutes"} — fields that
+// endpoint has never decoded — and had no callers, so nothing ever found out.
+// all_day is sent explicitly rather than left to the zero value: the wire
+// format is the contract, not Go's defaults.
+func (c *Client) ScheduleTask(token string, id string, startsAt, endsAt string) error {
+	body := map[string]any{"starts_at": startsAt, "ends_at": endsAt, "all_day": false}
 	return c.post("/api/tasks/"+id+"/schedule", token, body, nil)
 }
 

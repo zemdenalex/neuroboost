@@ -213,6 +213,17 @@ func (h *Handler) HandleCallback(cb *tgbotapi.CallbackQuery) {
 		h.handleTasks(chatID)
 	case strings.HasPrefix(data, "task_action_"):
 		h.handleTaskAction(chatID, strings.TrimPrefix(data, "task_action_"))
+	// The three scheduling steps, in the order they fire. They sit above
+	// task_done_/task_delete_ only for readability — every prefix here is
+	// distinct, deliberately: a switch on prefixes where one is a prefix of
+	// another routes by declaration order, which is a rule nobody remembers
+	// when adding the fourth button.
+	case strings.HasPrefix(data, "task_sched_"):
+		h.handleTaskScheduleWhen(chatID, strings.TrimPrefix(data, "task_sched_"))
+	case strings.HasPrefix(data, "task_when_"):
+		h.handleTaskScheduleDuration(chatID, strings.TrimPrefix(data, "task_when_"))
+	case strings.HasPrefix(data, "task_plan_"):
+		h.handleTaskSchedule(chatID, strings.TrimPrefix(data, "task_plan_"))
 	case strings.HasPrefix(data, "task_done_"):
 		h.handleTaskDone(chatID, strings.TrimPrefix(data, "task_done_"))
 	case strings.HasPrefix(data, "task_delete_"):
