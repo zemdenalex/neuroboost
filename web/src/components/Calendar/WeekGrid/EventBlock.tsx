@@ -96,9 +96,21 @@ export const EventBlock = memo(function EventBlock({
         <div className="absolute left-0 right-0 h-2 bottom-0 cursor-ns-resize bg-transparent hover:bg-blue-400/20" />
       )}
 
-      <div className="px-2 py-1 min-h-0 leading-tight overflow-hidden">
+      {/* 🔴 A 22px block (30 minutes at HOUR_PX 44) cannot hold a 14px line
+          plus 8px of vertical padding: measured on staging, the title row ran
+          from 693 to 713 inside a block ending at 710, so three pixels of every
+          short event's title have always been clipped. overflow-hidden hid the
+          symptom, and nothing measured the block until this week.
+
+          So short blocks lose the vertical padding and drop to text-xs, which
+          fits. Taller blocks are untouched. */}
+      <div className={`px-2 min-h-0 leading-tight overflow-hidden ${showsTimeRow ? 'py-1' : 'py-0'}`}>
         {/* Title with multi-day arrows */}
-        <div className="font-semibold text-sm flex items-center gap-1 mb-0.5">
+        <div
+          className={`font-semibold flex items-center gap-1 ${
+            showsTimeRow ? 'text-sm mb-0.5' : 'text-xs mb-0'
+          }`}
+        >
           {isMultiDaySegment && !isFirstSegment && (
             <span className="text-purple-300 flex-shrink-0">←</span>
           )}
