@@ -221,6 +221,65 @@ func (c *Client) ScheduleTask(token string, id string, startsAt, endsAt string) 
 	return c.post("/api/tasks/"+id+"/schedule", token, body, nil)
 }
 
+// Settings are a JSONB blob on the user row, and PATCH /api/auth/me REPLACES
+// it wholesale (auth/handlers.go:266 — `settings = $N`, not a jsonb merge).
+//
+// 🔴 That makes a partial write destructive. A bot sending {"work_start":"08:00"}
+// would erase header_variant, ui_scale, work_days, features and quiet hours in
+// one call, and the user would find out days later in the web app. The web
+// client survives this only because it always holds the whole object in memory
+// and sends all of it back.
+//
+// So the bot reads first and merges. MergeSettings is separate from the request
+// so the merge itself can be tested without a server: it is the part that has to
+// be right, and "did not lose the keys it never knew about" is not observable in
+// the bot's own UI.
+
+// MySettings returns the current settings blob for this user.
+func (c *Client) MySettings(token string) (map[string]any, error) {
+	var resp struct {
+		Data struct {
+			Settings map[string]any `json:"settings"`
+		} `json:"data"`
+	}
+	if err := c.get("/api/auth/me", token, nil, &resp); err != nil {
+		return nil, err
+	}
+	if resp.Data.Settings == nil {
+		return map[string]any{}, nil
+	}
+	return resp.Data.Settings, nil
+}
+
+// MergeSettings lays a patch over the current blob without dropping anything
+// else. Shallow by design: every field this bot touches is a scalar or a whole
+// array, and a deep merge would make removing an element impossible.
+func MergeSettings(current, patch map[string]any) map[string]any {
+	merged := make(map[string]any, len(current)+len(patch))
+	for k, v := range current {
+		merged[k] = v
+	}
+	for k, v := range patch {
+		merged[k] = v
+	}
+	return merged
+}
+
+// PatchSettings reads, merges and writes back. The read-modify-write race is
+// real but narrow, and losing a concurrent edit is a smaller harm than the
+// guaranteed erasure a blind write causes.
+func (c *Client) PatchSettings(token string, patch map[string]any) (map[string]any, error) {
+	current, err := c.MySettings(token)
+	if err != nil {
+		return nil, err
+	}
+	merged := MergeSettings(current, patch)
+	if err := c.patch("/api/auth/me", token, map[string]any{"settings": merged}, nil); err != nil {
+		return nil, err
+	}
+	return merged, nil
+}
+
 func (c *Client) SubmitFeedback(token string, req CreateFeedbackReq) error {
 	return c.post("/api/feedback", token, req, nil)
 }

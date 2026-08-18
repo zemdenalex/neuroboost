@@ -228,6 +228,12 @@ func (h *Handler) HandleCallback(cb *tgbotapi.CallbackQuery) {
 		h.handleTaskDone(chatID, strings.TrimPrefix(data, "task_done_"))
 	case strings.HasPrefix(data, "task_delete_"):
 		h.handleTaskDelete(chatID, strings.TrimPrefix(data, "task_delete_"))
+	case data == "settings_menu":
+		h.handleSettings(chatID)
+	case data == "settings_workhours":
+		h.handleWorkHours(chatID)
+	case strings.HasPrefix(data, "wh_"):
+		h.handleWorkHourSet(chatID, strings.TrimPrefix(data, "wh_"))
 	case strings.HasPrefix(data, "priority_"):
 		h.handlePrioritySelect(chatID, data)
 	case strings.HasPrefix(data, "when_"):

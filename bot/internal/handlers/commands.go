@@ -16,9 +16,4 @@ func (h *Handler) handleStart(chatID int64) {
 	h.bot.Send(msg)
 }
 
-func (h *Handler) handleSettings(chatID int64) {
-	text := "⚙️ <b>Settings</b>\n\n" +
-		"Settings are managed in the web app.\n" +
-		"Open: https://neuroboost.website/settings"
-	h.sendHTML(chatID, text)
-}
+// handleSettings moved to settings.go when it stopped being a link.

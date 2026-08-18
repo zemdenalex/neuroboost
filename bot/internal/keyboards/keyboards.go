@@ -1,6 +1,11 @@
 package keyboards
 
-import tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+import (
+	"fmt"
+	"strconv"
+
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+)
 
 func MainMenu() tgbotapi.ReplyKeyboardMarkup {
 	return tgbotapi.NewReplyKeyboard(
@@ -126,4 +131,50 @@ func EventWhen() tgbotapi.InlineKeyboardMarkup {
 			tgbotapi.NewInlineKeyboardButtonData("Завтра утром", "when_tomorrow"),
 		),
 	)
+}
+
+// SettingsMenu is the ⚙️ screen. One working control today; the button that
+// leads to it must do something, which is the whole point of the screen.
+func SettingsMenu() tgbotapi.InlineKeyboardMarkup {
+	return tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("🕘 Рабочие часы", "settings_workhours"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("« Menu", "main_menu"),
+		),
+	)
+}
+
+// WorkHoursStart / WorkHoursEnd lay the offered hours out three to a row.
+//
+// The hour list is a parameter rather than a constant here so the handler owns
+// what is offered and the keyboard owns only how it looks — and so a test can
+// hand it an absurd list and watch the row-packing hold.
+func WorkHoursStart(hours []int) tgbotapi.InlineKeyboardMarkup {
+	return hourKeyboard(hours, "wh_start_", "settings_menu")
+}
+
+func WorkHoursEnd(hours []int) tgbotapi.InlineKeyboardMarkup {
+	return hourKeyboard(hours, "wh_end_", "settings_menu")
+}
+
+func hourKeyboard(hours []int, prefix, back string) tgbotapi.InlineKeyboardMarkup {
+	var rows [][]tgbotapi.InlineKeyboardButton
+	var row []tgbotapi.InlineKeyboardButton
+	for _, h := range hours {
+		row = append(row, tgbotapi.NewInlineKeyboardButtonData(
+			fmt.Sprintf("%02d:00", h), prefix+strconv.Itoa(h)))
+		if len(row) == 3 {
+			rows = append(rows, row)
+			row = nil
+		}
+	}
+	if len(row) > 0 {
+		rows = append(rows, row)
+	}
+	rows = append(rows, tgbotapi.NewInlineKeyboardRow(
+		tgbotapi.NewInlineKeyboardButtonData("« Назад", back),
+	))
+	return tgbotapi.NewInlineKeyboardMarkup(rows...)
 }
