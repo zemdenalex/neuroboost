@@ -36,6 +36,14 @@ PostgreSQL + Telegram bot. "The calendar is truth; tasks exist to support schedu
 - 🔴 **Последнее состояние работы — хвост `graph/log.md`**, он инжектится на старте сессии.
   `.remember/handoff-2026-07-28.md` — это состояние на 28.07, а не «последнее»
 
+**Реестр внешнего материала: `docs/sources.md`** (заведён 18.08 — до него внешних источников
+у проекта не было вовсе). Источники истины из него, которые нельзя заменять своей памятью:
+- Что бот умеет и чего лишён, с проверками — `docs/razbor-bot-telegram-native-2026-08-18.md`
+- Спека работ по боту — `docs/superpowers/specs/2026-08-18-bot-telegram-native-and-sharing-design.md`
+- Что умеет Telegram сегодня — https://core.telegram.org/bots/api-changelog
+- Точные сигнатуры новой библиотеки — go-модуль github.com/go-telegram/bot@v1.23.0
+- Чего лишена действующая — go-модуль github.com/go-telegram-bot-api/telegram-bot-api/v5@v5.5.1
+
 🟢 **Активно врущих документов больше нет (12.08).** `README.md` починен; `PROGRESS.md`,
 `DEPLOY.md` и `docs/NeuroBoost_v0_4_0_Feature_List.md` безопасны шапкой-предупреждением в первых
 строках — они исторические артефакты, и переписывать их под сегодня значит стереть их ценность.
