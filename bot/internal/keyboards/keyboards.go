@@ -178,3 +178,60 @@ func hourKeyboard(hours []int, prefix, back string) tgbotapi.InlineKeyboardMarku
 	))
 	return tgbotapi.NewInlineKeyboardMarkup(rows...)
 }
+
+// MonthGrid renders the six-week month.
+//
+// It receives labels and dates already computed rather than a year and a month
+// it would have to walk itself: the marks (today, has-events) depend on data
+// this package has no business fetching, and splitting it this way lets the
+// layout be tested against a fixed grid instead of against the current date.
+//
+// weekdayNoop is the header row. Telegram has no inert button, so the cells
+// carry "noop" — which the router must accept and ignore. A callback nothing
+// answers leaves the spinner turning on the user's screen.
+func MonthGrid(year, month int, monthName string, labels, dates []string) tgbotapi.InlineKeyboardMarkup {
+	pos := strconv.Itoa(year) + "_" + strconv.Itoa(month)
+
+	rows := [][]tgbotapi.InlineKeyboardButton{
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("⬅", "cal_prev_"+pos),
+			tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("%s %d", monthName, year), "noop"),
+			tgbotapi.NewInlineKeyboardButtonData("➡", "cal_next_"+pos),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("Пн", "noop"),
+			tgbotapi.NewInlineKeyboardButtonData("Вт", "noop"),
+			tgbotapi.NewInlineKeyboardButtonData("Ср", "noop"),
+			tgbotapi.NewInlineKeyboardButtonData("Чт", "noop"),
+			tgbotapi.NewInlineKeyboardButtonData("Пт", "noop"),
+			tgbotapi.NewInlineKeyboardButtonData("Сб", "noop"),
+			tgbotapi.NewInlineKeyboardButtonData("Вс", "noop"),
+		),
+	}
+
+	for i := 0; i+7 <= len(labels) && i+7 <= len(dates); i += 7 {
+		var row []tgbotapi.InlineKeyboardButton
+		for j := i; j < i+7; j++ {
+			row = append(row, tgbotapi.NewInlineKeyboardButtonData(labels[j], "cal_day_"+dates[j]))
+		}
+		rows = append(rows, row)
+	}
+
+	rows = append(rows, tgbotapi.NewInlineKeyboardRow(
+		tgbotapi.NewInlineKeyboardButtonData("« Menu", "main_menu"),
+	))
+	return tgbotapi.NewInlineKeyboardMarkup(rows...)
+}
+
+// DayView sends the user back to the month they came from, not to a default.
+func DayView(year, month int) tgbotapi.InlineKeyboardMarkup {
+	return tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("« К месяцу",
+				"cal_back_"+strconv.Itoa(year)+"_"+strconv.Itoa(month)),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("« Menu", "main_menu"),
+		),
+	)
+}

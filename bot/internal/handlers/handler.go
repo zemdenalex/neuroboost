@@ -228,6 +228,21 @@ func (h *Handler) HandleCallback(cb *tgbotapi.CallbackQuery) {
 		h.handleTaskDone(chatID, strings.TrimPrefix(data, "task_done_"))
 	case strings.HasPrefix(data, "task_delete_"):
 		h.handleTaskDelete(chatID, strings.TrimPrefix(data, "task_delete_"))
+	// The month grid. cal_back_ re-renders as a NEW message rather than editing:
+	// it is pressed from a day view, which is its own message, and editing that
+	// into a grid would destroy what the user was reading.
+	case strings.HasPrefix(data, "cal_prev_"), strings.HasPrefix(data, "cal_next_"):
+		h.handleCalendarNav(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "cal_"))
+	case strings.HasPrefix(data, "cal_day_"):
+		h.handleCalendarDay(chatID, strings.TrimPrefix(data, "cal_day_"))
+	case strings.HasPrefix(data, "cal_back_"):
+		h.handleCalendarBack(chatID, strings.TrimPrefix(data, "cal_back_"))
+	// The grid's header and weekday cells. Telegram has no inert button, so they
+	// carry "noop" — and it must land somewhere, or every tap on a weekday
+	// header falls through to the default and does nothing visible while the
+	// callback has already been answered above.
+	case data == "noop":
+		return
 	case data == "settings_menu":
 		h.handleSettings(chatID)
 	case data == "settings_workhours":
@@ -266,6 +281,24 @@ func (h *Handler) sendHTML(chatID int64, text string) {
 	msg := tgbotapi.NewMessage(chatID, text)
 	msg.ParseMode = "HTML"
 	h.send(chatID, msg)
+}
+
+// editHTMLWithKeyboard replaces a message in place — what paging needs, so a
+// month calendar does not leave a new grid in the chat on every tap.
+//
+// Telegram answers "message is not modified" when the new text and keyboard are
+// byte-identical to the old, which happens whenever a user taps the same page
+// twice. That is not a failure worth a log line, and it is certainly not worth
+// a message to the user; everything else is.
+func (h *Handler) editHTMLWithKeyboard(chatID int64, messageID int, text string, kb tgbotapi.InlineKeyboardMarkup) {
+	msg := tgbotapi.NewEditMessageTextAndMarkup(chatID, messageID, text, kb)
+	msg.ParseMode = "HTML"
+	if _, err := h.bot.Send(msg); err != nil {
+		if strings.Contains(err.Error(), "message is not modified") {
+			return
+		}
+		log.Printf("edit in chat %d failed: %s", chatID, logsafe.Redact(err))
+	}
 }
 
 func (h *Handler) sendHTMLWithKeyboard(chatID int64, text string, kb tgbotapi.InlineKeyboardMarkup) {

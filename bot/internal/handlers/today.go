@@ -11,13 +11,19 @@ import (
 
 func (h *Handler) handleToday(chatID int64) {
 	us := h.store.GetOrCreate(chatID)
-	loc, _ := time.LoadLocation(h.cfg.Timezone)
+	// h.location() rather than LoadLocation with a dropped error: that returned
+	// a nil *Location on a bad TZ name, and time.Date panics on nil — in the
+	// handler behind the most-pressed button in the bot.
+	loc := h.location()
 	now := time.Now().In(loc)
 
-	todayStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
-	todayEnd := todayStart.Add(24 * time.Hour)
+	// 🔴 Built in the user's zone, then converted. This used to stamp the local
+	// calendar date with time.UTC, which for Moscow queried 03:00–03:00: three
+	// hours of yesterday evening included, tonight's last three hours missing.
+	// "Today" looked right most of the time, which is why it survived.
+	from, to := dayBounds(now, loc)
 
-	events, err := h.api.GetEvents(us.AuthToken, todayStart.Format(time.RFC3339), todayEnd.Format(time.RFC3339))
+	events, err := h.api.GetEvents(us.AuthToken, from, to)
 	if err != nil {
 		h.sendText(chatID, "❌ Failed to load events: "+err.Error())
 		return
@@ -61,4 +67,18 @@ func (h *Handler) handleToday(chatID int64) {
 
 func (h *Handler) handleStats(chatID int64) {
 	h.sendHTML(chatID, "📊 <b>Stats</b>\n\nComing soon! Track your productivity trends here.")
+}
+
+// dayBounds is the half-open UTC range covering one local calendar day.
+//
+// Extracted so the conversion can be asserted: the whole defect was invisible
+// inside a handler that needs a store, a bot and a live API to run at all, and
+// "today" is right in 21 of every 24 hours even when it is wrong.
+//
+// Sent as UTC rather than as an offset-bearing RFC3339 string, matching every
+// other call this bot makes — one wire format, one thing to be wrong about.
+func dayBounds(now time.Time, loc *time.Location) (string, string) {
+	local := now.In(loc)
+	start := time.Date(local.Year(), local.Month(), local.Day(), 0, 0, 0, 0, loc)
+	return start.UTC().Format(time.RFC3339), start.AddDate(0, 0, 1).UTC().Format(time.RFC3339)
 }
