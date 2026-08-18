@@ -17,6 +17,7 @@ links:
   - relates-to: learning-green-because-skipped-proves-nothing
   - relates-to: entity-p3-slice2-calendar-crud
   - relates-to: learning-checkbox-in-a-plan-is-a-claim-not-evidence
+  - relates-to: learning-explain-a-red-test-with-numbers
 ---
 **Правило.** Прежде чем засчитать тест как охрану, ответь: **что я должен сломать, чтобы он
 покраснел?** Если ответа нет — тест ничего не измеряет, а его зелёный цвет читается как
