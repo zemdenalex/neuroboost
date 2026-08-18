@@ -15,6 +15,7 @@ links:
   - relates-to: learning-a-rewrite-can-drop-features-silently
   - relates-to: learning-a-test-that-cannot-fail-guards-nothing
   - relates-to: learning-a-mechanism-is-not-a-state
+  - relates-to: learning-a-setting-with-no-reader
 ---
 17–18.08 я сравнивал Go-бота с его предшественником v0.2.1 и читал **`keyboards.mjs`** — файл,
 который рисует кнопки. Вышел список из пяти потерянных возможностей; он уехал в
