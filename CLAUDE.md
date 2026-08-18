@@ -215,7 +215,27 @@ cd web && pnpm test --run                      # сколько тестов н�
     - **Восстановление** (если снова: dirty на версии N): доложить недостающие колонки →
       `UPDATE schema_migrations SET version = N-1, dirty = false` → перезапустить API.
       SQL записан в `api-go/migrations/000016_repair_reminder_baseline.up.sql`.
-19. ⚠ **Прод-бот живёт на nl-2 и НЕ в git.** `/opt/neuroboost-bot-prod` — это `.env`,
+19. 🔴 **ОБА бота живут на nl-2 и НЕ выкатываются CI. Это делает «готово» про бота ложью
+    по умолчанию.** CI бота **собирает и тестирует** (`ci.yml`, job `backend`, шаг «Build and
+    test bot»), но **не деплоит ни одного** — ни dev, ни прод. Telegram недоступен с основного
+    хоста, поэтому оба бота вынесены на nl-2 и обновляются руками.
+    - **dev:** `/opt/neuroboost-bot`, контейнер `neuroboost-dev-bot`, **@NeuroBoost_dev_bot**,
+      `API_BASE=https://dev.neuroboost.website`
+    - **прод:** `/opt/neuroboost-bot-prod`, контейнер `neuroboost-prod-bot`,
+      **@NeuroBoost_assistant_bot**, `API_BASE=https://neuroboost.website`
+    - Обновление (обе среды одинаково): `cd /opt/neuroboost-bot{,-prod} && mv src src.bak-<дата>`,
+      затем `git archive --prefix=src/ <ref>:bot | ssh … 'cd … && tar x'`, затем
+      `docker compose up -d --build bot`. Ключ — `~/.ssh/ufo_servers`, `root@185.214.10.107`.
+    - 🔴 **Урок 19.08, стоивший Денису прохода по чеклисту:** четыре возможности бота были
+      написаны, покрыты тестами, проверены вызовами API — и объявлены готовыми, хотя ни одна
+      не доехала до бота, который можно нажать. Денис прошёл руками и увидел старое: настройки
+      ссылкой, календарь подсказкой, меню без новых кнопок. **«Зелёные тесты» и «выкачено» —
+      разные утверждения; для бота второе требует ручного шага, которого нет ни в одном
+      pipeline.** Прежде чем сказать про бота «готово» — `ls` его `src/` на nl-2.
+    - ⚠ Два инстанса на одном токене конкурируют за `getUpdates`, и доставка начинает мигать
+      через раз — поэтому в `docker-compose*.yml` сервис `bot` спрятан за profile `local-bot`
+      и не поднимается вместе с остальным.
+19b. ⚠ **Прежняя редакция этой записи (только про прод-бота):** `/opt/neuroboost-bot-prod` — это `.env`,
     `docker-compose.yml` и **скопированная** папка `src`. Обновление:
     `git archive --prefix=src/ <tag>:bot | ssh …`, затем `docker compose up -d --build`.
     `API_BASE=https://neuroboost.website`. Ключ — `~/.ssh/ufo_servers`, `root@185.214.10.107`.
