@@ -154,6 +154,8 @@ func (h *Handler) HandleMessage(msg *tgbotapi.Message) {
 		h.startNewEventFlow(chatID)
 	case "🗓 Calendar":
 		h.handleCalendar(chatID, time.Now())
+	case "🗂 Planning":
+		h.handlePlanning(chatID)
 	case "📊 Stats":
 		h.handleStats(chatID)
 	case "⚙️ Settings":
@@ -243,6 +245,8 @@ func (h *Handler) HandleCallback(cb *tgbotapi.CallbackQuery) {
 	// callback has already been answered above.
 	case data == "noop":
 		return
+	case data == "planning":
+		h.handlePlanning(chatID)
 	case data == "settings_menu":
 		h.handleSettings(chatID)
 	case data == "settings_workhours":

@@ -22,6 +22,9 @@ func MainMenu() tgbotapi.ReplyKeyboardMarkup {
 		),
 		tgbotapi.NewKeyboardButtonRow(
 			tgbotapi.NewKeyboardButton("🗓 Calendar"),
+			tgbotapi.NewKeyboardButton("🗂 Planning"),
+		),
+		tgbotapi.NewKeyboardButtonRow(
 			tgbotapi.NewKeyboardButton("📊 Stats"),
 		),
 		tgbotapi.NewKeyboardButtonRow(

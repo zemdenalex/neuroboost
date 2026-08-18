@@ -280,6 +280,36 @@ func (c *Client) PatchSettings(token string, patch map[string]any) (map[string]a
 	return merged, nil
 }
 
+// PlanningTask is one task the planner has not placed yet.
+type PlanningTask struct {
+	ID               string `json:"id"`
+	Title            string `json:"title"`
+	Priority         int    `json:"priority"`
+	EstimatedMinutes *int   `json:"estimated_minutes,omitempty"`
+}
+
+// WeekPlanResult mirrors planning.WeekPlan, narrowed to what the bot draws.
+//
+// Only four of its fields are read. The rest — week_start, week_end,
+// week_events — are answered by the endpoint and deliberately not decoded: the
+// bot shows a load figure and a list of unplaced work, and pulling the whole
+// week's events across to count hours the server already counted would be a
+// second source of truth for the same number.
+type WeekPlanResult struct {
+	UnscheduledTasks []PlanningTask `json:"unscheduled_tasks"`
+	ScheduledHours   float64        `json:"scheduled_hours"`
+	AvailableHours   float64        `json:"available_hours"`
+}
+
+// WeekPlan asks the API what this week already looks like.
+func (c *Client) WeekPlan(token string) (WeekPlanResult, error) {
+	var resp struct {
+		Data WeekPlanResult `json:"data"`
+	}
+	err := c.get("/api/planning/week", token, nil, &resp)
+	return resp.Data, err
+}
+
 func (c *Client) SubmitFeedback(token string, req CreateFeedbackReq) error {
 	return c.post("/api/feedback", token, req, nil)
 }
