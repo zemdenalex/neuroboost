@@ -311,3 +311,44 @@ func (h *Handler) sendHTMLWithKeyboard(chatID int64, text string, kb tgbotapi.In
 	msg.ReplyMarkup = kb
 	h.send(chatID, msg)
 }
+
+// shouldSendNew decides whether a navigation step must post a new message.
+//
+// Pulled out of editOrSend as a pure function on purpose: the method around it
+// cannot run without a bot, a store and a reachable API, and this decision is
+// the only part of it that can be wrong.
+func shouldSendNew(messageID int, editErr error) bool {
+	if messageID == 0 {
+		// The press came from a reply-keyboard button or a command; there is no
+		// message of ours to edit.
+		return true
+	}
+	if editErr == nil {
+		return false
+	}
+	// An identical re-render. Not a failure, and answering it with a fresh
+	// message would double the screen on every second tap.
+	if strings.Contains(editErr.Error(), "message is not modified") {
+		return false
+	}
+	// Anything else — most often a message past Telegram's 48-hour edit window.
+	// Falling back to a new message is the only outcome the user can see.
+	return true
+}
+
+// editOrSend renders a screen onto the message it was triggered from, or posts
+// a new one when there is nothing to edit.
+func (h *Handler) editOrSend(chatID int64, messageID int, text string, kb tgbotapi.InlineKeyboardMarkup) {
+	if messageID != 0 {
+		edit := tgbotapi.NewEditMessageTextAndMarkup(chatID, messageID, text, kb)
+		edit.ParseMode = "HTML"
+		_, err := h.bot.Send(edit)
+		if !shouldSendNew(messageID, err) {
+			return
+		}
+		if err != nil {
+			log.Printf("edit in chat %d fell back to a new message: %s", chatID, logsafe.Redact(err))
+		}
+	}
+	h.sendHTMLWithKeyboard(chatID, text, kb)
+}
