@@ -39,19 +39,29 @@ type CreateEventReq struct {
 }
 
 type Task struct {
-	ID               string `json:"id"`
-	Title            string `json:"title"`
-	Status           string `json:"status"`
-	Priority         int    `json:"priority"`
-	EstimatedMinutes int    `json:"estimated_minutes"`
-	DueDate          string `json:"due_date"`
-	CompletedAt      string `json:"completed_at"`
+	ID               string   `json:"id"`
+	Title            string   `json:"title"`
+	Status           string   `json:"status"`
+	Priority         int      `json:"priority"`
+	EstimatedMinutes int      `json:"estimated_minutes"`
+	DueDate          string   `json:"due_date"`
+	CompletedAt      string   `json:"completed_at"`
+	Tags             []string `json:"tags"`
 }
 
+// CreateTaskReq mirrors api-go's CreateTaskRequest for the fields the bot uses.
+//
+// 🔴 Every optional field is a pointer with omitempty, and Priority especially:
+// 0 is Buffer, a priority a user can pick, so a plain int cannot express "not
+// stated". The API treats an absent priority as its own default; it treats 0 as
+// Buffer. Those are different tasks.
 type CreateTaskReq struct {
-	Title    string `json:"title"`
-	Priority int    `json:"priority"`
-	Status   string `json:"status"`
+	Title            string   `json:"title"`
+	Priority         *int     `json:"priority,omitempty"`
+	Status           string   `json:"status,omitempty"`
+	DueDate          *string  `json:"due_date,omitempty"` // ISO 8601
+	EstimatedMinutes *int     `json:"estimated_minutes,omitempty"`
+	Tags             []string `json:"tags,omitempty"`
 }
 
 type CreateFeedbackReq struct {

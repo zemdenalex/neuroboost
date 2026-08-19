@@ -268,6 +268,8 @@ func (h *Handler) HandleCallback(cb *tgbotapi.CallbackQuery) {
 		h.handlePrioritySelect(chatID, data)
 	case strings.HasPrefix(data, "when_"):
 		h.handleWhenSelect(chatID, data)
+	case data == "nt_save":
+		h.handleTaskCardSave(chatID, cb.Message.MessageID)
 	}
 }
 
