@@ -270,6 +270,16 @@ func (h *Handler) HandleCallback(cb *tgbotapi.CallbackQuery) {
 		h.handleWhenSelect(chatID, data)
 	case data == "nt_save":
 		h.handleTaskCardSave(chatID, cb.Message.MessageID)
+	case data == "nt_wizard":
+		h.handleTaskWizardStart(chatID, cb.Message.MessageID)
+	case data == "nt_skip":
+		h.handleTaskWizardSkip(chatID, cb.Message.MessageID)
+	case strings.HasPrefix(data, "nt_p_"):
+		h.handleWizardPriority(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "nt_p_"))
+	case strings.HasPrefix(data, "nt_d_"):
+		h.handleWizardDue(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "nt_d_"))
+	case strings.HasPrefix(data, "nt_e_"):
+		h.handleWizardEstimate(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "nt_e_"))
 	}
 }
 
