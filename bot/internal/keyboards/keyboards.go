@@ -24,17 +24,71 @@ func TaskPriority() tgbotapi.InlineKeyboardMarkup {
 	)
 }
 
+// TaskActions is the card for one existing task.
+//
+// Срок / Оценка / Теги reuse the wizard's own step screens rather than
+// duplicating them: the question "when is this due" has one right keyboard, and
+// two copies of it drift apart the first time one is edited.
+//
+// Budget check, not arithmetic in prose: keyboards_test.go asserts every
+// callback_data here against Telegram's 64 bytes. task_sched_ + a 36-character
+// UUID is the longest button ON THIS CARD, at 47; the screens these three
+// buttons open (TaskDue, TaskEstimate below) carry a longer "_set_" callback
+// of their own and are asserted the same way.
 func TaskActions(taskID string) tgbotapi.InlineKeyboardMarkup {
 	return tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("⏰ Запланировать", "task_sched_"+taskID),
 		),
 		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("📅 Срок", "task_due_"+taskID),
+			tgbotapi.NewInlineKeyboardButtonData("⏱ Оценка", "task_est_"+taskID),
+			tgbotapi.NewInlineKeyboardButtonData("🏷 Теги", "task_tag_"+taskID),
+		),
+		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("✅ Done", "task_done_"+taskID),
 			tgbotapi.NewInlineKeyboardButtonData("🗑 Delete", "task_delete_"+taskID),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("« Back", "top_tasks"),
+			tgbotapi.NewInlineKeyboardButtonData("« Назад", "top_tasks"),
+		),
+	)
+}
+
+// TaskDue and TaskEstimate answer "📅 Срок" / "⏱ Оценка" on an existing task's
+// card. They reuse dueRow / estimateRow (task.go) — the wizard's own two data
+// rows — so the values offered here can never drift from what "📝 Подробнее"
+// offers when creating a task.
+//
+// The footer is the one thing that could not be reused as-is: wizardEscapes()
+// carries "⏭ Пропустить" / "✅ Создать сейчас", both worded for the moment a
+// task is being created. Firing "✅ Создать сейчас" on a task that already
+// exists would be a button that does the wrong thing while claiming to create
+// one — worse than a dead button, not better — so this footer is its own row,
+// a plain cancel back to the card.
+//
+// The callback prefix also can't be nt_d_/nt_e_: those carry no task id, and
+// this bot deliberately keeps every task button self-describing (see
+// TaskScheduleWhen's comment below) rather than remembering which task is
+// "current" in session state, which breaks the moment two cards are open. So
+// the value-setting buttons here get their own "task_due_set_"/"task_est_set_"
+// prefix, one level more specific than the card's own "task_due_"/"task_est_"
+// — HandleCallback must check the "_set_" prefix first, same rule as every
+// other prefix switch in this bot.
+func TaskDue(taskID string) tgbotapi.InlineKeyboardMarkup {
+	return tgbotapi.NewInlineKeyboardMarkup(
+		dueRow("task_due_set_"+taskID+"_"),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("« Отмена", "task_action_"+taskID),
+		),
+	)
+}
+
+func TaskEstimate(taskID string) tgbotapi.InlineKeyboardMarkup {
+	return tgbotapi.NewInlineKeyboardMarkup(
+		estimateRow("task_est_set_"+taskID+"_"),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("« Отмена", "task_action_"+taskID),
 		),
 	)
 }

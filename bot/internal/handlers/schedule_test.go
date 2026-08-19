@@ -133,6 +133,8 @@ func scheduleKeyboards() map[string]tgbotapi.InlineKeyboardMarkup {
 		"TaskActions":          keyboards.TaskActions(uuid),
 		"TaskScheduleWhen":     keyboards.TaskScheduleWhen(uuid),
 		"TaskScheduleDuration": keyboards.TaskScheduleDuration(uuid, "eve"),
+		"TaskDue":              keyboards.TaskDue(uuid),
+		"TaskEstimate":         keyboards.TaskEstimate(uuid),
 	}
 }
 
@@ -179,6 +181,7 @@ func TestEveryScheduleButtonHasAPrefixTheRouterKnows(t *testing.T) {
 	routed := []string{
 		"task_sched_", "task_when_", "task_plan_",
 		"task_action_", "task_done_", "task_delete_", "top_tasks",
+		"task_due_set_", "task_due_", "task_est_set_", "task_est_", "task_tag_",
 	}
 	for name, kb := range scheduleKeyboards() {
 		eachButton(kb, func(data string) {

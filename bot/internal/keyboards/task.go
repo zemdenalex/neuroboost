@@ -42,24 +42,37 @@ func WizardPriority() tgbotapi.InlineKeyboardMarkup {
 
 func WizardDue() tgbotapi.InlineKeyboardMarkup {
 	return tgbotapi.NewInlineKeyboardMarkup(
-		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("Сегодня", "nt_d_0"),
-			tgbotapi.NewInlineKeyboardButtonData("Завтра", "nt_d_1"),
-			tgbotapi.NewInlineKeyboardButtonData("Через неделю", "nt_d_7"),
-		),
+		dueRow("nt_d_"),
 		wizardEscapes(),
 	)
 }
 
 func WizardEstimate() tgbotapi.InlineKeyboardMarkup {
 	return tgbotapi.NewInlineKeyboardMarkup(
-		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("15м", "nt_e_15"),
-			tgbotapi.NewInlineKeyboardButtonData("30м", "nt_e_30"),
-			tgbotapi.NewInlineKeyboardButtonData("1ч", "nt_e_60"),
-			tgbotapi.NewInlineKeyboardButtonData("2ч", "nt_e_120"),
-		),
+		estimateRow("nt_e_"),
 		wizardEscapes(),
+	)
+}
+
+// dueRow and estimateRow are the wizard's two data rows, factored out so the
+// existing-task card (keyboards.go: TaskDue, TaskEstimate) offers exactly the
+// same question and the same values under a different footer, instead of a
+// second copy of the labels and offsets that drifts the first time one of
+// them is edited. Only the callback prefix varies between callers.
+func dueRow(prefix string) []tgbotapi.InlineKeyboardButton {
+	return tgbotapi.NewInlineKeyboardRow(
+		tgbotapi.NewInlineKeyboardButtonData("Сегодня", prefix+"0"),
+		tgbotapi.NewInlineKeyboardButtonData("Завтра", prefix+"1"),
+		tgbotapi.NewInlineKeyboardButtonData("Через неделю", prefix+"7"),
+	)
+}
+
+func estimateRow(prefix string) []tgbotapi.InlineKeyboardButton {
+	return tgbotapi.NewInlineKeyboardRow(
+		tgbotapi.NewInlineKeyboardButtonData("15м", prefix+"15"),
+		tgbotapi.NewInlineKeyboardButtonData("30м", prefix+"30"),
+		tgbotapi.NewInlineKeyboardButtonData("1ч", prefix+"60"),
+		tgbotapi.NewInlineKeyboardButtonData("2ч", prefix+"120"),
 	)
 }
 

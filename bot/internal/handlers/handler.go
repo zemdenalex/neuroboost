@@ -235,6 +235,19 @@ func (h *Handler) HandleCallback(cb *tgbotapi.CallbackQuery) {
 		h.handleTaskDone(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "task_done_"))
 	case strings.HasPrefix(data, "task_delete_"):
 		h.handleTaskDelete(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "task_delete_"))
+	// Срок / Оценка / Теги. The "_set_" variants are the wizard-style screens'
+	// own answer buttons and must be checked before their plain "task_due_" /
+	// "task_est_" prefix — same declaration-order rule as above.
+	case strings.HasPrefix(data, "task_due_set_"):
+		h.handleTaskDueSet(chatID, strings.TrimPrefix(data, "task_due_set_"))
+	case strings.HasPrefix(data, "task_due_"):
+		h.handleTaskDueMenu(chatID, strings.TrimPrefix(data, "task_due_"))
+	case strings.HasPrefix(data, "task_est_set_"):
+		h.handleTaskEstimateSet(chatID, strings.TrimPrefix(data, "task_est_set_"))
+	case strings.HasPrefix(data, "task_est_"):
+		h.handleTaskEstimateMenu(chatID, strings.TrimPrefix(data, "task_est_"))
+	case strings.HasPrefix(data, "task_tag_"):
+		h.handleTaskTagsPrompt(chatID, strings.TrimPrefix(data, "task_tag_"))
 	// The month grid. cal_back_ re-renders as a NEW message rather than editing:
 	// it is pressed from a day view, which is its own message, and editing that
 	// into a grid would destroy what the user was reading.

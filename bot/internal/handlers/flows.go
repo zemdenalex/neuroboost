@@ -42,6 +42,8 @@ func (h *Handler) handleFlowInput(chatID int64, text string) {
 		h.handleNewTaskFlow(chatID, text)
 	case "new_event":
 		h.handleNewEventFlow(chatID, text)
+	case "edit_task_tags":
+		h.handleEditTaskTags(chatID, text)
 	default:
 		h.store.ClearFlow(chatID)
 		h.sendHTMLWithKeyboard(chatID, "Что-то пошло не так.", keyboards.HomeInline())

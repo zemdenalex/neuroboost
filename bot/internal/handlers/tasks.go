@@ -3,6 +3,9 @@ package handlers
 import (
 	"fmt"
 	"sort"
+	"strconv"
+	"strings"
+	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 
@@ -109,4 +112,133 @@ func (h *Handler) handleTaskDelete(chatID int64, messageID int, taskID string) {
 	}
 	h.sendText(chatID, "🗑 Task deleted")
 	h.handleTasks(chatID, messageID)
+}
+
+// Срок / Оценка / Теги — the three fields the card could show but never let
+// you set. Due and estimate are button-driven, and reuse keyboards.TaskDue /
+// TaskEstimate (which themselves reuse the wizard's own dueRow/estimateRow —
+// see keyboards.go). Tags are free text: there is no closed set of values to
+// offer, so "🏷 Теги" opens a normal FlowData text prompt, same shape as
+// startNoteFlow / startNewTaskFlow.
+
+var dueOffsets = map[string]bool{"0": true, "1": true, "7": true}
+var estimateOptions = map[string]bool{"15": true, "30": true, "60": true, "120": true}
+
+func (h *Handler) handleTaskDueMenu(chatID int64, taskID string) {
+	title, ok := h.taskTitle(chatID, taskID)
+	if !ok {
+		return
+	}
+	h.sendHTMLWithKeyboard(chatID,
+		fmt.Sprintf("📅 <b>%s</b>\n\nКогда срок?", format.Escape(title)),
+		keyboards.TaskDue(taskID))
+}
+
+// handleTaskDueSet answers task_due_set_<uuid>_<offset>, cut from the right —
+// same convention as parsePlanCallback in schedule.go, for the same reason: a
+// task id is opaque to this bot and the offset is ours and known-shaped.
+func (h *Handler) handleTaskDueSet(chatID int64, data string) {
+	idx := strings.LastIndex(data, "_")
+	if idx < 0 {
+		h.sendText(chatID, "Не понял кнопку. Открой задачу заново: 📋 Tasks")
+		return
+	}
+	taskID, offsetStr := data[:idx], data[idx+1:]
+	if taskID == "" || !dueOffsets[offsetStr] {
+		h.sendText(chatID, "Не понял кнопку. Открой задачу заново: 📋 Tasks")
+		return
+	}
+	offset, _ := strconv.Atoi(offsetStr)
+
+	due := time.Now().In(h.location()).AddDate(0, 0, offset)
+	us := h.store.GetOrCreate(chatID)
+	if err := h.api.UpdateTask(us.AuthToken, taskID, map[string]any{
+		"due_date": due.Format(time.RFC3339),
+	}); err != nil {
+		h.sendText(chatID, "❌ Не удалось сохранить: "+err.Error())
+		return
+	}
+	h.sendText(chatID, "📅 Срок обновлён")
+	h.handleTaskAction(chatID, taskID)
+}
+
+func (h *Handler) handleTaskEstimateMenu(chatID int64, taskID string) {
+	title, ok := h.taskTitle(chatID, taskID)
+	if !ok {
+		return
+	}
+	h.sendHTMLWithKeyboard(chatID,
+		fmt.Sprintf("⏱ <b>%s</b>\n\nСколько времени займёт?", format.Escape(title)),
+		keyboards.TaskEstimate(taskID))
+}
+
+// handleTaskEstimateSet answers task_est_set_<uuid>_<minutes>.
+func (h *Handler) handleTaskEstimateSet(chatID int64, data string) {
+	idx := strings.LastIndex(data, "_")
+	if idx < 0 {
+		h.sendText(chatID, "Не понял кнопку. Открой задачу заново: 📋 Tasks")
+		return
+	}
+	taskID, minStr := data[:idx], data[idx+1:]
+	if taskID == "" || !estimateOptions[minStr] {
+		h.sendText(chatID, "Не понял кнопку. Открой задачу заново: 📋 Tasks")
+		return
+	}
+	minutes, _ := strconv.Atoi(minStr)
+
+	us := h.store.GetOrCreate(chatID)
+	if err := h.api.UpdateTask(us.AuthToken, taskID, map[string]any{
+		"estimated_minutes": minutes,
+	}); err != nil {
+		h.sendText(chatID, "❌ Не удалось сохранить: "+err.Error())
+		return
+	}
+	h.sendText(chatID, "⏱ Оценка обновлена")
+	h.handleTaskAction(chatID, taskID)
+}
+
+// handleTaskTagsPrompt answers task_tag_<uuid> — "🏷 Теги" on the card. It
+// opens a text flow rather than a keyboard: tags are not a closed set.
+func (h *Handler) handleTaskTagsPrompt(chatID int64, taskID string) {
+	title, ok := h.taskTitle(chatID, taskID)
+	if !ok {
+		return
+	}
+	us := h.store.GetOrCreate(chatID)
+	us.CurrentFlow = "edit_task_tags"
+	us.FlowStep = "text"
+	us.FlowData["taskID"] = taskID
+	h.sendHTML(chatID, fmt.Sprintf("🏷 <b>%s</b>\n\nТэги через запятую (или «cancel»):", format.Escape(title)))
+}
+
+// handleEditTaskTags is the text-flow answer to handleTaskTagsPrompt, routed
+// from handleFlowInput (flows.go) by CurrentFlow == "edit_task_tags".
+//
+// The project rule is empty slices, never nil: typing "-" or a blank line
+// clears the tags rather than leaving the field untouched, and it does so by
+// sending an explicit [] — omitting the key here would mean "don't change
+// this field", which is not what a user asking to clear their tags wants.
+func (h *Handler) handleEditTaskTags(chatID int64, text string) {
+	us := h.store.GetOrCreate(chatID)
+	taskID, _ := us.FlowData["taskID"].(string)
+	h.store.ClearFlow(chatID)
+	if taskID == "" {
+		h.sendHTMLWithKeyboard(chatID, "Не помню, к какой задаче это относится.", keyboards.HomeInline())
+		return
+	}
+
+	tags := []string{}
+	for _, tag := range strings.Split(text, ",") {
+		tag = strings.TrimSpace(tag)
+		if tag != "" && tag != "-" {
+			tags = append(tags, tag)
+		}
+	}
+
+	if err := h.api.UpdateTask(us.AuthToken, taskID, map[string]any{"tags": tags}); err != nil {
+		h.sendText(chatID, "❌ Не удалось сохранить: "+err.Error())
+		return
+	}
+	h.sendText(chatID, "🏷 Тэги обновлены")
+	h.handleTaskAction(chatID, taskID)
 }
