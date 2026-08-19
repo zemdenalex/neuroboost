@@ -37,12 +37,30 @@ func (h *Handler) startNewEventFlow(chatID int64) {
 		"Можно просто название — спрошу время кнопками.")
 }
 
+// startNewEventForDay begins the normal new-event flow with the day already
+// chosen, so "18:00 Ужин" is enough.
+func (h *Handler) startNewEventForDay(chatID int64, date string) {
+	us := h.store.GetOrCreate(chatID)
+	us.CurrentFlow = "new_event"
+	us.FlowStep = "line"
+	us.FlowData["date"] = date
+	h.sendHTML(chatID, "📅 <b>Событие на "+format.Escape(date)+"</b>\n\nНапиши время и название — например «18:00 Ужин».")
+}
+
 func (h *Handler) handleNewEventFlow(chatID int64, text string) {
 	us := h.store.GetOrCreate(chatID)
 	if us.FlowStep != "line" {
 		h.store.ClearFlow(chatID)
 		h.sendHTMLWithKeyboard(chatID, "Что-то пошло не так.", keyboards.HomeInline())
 		return
+	}
+
+	if d, ok := us.FlowData["date"].(string); ok && d != "" {
+		// parse.Parse understands "14.08"; feeding the chosen day in this form
+		// reuses the tested path instead of adding a second way to set a date.
+		if t, err := time.Parse("2006-01-02", d); err == nil {
+			text = t.Format("02.01") + " " + text
+		}
 	}
 
 	loc := h.location()

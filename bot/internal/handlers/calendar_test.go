@@ -146,7 +146,7 @@ func TestMonthGridButtonsAreRoutedAndFit(t *testing.T) {
 		labels[i] = "88"
 		dates[i] = "2026-08-01"
 	}
-	kb := keyboards.MonthGrid(2026, 8, "Август", labels, dates)
+	kb := keyboards.MonthGrid(2026, 8, "Август", labels, dates, "2026-08-18")
 
 	routed := []string{"cal_prev_", "cal_next_", "cal_day_", "cal_back_", "noop", "main_menu"}
 	var seen int
@@ -172,9 +172,9 @@ func TestMonthGridButtonsAreRoutedAndFit(t *testing.T) {
 			}
 		}
 	}
-	// 3 header + 7 weekday + 42 days + 1 menu.
-	if seen != 53 {
-		t.Errorf("grid has %d buttons, want 53", seen)
+	// 3 header + 7 weekday + 42 days + 2 footer (today, menu).
+	if seen != 54 {
+		t.Errorf("grid has %d buttons, want 54", seen)
 	}
 }
 
@@ -185,7 +185,7 @@ func TestMonthGridRowsAreSevenWide(t *testing.T) {
 		labels[i] = "1"
 		dates[i] = "2026-08-01"
 	}
-	kb := keyboards.MonthGrid(2026, 8, "Август", labels, dates)
+	kb := keyboards.MonthGrid(2026, 8, "Август", labels, dates, "2026-08-18")
 
 	// Rows 2..7 are the weeks. Telegram renders whatever it is given, so a row
 	// of six and a row of eight would simply look wrong and never error.
@@ -202,7 +202,7 @@ func TestMonthGridRowsAreSevenWide(t *testing.T) {
 func TestMonthGridIgnoresAShortLabelSlice(t *testing.T) {
 	// Defensive: a truncated slice must not panic mid-render and leave the user
 	// with no keyboard at all. Fewer weeks is a visible bug; a crash is a dead bot.
-	kb := keyboards.MonthGrid(2026, 8, "Август", []string{"1", "2"}, []string{"a", "b"})
+	kb := keyboards.MonthGrid(2026, 8, "Август", []string{"1", "2"}, []string{"a", "b"}, "2026-08-18")
 	if len(kb.InlineKeyboard) != 3 {
 		t.Errorf("got %d rows, want 3 (nav + weekdays + menu)", len(kb.InlineKeyboard))
 	}
@@ -254,5 +254,44 @@ func TestDayBoundsAreExactlyOneDayApartAcrossADSTShift(t *testing.T) {
 
 	if got := end.Sub(start); got != 25*time.Hour {
 		t.Errorf("the range spans %v, want 25h — the local day really is that long", got)
+	}
+}
+
+func TestShiftDayCrossesMonthAndYear(t *testing.T) {
+	cases := []struct {
+		in   string
+		days int
+		want string
+	}{
+		{"2026-08-18", 1, "2026-08-19"},
+		{"2026-08-31", 1, "2026-09-01"},
+		{"2026-09-01", -1, "2026-08-31"},
+		{"2026-12-31", 1, "2027-01-01"},
+		{"2027-01-01", -1, "2026-12-31"},
+		// 2028 is a leap year: the 29th exists and must not be skipped.
+		{"2028-02-28", 1, "2028-02-29"},
+		{"2028-02-29", 1, "2028-03-01"},
+		// 2026 is not: the 29th does not exist and must not be produced.
+		{"2026-02-28", 1, "2026-03-01"},
+	}
+	for _, c := range cases {
+		got, ok := shiftDay(c.in, c.days)
+		if !ok {
+			t.Errorf("shiftDay(%q, %d) refused a valid date", c.in, c.days)
+			continue
+		}
+		if got != c.want {
+			t.Errorf("shiftDay(%q, %d) = %q, want %q", c.in, c.days, got, c.want)
+		}
+	}
+}
+
+func TestShiftDayRefusesGarbage(t *testing.T) {
+	// The date arrives from callback_data, which is user-reachable input.
+	// Refusing is the only safe answer; guessing puts the user on a wrong day.
+	for _, bad := range []string{"", "tomorrow", "2026-13-01", "18-08-2026"} {
+		if _, ok := shiftDay(bad, 1); ok {
+			t.Errorf("shiftDay accepted %q", bad)
+		}
 	}
 }

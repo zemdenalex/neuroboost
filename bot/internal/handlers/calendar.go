@@ -121,7 +121,8 @@ func (h *Handler) showMonth(chatID int64, messageID, year int, month time.Month)
 
 	text := fmt.Sprintf("🗓 <b>%s %d</b>\n\nВыбери день. 🔸 сегодня · • есть события",
 		monthNominative(month), year)
-	kb := keyboards.MonthGrid(year, int(month), monthNominative(month), labels, dates)
+	kb := keyboards.MonthGrid(year, int(month), monthNominative(month), labels, dates,
+		time.Now().In(loc).Format("2006-01-02"))
 
 	if messageID > 0 {
 		h.editHTMLWithKeyboard(chatID, messageID, text, kb)
@@ -158,11 +159,38 @@ func (h *Handler) handleCalendarNav(chatID int64, messageID int, data string) {
 	h.showMonth(chatID, messageID, shifted.Year(), shifted.Month())
 }
 
-// handleCalendarDay lists one day.
-func (h *Handler) handleCalendarDay(chatID int64, date string) {
+// shiftDay moves an ISO date by whole days.
+//
+// Deliberately date-only arithmetic with time.UTC: the value comes from
+// callback_data as "2026-08-18" and goes straight back into it. Doing this in a
+// zone with DST would give 23- and 25-hour days, and "yesterday" could land on
+// today again on the switchover — a bug that appears twice a year and is
+// invisible the rest of the time.
+func shiftDay(iso string, days int) (string, bool) {
+	d, err := time.Parse("2006-01-02", iso)
+	if err != nil {
+		return "", false
+	}
+	return d.AddDate(0, 0, days).Format("2006-01-02"), true
+}
+
+// handleCalendarDay lists one day. messageID > 0 means edit in place; paging
+// day to day must not bury the chat under a new message per tap, same reason
+// as the month grid.
+func (h *Handler) handleCalendarDay(chatID int64, messageID int, date string) {
 	loc := h.location()
 	day, err := time.ParseInLocation("2006-01-02", date, loc)
 	if err != nil {
+		h.editOrSend(chatID, messageID, "Не понял дату.", keyboards.HomeInline())
+		return
+	}
+
+	prev, okPrev := shiftDay(date, -1)
+	next, okNext := shiftDay(date, 1)
+	if !okPrev || !okNext {
+		// Unparseable date from callback_data: say so rather than render a day
+		// that is not the one asked for.
+		h.editOrSend(chatID, messageID, "Не понял дату.", keyboards.HomeInline())
 		return
 	}
 
@@ -176,7 +204,7 @@ func (h *Handler) handleCalendarDay(chatID int64, date string) {
 	us := h.store.GetOrCreate(chatID)
 	events, err := h.api.GetEvents(us.AuthToken, from, to)
 	if err != nil {
-		h.sendText(chatID, "❌ Не удалось загрузить день: "+err.Error())
+		h.editOrSend(chatID, messageID, "❌ Не удалось загрузить день: "+err.Error(), keyboards.HomeInline())
 		return
 	}
 
@@ -191,7 +219,8 @@ func (h *Handler) handleCalendarDay(chatID int64, date string) {
 		}
 	}
 
-	h.sendHTMLWithKeyboard(chatID, text, keyboards.DayView(day.Year(), int(day.Month())))
+	h.editOrSend(chatID, messageID, text,
+		keyboards.DayActions(date, prev, next, day.Year(), int(day.Month())))
 }
 
 // handleCalendarBack returns from a day to the month it was opened from.

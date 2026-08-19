@@ -238,10 +238,14 @@ func (h *Handler) HandleCallback(cb *tgbotapi.CallbackQuery) {
 	// The month grid. cal_back_ re-renders as a NEW message rather than editing:
 	// it is pressed from a day view, which is its own message, and editing that
 	// into a grid would destroy what the user was reading.
+	case data == "cal_today":
+		h.handleCalendarDay(chatID, cb.Message.MessageID, time.Now().In(h.location()).Format("2006-01-02"))
+	case strings.HasPrefix(data, "cal_new_"):
+		h.startNewEventForDay(chatID, strings.TrimPrefix(data, "cal_new_"))
 	case strings.HasPrefix(data, "cal_prev_"), strings.HasPrefix(data, "cal_next_"):
 		h.handleCalendarNav(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "cal_"))
 	case strings.HasPrefix(data, "cal_day_"):
-		h.handleCalendarDay(chatID, strings.TrimPrefix(data, "cal_day_"))
+		h.handleCalendarDay(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "cal_day_"))
 	case strings.HasPrefix(data, "cal_back_"):
 		h.handleCalendarBack(chatID, strings.TrimPrefix(data, "cal_back_"))
 	// The grid's header and weekday cells. Telegram has no inert button, so they

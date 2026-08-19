@@ -166,7 +166,7 @@ func hourKeyboard(hours []int, prefix, back string) tgbotapi.InlineKeyboardMarku
 // weekdayNoop is the header row. Telegram has no inert button, so the cells
 // carry "noop" — which the router must accept and ignore. A callback nothing
 // answers leaves the spinner turning on the user's screen.
-func MonthGrid(year, month int, monthName string, labels, dates []string) tgbotapi.InlineKeyboardMarkup {
+func MonthGrid(year, month int, monthName string, labels, dates []string, todayISO string) tgbotapi.InlineKeyboardMarkup {
 	pos := strconv.Itoa(year) + "_" + strconv.Itoa(month)
 
 	rows := [][]tgbotapi.InlineKeyboardButton{
@@ -195,20 +195,29 @@ func MonthGrid(year, month int, monthName string, labels, dates []string) tgbota
 	}
 
 	rows = append(rows, tgbotapi.NewInlineKeyboardRow(
-		tgbotapi.NewInlineKeyboardButtonData("« Menu", "main_menu"),
+		tgbotapi.NewInlineKeyboardButtonData("📅 Сегодня", "cal_day_"+todayISO),
+		tgbotapi.NewInlineKeyboardButtonData("🏠 Меню", "main_menu"),
 	))
 	return tgbotapi.NewInlineKeyboardMarkup(rows...)
 }
 
-// DayView sends the user back to the month they came from, not to a default.
-func DayView(year, month int) tgbotapi.InlineKeyboardMarkup {
+// DayActions is the day screen. Paging first, because that is the regression
+// people feel: v0.2.1 let you walk day to day from here (handler calendar_day_,
+// index.mjs:750) and this bot made you go back to the grid every time.
+func DayActions(date, prev, next string, year, month int) tgbotapi.InlineKeyboardMarkup {
 	return tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("⬅", "cal_day_"+prev),
+			tgbotapi.NewInlineKeyboardButtonData("Сегодня", "cal_today"),
+			tgbotapi.NewInlineKeyboardButtonData("➡", "cal_day_"+next),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("➕ Событие на этот день", "cal_new_"+date),
+		),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("« К месяцу",
 				"cal_back_"+strconv.Itoa(year)+"_"+strconv.Itoa(month)),
-		),
-		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("« Menu", "main_menu"),
+			tgbotapi.NewInlineKeyboardButtonData("🏠 Меню", "main_menu"),
 		),
 	)
 }
