@@ -126,3 +126,25 @@ func TestParseTaskCombinesEverything(t *testing.T) {
 		t.Errorf("Tags = %v", r.Tags)
 	}
 }
+
+func TestParseTaskPriorityRequiresStandaloneMarker(t *testing.T) {
+	// 🔴 The boundary group (?:^|\s)!([0-5])(?:\s|$) exists so a "!" glued to
+	// something that is NOT a standalone priority marker is left alone —
+	// both the priority AND the title must survive untouched. Without the
+	// boundary, "!1" inside "!12" would match, orphan the "2" by cutting the
+	// marker out, and silently mark the task Emergency.
+	cases := []string{
+		"позвонить !12",     // a longer number: !1 must not be read out of !12
+		"тест!3",             // "!" glued to a word with no separating space
+		"срочно!5 звонок",    // same, marker in the middle of the line
+	}
+	for _, in := range cases {
+		r := ParseTask(in, now())
+		if r.Priority != nil {
+			t.Errorf("%q: Priority = %v, want nil — not a standalone marker", in, *r.Priority)
+		}
+		if r.Title != in {
+			t.Errorf("%q: Title = %q, want unchanged — the lookalike marker must not be cut out", in, r.Title)
+		}
+	}
+}
