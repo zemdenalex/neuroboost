@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
@@ -93,39 +92,23 @@ func (h *Handler) handleNewTaskFlow(chatID int64, text string) {
 	}
 }
 
-func (h *Handler) handlePrioritySelect(chatID int64, data string) {
-	us := h.store.GetOrCreate(chatID)
-	if us.CurrentFlow != "new_task" || us.FlowStep != "priority" {
-		return
-	}
-
-	priorityStr := strings.TrimPrefix(data, "priority_")
-	priority, err := strconv.Atoi(priorityStr)
-	if err != nil {
-		return
-	}
-
-	title, _ := us.FlowData["title"].(string)
-	task, err := h.api.CreateTask(us.AuthToken, api.CreateTaskReq{
-		Title:    title,
-		Priority: &priority,
-		Status:   "TODO",
-	})
-	h.store.ClearFlow(chatID)
-
-	if err != nil {
-		h.sendText(chatID, "❌ Failed to create: "+err.Error())
-		return
-	}
-
-	h.sendHTML(chatID, fmt.Sprintf("✅ Task created!\n\n<b>%s</b>\nID: <code>%s</code>", title, task.ID))
-}
-
 // handleTaskCardSave creates the task from the card's understanding as it
 // stands — nothing more is asked, because nothing more is required.
+//
+// 🔴 It answers "nt_save" — and "✅ Создать сейчас" (keyboards.wizardEscapes)
+// sends that exact callback from every wizard screen, not just the plain
+// card. The guard used to require FlowStep == "card" and nothing else, so
+// nt_save pressed from "wizard:priority"/"wizard:due"/"wizard:estimate" was
+// silently swallowed here: the callback got answered (spinner stops), and
+// nothing else happened. That was the one escape Denis named by hand
+// ("должна быть кнопка ... создать сейчас"), and it was the one that did
+// nothing. A step's own value, if any, is still in FlowData at that point —
+// advanceWizard's "done" path proves that already — so saving from here is
+// exactly as complete as saving from the card.
 func (h *Handler) handleTaskCardSave(chatID int64, messageID int) {
 	us := h.store.GetOrCreate(chatID)
-	if us.CurrentFlow != "new_task" || us.FlowStep != "card" {
+	onWizardStep := strings.HasPrefix(us.FlowStep, "wizard:")
+	if us.CurrentFlow != "new_task" || (us.FlowStep != "card" && !onWizardStep) {
 		return
 	}
 

@@ -7,22 +7,6 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
-func TaskPriority() tgbotapi.InlineKeyboardMarkup {
-	return tgbotapi.NewInlineKeyboardMarkup(
-		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("🔴 Emergency", "priority_1"),
-			tgbotapi.NewInlineKeyboardButtonData("🟠 Urgent", "priority_2"),
-		),
-		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("🟡 Normal", "priority_3"),
-			tgbotapi.NewInlineKeyboardButtonData("🟢 Low", "priority_4"),
-		),
-		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("⚪ If Possible", "priority_5"),
-			tgbotapi.NewInlineKeyboardButtonData("🔵 Buffer", "priority_0"),
-		),
-	)
-}
 
 // TaskActions is the card for one existing task.
 //
@@ -77,7 +61,7 @@ func TaskActions(taskID string) tgbotapi.InlineKeyboardMarkup {
 // other prefix switch in this bot.
 func TaskDue(taskID string) tgbotapi.InlineKeyboardMarkup {
 	return tgbotapi.NewInlineKeyboardMarkup(
-		dueRow("task_due_set_"+taskID+"_"),
+		dueRow("task_due_set_"+taskID+"_", ""),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("« Отмена", "task_action_"+taskID),
 		),
@@ -86,7 +70,7 @@ func TaskDue(taskID string) tgbotapi.InlineKeyboardMarkup {
 
 func TaskEstimate(taskID string) tgbotapi.InlineKeyboardMarkup {
 	return tgbotapi.NewInlineKeyboardMarkup(
-		estimateRow("task_est_set_"+taskID+"_"),
+		estimateRow("task_est_set_"+taskID+"_", ""),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("« Отмена", "task_action_"+taskID),
 		),
@@ -144,6 +128,18 @@ func BackToMenu() tgbotapi.InlineKeyboardMarkup {
 	return tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("« Menu", "main_menu"),
+		),
+	)
+}
+
+// BackToTasks is the recovery keyboard for a callback the bot could not parse
+// — a real button back to the task list, not prose that names one which the
+// user may no longer have on screen (or, once, does not exist at all: this
+// replaced text naming the reply keyboard this branch deleted).
+func BackToTasks() tgbotapi.InlineKeyboardMarkup {
+	return tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("📋 Задачи", "top_tasks"),
 		),
 	)
 }

@@ -124,11 +124,7 @@ func (h *Handler) showMonth(chatID int64, messageID, year int, month time.Month)
 	kb := keyboards.MonthGrid(year, int(month), monthNominative(month), labels, dates,
 		time.Now().In(loc).Format("2006-01-02"))
 
-	if messageID > 0 {
-		h.editHTMLWithKeyboard(chatID, messageID, text, kb)
-		return
-	}
-	h.sendHTMLWithKeyboard(chatID, text, kb)
+	h.editOrSend(chatID, messageID, text, kb)
 }
 
 // handleCalendarNav steps a month at a time. The current position travels in

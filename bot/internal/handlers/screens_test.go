@@ -24,7 +24,11 @@ import (
 var replyButtonProse = regexp.MustCompile(
 	`(?i)(use\s+the\s+menu|use\s+/start|menu\s+below|` +
 		`➕\s*New\s+Task|📅\s*New\s+Event|📝\s*Note\b|` +
-		`🏠\s*Меню|🗓\s*Календарь|📅\s*События|📋\s*Задачи|➕\s*Создать|⚙️\s*Настройки)`)
+		`🏠\s*Меню|🗓\s*Календарь|📅\s*События|📋\s*Задачи|➕\s*Создать|⚙️\s*Настройки|` +
+		// The reply keyboard these labels named was deleted by this branch —
+		// prose naming any of them points the user at a button that no
+		// longer exists.
+		`📋\s*Tasks|🎯\s*Today|🗓\s*Calendar|🗂\s*Planning|📊\s*Stats|⚙️\s*Settings)`)
 
 // dispatchOnlyClause matches a line that IS a reply-keyboard dispatch clause
 // and nothing else: optional leading whitespace, `case`, one or more quoted

@@ -124,12 +124,12 @@ func (h *Handler) handleTaskDelete(chatID int64, messageID int, taskID string) {
 var dueOffsets = map[string]bool{"0": true, "1": true, "7": true}
 var estimateOptions = map[string]bool{"15": true, "30": true, "60": true, "120": true}
 
-func (h *Handler) handleTaskDueMenu(chatID int64, taskID string) {
+func (h *Handler) handleTaskDueMenu(chatID int64, messageID int, taskID string) {
 	title, ok := h.taskTitle(chatID, taskID)
 	if !ok {
 		return
 	}
-	h.sendHTMLWithKeyboard(chatID,
+	h.editOrSend(chatID, messageID,
 		fmt.Sprintf("📅 <b>%s</b>\n\nКогда срок?", format.Escape(title)),
 		keyboards.TaskDue(taskID))
 }
@@ -140,12 +140,12 @@ func (h *Handler) handleTaskDueMenu(chatID int64, taskID string) {
 func (h *Handler) handleTaskDueSet(chatID int64, data string) {
 	idx := strings.LastIndex(data, "_")
 	if idx < 0 {
-		h.sendText(chatID, "Не понял кнопку. Открой задачу заново: 📋 Tasks")
+		h.sendHTMLWithKeyboard(chatID, "Не понял кнопку.", keyboards.BackToTasks())
 		return
 	}
 	taskID, offsetStr := data[:idx], data[idx+1:]
 	if taskID == "" || !dueOffsets[offsetStr] {
-		h.sendText(chatID, "Не понял кнопку. Открой задачу заново: 📋 Tasks")
+		h.sendHTMLWithKeyboard(chatID, "Не понял кнопку.", keyboards.BackToTasks())
 		return
 	}
 	offset, _ := strconv.Atoi(offsetStr)
@@ -162,12 +162,12 @@ func (h *Handler) handleTaskDueSet(chatID int64, data string) {
 	h.handleTaskAction(chatID, taskID)
 }
 
-func (h *Handler) handleTaskEstimateMenu(chatID int64, taskID string) {
+func (h *Handler) handleTaskEstimateMenu(chatID int64, messageID int, taskID string) {
 	title, ok := h.taskTitle(chatID, taskID)
 	if !ok {
 		return
 	}
-	h.sendHTMLWithKeyboard(chatID,
+	h.editOrSend(chatID, messageID,
 		fmt.Sprintf("⏱ <b>%s</b>\n\nСколько времени займёт?", format.Escape(title)),
 		keyboards.TaskEstimate(taskID))
 }
@@ -176,12 +176,12 @@ func (h *Handler) handleTaskEstimateMenu(chatID int64, taskID string) {
 func (h *Handler) handleTaskEstimateSet(chatID int64, data string) {
 	idx := strings.LastIndex(data, "_")
 	if idx < 0 {
-		h.sendText(chatID, "Не понял кнопку. Открой задачу заново: 📋 Tasks")
+		h.sendHTMLWithKeyboard(chatID, "Не понял кнопку.", keyboards.BackToTasks())
 		return
 	}
 	taskID, minStr := data[:idx], data[idx+1:]
 	if taskID == "" || !estimateOptions[minStr] {
-		h.sendText(chatID, "Не понял кнопку. Открой задачу заново: 📋 Tasks")
+		h.sendHTMLWithKeyboard(chatID, "Не понял кнопку.", keyboards.BackToTasks())
 		return
 	}
 	minutes, _ := strconv.Atoi(minStr)
@@ -199,7 +199,7 @@ func (h *Handler) handleTaskEstimateSet(chatID int64, data string) {
 
 // handleTaskTagsPrompt answers task_tag_<uuid> — "🏷 Теги" on the card. It
 // opens a text flow rather than a keyboard: tags are not a closed set.
-func (h *Handler) handleTaskTagsPrompt(chatID int64, taskID string) {
+func (h *Handler) handleTaskTagsPrompt(chatID int64, messageID int, taskID string) {
 	title, ok := h.taskTitle(chatID, taskID)
 	if !ok {
 		return
@@ -208,7 +208,9 @@ func (h *Handler) handleTaskTagsPrompt(chatID int64, taskID string) {
 	us.CurrentFlow = "edit_task_tags"
 	us.FlowStep = "text"
 	us.FlowData["taskID"] = taskID
-	h.sendHTML(chatID, fmt.Sprintf("🏷 <b>%s</b>\n\nТэги через запятую (или «cancel»):", format.Escape(title)))
+	h.editOrSend(chatID, messageID,
+		fmt.Sprintf("🏷 <b>%s</b>\n\nТэги через запятую (или «cancel»):", format.Escape(title)),
+		tgbotapi.NewInlineKeyboardMarkup())
 }
 
 // handleEditTaskTags is the text-flow answer to handleTaskTagsPrompt, routed

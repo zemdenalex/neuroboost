@@ -241,13 +241,13 @@ func (h *Handler) HandleCallback(cb *tgbotapi.CallbackQuery) {
 	case strings.HasPrefix(data, "task_due_set_"):
 		h.handleTaskDueSet(chatID, strings.TrimPrefix(data, "task_due_set_"))
 	case strings.HasPrefix(data, "task_due_"):
-		h.handleTaskDueMenu(chatID, strings.TrimPrefix(data, "task_due_"))
+		h.handleTaskDueMenu(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "task_due_"))
 	case strings.HasPrefix(data, "task_est_set_"):
 		h.handleTaskEstimateSet(chatID, strings.TrimPrefix(data, "task_est_set_"))
 	case strings.HasPrefix(data, "task_est_"):
-		h.handleTaskEstimateMenu(chatID, strings.TrimPrefix(data, "task_est_"))
+		h.handleTaskEstimateMenu(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "task_est_"))
 	case strings.HasPrefix(data, "task_tag_"):
-		h.handleTaskTagsPrompt(chatID, strings.TrimPrefix(data, "task_tag_"))
+		h.handleTaskTagsPrompt(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "task_tag_"))
 	// The month grid. cal_back_ re-renders as a NEW message rather than editing:
 	// it is pressed from a day view, which is its own message, and editing that
 	// into a grid would destroy what the user was reading.
@@ -277,8 +277,6 @@ func (h *Handler) HandleCallback(cb *tgbotapi.CallbackQuery) {
 		h.handleWorkHours(chatID)
 	case strings.HasPrefix(data, "wh_"):
 		h.handleWorkHourSet(chatID, strings.TrimPrefix(data, "wh_"))
-	case strings.HasPrefix(data, "priority_"):
-		h.handlePrioritySelect(chatID, data)
 	case strings.HasPrefix(data, "when_"):
 		h.handleWhenSelect(chatID, data)
 	case data == "nt_save":
@@ -321,24 +319,6 @@ func (h *Handler) sendHTML(chatID int64, text string) {
 	msg := tgbotapi.NewMessage(chatID, text)
 	msg.ParseMode = "HTML"
 	h.send(chatID, msg)
-}
-
-// editHTMLWithKeyboard replaces a message in place — what paging needs, so a
-// month calendar does not leave a new grid in the chat on every tap.
-//
-// Telegram answers "message is not modified" when the new text and keyboard are
-// byte-identical to the old, which happens whenever a user taps the same page
-// twice. That is not a failure worth a log line, and it is certainly not worth
-// a message to the user; everything else is.
-func (h *Handler) editHTMLWithKeyboard(chatID int64, messageID int, text string, kb tgbotapi.InlineKeyboardMarkup) {
-	msg := tgbotapi.NewEditMessageTextAndMarkup(chatID, messageID, text, kb)
-	msg.ParseMode = "HTML"
-	if _, err := h.bot.Send(msg); err != nil {
-		if strings.Contains(err.Error(), "message is not modified") {
-			return
-		}
-		log.Printf("edit in chat %d failed: %s", chatID, logsafe.Redact(err))
-	}
 }
 
 func (h *Handler) sendHTMLWithKeyboard(chatID int64, text string, kb tgbotapi.InlineKeyboardMarkup) {

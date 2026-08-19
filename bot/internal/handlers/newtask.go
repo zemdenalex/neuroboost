@@ -48,9 +48,19 @@ func taskCardText(r parse.TaskResult, tz string) string {
 // a judgement, a date is a commitment, an estimate is a guess.
 var wizardOrder = []string{"priority", "due", "estimate"}
 
-// nextWizardStep returns the next field to ask about, skipping anything the
-// typed line already answered, and "done" when nothing is left.
+// nextWizardStep returns the next field to ask about, and "done" once every
+// step has been visited.
+//
+// 🔴 It used to skip a field the typed line already answered. Spec, part 3:
+// "a step whose value is already known shows it as the current value and
+// lets you replace it" — skipping made "📝 Подробнее" on a fully-parsed line
+// create the task with zero screens, indistinguishable from "✅ Создать". The
+// `has` parameter is kept only so callers do not need to change; it is no
+// longer consulted for skipping. What IS known still reaches the screen —
+// through wizardStepText/wizardKeyboardFor, which read FlowData directly and
+// mark the current value instead of hiding the step.
 func nextWizardStep(current string, has map[string]bool) string {
+	_ = has
 	if current == "done" {
 		return "done"
 	}
@@ -63,10 +73,8 @@ func nextWizardStep(current string, has map[string]bool) string {
 			}
 		}
 	}
-	for i := start; i < len(wizardOrder); i++ {
-		if !has[wizardOrder[i]] {
-			return wizardOrder[i]
-		}
+	if start < len(wizardOrder) {
+		return wizardOrder[start]
 	}
 	return "done"
 }
@@ -86,29 +94,81 @@ func wizardHas(flowData map[string]any) map[string]bool {
 	}
 }
 
+// wizardDueOffset reports which of the wizard's three quick due choices
+// (0/1/7 days out) a known due date lands on, in the timezone the wizard asks
+// in. "" means either nothing is known, or it is known but does not land on
+// one of the three — wizardStepText still shows it, just not as a marked
+// button.
+func wizardDueOffset(flowData map[string]any, loc *time.Location) string {
+	d, ok := flowData["due"].(string)
+	if !ok || d == "" {
+		return ""
+	}
+	t, err := time.Parse(time.RFC3339, d)
+	if err != nil {
+		return ""
+	}
+	dateStr := t.In(loc).Format("2006-01-02")
+	now := time.Now().In(loc)
+	for _, offset := range []int{0, 1, 7} {
+		if now.AddDate(0, 0, offset).Format("2006-01-02") == dateStr {
+			return strconv.Itoa(offset)
+		}
+	}
+	return ""
+}
+
 // wizardStepText is what the wizard message says while asking about a field.
-func wizardStepText(step string) string {
+// Spec, part 3: a step whose value is already known shows it as the current
+// value. That has to work even when the known value is not one of the
+// keyboard's quick choices (an arbitrary parsed date, say), so the text
+// carries it independently of what the keyboard can mark.
+func wizardStepText(step string, flowData map[string]any, loc *time.Location) string {
 	switch step {
 	case "priority":
+		if p, ok := flowData["priority"].(int); ok {
+			return fmt.Sprintf("📝 <b>Подробнее</b>\n\nПриоритет? Сейчас: %s %s (можно заменить или пропустить)",
+				format.PriorityEmoji(p), format.PriorityLabel(p))
+		}
 		return "📝 <b>Подробнее</b>\n\nПриоритет? (можно пропустить)"
 	case "due":
+		if d, ok := flowData["due"].(string); ok && d != "" {
+			if t, err := time.Parse(time.RFC3339, d); err == nil {
+				return fmt.Sprintf("📝 <b>Подробнее</b>\n\nКогда сделать? Сейчас: %s (можно заменить или пропустить)",
+					t.In(loc).Format("02.01"))
+			}
+		}
 		return "📝 <b>Подробнее</b>\n\nКогда сделать? (можно пропустить)"
 	case "estimate":
+		if m, ok := flowData["minutes"].(int); ok {
+			return fmt.Sprintf("📝 <b>Подробнее</b>\n\nСколько времени займёт? Сейчас: %s (можно заменить или пропустить)",
+				format.Duration(m))
+		}
 		return "📝 <b>Подробнее</b>\n\nСколько времени займёт? (можно пропустить)"
 	}
 	return "📝 <b>Подробнее</b>"
 }
 
 // wizardKeyboardFor is the keyboard for a given wizard step. Every one of
-// these carries both escapes — see keyboards.wizardEscapes.
-func wizardKeyboardFor(step string) tgbotapi.InlineKeyboardMarkup {
+// these carries both escapes — see keyboards.wizardEscapes. Each also marks
+// the button matching what is already known, when the known value lands on
+// one of the quick choices offered.
+func wizardKeyboardFor(step string, flowData map[string]any, loc *time.Location) tgbotapi.InlineKeyboardMarkup {
 	switch step {
 	case "priority":
-		return keyboards.WizardPriority()
+		var current *int
+		if p, ok := flowData["priority"].(int); ok {
+			current = &p
+		}
+		return keyboards.WizardPriority(current)
 	case "due":
-		return keyboards.WizardDue()
+		return keyboards.WizardDue(wizardDueOffset(flowData, loc))
 	case "estimate":
-		return keyboards.WizardEstimate()
+		var current *int
+		if m, ok := flowData["minutes"].(int); ok {
+			current = &m
+		}
+		return keyboards.WizardEstimate(current)
 	}
 	return keyboards.TaskCard()
 }
@@ -127,7 +187,8 @@ func (h *Handler) advanceWizard(chatID int64, messageID int, current string) {
 		return
 	}
 	us.FlowStep = "wizard:" + next
-	h.editOrSend(chatID, messageID, wizardStepText(next), wizardKeyboardFor(next))
+	loc := h.location()
+	h.editOrSend(chatID, messageID, wizardStepText(next, us.FlowData, loc), wizardKeyboardFor(next, us.FlowData, loc))
 }
 
 // handleTaskWizardStart is nt_wizard — "📝 Подробнее" pressed under the card.

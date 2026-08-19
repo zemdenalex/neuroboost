@@ -130,7 +130,7 @@ func (h *Handler) handleTaskScheduleDuration(chatID int64, data string) {
 func (h *Handler) handleTaskSchedule(chatID int64, data string) {
 	taskID, slot, minutes, ok := parsePlanCallback(data)
 	if !ok {
-		h.sendText(chatID, "Не понял кнопку. Открой задачу заново: 📋 Tasks")
+		h.sendHTMLWithKeyboard(chatID, "Не понял кнопку.", keyboards.BackToTasks())
 		return
 	}
 

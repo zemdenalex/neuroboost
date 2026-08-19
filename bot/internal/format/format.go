@@ -25,6 +25,29 @@ func PriorityEmoji(p int) string {
 	}
 }
 
+// PriorityLabel names what the number means. Priority is INVERTED here — 1 is
+// Emergency, 5 is If Possible, 0 is the separate Buffer bucket — so a bare
+// digit tells the reader nothing about which end is urgent. The word is the
+// only cue.
+func PriorityLabel(p int) string {
+	switch p {
+	case 1:
+		return "Emergency"
+	case 2:
+		return "Urgent"
+	case 3:
+		return "Normal"
+	case 4:
+		return "Low"
+	case 5:
+		return "If Possible"
+	case 0:
+		return "Buffer"
+	default:
+		return ""
+	}
+}
+
 func FormatTime(isoTime string, tz string) string {
 	loc, err := time.LoadLocation(tz)
 	if err != nil {
