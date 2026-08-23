@@ -38,6 +38,8 @@ PostgreSQL + Telegram bot. "The calendar is truth; tasks exist to support schedu
 
 **Реестр внешнего материала: `docs/sources.md`** (заведён 18.08 — до него внешних источников
 у проекта не было вовсе). Источники истины из него, которые нельзя заменять своей памятью:
+- 🔴 **Что нашёл проход вдвоём 23.08 и почему релиз остановлен** — `docs/defekty-prohod-vdvoem-2026-08-23.md`,
+  первоисточник — `ref/feedback/prohod-vdvoem-otvet-denisa-2026-08-23.md`
 - Что бот умеет и чего лишён, с проверками — `docs/razbor-bot-telegram-native-2026-08-18.md`
 - Спека работ по боту — `docs/superpowers/specs/2026-08-18-bot-telegram-native-and-sharing-design.md`
 - Что умеет Telegram сегодня — https://core.telegram.org/bots/api-changelog
