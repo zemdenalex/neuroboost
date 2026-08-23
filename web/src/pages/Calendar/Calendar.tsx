@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
+import { taskDeepLinkTo } from '../../lib/tasks/taskDeepLink';
 import { ListTodo } from 'lucide-react';
 import { WeekGrid } from '../../components/Calendar/WeekGrid';
 import { TaskSidebar } from '../../components/TaskSidebar';
@@ -37,6 +39,7 @@ const QUICK_TASK_CALENDAR_KEY = 'nb-quick-task-calendar';
 
 export function Calendar() {
   const { t } = useTranslation('calendar');
+  const navigate = useNavigate();
   const { user } = useAuthContext();
   const timezone = user?.timezone || 'Europe/Moscow';
   const { withScope, dialog: recurringScopeDialog } = useRecurringScope();
@@ -283,13 +286,21 @@ export function Calendar() {
     });
   }, []);
 
+  // 🔴 Both of these were console.log stubs, wired into the desktop sidebar
+  // AND the mobile panel — so tapping a task in the calendar did nothing at
+  // all, and from the outside a stub looks exactly like a slow network. They
+  // were the only two left in src/pages/.
+  //
+  // The tasks page already shows and edits tasks; sending the user there beats
+  // growing a second editor here. Select shows the task in the list, edit opens
+  // it — the distinction the two callbacks already promised.
   const handleSelectTask = useCallback((task: Task) => {
-    console.log('Selected task:', task.id);
-  }, []);
+    navigate(taskDeepLinkTo(task.id, false));
+  }, [navigate]);
 
   const handleEditTask = useCallback((task: Task) => {
-    console.log('Edit task:', task.id);
-  }, []);
+    navigate(taskDeepLinkTo(task.id, true));
+  }, [navigate]);
 
   const handleCreateTask = useCallback(() => {
     setQuickTaskOpen(true);

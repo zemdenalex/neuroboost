@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo, useRef } from 'react'
 import { onTasksChanged } from '../../lib/quickTask/tasksChanged'
 import { sortWithinPriority } from '../../lib/quickTask/sortTasks'
 import { useTranslation } from 'react-i18next'
+import { useSearchParams } from 'react-router-dom'
+import { parseTaskDeepLink } from '../../lib/tasks/taskDeepLink'
 import { createInFlightGuard } from '../../lib/inFlightGuard'
 import {
   Plus,
@@ -66,6 +68,11 @@ export default function Tasks() {
   // Anchor for Shift+click range selection — the last row clicked without Shift.
   const selectionAnchor = useRef<string | null>(null)
 
+  // One task, opened from somewhere else — today that is the calendar, whose
+  // task handlers used to be console.log stubs. See lib/tasks/taskDeepLink.ts.
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [highlightId, setHighlightId] = useState<string | null>(null)
+
   // Fetch tasks, and refetch whenever something outside this page creates one
   // (the global Ctrl+K modal). Reloading rather than splicing in the response
   // keeps one source of truth: the modal can create several tasks at once.
@@ -88,6 +95,46 @@ export default function Tasks() {
     const off = onTasksChanged(() => fetchTasks(false))
     return () => { cancelled = true; off() }
   }, [])
+
+  // Arriving from the calendar with one task named.
+  //
+  // Waits for the list: acting on an empty `tasks` would report "not found" for
+  // a task that simply had not loaded yet. The parameters are cleared either
+  // way — leaving them would reopen the editor on every refresh, and would keep
+  // this effect firing.
+  useEffect(() => {
+    if (loading) return
+    const link = parseTaskDeepLink(searchParams)
+    if (!link) return
+
+    const task = tasks.find(item => item.id === link.taskId)
+    if (!task) {
+      // Deleted, or hidden by a filter this page remembered. Saying so beats
+      // the silence that made the calendar's stubs invisible in the first place.
+      showToast(t('deepLink.notFound'))
+    } else if (link.edit) {
+      setEditingTask(task)
+      setShowEditor(true)
+    } else {
+      // The row is inside a collapsed group often enough that highlighting it
+      // without expanding would point at nothing.
+      setExpandedGroups(prev => new Set(prev).add(task.priority))
+      setHighlightId(task.id)
+    }
+    setSearchParams({}, { replace: true })
+  }, [loading, tasks, searchParams, setSearchParams, t])
+
+  // Bring the highlighted row into view once it has actually been rendered,
+  // and let the highlight fade on its own — a ring that never leaves stops
+  // meaning "this one".
+  useEffect(() => {
+    if (!highlightId) return
+    const frame = requestAnimationFrame(() => {
+      document.getElementById(`task-${highlightId}`)?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+    })
+    const timer = setTimeout(() => setHighlightId(null), 4000)
+    return () => { cancelAnimationFrame(frame); clearTimeout(timer) }
+  }, [highlightId])
 
   // A filter or search change hides rows; keeping them selected would let a
   // bulk action hit tasks Denis cannot see.
@@ -488,7 +535,10 @@ export default function Tasks() {
                       {priorityTasks.map(task => (
                         <div
                           key={task.id}
-                          className={`flex items-center gap-3 px-4 py-3 border-b border-zinc-800/50 last:border-b-0 transition-colors group ${selected.has(task.id) ? 'bg-blue-950/40' : 'hover:bg-zinc-800/30'}`}
+                          id={`task-${task.id}`}
+                          className={`flex items-center gap-3 px-4 py-3 border-b border-zinc-800/50 last:border-b-0 transition-colors group ${
+                            highlightId === task.id ? 'bg-blue-900/30 ring-1 ring-blue-500' : selected.has(task.id) ? 'bg-blue-950/40' : 'hover:bg-zinc-800/30'
+                          }`}
                         >
                           {/* Selection — Shift+click extends from the last plain click.
                               Hidden at rest so the row shows ONE control and the

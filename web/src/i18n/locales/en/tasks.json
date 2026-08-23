@@ -12,6 +12,9 @@
     "close": "Close"
   },
   "newTask": "New Task",
+  "deepLink": {
+    "notFound": "That task is no longer in the list"
+  },
   "editTask": "Edit Task",
   "searchPlaceholder": "Search tasks...",
   "noTasks": "No tasks found",
