@@ -8,6 +8,7 @@ import { DayColumn } from './DayColumn';
 import { useWeekGridDrag } from './useWeekGridDrag';
 import { useKeyboardNav } from './useKeyboardNav';
 import { initialMobileDayOffset } from '../../../lib/calendar/mobileDayOffset';
+import { isHorizontalSwipe } from '../../../lib/calendar/swipe';
 
 export function WeekGrid({
   events,
@@ -189,17 +190,24 @@ export function WeekGrid({
   }, [startCreate]);
 
   // Swipe navigation (mobile/tablet)
-  const swipeStartRef = useRef<number | null>(null);
+  //
+  // 🔴 BOTH coordinates. Only clientX was recorded here, so touchend had
+  // nothing vertical to compare against and any scroll that drifted 50px
+  // sideways changed the day underneath the reader's thumb. That is what
+  // "события исчезают при прокрутке" was: a different day, not lost events.
+  const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
 
   const handleTouchStartSwipe = useCallback((e: React.TouchEvent) => {
     if (visibleDays >= 7) return;
-    swipeStartRef.current = e.touches[0].clientX;
+    swipeStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
   }, [visibleDays]);
 
   const handleTouchEndSwipe = useCallback((e: React.TouchEvent) => {
-    if (swipeStartRef.current === null || visibleDays >= 7) return;
-    const dx = e.changedTouches[0].clientX - swipeStartRef.current;
-    if (Math.abs(dx) > 50) {
+    const start = swipeStartRef.current;
+    if (start === null || visibleDays >= 7) return;
+    const dx = e.changedTouches[0].clientX - start.x;
+    const dy = e.changedTouches[0].clientY - start.y;
+    if (isHorizontalSwipe(dx, dy)) {
       setMobileDayOffset(prev => prev + (dx < 0 ? visibleDays : -visibleDays));
     }
     swipeStartRef.current = null;

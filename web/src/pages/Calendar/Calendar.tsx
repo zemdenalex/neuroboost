@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ListTodo } from 'lucide-react';
 import { WeekGrid } from '../../components/Calendar/WeekGrid';
@@ -8,6 +8,7 @@ import { EventEditor } from '../../components/Calendar/EventEditor';
 import { useRecurringScope } from '../../components/Calendar/useRecurringScope';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { computeWeekRange } from '../../lib/calendar/weekRange';
+import { shouldRefetchOnReturn } from '../../lib/calendar/refetchOnReturn';
 import { createTask } from '../../api';
 import { listCalendars, type Calendar as NbCalendar } from '../../api/calendars';
 import { CalendarFilter } from '../../components/Calendars/CalendarFilter';
@@ -35,7 +36,17 @@ export function Calendar() {
   const { withScope, dialog: recurringScopeDialog } = useRecurringScope();
   const [events, setEvents] = useState<NbEvent[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [loading, setLoading] = useState(true);
+  // 🔴 "initial", not "loading". `if (loading)` below returns a spinner INSTEAD
+  // of the entire calendar, so a flag raised on every week change tore the grid
+  // off the screen and rebuilt it from nothing. That is what "очень долгая
+  // загрузка при смене недели" was — the page dismantling itself, not the
+  // network being slow.
+  const [initialLoading, setInitialLoading] = useState(true);
+
+  // When the events on screen were last read. Drives the refetch-on-return
+  // below; a ref rather than state because nothing renders from it and a
+  // re-render per load would be pure noise.
+  const lastLoadedAtRef = useRef(0);
   const [currentWeekOffset, setCurrentWeekOffset] = useState(0);
   const [editorOpen, setEditorOpen] = useState(false);
   const [editorRange, setEditorRange] = useState<{ start: Date; end: Date; allDay?: boolean } | null>(null);
@@ -118,10 +129,35 @@ export function Calendar() {
     }
   }, []);
 
-  // Initial load
+  // Tasks once. They do not depend on the week, and they used to share an
+  // effect with the events — whose callback identity changes with the week — so
+  // every page of the calendar refetched a list that could not have changed.
+  useEffect(() => { void loadTasks(); }, [loadTasks]);
+
+  // Events on every week change, with the grid left standing.
   useEffect(() => {
-    setLoading(true);
-    Promise.all([loadEvents(), loadTasks()]).finally(() => setLoading(false));
+    let cancelled = false;
+    loadEvents().finally(() => {
+      if (cancelled) return;
+      lastLoadedAtRef.current = Date.now();
+      setInitialLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [loadEvents]);
+
+  // Someone else's change lands when you come back to the tab.
+  //
+  // Denis's decision, 23.08: re-read on return, no realtime. The staleness
+  // threshold lives in shouldRefetchOnReturn — without it, alt-tabbing between
+  // two windows would refetch the week on every switch.
+  useEffect(() => {
+    const onVisibility = () => {
+      if (!shouldRefetchOnReturn(document.visibilityState, lastLoadedAtRef.current, Date.now())) return;
+      lastLoadedAtRef.current = Date.now();
+      void Promise.all([loadEvents(), loadTasks()]);
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
   }, [loadEvents, loadTasks]);
 
   // Event handlers
@@ -246,7 +282,7 @@ export function Calendar() {
     setQuickTaskOpen(false);
   }, [quickTaskTitle, loadTasks]);
 
-  if (loading) {
+  if (initialLoading) {
     return (
       <div className="flex items-center justify-center h-screen bg-black text-zinc-400">
         <div className="text-center">
