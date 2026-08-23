@@ -163,7 +163,15 @@ export const DayColumn = memo(function DayColumn({
       else if (touchYInTimeGrid > timeGridHeight - 24) startAutoScroll('down');
       else stopAutoScroll();
     }
-    e.preventDefault();
+    // ⚠ There was an `e.preventDefault()` here and it did nothing. React
+    // attaches touch listeners passively, so the browser ignores the call and
+    // logs "Unable to preventDefault inside passive event listener" instead.
+    //
+    // 🔴 That warning was in the console while the day jumped under a scroll,
+    // and it was NOT the cause — the swipe comparing only clientX was (see
+    // lib/calendar/swipe.ts). Removing the dead call so the next reader is not
+    // sent the same way: a warning that co-occurs with a defect is not evidence
+    // about it.
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
