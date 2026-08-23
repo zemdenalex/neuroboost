@@ -75,6 +75,7 @@
     "explain": "This event repeats. Apply the change to just this one, or to every occurrence?",
     "thisEvent": "This event",
     "allEvents": "All events",
+    "calendarSeriesOnly": "Moving to another calendar applies to the whole series.",
     "remember": "Remember my choice",
     "cancel": "Cancel"
   },

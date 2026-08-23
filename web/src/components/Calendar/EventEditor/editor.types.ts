@@ -26,6 +26,7 @@ export interface EditorProps {
     id: string,
     action: RecurringAction,
     run: (scope?: MutationScope) => Promise<void>,
+    options?: { calendarChanged?: boolean },
   ) => Promise<void>;
 }
 

@@ -242,7 +242,11 @@ export function useEditorForm(
     // would therefore turn "edit just this Tuesday" into a 400 for every
     // recurring event, which is a regression the API cannot distinguish from a
     // real move.
-    if (isEditing && draft && (draft.calendarId || '') === calendarId) {
+    const calendarChanged = Boolean(isEditing && draft && (draft.calendarId || '') !== calendarId);
+    // ⚠ Editing only. On CREATE the chosen calendar is the whole point of the
+    // field, and dropping it here would send every new event to the personal
+    // calendar whatever the form showed.
+    if (isEditing && draft && !calendarChanged) {
       delete body.calendarId;
     }
 
@@ -273,7 +277,7 @@ export function useEditorForm(
             // Posting to the synthetic "<uuid>:<date>" id would 500 outright.
             await saveReflection(saved.id, reflectionBody);
           }
-        });
+        }, { calendarChanged });
 
         onPatched();
       } else {

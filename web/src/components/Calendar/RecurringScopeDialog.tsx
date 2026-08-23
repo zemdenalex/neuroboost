@@ -7,6 +7,16 @@ export type RecurringAction = 'edit' | 'move' | 'delete'
 interface RecurringScopeDialogProps {
   open: boolean
   action: RecurringAction
+  /**
+   * The save moves the event to another calendar.
+   *
+   * 🔴 Then "this occurrence" is not a choice the server will accept: it answers
+   * 400 CALENDAR_SCOPE_SERIES, deliberately, because detaching one occurrence
+   * would move something other than the thing the user named. The dialog used
+   * to autoFocus that very button, so Enter picked the refused path — a dialog
+   * whose default answer is rejected.
+   */
+  calendarChanged?: boolean
   onChoose: (scope: MutationScope, remember: boolean) => void
   onCancel: () => void
 }
@@ -23,7 +33,7 @@ interface RecurringScopeDialogProps {
  * Cancel is a real outcome, not a decoration — the caller must be able to abandon
  * a drag it did not mean to commit.
  */
-export function RecurringScopeDialog({ open, action, onChoose, onCancel }: RecurringScopeDialogProps) {
+export function RecurringScopeDialog({ open, action, calendarChanged = false, onChoose, onCancel }: RecurringScopeDialogProps) {
   const { t } = useTranslation('calendar')
   const [remember, setRemember] = useState(false)
 
@@ -59,18 +69,23 @@ export function RecurringScopeDialog({ open, action, onChoose, onCancel }: Recur
           {t(`recurringScope.title.${action}`)}
         </h2>
         <p className="mt-2 text-sm text-zinc-400">{t('recurringScope.explain')}</p>
+        {calendarChanged && (
+          <p className="mt-2 text-sm text-amber-300">{t('recurringScope.calendarSeriesOnly')}</p>
+        )}
 
         <div className="mt-4 flex flex-col gap-2">
           <button
             type="button"
-            autoFocus
+            autoFocus={!calendarChanged}
+            disabled={calendarChanged}
             onClick={() => onChoose('occurrence', remember)}
-            className="rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-left text-sm text-zinc-100 hover:border-zinc-500 focus-visible:border-blue-500 focus-visible:outline-none"
+            className="rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-left text-sm text-zinc-100 hover:border-zinc-500 focus-visible:border-blue-500 focus-visible:outline-none disabled:cursor-not-allowed disabled:border-zinc-800 disabled:text-zinc-600 disabled:hover:border-zinc-800"
           >
             {t('recurringScope.thisEvent')}
           </button>
           <button
             type="button"
+            autoFocus={calendarChanged}
             onClick={() => onChoose('series', remember)}
             className={`rounded border px-3 py-2 text-left text-sm focus-visible:outline-none ${
               destructive

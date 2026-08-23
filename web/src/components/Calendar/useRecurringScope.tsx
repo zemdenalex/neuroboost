@@ -5,8 +5,14 @@ import { RecurringScopeDialog, type RecurringAction } from './RecurringScopeDial
 
 interface Pending {
   action: RecurringAction
+  /** The save also moves the event between calendars — see the dialog. */
+  calendarChanged: boolean
   run: (scope: MutationScope) => Promise<void>
   settle: () => void
+}
+
+interface ScopeOptions {
+  calendarChanged?: boolean
 }
 
 /**
@@ -25,12 +31,17 @@ export function useRecurringScope() {
   const [pending, setPending] = useState<Pending | null>(null)
 
   const withScope = useCallback(
-    (id: string, action: RecurringAction, run: (scope?: MutationScope) => Promise<void>): Promise<void> => {
-      const decision = planMutation(id, remembered)
+    (
+      id: string,
+      action: RecurringAction,
+      run: (scope?: MutationScope) => Promise<void>,
+      options: ScopeOptions = {},
+    ): Promise<void> => {
+      const decision = planMutation(id, remembered, options.calendarChanged ?? false)
       if (decision.kind === 'proceed') return run(decision.scope)
 
       return new Promise<void>(resolve => {
-        setPending({ action, run, settle: resolve })
+        setPending({ action, calendarChanged: options.calendarChanged ?? false, run, settle: resolve })
       })
     },
     [remembered],
@@ -71,6 +82,7 @@ export function useRecurringScope() {
     <RecurringScopeDialog
       open={pending !== null}
       action={pending?.action ?? 'edit'}
+      calendarChanged={pending?.calendarChanged ?? false}
       onChoose={handleChoose}
       onCancel={handleCancel}
     />

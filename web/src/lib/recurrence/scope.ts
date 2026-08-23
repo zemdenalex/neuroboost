@@ -46,9 +46,20 @@ export type ScopeDecision =
  * A plain event proceeds with no scope parameter at all — sending one would be
  * meaningless, and the backend ignores it. Only an instance can need the dialog.
  */
-export function planMutation(id: string, remembered: RememberedScope): ScopeDecision {
+export function planMutation(
+  id: string,
+  remembered: RememberedScope,
+  calendarChanged = false,
+): ScopeDecision {
   if (!isRecurringInstance(id)) return { kind: 'proceed' }
   if (remembered === 'ask') return { kind: 'ask' }
+  // 🔴 A remembered "just this one" cannot apply to a calendar move: the API
+  // answers 400 CALENDAR_SCOPE_SERIES for that combination on purpose, since
+  // detaching one occurrence would move something other than what was named.
+  // Proceeding on the remembered answer would turn a preference into a refusal
+  // the user never chose — and with the dialog skipped there is nothing on
+  // screen explaining why the save failed.
+  if (calendarChanged && remembered === 'occurrence') return { kind: 'ask' }
   return { kind: 'proceed', scope: remembered }
 }
 

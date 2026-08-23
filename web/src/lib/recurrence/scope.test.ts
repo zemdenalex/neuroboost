@@ -53,6 +53,25 @@ describe('planMutation', () => {
     expect(planMutation(`${UUID}:2026-08-05`, 'occurrence')).toEqual({ kind: 'proceed', scope: 'occurrence' })
     expect(planMutation(`${UUID}:2026-08-05`, 'series')).toEqual({ kind: 'proceed', scope: 'series' })
   })
+
+  describe('when the save also moves the event to another calendar', () => {
+    // 🔴 The API refuses calendar_id together with scope=occurrence — 400
+    // CALENDAR_SCOPE_SERIES, on purpose. A remembered "just this one" would
+    // therefore turn a saved preference into a refusal the user never chose,
+    // with no dialog on screen to explain it.
+    it('asks again instead of proceeding on a remembered "this occurrence"', () => {
+      expect(planMutation(`${UUID}:2026-08-05`, 'occurrence', true)).toEqual({ kind: 'ask' })
+    })
+
+    it('leaves a remembered "all events" alone — the server accepts that one', () => {
+      expect(planMutation(`${UUID}:2026-08-05`, 'series', true)).toEqual({ kind: 'proceed', scope: 'series' })
+    })
+
+    it('still sends a plain event straight through', () => {
+      // No series, no scope, nothing for the API to refuse.
+      expect(planMutation(UUID, 'occurrence', true)).toEqual({ kind: 'proceed' })
+    })
+  })
 })
 
 describe('scopeQuery', () => {
