@@ -26,10 +26,27 @@ func MainMenu() tgbotapi.ReplyKeyboardMarkup {
 	)
 }
 
-// HomeInline is what 🏠 Меню actually offers — the screens that are no longer
-// reply buttons.
+// HomeInline is the home screen, and it must reach EVERYWHERE the reply
+// keyboard reaches.
+//
+// 🔴 Denis, 23.08: «странно что в меню обычном нету тех же кнопок или невозможно
+// добраться до кнопок, которые есть в клавиатурном меню». Календарь, События and
+// Задачи lived only on the reply keyboard — and a reply keyboard can be
+// collapsed, at which point three of the six entrances were unreachable.
+//
+// The rule this encodes, held by TestEveryReplyEntranceHasAnInlineWayIn: every
+// reply-keyboard button has an inline button leading to the same screen. 🏠 Меню
+// is the exception because it IS this screen.
 func HomeInline() tgbotapi.InlineKeyboardMarkup {
 	return tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("🗓 Календарь", "cal_open"),
+			tgbotapi.NewInlineKeyboardButtonData("📅 События", "agenda_open"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("📋 Задачи", "top_tasks"),
+			tgbotapi.NewInlineKeyboardButtonData("➕ Создать", "create_menu"),
+		),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("🎯 Сегодня", "today_focus"),
 			tgbotapi.NewInlineKeyboardButtonData("🗂 Планирование", "planning"),
@@ -37,13 +54,6 @@ func HomeInline() tgbotapi.InlineKeyboardMarkup {
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("📊 Статистика", "stats"),
 			tgbotapi.NewInlineKeyboardButtonData("⚙️ Настройки", "settings_menu"),
-		),
-		// AMENDED BY CONTROLLER RULING — see the ledger.
-		// Without this the "create_menu" route below has no emitter, and the home
-		// screen offers no way to create anything, which contradicts the spec's
-		// central rule that a screen carries the actions available from it.
-		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("➕ Создать", "create_menu"),
 		),
 	)
 }
