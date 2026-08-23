@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-08-19
 tags: [neuroboost, e2e, debugging, evidence]
-weight: { importance: 5, connectivity: 3, access: 1, last_accessed: 2026-08-19 }
+weight: { importance: 5, connectivity: 6, access: 2, last_accessed: 2026-08-23 }
 sources:
   - file: "web/e2e/shared-badge-mobile.spec.ts"
   - file: "web/src/components/Calendar/WeekGrid/EventBlock.tsx"
@@ -15,6 +15,7 @@ links:
   - relates-to: learning-a-test-that-cannot-fail-guards-nothing
   - relates-to: learning-a-button-is-not-a-feature
   - relates-to: learning-e2e-baseline-recorded-on-a-monday
+  - relates-to: learning-a-co-occurring-warning-is-not-a-cause
 ---
 Новая мобильная спека падала в CI и проходила локально. Я объяснил это **три раза**, и первые
 два объяснения были неверны — каждое звучало убедительно и каждое стоило круга CI.

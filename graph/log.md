@@ -792,3 +792,42 @@ per-viewer — колонкой быть не могут), 👥 и автор в
 **На Денисе:** ротация токена бота (BotFather) · ночного бэкапа прода нет · форма мобильного
 календаря (`docs/razbor-mobilnyy-kalendar-2026-08-19.md`, рекомендован вариант A) · 4 узла в
 promote-очереди.
+
+## [2026-08-23] recall | learning-a-button-is-not-a-feature, learning-a-test-that-cannot-fail-guards-nothing, learning-stale-comment-outlived-its-constraint, learning-plan-named-two-files-invariant-lived-in-eight, learning-green-tests-are-not-a-deployed-bot, learning-merge-to-main-is-the-release, learning-e2e-baseline-recorded-on-a-monday, learning-explain-a-red-test-with-numbers, learning-fixture-data-can-disarm-a-control, learning-a-setting-with-no-reader, learning-a-rewrite-can-drop-features-silently, entity-bot-deploys-by-hand-not-by-ci, entity-v0410-released-with-an-outage, decision-brainstorm-the-bot-before-building-more, workitem-bot-what-denis-called-bad, learning-green-because-skipped-proves-nothing
+
+## [2026-08-23] continuation
+
+**Сделано.** План навигации бота выполнен целиком — 9 задач субагентами, каждая с ревью и
+показанным красным тестом, плюс волна правок по финальному ревью (2 блокера, 4 significant).
+Dev-бот выкачен на nl-2 и **пройден руками Денисом вдвоём с девушкой** по
+`docs/proverka-vdvoem-2026-08-19.md`.
+
+**Главное, что принёс проход:** прошло почти всё, не прошло семь вещей. Причины найдены и
+перепроверены — кроме C3, которая осталась ведущей гипотезой, и это записано прямо.
+Разбор: `docs/defekty-prohod-vdvoem-2026-08-23.md`. Первоисточник (размеченный Денисом
+чеклист): `ref/feedback/prohod-vdvoem-otvet-denisa-2026-08-23.md`.
+
+**Открыто, следующая сессия.** Спека готова и одобрена по решениям:
+`docs/superpowers/specs/2026-08-23-post-walkthrough-fixes-and-release-design.md`.
+Порядок: волна 0 (без кода — ротация токена, бэкап с восстановлением, сухой прогон 8 миграций
+на копии прод-базы) → срез 1 (C1 свайп, C2a заглушки, C2b calendar_id, C3, C5 refetch,
+C7 мигание недели) → **v0.4.11** → срез 2 (бот: B1 семь экранов без messageID, B2 полное
+inline-меню, релиза прода не требует) → срез 3 (перетаскивание пальцем на pointer events) →
+**v0.4.12**.
+
+🔴 **Читать первыми:** `entity-prod-runs-a-build-no-branch-points-at` (на прод нет git-ссылки,
+откатываться некуда), `decision-safety-wave-before-any-release` (порядок выбрал Денис),
+`learning-a-rule-satisfied-literally-can-keep-the-defect` и
+`learning-the-author-of-a-control-cannot-see-it-cannot-fail` — обе про мои собственные промахи
+этой сессии, обе повторяемы.
+
+⚠ **Не забыть, иначе всплывёт как «дефект» заново:** C4 — Telegram нельзя привязать к
+dev-аккаунту, поэтому «напоминание каждому в свой Telegram» **не проверено, а не провалено**.
+C6 (приглашение из настроек) — функция, вне объёма.
+
+**Числа не переносить.** На 23.08: develop впереди main на 341, миграций 16, восемь не в main,
+последний запушенный тег v0.4.9, v0.4.10 — сирота. Команды в CLAUDE.md §Счётчики.
+
+**Suggested skills for next session:** `superpowers:writing-plans` по спеке выше (срез 1),
+затем `superpowers:subagent-driven-development`. Для C3 и тач-драга — сперва
+`superpowers:systematic-debugging`, воспроизвести на staging до планирования починки.

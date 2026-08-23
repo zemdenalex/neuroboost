@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-08-11
 tags: [neuroboost, calendar, drag, ux]
-weight: { importance: 3, connectivity: 3, access: 1, last_accessed: 2026-08-11 }
+weight: { importance: 4, connectivity: 5, access: 1, last_accessed: 2026-08-23 }
 sources:
   - command: "corepack pnpm exec playwright test drag-commit-repaint --project=desktop  # до правки delta=0px (fail), после — delta=44px (pass)"
   - file: "web/src/pages/Calendar/Calendar.tsx:47-55 (loadEvents)"
@@ -15,6 +15,7 @@ stakes: low
 links:
   - relates-to: learning-stale-comment-outlived-its-constraint
   - relates-to: entity-e2e-playwright-harness
+  - relates-to: learning-a-co-occurring-warning-is-not-a-cause
 ---
 ✅ **Починено 11.08** (`c27b94a`). Сначала было отложено как design change — и правильно, потому
 что решение зависело от утверждения, которое оказалось ложным.

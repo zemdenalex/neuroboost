@@ -1,3 +1,5 @@
+<!-- паспорт: тип=план | статус=действует | строк=2033 | ~токенов=17941 | обновлён=по git -->
+
 # Bot Navigation, Calendar and Task Creation — Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.

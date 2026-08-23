@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-08-19
 tags: [neuroboost, bot, deploy, evidence, ci]
-weight: { importance: 5, connectivity: 4, access: 1, last_accessed: 2026-08-19 }
+weight: { importance: 5, connectivity: 6, access: 2, last_accessed: 2026-08-23 }
 sources:
   - file: "CLAUDE.md gotcha 19"
   - file: ".github/workflows/ci.yml"

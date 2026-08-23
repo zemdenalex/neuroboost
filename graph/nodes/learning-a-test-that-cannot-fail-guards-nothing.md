@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-08-12
 tags: [neuroboost, testing, review, method]
-weight: { importance: 5, connectivity: 27, access: 9, last_accessed: 2026-08-18 }
+weight: { importance: 5, connectivity: 29, access: 10, last_accessed: 2026-08-23 }
 sources:
   - command: "swap ErrCalendarNotFound/ErrNotCalendarOwner arms → FAIL ровно 2 теста; restore → ok"
   - file: "api-go/internal/calendars/handlers_test.go"
@@ -18,6 +18,7 @@ links:
   - relates-to: entity-p3-slice2-calendar-crud
   - relates-to: learning-checkbox-in-a-plan-is-a-claim-not-evidence
   - relates-to: learning-explain-a-red-test-with-numbers
+  - relates-to: learning-the-author-of-a-control-cannot-see-it-cannot-fail
 ---
 **Правило.** Прежде чем засчитать тест как охрану, ответь: **что я должен сломать, чтобы он
 покраснел?** Если ответа нет — тест ничего не измеряет, а его зелёный цвет читается как

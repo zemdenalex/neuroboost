@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-08-19
 tags: [neuroboost, bot, planning, denis]
-weight: { importance: 5, connectivity: 3, access: 1, last_accessed: 2026-08-19 }
+weight: { importance: 5, connectivity: 5, access: 2, last_accessed: 2026-08-23 }
 sources:
   - file: "graph/log.md 2026-08-19"
 stakes: high

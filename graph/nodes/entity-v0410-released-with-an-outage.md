@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-08-18
 tags: [neuroboost, release, prod, incident]
-weight: { importance: 5, connectivity: 4, access: 5, last_accessed: 2026-08-18 }
+weight: { importance: 5, connectivity: 6, access: 6, last_accessed: 2026-08-23 }
 sources:
   - commit: "46d775d (merge на main) · тег v0.4.10 · 6178dce (починка)"
   - file: "docs/release-readiness-2026-08-18.md · docs/analiz-bot-vs-web-2026-08-18.md"
@@ -15,6 +15,7 @@ links:
   - relates-to: learning-empty-is-not-the-same-shape
   - relates-to: learning-merge-to-main-is-the-release
   - relates-to: entity-p3-sharing-shipped-2026-08-17
+  - relates-to: entity-prod-runs-a-build-no-branch-points-at
 ---
 Денис дал явное «да» и релиз уехал: **299 коммитов**, миграции **8 → 15**, P1 + P2 +
 P3 срезы 1–4.

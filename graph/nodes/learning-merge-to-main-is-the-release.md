@@ -4,13 +4,15 @@ title: Prod деплоится на push в `main`, а не на тег — ме
 type: learning
 status: verified
 tags: [neuroboost, ci, deploy, release, git]
-weight: { importance: 5, connectivity: 12, access: 13, last_accessed: 2026-08-18 }
+weight: { importance: 5, connectivity: 14, access: 14, last_accessed: 2026-08-23 }
 created: 2026-08-10
 sources:
   - file: ".github/workflows/ci.yml — job deploy, if: github.ref == 'refs/heads/main'"
   - file: ".remember/handoff-2026-07-28.md"
 links:
   - relates-to: workitem-release-v0410-gated-by-denis-report
+  - relates-to: decision-safety-wave-before-any-release
+  - relates-to: entity-prod-runs-a-build-no-branch-points-at
 ---
 **Summary:** Тег — это метка постфактум, а не спусковой крючок: продакшен уезжает в момент
 мержа в `main`. Значит мерж PR — необратимое действие, требующее явного «да» Дениса.

@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-08-17
 tags: [neuroboost, e2e, css, evidence, ci]
-weight: { importance: 4, connectivity: 3, access: 6, last_accessed: 2026-08-18 }
+weight: { importance: 4, connectivity: 4, access: 7, last_accessed: 2026-08-23 }
 sources:
   - file: "web/e2e/mobile-overflow.spec.ts — «the profile header survives a long unbreakable value»"
   - commit: "911bf9e, d0b5249"
@@ -14,6 +14,7 @@ stakes: medium
 links:
   - relates-to: learning-a-test-that-cannot-fail-guards-nothing
   - relates-to: learning-e2e-baseline-recorded-on-a-monday
+  - relates-to: learning-the-author-of-a-control-cannot-see-it-cannot-fail
 ---
 Спека «375px не скроллится вбок» была зелёной на `/profile` всё время, пока `/profile`
 переполнялся. Тот же код, то же утверждение — **другие данные**: у аккаунта, под которым ходит
