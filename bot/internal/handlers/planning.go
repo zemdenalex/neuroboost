@@ -8,6 +8,7 @@ import (
 
 	"github.com/zemdenalex/neuroboost-bot/internal/api"
 	"github.com/zemdenalex/neuroboost-bot/internal/format"
+	"github.com/zemdenalex/neuroboost-bot/internal/keyboards"
 )
 
 // Planning — the last capability the Go rewrite dropped from v0.2.1.
@@ -24,11 +25,12 @@ import (
 // unable to do anything about it is the shape this product keeps producing;
 // two taps from here puts one in the calendar.
 
-func (h *Handler) handlePlanning(chatID int64) {
+func (h *Handler) handlePlanning(chatID int64, messageID int) {
 	us := h.store.GetOrCreate(chatID)
 	plan, err := h.api.WeekPlan(us.AuthToken)
 	if err != nil {
-		h.sendText(chatID, "❌ Не удалось загрузить план: "+err.Error())
+		h.editOrSend(chatID, messageID,
+			"❌ Не удалось загрузить план: "+err.Error(), keyboards.BackToMenu())
 		return
 	}
 
@@ -57,7 +59,7 @@ func (h *Handler) handlePlanning(chatID int64) {
 		tgbotapi.NewInlineKeyboardButtonData("« Menu", "main_menu"),
 	))
 
-	h.sendHTMLWithKeyboard(chatID, text, tgbotapi.NewInlineKeyboardMarkup(rows...))
+	h.editOrSend(chatID, messageID, text, tgbotapi.NewInlineKeyboardMarkup(rows...))
 }
 
 // planningText is the whole message, built from three numbers so it can be

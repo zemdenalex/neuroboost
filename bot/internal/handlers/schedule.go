@@ -88,18 +88,18 @@ func parsePlanCallback(data string) (taskID, slot string, minutes int, ok bool) 
 }
 
 // handleTaskScheduleWhen answers ⏰ Запланировать on the task card.
-func (h *Handler) handleTaskScheduleWhen(chatID int64, taskID string) {
+func (h *Handler) handleTaskScheduleWhen(chatID int64, messageID int, taskID string) {
 	title, ok := h.taskTitle(chatID, taskID)
 	if !ok {
 		return
 	}
-	h.sendHTMLWithKeyboard(chatID,
+	h.editOrSend(chatID, messageID,
 		fmt.Sprintf("⏰ <b>%s</b>\n\nКогда заняться?", format.Escape(title)),
 		keyboards.TaskScheduleWhen(taskID))
 }
 
 // handleTaskScheduleDuration asks how long, once the slot is chosen.
-func (h *Handler) handleTaskScheduleDuration(chatID int64, data string) {
+func (h *Handler) handleTaskScheduleDuration(chatID int64, messageID int, data string) {
 	idx := strings.LastIndex(data, "_")
 	if idx < 0 {
 		return
@@ -120,17 +120,17 @@ func (h *Handler) handleTaskScheduleDuration(chatID int64, data string) {
 		return
 	}
 
-	h.sendHTMLWithKeyboard(chatID,
+	h.editOrSend(chatID, messageID,
 		fmt.Sprintf("⏰ <b>%s</b>\n🕐 %s\n\nНасколько?",
 			format.Escape(title), humanDay(start, time.Now().In(loc))),
 		keyboards.TaskScheduleDuration(taskID, slot))
 }
 
 // handleTaskSchedule performs the scheduling.
-func (h *Handler) handleTaskSchedule(chatID int64, data string) {
+func (h *Handler) handleTaskSchedule(chatID int64, messageID int, data string) {
 	taskID, slot, minutes, ok := parsePlanCallback(data)
 	if !ok {
-		h.sendHTMLWithKeyboard(chatID, "Не понял кнопку.", keyboards.BackToTasks())
+		h.editOrSend(chatID, messageID, "Не понял кнопку.", keyboards.BackToTasks())
 		return
 	}
 
@@ -149,8 +149,8 @@ func (h *Handler) handleTaskSchedule(chatID int64, data string) {
 		return
 	}
 
-	h.sendHTML(chatID, fmt.Sprintf("✅ <b>В календаре</b>\n🕐 %s",
-		humanRange(start, end, time.Now().In(loc))))
+	h.editOrSend(chatID, messageID, fmt.Sprintf("✅ <b>В календаре</b>\n🕐 %s",
+		humanRange(start, end, time.Now().In(loc))), keyboards.BackToTasks())
 }
 
 // taskTitle looks a task up by id so the keyboards can name what they are about.

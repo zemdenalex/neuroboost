@@ -79,10 +79,10 @@ func cellLabel(c dayCell) string {
 //
 // messageID > 0 means edit in place; 0 means send a new message. Paging that
 // appends a new grid every tap buries the chat within a minute.
-func (h *Handler) handleCalendar(chatID int64, date time.Time) {
+func (h *Handler) handleCalendar(chatID int64, messageID int, date time.Time) {
 	loc := h.location()
 	d := date.In(loc)
-	h.showMonth(chatID, 0, d.Year(), d.Month())
+	h.showMonth(chatID, messageID, d.Year(), d.Month())
 }
 
 func (h *Handler) showMonth(chatID int64, messageID, year int, month time.Month) {
@@ -220,7 +220,14 @@ func (h *Handler) handleCalendarDay(chatID int64, messageID int, date string) {
 }
 
 // handleCalendarBack returns from a day to the month it was opened from.
-func (h *Handler) handleCalendarBack(chatID int64, pos string) {
+//
+// ⚠ It used to force a new message, and a comment in handler.go explained why:
+// the day view was "its own message", and editing it would destroy what the
+// user was reading. That stopped being true once the day view itself began
+// editing in place — grid and day now share one message, and going back to the
+// month is the same navigation step as paging it. Denis, 23.08: «нажатие „к
+// месяцу“ пишет новое».
+func (h *Handler) handleCalendarBack(chatID int64, messageID int, pos string) {
 	yearStr, monthStr, ok := strings.Cut(pos, "_")
 	if !ok {
 		return
@@ -230,7 +237,7 @@ func (h *Handler) handleCalendarBack(chatID int64, pos string) {
 	if err1 != nil || err2 != nil || month < 1 || month > 12 {
 		return
 	}
-	h.showMonth(chatID, 0, year, time.Month(month))
+	h.showMonth(chatID, messageID, year, time.Month(month))
 }
 
 func monthNominative(m time.Month) string {

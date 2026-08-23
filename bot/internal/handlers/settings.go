@@ -32,9 +32,9 @@ var (
 	endHours   = []int{14, 15, 16, 17, 18, 19, 20, 21, 22}
 )
 
-func (h *Handler) handleSettings(chatID int64) {
+func (h *Handler) handleSettings(chatID int64, messageID int) {
 	start, end := h.workHours(chatID)
-	h.sendHTMLWithKeyboard(chatID, settingsText(start, end), keyboards.SettingsMenu())
+	h.editOrSend(chatID, messageID, settingsText(start, end), keyboards.SettingsMenu())
 }
 
 func settingsText(start, end string) string {
@@ -65,9 +65,9 @@ func settingString(settings map[string]any, key, fallback string) string {
 	return fallback
 }
 
-func (h *Handler) handleWorkHours(chatID int64) {
+func (h *Handler) handleWorkHours(chatID int64, messageID int) {
 	start, end := h.workHours(chatID)
-	h.sendHTMLWithKeyboard(chatID,
+	h.editOrSend(chatID, messageID,
 		fmt.Sprintf("🕘 <b>Рабочие часы</b>\n\nСейчас: <b>%s – %s</b>\n\nВыбери начало дня:", start, end),
 		keyboards.WorkHoursStart(startHours))
 }
@@ -77,7 +77,7 @@ func (h *Handler) handleWorkHours(chatID int64) {
 // Each tap saves immediately. v0.2.1 had a 💾 Save button, and it had no
 // handler at all — the change was never written. An explicit save step in a
 // chat is a place to lose work, not a safeguard.
-func (h *Handler) handleWorkHourSet(chatID int64, data string) {
+func (h *Handler) handleWorkHourSet(chatID int64, messageID int, data string) {
 	which, hourStr, found := strings.Cut(data, "_")
 	if !found || (which != "start" && which != "end") {
 		return
@@ -114,12 +114,12 @@ func (h *Handler) handleWorkHourSet(chatID int64, data string) {
 	}
 
 	if which == "start" {
-		h.sendHTMLWithKeyboard(chatID,
+		h.editOrSend(chatID, messageID,
 			fmt.Sprintf("🕘 Начало: <b>%s</b>\n\nТеперь конец дня:", value),
 			keyboards.WorkHoursEnd(endHours))
 		return
 	}
-	h.sendHTMLWithKeyboard(chatID,
+	h.editOrSend(chatID, messageID,
 		fmt.Sprintf("✅ <b>Рабочие часы: %s – %s</b>", current, other),
 		keyboards.BackToMenu())
 }

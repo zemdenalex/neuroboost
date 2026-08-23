@@ -53,11 +53,11 @@ func (h *Handler) handleTasks(chatID int64, messageID int) {
 	h.editOrSend(chatID, messageID, text, kb)
 }
 
-func (h *Handler) handleTaskAction(chatID int64, taskID string) {
+func (h *Handler) handleTaskAction(chatID int64, messageID int, taskID string) {
 	us := h.store.GetOrCreate(chatID)
 	tasks, err := h.api.GetTasks(us.AuthToken, "")
 	if err != nil {
-		h.sendText(chatID, "❌ Failed to load task")
+		h.editOrSend(chatID, messageID, "❌ Не удалось загрузить задачу.", keyboards.BackToTasks())
 		return
 	}
 
@@ -77,7 +77,7 @@ func (h *Handler) handleTaskAction(chatID int64, taskID string) {
 	}
 
 	if !found {
-		h.sendText(chatID, "Task not found")
+		h.editOrSend(chatID, messageID, "Задача не найдена.", keyboards.BackToTasks())
 		return
 	}
 
@@ -89,7 +89,7 @@ func (h *Handler) handleTaskAction(chatID int64, taskID string) {
 		text += fmt.Sprintf("📅 Due: %s\n", format.FormatDate(dueDate, h.cfg.Timezone))
 	}
 
-	h.sendHTMLWithKeyboard(chatID, text, keyboards.TaskActions(taskID))
+	h.editOrSend(chatID, messageID, text, keyboards.TaskActions(taskID))
 }
 
 func (h *Handler) handleTaskDone(chatID int64, messageID int, taskID string) {
@@ -137,7 +137,7 @@ func (h *Handler) handleTaskDueMenu(chatID int64, messageID int, taskID string) 
 // handleTaskDueSet answers task_due_set_<uuid>_<offset>, cut from the right —
 // same convention as parsePlanCallback in schedule.go, for the same reason: a
 // task id is opaque to this bot and the offset is ours and known-shaped.
-func (h *Handler) handleTaskDueSet(chatID int64, data string) {
+func (h *Handler) handleTaskDueSet(chatID int64, messageID int, data string) {
 	idx := strings.LastIndex(data, "_")
 	if idx < 0 {
 		h.sendHTMLWithKeyboard(chatID, "Не понял кнопку.", keyboards.BackToTasks())
@@ -158,8 +158,7 @@ func (h *Handler) handleTaskDueSet(chatID int64, data string) {
 		h.sendText(chatID, "❌ Не удалось сохранить: "+err.Error())
 		return
 	}
-	h.sendText(chatID, "📅 Срок обновлён")
-	h.handleTaskAction(chatID, taskID)
+	h.handleTaskAction(chatID, messageID, taskID)
 }
 
 func (h *Handler) handleTaskEstimateMenu(chatID int64, messageID int, taskID string) {
@@ -173,7 +172,7 @@ func (h *Handler) handleTaskEstimateMenu(chatID int64, messageID int, taskID str
 }
 
 // handleTaskEstimateSet answers task_est_set_<uuid>_<minutes>.
-func (h *Handler) handleTaskEstimateSet(chatID int64, data string) {
+func (h *Handler) handleTaskEstimateSet(chatID int64, messageID int, data string) {
 	idx := strings.LastIndex(data, "_")
 	if idx < 0 {
 		h.sendHTMLWithKeyboard(chatID, "Не понял кнопку.", keyboards.BackToTasks())
@@ -193,8 +192,7 @@ func (h *Handler) handleTaskEstimateSet(chatID int64, data string) {
 		h.sendText(chatID, "❌ Не удалось сохранить: "+err.Error())
 		return
 	}
-	h.sendText(chatID, "⏱ Оценка обновлена")
-	h.handleTaskAction(chatID, taskID)
+	h.handleTaskAction(chatID, messageID, taskID)
 }
 
 // handleTaskTagsPrompt answers task_tag_<uuid> — "🏷 Теги" on the card. It
@@ -242,5 +240,7 @@ func (h *Handler) handleEditTaskTags(chatID int64, text string) {
 		return
 	}
 	h.sendText(chatID, "🏷 Тэги обновлены")
-	h.handleTaskAction(chatID, taskID)
+	// 0: the tags arrived as a text message, so there is no screen of ours
+	// under the user thumb to edit — the card is posted fresh.
+	h.handleTaskAction(chatID, 0, taskID)
 }

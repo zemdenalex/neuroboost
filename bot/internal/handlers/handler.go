@@ -146,7 +146,7 @@ func (h *Handler) HandleMessage(msg *tgbotapi.Message) {
 	case "🏠 Меню":
 		h.handleMenu(chatID, 0)
 	case "🗓 Календарь":
-		h.handleCalendar(chatID, time.Now())
+		h.handleCalendar(chatID, 0, time.Now())
 	case "📅 События":
 		h.handleAgenda(chatID, 0)
 	case "📋 Задачи":
@@ -154,7 +154,7 @@ func (h *Handler) HandleMessage(msg *tgbotapi.Message) {
 	case "➕ Создать":
 		h.sendHTMLWithKeyboard(chatID, "Что создаём?", keyboards.CreateMenu())
 	case "⚙️ Настройки":
-		h.handleSettings(chatID)
+		h.handleSettings(chatID, 0)
 	default:
 		h.sendHTMLWithKeyboard(chatID, "Не понял. Вот меню:", keyboards.HomeInline())
 	}
@@ -205,7 +205,7 @@ func (h *Handler) HandleCallback(cb *tgbotapi.CallbackQuery) {
 	case data == "main_menu":
 		h.handleMenu(chatID, cb.Message.MessageID)
 	case data == "stats":
-		h.handleStats(chatID)
+		h.handleStats(chatID, cb.Message.MessageID)
 	case data == "create_menu":
 		h.editOrSend(chatID, cb.Message.MessageID, "Что создаём?", keyboards.CreateMenu())
 	case data == "new_task":
@@ -215,22 +215,22 @@ func (h *Handler) HandleCallback(cb *tgbotapi.CallbackQuery) {
 	case data == "new_note":
 		h.startNoteFlow(chatID)
 	case data == "today_focus":
-		h.handleToday(chatID)
+		h.handleToday(chatID, cb.Message.MessageID)
 	case data == "top_tasks":
 		h.handleTasks(chatID, cb.Message.MessageID)
 	case strings.HasPrefix(data, "task_action_"):
-		h.handleTaskAction(chatID, strings.TrimPrefix(data, "task_action_"))
+		h.handleTaskAction(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "task_action_"))
 	// The three scheduling steps, in the order they fire. They sit above
 	// task_done_/task_delete_ only for readability — every prefix here is
 	// distinct, deliberately: a switch on prefixes where one is a prefix of
 	// another routes by declaration order, which is a rule nobody remembers
 	// when adding the fourth button.
 	case strings.HasPrefix(data, "task_sched_"):
-		h.handleTaskScheduleWhen(chatID, strings.TrimPrefix(data, "task_sched_"))
+		h.handleTaskScheduleWhen(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "task_sched_"))
 	case strings.HasPrefix(data, "task_when_"):
-		h.handleTaskScheduleDuration(chatID, strings.TrimPrefix(data, "task_when_"))
+		h.handleTaskScheduleDuration(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "task_when_"))
 	case strings.HasPrefix(data, "task_plan_"):
-		h.handleTaskSchedule(chatID, strings.TrimPrefix(data, "task_plan_"))
+		h.handleTaskSchedule(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "task_plan_"))
 	case strings.HasPrefix(data, "task_done_"):
 		h.handleTaskDone(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "task_done_"))
 	case strings.HasPrefix(data, "task_delete_"):
@@ -239,18 +239,20 @@ func (h *Handler) HandleCallback(cb *tgbotapi.CallbackQuery) {
 	// own answer buttons and must be checked before their plain "task_due_" /
 	// "task_est_" prefix — same declaration-order rule as above.
 	case strings.HasPrefix(data, "task_due_set_"):
-		h.handleTaskDueSet(chatID, strings.TrimPrefix(data, "task_due_set_"))
+		h.handleTaskDueSet(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "task_due_set_"))
 	case strings.HasPrefix(data, "task_due_"):
 		h.handleTaskDueMenu(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "task_due_"))
 	case strings.HasPrefix(data, "task_est_set_"):
-		h.handleTaskEstimateSet(chatID, strings.TrimPrefix(data, "task_est_set_"))
+		h.handleTaskEstimateSet(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "task_est_set_"))
 	case strings.HasPrefix(data, "task_est_"):
 		h.handleTaskEstimateMenu(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "task_est_"))
 	case strings.HasPrefix(data, "task_tag_"):
 		h.handleTaskTagsPrompt(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "task_tag_"))
-	// The month grid. cal_back_ re-renders as a NEW message rather than editing:
-	// it is pressed from a day view, which is its own message, and editing that
-	// into a grid would destroy what the user was reading.
+	// The month grid. Every step of it — paging, opening a day, and going back
+	// to the month — edits the message it was pressed on. cal_back_ used to post
+	// a new one, and the comment that stood here explained why: the day view was
+	// "its own message". The day view edits in place too now, so grid and day
+	// share one message and the exception no longer had anything to protect.
 	case data == "cal_today":
 		h.handleCalendarDay(chatID, cb.Message.MessageID, time.Now().In(h.location()).Format("2006-01-02"))
 	case strings.HasPrefix(data, "cal_new_"):
@@ -260,7 +262,7 @@ func (h *Handler) HandleCallback(cb *tgbotapi.CallbackQuery) {
 	case strings.HasPrefix(data, "cal_day_"):
 		h.handleCalendarDay(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "cal_day_"))
 	case strings.HasPrefix(data, "cal_back_"):
-		h.handleCalendarBack(chatID, strings.TrimPrefix(data, "cal_back_"))
+		h.handleCalendarBack(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "cal_back_"))
 	// The grid's header and weekday cells. Telegram has no inert button, so they
 	// carry "noop" — and it must land somewhere, or every tap on a weekday
 	// header falls through to the default and does nothing visible while the
@@ -268,17 +270,19 @@ func (h *Handler) HandleCallback(cb *tgbotapi.CallbackQuery) {
 	case data == "noop":
 		return
 	case data == "cal_open":
-		h.handleCalendar(chatID, time.Now())
+		h.handleCalendar(chatID, cb.Message.MessageID, time.Now())
+	case data == "agenda_open":
+		h.handleAgenda(chatID, cb.Message.MessageID)
 	case data == "planning":
-		h.handlePlanning(chatID)
+		h.handlePlanning(chatID, cb.Message.MessageID)
 	case data == "settings_menu":
-		h.handleSettings(chatID)
+		h.handleSettings(chatID, cb.Message.MessageID)
 	case data == "settings_workhours":
-		h.handleWorkHours(chatID)
+		h.handleWorkHours(chatID, cb.Message.MessageID)
 	case strings.HasPrefix(data, "wh_"):
-		h.handleWorkHourSet(chatID, strings.TrimPrefix(data, "wh_"))
+		h.handleWorkHourSet(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "wh_"))
 	case strings.HasPrefix(data, "when_"):
-		h.handleWhenSelect(chatID, data)
+		h.handleWhenSelect(chatID, cb.Message.MessageID, data)
 	case data == "nt_save":
 		h.handleTaskCardSave(chatID, cb.Message.MessageID)
 	case data == "nt_wizard":

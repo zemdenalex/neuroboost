@@ -9,7 +9,7 @@ import (
 	"github.com/zemdenalex/neuroboost-bot/internal/keyboards"
 )
 
-func (h *Handler) handleToday(chatID int64) {
+func (h *Handler) handleToday(chatID int64, messageID int) {
 	us := h.store.GetOrCreate(chatID)
 	// h.location() rather than LoadLocation with a dropped error: that returned
 	// a nil *Location on a bad TZ name, and time.Date panics on nil — in the
@@ -25,7 +25,8 @@ func (h *Handler) handleToday(chatID int64) {
 
 	events, err := h.api.GetEvents(us.AuthToken, from, to)
 	if err != nil {
-		h.sendText(chatID, "❌ Failed to load events: "+err.Error())
+		h.editOrSend(chatID, messageID,
+			"❌ Не удалось загрузить события: "+err.Error(), keyboards.BackToMenu())
 		return
 	}
 
@@ -62,11 +63,13 @@ func (h *Handler) handleToday(chatID int64) {
 		}
 	}
 
-	h.sendHTMLWithKeyboard(chatID, text, keyboards.BackToMenu())
+	h.editOrSend(chatID, messageID, text, keyboards.BackToMenu())
 }
 
-func (h *Handler) handleStats(chatID int64) {
-	h.sendHTML(chatID, "📊 <b>Stats</b>\n\nComing soon! Track your productivity trends here.")
+func (h *Handler) handleStats(chatID int64, messageID int) {
+	h.editOrSend(chatID, messageID,
+		"📊 <b>Stats</b>\n\nComing soon! Track your productivity trends here.",
+		keyboards.BackToMenu())
 }
 
 // dayBounds is the half-open UTC range covering one local calendar day.

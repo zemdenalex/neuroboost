@@ -81,11 +81,12 @@ func (h *Handler) handleNewEventFlow(chatID int64, text string) {
 		return
 	}
 
-	h.createEventAndReply(chatID, res.Title, res.Start, res.End)
+	// 0: the event came from typed text, so there is no screen of ours to edit.
+	h.createEventAndReply(chatID, 0, res.Title, res.Start, res.End)
 }
 
 // handleWhenSelect turns a coarse button into a concrete time.
-func (h *Handler) handleWhenSelect(chatID int64, data string) {
+func (h *Handler) handleWhenSelect(chatID int64, messageID int, data string) {
 	us := h.store.GetOrCreate(chatID)
 	if us.CurrentFlow != "new_event" || us.FlowStep != "when" {
 		return
@@ -93,7 +94,7 @@ func (h *Handler) handleWhenSelect(chatID int64, data string) {
 	title, _ := us.FlowData["title"].(string)
 	if title == "" {
 		h.store.ClearFlow(chatID)
-		h.sendHTMLWithKeyboard(chatID, "Не помню название.", keyboards.RestartNewEvent())
+		h.editOrSend(chatID, messageID, "Не помню название.", keyboards.RestartNewEvent())
 		return
 	}
 
@@ -119,10 +120,13 @@ func (h *Handler) handleWhenSelect(chatID int64, data string) {
 		return
 	}
 
-	h.createEventAndReply(chatID, title, start, start.Add(parse.DefaultDuration))
+	h.createEventAndReply(chatID, messageID, title, start, start.Add(parse.DefaultDuration))
 }
 
-func (h *Handler) createEventAndReply(chatID int64, title string, start, end time.Time) {
+// createEventAndReply confirms a created event on the screen it was created
+// from. messageID is 0 when the event came from typed text — there is no screen
+// of ours to edit then, and the confirmation is posted fresh.
+func (h *Handler) createEventAndReply(chatID int64, messageID int, title string, start, end time.Time) {
 	us := h.store.GetOrCreate(chatID)
 
 	ev, err := h.api.CreateEvent(us.AuthToken, api.CreateEventReq{
@@ -137,8 +141,9 @@ func (h *Handler) createEventAndReply(chatID int64, title string, start, end tim
 	}
 
 	loc := h.location()
-	h.sendHTML(chatID, fmt.Sprintf("✅ <b>Событие создано</b>\n%s\n🕐 %s",
-		format.Escape(ev.Title), humanRange(start.In(loc), end.In(loc), time.Now().In(loc))))
+	h.editOrSend(chatID, messageID, fmt.Sprintf("✅ <b>Событие создано</b>\n%s\n🕐 %s",
+		format.Escape(ev.Title), humanRange(start.In(loc), end.In(loc), time.Now().In(loc))),
+		keyboards.AgendaActions())
 }
 
 // humanRange renders "Завтра 19:00–20:00" — the same shape the reminder uses,
