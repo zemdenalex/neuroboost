@@ -53,6 +53,22 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals())
 
 describe('createTask', () => {
+  it('sends the chosen calendar, and omits it when there is none', async () => {
+    // 🔴 The wrapper had no calendar_id at all, so quick-add on the calendar
+    // page could not put a task anywhere but the author's personal calendar —
+    // and a task created while looking at a shared week was invisible to the
+    // person it was for. Asserting on the REQUEST, not the response: the API
+    // answers 201 either way, which is why nobody saw this.
+    fetchMock.mockResolvedValue(mockResponse(201, { data: RAW_TASK }))
+
+    await createTask({ title: 'Написать тест', calendarId: 'cal-7' })
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body).calendar_id).toBe('cal-7')
+
+    fetchMock.mockClear()
+    await createTask({ title: 'Написать тест' })
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).not.toHaveProperty('calendar_id')
+  })
+
   it('returns the created task rather than undefined', async () => {
     fetchMock.mockResolvedValue(mockResponse(201, { data: RAW_TASK }))
 

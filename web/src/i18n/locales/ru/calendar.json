@@ -12,6 +12,7 @@
   "loading": "Загрузка...",
   "taskTitlePrompt": "Название задачи?",
   "newTask": "Новая задача",
+  "taskCreateFailed": "Не удалось создать задачу",
   "taskTitlePlaceholder": "Название задачи...",
   "cancel": "Отмена",
   "openTasks": "Открыть задачи",

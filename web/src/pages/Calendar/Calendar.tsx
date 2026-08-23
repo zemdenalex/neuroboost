@@ -12,6 +12,9 @@ import { shouldRefetchOnReturn } from '../../lib/calendar/refetchOnReturn';
 import { createTask } from '../../api';
 import { listCalendars, type Calendar as NbCalendar } from '../../api/calendars';
 import { CalendarFilter } from '../../components/Calendars/CalendarFilter';
+import { CalendarPicker } from '../../components/Calendars/CalendarPicker';
+import { defaultTaskCalendarId } from '../../lib/calendars/defaultTaskCalendar';
+import { errorMessage } from '../../lib/errorMessage';
 import { sortCalendars } from '../../lib/calendars/order';
 import {
   loadHiddenCalendars,
@@ -28,6 +31,9 @@ import {
   updateTask,
 } from '../../api';
 import type { NbEvent, Task } from '../../types';
+
+/** Where the last quick-task calendar choice is kept between visits. */
+const QUICK_TASK_CALENDAR_KEY = 'nb-quick-task-calendar';
 
 export function Calendar() {
   const { t } = useTranslation('calendar');
@@ -102,6 +108,21 @@ export function Calendar() {
 
   const [quickTaskOpen, setQuickTaskOpen] = useState(false);
   const [quickTaskTitle, setQuickTaskTitle] = useState('');
+
+  // Which calendar a quick task goes into.
+  //
+  // 🔴 It used to go into none: the request carried { title, priority } and
+  // nothing else, so the API applied its own default and a task created while
+  // looking at a shared week was invisible to the other person. The choice is
+  // now made explicitly, shown on screen, and remembered — see
+  // lib/calendars/defaultTaskCalendar.ts for why "the first one" is not it.
+  const [quickTaskCalendarId, setQuickTaskCalendarId] = useState('');
+
+  useEffect(() => {
+    if (!calendars.length) return;
+    setQuickTaskCalendarId(prev =>
+      prev || defaultTaskCalendarId(calendars, localStorage.getItem(QUICK_TASK_CALENDAR_KEY)));
+  }, [calendars]);
 
   // Calculate week range (Monday-based; Sunday stays in the current week — see computeWeekRange)
   const getWeekRange = useCallback((offset: number) => {
@@ -276,11 +297,23 @@ export function Calendar() {
 
   const handleQuickTaskSubmit = useCallback(async () => {
     if (!quickTaskTitle.trim()) return;
-    await createTask({ title: quickTaskTitle.trim(), priority: 2 });
+    try {
+      await createTask({
+        title: quickTaskTitle.trim(),
+        priority: 2,
+        calendarId: quickTaskCalendarId || undefined,
+      });
+    } catch (error) {
+      // Saying nothing here would repeat the shape of the defect above: the
+      // task is missing and the interface behaves as though it were saved.
+      alert(errorMessage(error, t('taskCreateFailed')));
+      return;
+    }
+    if (quickTaskCalendarId) localStorage.setItem(QUICK_TASK_CALENDAR_KEY, quickTaskCalendarId);
     await loadTasks();
     setQuickTaskTitle('');
     setQuickTaskOpen(false);
-  }, [quickTaskTitle, loadTasks]);
+  }, [quickTaskTitle, quickTaskCalendarId, loadTasks, t]);
 
   if (initialLoading) {
     return (
@@ -411,6 +444,15 @@ export function Calendar() {
               placeholder={t('taskTitlePlaceholder')}
               className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-white font-mono text-sm focus:outline-none focus:border-blue-500 mb-3"
             />
+            {/* Renders nothing when there is only one writable calendar — a
+                select with a single option is noise. */}
+            <div className="mb-3">
+              <CalendarPicker
+                id="quick-task-calendar"
+                value={quickTaskCalendarId}
+                onChange={setQuickTaskCalendarId}
+              />
+            </div>
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => setQuickTaskOpen(false)}

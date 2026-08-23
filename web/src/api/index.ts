@@ -221,6 +221,13 @@ export async function createTask(body: {
   tags?: string[];
   dueDate?: string;
   estimatedMinutes?: number;
+  /**
+   * Which calendar the task belongs to. Omitted means "my personal calendar",
+   * which is the API's own default — and was the ONLY behaviour available here
+   * until 23.08, because this wrapper had no way to say anything else. A task
+   * created from a shared week landed out of sight of the person it was for.
+   */
+  calendarId?: string;
 }): Promise<import('../types').Task> {
   // 🔴 The API returns the task object itself inside the { data } envelope,
   // and api.post already unwraps that envelope — so asking for a `.task` key
@@ -237,6 +244,9 @@ export async function createTask(body: {
     tags: body.tags,
     due_date: body.dueDate,
     estimated_minutes: body.estimatedMinutes,
+    // Omitted rather than sent empty, matching the event editor: the backend
+    // reads an absent field as "the author's personal calendar".
+    calendar_id: body.calendarId || undefined,
   });
   return toTask(raw);
 }

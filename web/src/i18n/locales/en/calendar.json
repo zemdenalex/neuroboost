@@ -12,6 +12,7 @@
   "loading": "Loading...",
   "taskTitlePrompt": "Task title?",
   "newTask": "New Task",
+  "taskCreateFailed": "Could not create the task",
   "taskTitlePlaceholder": "Task title...",
   "cancel": "Cancel",
   "openTasks": "Open tasks",
