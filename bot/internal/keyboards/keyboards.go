@@ -149,6 +149,9 @@ func SettingsMenu() tgbotapi.InlineKeyboardMarkup {
 			tgbotapi.NewInlineKeyboardButtonData("🕘 Рабочие часы", "settings_workhours"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("🔤 Ключевые слова", "settings_keywords"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("« Menu", "main_menu"),
 		),
 	)

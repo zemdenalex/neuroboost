@@ -41,6 +41,8 @@ func (h *Handler) handleFlowInput(chatID int64, text string) {
 		h.handleNewTaskFlow(chatID, text)
 	case "new_event":
 		h.handleNewEventFlow(chatID, text)
+	case "keyword":
+		h.handleKeywordInput(chatID, text)
 	case "edit_task_tags":
 		h.handleEditTaskTags(chatID, text)
 	default:

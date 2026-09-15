@@ -315,6 +315,12 @@ func (h *Handler) HandleCallback(cb *tgbotapi.CallbackQuery) {
 		h.handlePlanning(chatID, cb.Message.MessageID)
 	case data == "settings_menu":
 		h.handleSettings(chatID, cb.Message.MessageID)
+	case data == "settings_keywords":
+		h.handleKeywords(chatID, cb.Message.MessageID)
+	case data == "kw_add":
+		h.startKeywordFlow(chatID, cb.Message.MessageID)
+	case strings.HasPrefix(data, "kw_del_"):
+		h.handleKeywordDelete(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "kw_del_"))
 	case data == "settings_workhours":
 		h.handleWorkHours(chatID, cb.Message.MessageID)
 	case strings.HasPrefix(data, "wh_"):

@@ -143,7 +143,35 @@ func renderDraft(st draftState, now time.Time) string {
 		fmt.Fprintf(&b, "🏷 %s\n", format.Escape(strings.Join(st.D.Tags, ", ")))
 	}
 
+	// 🔴 Three states, three sentences. Saying nothing for the nil case is
+	// correct — it means "my usual reminders", which is what the server will
+	// do — but «не напоминать» has to be visible, or an event that will stay
+	// silent forever looks identical to one that will not.
+	if st.ReminderOffsets != nil {
+		if len(*st.ReminderOffsets) == 0 {
+			b.WriteString("🔕 не напоминать\n")
+		} else {
+			parts := make([]string, 0, len(*st.ReminderOffsets))
+			for _, m := range *st.ReminderOffsets {
+				parts = append(parts, humanOffset(m))
+			}
+			fmt.Fprintf(&b, "🔔 за %s\n", strings.Join(parts, ", "))
+		}
+	}
+
 	return strings.TrimRight(b.String(), "\n")
+}
+
+// humanOffset turns minutes-before into the words a person would use.
+func humanOffset(m int) string {
+	switch {
+	case m >= 1440 && m%1440 == 0:
+		return fmt.Sprintf("%d дн.", m/1440)
+	case m >= 60 && m%60 == 0:
+		return fmt.Sprintf("%d ч.", m/60)
+	default:
+		return fmt.Sprintf("%d мин.", m)
+	}
 }
 
 // offsetHHMM prints an offset from midnight as a clock time. An offset past

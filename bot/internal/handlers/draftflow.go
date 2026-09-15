@@ -38,8 +38,13 @@ const creationGuide = `📅 <b>Новое событие</b>
 <code>созвон работа синий 16.09 10:00</code>
    → созвон · календарь «Работа» · синий · 16.09 10:00
 
-<b>Слова:</b> задача · весь день · повтор · ежедневно · цвета · #тег
+<code>зарядка каждый день 07:00 напомнить за 10м</code>
+   → зарядка · каждый день · 07:00 · напомню за 10 мин.
+
+<b>Слова:</b> задача · весь день · повтор · ежедневно · цвета · #тег · напомнить за 15м
 <b>Дни:</b> завтра · среда · следующая среда · пн · wednesday · 16.09
+<b>Своё слово</b> — ⚙️ Настройки → 🔤 Ключевые слова
+<b>Списком</b> — несколько строк сразу, спрошу, одна это запись или список
 
 Покажу, что понял, и спрошу подтверждение — создам только после него.`
 
@@ -167,6 +172,18 @@ func (h *Handler) parseIntoDraft(chatID int64, text string) draftState {
 		}
 	}
 
+	// 🔴 The user's own words run LAST, after every built-in recogniser and
+	// after the calendar. A custom word spelled like «синий» or «повтор» must
+	// not take the built-in meaning away from the person who added it.
+	if vocab, err := h.api.BotKeywords(us.AuthToken); err == nil && len(vocab) > 0 {
+		parse.RecogniseCustomTags(p.Tokens, vocab, &st.D)
+	}
+
+	if presets, err := h.api.ReminderPresets(us.AuthToken); err == nil && len(presets) > 0 {
+		parse.RecogniseReminderPreset(p.Tokens, presets, &st.D)
+	}
+	st.ReminderOffsets = st.D.ReminderOffsets
+
 	st.Title = parse.Title(p.Tokens)
 	return st
 }
@@ -213,6 +230,16 @@ func (h *Handler) handleDraftCallback(chatID int64, messageID int, data string) 
 		h.editOrSend(chatID, messageID, "Это создание уже закрыто.", keyboards.HomeInline())
 		return true
 	}
+	// 🗑 is answered before the draft is looked up. It is the one button that
+	// must work in every state — including «одна запись или список?», where no
+	// draft exists yet and a lookup would answer "черновик потерялся" to
+	// someone who was trying to throw the draft away.
+	if data == "dr_cancel" {
+		h.store.ClearFlow(chatID)
+		h.editOrSend(chatID, messageID, "🗑 Отменено.", keyboards.HomeInline())
+		return true
+	}
+
 	st, ok := draftOf(h, chatID)
 	if !ok {
 		h.lostDraft(chatID)

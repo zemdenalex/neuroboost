@@ -43,6 +43,11 @@ type Draft struct {
 	Calendar string
 
 	Tags []string
+
+	// ReminderOffsets keeps three states apart: nil is "not stated", so the API
+	// applies the user's default preset; a pointer to an empty slice is "stated
+	// as none", meaning silent forever; anything else is what was asked for.
+	ReminderOffsets *[]int
 }
 
 // StartsAt composes the day and the start offset. Only meaningful when both

@@ -34,6 +34,7 @@ var recognisers = []recogniser{
 	{"all-day", func(t []Token, _ time.Time, d *Draft) bool { return recogniseAllDay(t, d) }},
 	{"kind", func(t []Token, _ time.Time, d *Draft) bool { return recogniseKind(t, d) }},
 	{"colour", func(t []Token, _ time.Time, d *Draft) bool { return recogniseColour(t, d) }},
+	{"reminder", func(t []Token, _ time.Time, d *Draft) bool { return RecogniseReminderOffset(t, d) }},
 	{"tags", func(t []Token, _ time.Time, d *Draft) bool { return recogniseTags(t, d) }},
 }
 

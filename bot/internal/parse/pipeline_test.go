@@ -87,7 +87,7 @@ func TestParseLineTable(t *testing.T) {
 func TestRecogniserOrderIsFixed(t *testing.T) {
 	want := []string{
 		"date", "relative-day", "repeat", "weekday",
-		"time-range", "time-word", "all-day", "kind", "colour", "tags",
+		"time-range", "time-word", "all-day", "kind", "colour", "reminder", "tags",
 	}
 	if len(recognisers) != len(want) {
 		t.Fatalf("got %d recognisers, want %d — if one was added, decide where it "+
@@ -184,5 +184,22 @@ func TestNoKeywordEverReachesTheTitle(t *testing.T) {
 		if p.Title != "оркестр" {
 			t.Errorf("%q left %q in the title", k, strings.TrimPrefix(p.Title, "оркестр "))
 		}
+	}
+}
+
+// The new guide example must parse the way it is printed, like the others.
+func TestGuideReminderExample(t *testing.T) {
+	p := ParseLine("зарядка каждый день 07:00 напомнить за 10м", tuesday15())
+	if p.Title != "зарядка" {
+		t.Errorf("Title = %q, want %q", p.Title, "зарядка")
+	}
+	if p.Draft.Repeat != "FREQ=DAILY" {
+		t.Errorf("Repeat = %q, want FREQ=DAILY", p.Draft.Repeat)
+	}
+	if p.Draft.Start != hhmm(7, 0) {
+		t.Errorf("Start = %v, want 07:00", p.Draft.Start)
+	}
+	if p.Draft.ReminderOffsets == nil || (*p.Draft.ReminderOffsets)[0] != 10 {
+		t.Errorf("ReminderOffsets = %v, want [10]", p.Draft.ReminderOffsets)
 	}
 }
