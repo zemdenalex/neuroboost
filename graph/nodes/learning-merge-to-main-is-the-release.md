@@ -4,7 +4,7 @@ title: Prod деплоится на push в `main`, а не на тег — ме
 type: learning
 status: verified
 tags: [neuroboost, ci, deploy, release, git]
-weight: { importance: 5, connectivity: 18, access: 15, last_accessed: 2026-09-11 }
+weight: { importance: 5, connectivity: 18, access: 16, last_accessed: 2026-09-15 }
 created: 2026-08-10
 sources:
   - file: ".github/workflows/ci.yml — job deploy, if: github.ref == 'refs/heads/main'"

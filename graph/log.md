@@ -897,3 +897,51 @@ C6 (приглашение из настроек) — функция, вне о�
 **Suggested skills for next session:** дождаться ревью спеки, затем
 `superpowers:writing-plans` по ней и `superpowers:subagent-driven-development`.
 Для трёх замечаний про задачи — `superpowers:brainstorming` отдельной спекой.
+
+## [2026-09-15] recall | learning-a-stale-local-ref-answers-confidently, decision-v0412-focus-is-the-event-window, entity-bot-deploys-by-hand-not-by-ci, learning-green-tests-are-not-a-deployed-bot, learning-merge-to-main-is-the-release, entity-server-topology, decision-bot-token-rotation-dropped
+
+---
+
+## [2026-09-15] Сессия: сверка состояния и смена порядка работ
+
+Короткая сессия. Кода не трогали, дерево чистое, незапушенного нет.
+
+### Сверено (от `origin` и от самого хоста, а не по памяти)
+
+Прод держит **v0.4.11** четвёртые сутки: хост на `f4ce145`, схема **16/clean**, три
+контейнера и прод-бот `Up 4 days (healthy)`, теги `v0.4.10` и `v0.4.11` на remote.
+`develop` впереди на **6** коммитов — только `docs/` и `graph/`, кода ноль.
+
+🟢 [[learning-a-stale-local-ref-answers-confidently]] сработал сразу: считал от
+`origin/main` и проверил `cd /opt/neuroboost && git log -1`, а не локальные ветки.
+
+### 🔴 Порядок работ изменён
+
+Денис: *«включим это в 0.4.11.1, а потом уже перейдем к 12 где улучшим мобилку»*.
+Перед окном событий встаёт **патч по боту** — [[decision-bot-patch-v04111-before-mobile]].
+Спека v0.4.12 остаётся верной, но ждёт своей очереди.
+
+### Открыто
+
+- 🔴 **Ждём от Дениса список замечаний по боту.** Он сказал, что напишет, и не прислал.
+  Без списка объёма патча нет; придумывать за него нельзя — прошлый раз половина ценного
+  была про **отсутствующее**, а не про сломанное.
+- 🔴 **Спека v0.4.12 так и не прочитана** —
+  `docs/superpowers/specs/2026-09-11-calendar-event-window-design.md`, статус «черновик на
+  ревью». В код до его слова не идём.
+- ⚠ **Прод руками он не проходил** — приёмка 11.09 была по staging. Не считать сделанным.
+- 🟡 Три замечания 11.09 без спеки: отметка «общая» у задачи · связь задачи и события ·
+  редактор задачи модалкой поверх календаря.
+- 🟡 Не решено: `--max-warnings 0` в CI (сейчас 3 warning'а) и pipeline для выкатки бота.
+
+### Читать первыми в следующей сессии
+
+`decision-bot-patch-v04111-before-mobile` · `decision-v0412-focus-is-the-event-window` ·
+`entity-bot-deploys-by-hand-not-by-ci` · `learning-green-tests-are-not-a-deployed-bot`
+
+**Числа не переносить, считать от `origin`.** На 15.09: прод `v0.4.11`, схема 16,
+`develop` = `origin/main` + 6 docs/graph-коммитов, миграций 16.
+
+**Suggested skills for next session:** получить список от Дениса, затем
+`superpowers:brainstorming` по патчу бота (объём известен только из его слов).
+Выкатка бота — **руками** на nl-2 из тега, `ls` его `src/` перед словом «готово».

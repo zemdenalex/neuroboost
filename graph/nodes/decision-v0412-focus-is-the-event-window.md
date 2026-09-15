@@ -6,7 +6,7 @@ status: verified
 verified_by: session-01VRP8SC
 verified_at: 2026-09-11
 tags: [neuroboost, calendar, frontend, decision]
-weight: { importance: 5, connectivity: 3, access: 1, last_accessed: 2026-09-11 }
+weight: { importance: 5, connectivity: 6, access: 2, last_accessed: 2026-09-15 }
 sources:
   - file: "docs/superpowers/specs/2026-09-11-calendar-event-window-design.md"
   - file: "ref/feedback/proverka-pered-relizom-otvet-denisa-2026-09-11.md"
@@ -15,7 +15,12 @@ links:
   - relates-to: entity-calendars-hold-events-since-slice2plus
   - relates-to: learning-a-handler-test-says-nothing-about-a-control
   - relates-to: preference-never-replace-a-working-capability-with-a-simpler-one
+  - relates-to: decision-bot-patch-v04111-before-mobile
 ---
+⚠ **Порядок изменён 15.09:** перед этим фокусом встал патч по боту **v0.4.11.1** — см.
+[[decision-bot-patch-v04111-before-mobile]]. Содержание фокуса не поменялось, поменялась
+очередь.
+
 После приёмки v0.4.11 Денис выбрал фокусом следующего релиза модель загрузки событий и
 ответил на четыре вопроса дизайна:
 
