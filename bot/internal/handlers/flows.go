@@ -15,14 +15,7 @@ func (h *Handler) startNoteFlow(chatID int64) {
 	us := h.store.GetOrCreate(chatID)
 	us.CurrentFlow = "note"
 	us.FlowStep = "text"
-	h.sendText(chatID, "📝 Send me your note:")
-}
-
-func (h *Handler) startNewTaskFlow(chatID int64) {
-	us := h.store.GetOrCreate(chatID)
-	us.CurrentFlow = "new_task"
-	us.FlowStep = "title"
-	h.sendHTML(chatID, "➕ <b>New Task</b>\n\nWhat's the task title?")
+	h.sendText(chatID, "📝 Пришли заметку — сохраню её задачей.")
 }
 
 func (h *Handler) handleFlowInput(chatID int64, text string) {
@@ -61,10 +54,10 @@ func (h *Handler) handleNoteFlow(chatID int64, text string) {
 	})
 	h.store.ClearFlow(chatID)
 	if err != nil {
-		h.sendText(chatID, "❌ Failed to save: "+err.Error())
+		h.sendText(chatID, "❌ Не удалось сохранить: "+err.Error())
 		return
 	}
-	h.sendText(chatID, "✅ Note saved as task!")
+	h.sendText(chatID, "✅ Заметка сохранена задачей.")
 }
 
 func (h *Handler) handleNewTaskFlow(chatID int64, text string) {
@@ -72,22 +65,19 @@ func (h *Handler) handleNewTaskFlow(chatID int64, text string) {
 
 	switch us.FlowStep {
 	case "title":
-		r := parse.ParseTask(text, time.Now().In(h.location()))
-		us.FlowData["title"] = r.Title
-		if r.Priority != nil {
-			us.FlowData["priority"] = *r.Priority
+		// 🔴 Ask before assuming. Denis, 15.09: «С задачами ты сделал тоже
+		// списки?» — no, and three lines silently became one task carrying a
+		// three-line title.
+		if parse.LooksLikeList(text, time.Now().In(h.location())) {
+			us.FlowData["raw"] = text
+			us.FlowStep = "list:confirm"
+			n := len(parse.Entries(text))
+			h.sendHTMLWithKeyboard(chatID,
+				fmt.Sprintf("Это одна задача или список из %d?\n\n<i>Одной задачей название будет целиком, со всеми строками.</i>", n),
+				keyboards.ListConfirm(n))
+			return
 		}
-		if r.EstimatedMinutes != nil {
-			us.FlowData["minutes"] = *r.EstimatedMinutes
-		}
-		if r.DueDate != nil {
-			us.FlowData["due"] = r.DueDate.Format(time.RFC3339)
-		}
-		if len(r.Tags) > 0 {
-			us.FlowData["tags"] = r.Tags
-		}
-		us.FlowStep = "card"
-		h.sendHTMLWithKeyboard(chatID, taskCardText(r, h.cfg.Timezone), keyboards.TaskCard())
+		h.showTaskCard(chatID, text)
 	default:
 		h.store.ClearFlow(chatID)
 		h.sendHTMLWithKeyboard(chatID, "Что-то пошло не так.", keyboards.HomeInline())

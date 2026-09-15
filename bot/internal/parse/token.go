@@ -68,3 +68,16 @@ func Title(toks []Token) string {
 	}
 	return strings.Trim(strings.Join(parts, " "), edgePunct)
 }
+
+// dashEdgePunct is edgePunct WITHOUT the dashes.
+//
+// 🔴 Norm trims dashes off both ends, which is right for «оркестр —» and wrong
+// for «-12:50». A leading dash there is not decoration: it is the separator of
+// a range whose space was typed on the wrong side, and trimming it is what made
+// «12:00 -12:50 физра» come out as the event «12:50 физра».
+const dashEdgePunct = ` ,.;:!?()[]«»"'“”`
+
+// NormKeepingDash is Norm with the leading and trailing dashes left in place.
+func NormKeepingDash(t Token) string {
+	return strings.Trim(strings.ToLower(t.Text), dashEdgePunct)
+}

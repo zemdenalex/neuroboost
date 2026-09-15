@@ -96,10 +96,10 @@ func (h *Handler) handleTaskDone(chatID int64, messageID int, taskID string) {
 	us := h.store.GetOrCreate(chatID)
 	err := h.api.UpdateTask(us.AuthToken, taskID, map[string]any{"status": "DONE"})
 	if err != nil {
-		h.sendText(chatID, "❌ Failed: "+err.Error())
+		h.sendText(chatID, "❌ Не получилось: "+err.Error())
 		return
 	}
-	h.sendText(chatID, "✅ Task completed!")
+	h.sendText(chatID, "✅ Задача выполнена.")
 	h.handleTasks(chatID, messageID)
 }
 
@@ -107,10 +107,10 @@ func (h *Handler) handleTaskDelete(chatID int64, messageID int, taskID string) {
 	us := h.store.GetOrCreate(chatID)
 	err := h.api.DeleteTask(us.AuthToken, taskID)
 	if err != nil {
-		h.sendText(chatID, "❌ Failed: "+err.Error())
+		h.sendText(chatID, "❌ Не получилось: "+err.Error())
 		return
 	}
-	h.sendText(chatID, "🗑 Task deleted")
+	h.sendText(chatID, "🗑 Задача удалена.")
 	h.handleTasks(chatID, messageID)
 }
 

@@ -90,6 +90,35 @@ var colourRu = map[string]string{
 func renderDraft(st draftState, now time.Time) string {
 	var b strings.Builder
 
+	// 🔴 Date, then time, then title. Denis, 15.09: «Плохо что сначала
+	// показывается навание потом дата потом время, должно быть дата потом
+	// время потом название, чтобы было проще сориентироваться».
+	//
+	// It matters most in a list. Seventeen entries scanned down the left edge
+	// answer "when is this" first, which is the question you are actually
+	// asking when you read back a timetable; the title is the part you already
+	// know, because you just typed it.
+	if st.D.HasDay {
+		fmt.Fprintf(&b, "🗓 %s, %d %s%s\n",
+			weekdayRu[int(st.D.Day.Weekday())], st.D.Day.Day(), monthGenitive(st.D.Day.Month()),
+			checkMark(st.D.IsUncertain(parse.FieldDay)))
+	} else {
+		b.WriteString("⚠ дата не указана — спрошу\n")
+	}
+
+	switch {
+	case st.D.AllDay:
+		b.WriteString("🕐 весь день\n")
+	case st.D.HasTime && st.D.HasEnd:
+		fmt.Fprintf(&b, "🕐 %s–%s%s\n", offsetHHMM(st.D.Start), offsetHHMM(st.D.End),
+			checkMark(st.D.IsUncertain(parse.FieldTime)))
+	case st.D.HasTime:
+		fmt.Fprintf(&b, "🕐 %s%s\n", offsetHHMM(st.D.Start),
+			checkMark(st.D.IsUncertain(parse.FieldTime)))
+	default:
+		b.WriteString("⚠ время не указано — спрошу\n")
+	}
+
 	icon := "📅"
 	if st.D.IsTask {
 		icon = "✅"
@@ -99,24 +128,6 @@ func renderDraft(st draftState, now time.Time) string {
 		title = "без названия"
 	}
 	fmt.Fprintf(&b, "%s <b>%s</b>\n", icon, format.Escape(title))
-
-	if st.D.HasDay {
-		fmt.Fprintf(&b, "🗓 %s, %d %s\n",
-			weekdayRu[int(st.D.Day.Weekday())], st.D.Day.Day(), monthGenitive(st.D.Day.Month()))
-	} else {
-		b.WriteString("⚠ дата не указана — спрошу\n")
-	}
-
-	switch {
-	case st.D.AllDay:
-		b.WriteString("🕐 весь день\n")
-	case st.D.HasTime && st.D.HasEnd:
-		fmt.Fprintf(&b, "🕐 %s–%s\n", offsetHHMM(st.D.Start), offsetHHMM(st.D.End))
-	case st.D.HasTime:
-		fmt.Fprintf(&b, "🕐 %s\n", offsetHHMM(st.D.Start))
-	default:
-		b.WriteString("⚠ время не указано — спрошу\n")
-	}
 
 	switch {
 	case st.D.Repeat != "":
@@ -160,6 +171,20 @@ func renderDraft(st draftState, now time.Time) string {
 	}
 
 	return strings.TrimRight(b.String(), "\n")
+}
+
+// checkMark flags a value the parser read from a loose format.
+//
+// 🔴 Denis, 15.09: «если время написано не строго по формулировке должно
+// помечать на уточнение/подтверждение». The bot now reads «13;00», «12» and
+// «12:00 -12:50», which is what he asked for — but reading a sloppy format
+// silently turns a typo into a fact nobody checked. The mark is the difference
+// between a kindness and a guess.
+func checkMark(uncertain bool) string {
+	if uncertain {
+		return " ⚠ проверь"
+	}
+	return ""
 }
 
 // humanOffset turns minutes-before into the words a person would use.

@@ -97,7 +97,7 @@ func (h *Handler) ensureAuth(chatID int64, from *tgbotapi.User) bool {
 	if from == nil {
 		// Channel posts and some service messages carry no sender; there is no
 		// identity to log in as.
-		h.sendText(chatID, "⚠️ Can't identify you from this chat. Message the bot directly.")
+		h.sendText(chatID, "⚠️ Не понимаю, кто ты в этом чате. Напиши боту напрямую.")
 		return false
 	}
 
@@ -112,7 +112,7 @@ func (h *Handler) ensureAuth(chatID int64, from *tgbotapi.User) bool {
 	token, expiresAt, err := h.api.TelegramLogin(payload)
 	if err != nil {
 		log.Printf("auth: login for chat %d failed: %v", chatID, err)
-		h.sendText(chatID, "⚠️ Couldn't sign you in. Try again in a minute.")
+		h.sendText(chatID, "⚠️ Не получилось войти. Попробуй через минуту.")
 		return false
 	}
 
@@ -204,7 +204,7 @@ func (h *Handler) HandleCallback(cb *tgbotapi.CallbackQuery) {
 	// spinner turning on the user's button forever, which reads as a hung bot
 	// rather than as a stale message.
 	if cb.Message == nil {
-		if _, err := h.bot.Request(tgbotapi.NewCallback(cb.ID, "This message is too old — open the bot and try again")); err != nil {
+		if _, err := h.bot.Request(tgbotapi.NewCallback(cb.ID, "Сообщение слишком старое — открой бота и попробуй снова")); err != nil {
 			log.Printf("callback %s: could not answer a message-less callback: %s", cb.ID, logsafe.Redact(err))
 		}
 		return
@@ -236,6 +236,12 @@ func (h *Handler) HandleCallback(cb *tgbotapi.CallbackQuery) {
 	// with three prefixes, and a dozen more cases in a switch this long is how
 	// one of them ends up unreachable.
 	if h.handleDraftCallback(chatID, cb.Message.MessageID, data) {
+		return
+	}
+
+	// The keyword screen owns kwf_/kwv_. Its own prefixes, not the card's —
+	// see keyboards/trigger.go for why reusing dr_col_ would have been a bug.
+	if h.handleKeywordCallback(chatID, cb.Message.MessageID, data) {
 		return
 	}
 

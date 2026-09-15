@@ -95,8 +95,45 @@ func TestCardPrintsAMidnightCrossing(t *testing.T) {
 
 func TestCardMarksATask(t *testing.T) {
 	card := renderDraft(draftFrom("отжаться задача завтра 10:00"), tuesday15())
-	if !strings.HasPrefix(card, "✅") {
+	if !strings.Contains(card, "✅ <b>отжаться</b>") {
 		t.Errorf("a task is not marked as one:\n%s", card)
+	}
+}
+
+// 🔴 Denis, 15.09: «должно быть дата потом время потом название, чтобы было
+// проще сориентироваться». The order is the requirement, so the order is what
+// is asserted — not merely that all three appear.
+func TestCardPutsDateThenTimeThenTitle(t *testing.T) {
+	card := renderDraft(draftFrom("оркестр среда 14:00-15:00"), tuesday15())
+
+	day := strings.Index(card, "🗓")
+	clock := strings.Index(card, "🕐")
+	title := strings.Index(card, "оркестр")
+
+	if day < 0 || clock < 0 || title < 0 {
+		t.Fatalf("a line is missing entirely:\n%s", card)
+	}
+	if !(day < clock && clock < title) {
+		t.Errorf("order is date %d, time %d, title %d — want date, then time, then title:\n%s",
+			day, clock, title, card)
+	}
+}
+
+// 🔴 A loose reading has to announce itself. «13;00» is read as 13:00 now,
+// which is what he asked for; reading it without the mark would turn a typo
+// into a fact he never checked.
+func TestCardFlagsALooseReading(t *testing.T) {
+	loose := renderDraft(draftFrom("обед завтра 13;00"), tuesday15())
+	if !strings.Contains(loose, "⚠ проверь") {
+		t.Errorf("«13;00» was read silently:\n%s", loose)
+	}
+
+	// The contrast that makes the assertion mean something: a strict time
+	// carries no mark, or every line would carry one and the mark would say
+	// nothing.
+	strict := renderDraft(draftFrom("обед завтра 13:00"), tuesday15())
+	if strings.Contains(strict, "⚠ проверь") {
+		t.Errorf("a strict time was flagged too:\n%s", strict)
 	}
 }
 

@@ -48,6 +48,33 @@ type Draft struct {
 	// applies the user's default preset; a pointer to an empty slice is "stated
 	// as none", meaning silent forever; anything else is what was asked for.
 	ReminderOffsets *[]int
+
+	// Uncertain names the fields that were read LOOSELY — «13;00» instead of
+	// «13:00», a bare «12», a date with a slash.
+	//
+	// 🔴 Denis, 15.09: «если время написано не строго по формулировке должно
+	// помечать на уточнение/подтверждение». Reading a sloppy format is a
+	// kindness; reading it without saying so is a guess presented as a fact,
+	// and the card has to be able to tell the two apart.
+	Uncertain []Field
+}
+
+// MarkUncertain records that a field was read from a loose format.
+func (d *Draft) MarkUncertain(f Field) {
+	if d.IsUncertain(f) {
+		return
+	}
+	d.Uncertain = append(d.Uncertain, f)
+}
+
+// IsUncertain reports whether a field was read loosely.
+func (d Draft) IsUncertain(f Field) bool {
+	for _, got := range d.Uncertain {
+		if got == f {
+			return true
+		}
+	}
+	return false
 }
 
 // StartsAt composes the day and the start offset. Only meaningful when both

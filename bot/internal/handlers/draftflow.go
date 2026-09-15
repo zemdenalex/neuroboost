@@ -176,7 +176,31 @@ func (h *Handler) parseIntoDraft(chatID int64, text string) draftState {
 	// after the calendar. A custom word spelled like «синий» or «повтор» must
 	// not take the built-in meaning away from the person who added it.
 	if vocab, err := h.api.BotKeywords(us.AuthToken); err == nil && len(vocab) > 0 {
-		parse.RecogniseCustomTags(p.Tokens, vocab, &st.D)
+		rules := make(map[string]parse.Trigger, len(vocab))
+		for word, kw := range vocab {
+			field, ok := parse.FieldByName(kw.Field)
+			if !ok {
+				// A characteristic this build does not know — written by a
+				// newer version, or renamed. Skipping it leaves the word in
+				// the title, which is visible; guessing a field would not be.
+				continue
+			}
+			rules[word] = parse.Trigger{Field: field, Value: kw.Value}
+		}
+		parse.RecogniseCustomTriggers(p.Tokens, rules, time.Now().In(h.location()), &st.D)
+	}
+
+	// A custom word may name a calendar. Resolving it needs the list again,
+	// but only when the pipeline did not already resolve one from the line.
+	if st.CalendarID == "" && st.D.Calendar != "" {
+		if cals, err := h.api.Calendars(us.AuthToken); err == nil {
+			for _, c := range cals {
+				if strings.EqualFold(strings.TrimSpace(c.Name), strings.TrimSpace(st.D.Calendar)) {
+					st.CalendarID, st.CalendarName = c.ID, c.Name
+					break
+				}
+			}
+		}
 	}
 
 	if presets, err := h.api.ReminderPresets(us.AuthToken); err == nil && len(presets) > 0 {
@@ -221,6 +245,17 @@ func (h *Handler) handleDraftCallback(chatID int64, messageID int, data string) 
 	}
 	us := h.store.GetOrCreate(chatID)
 	if us.CurrentFlow == "new_event" && h.handleListCallback(chatID, messageID, data) {
+		return true
+	}
+	// Tasks share the one/many question and nothing else: for them «many»
+	// means create, while for events it means show a card with days and times
+	// to check first.
+	if us.CurrentFlow == "new_task" && h.handleTaskListCallback(chatID, messageID, data) {
+		return true
+	}
+	if data == "dr_cancel" && us.CurrentFlow != "" {
+		h.store.ClearFlow(chatID)
+		h.editOrSend(chatID, messageID, "🗑 Отменено.", keyboards.HomeInline())
 		return true
 	}
 	if us.CurrentFlow != "new_event" {

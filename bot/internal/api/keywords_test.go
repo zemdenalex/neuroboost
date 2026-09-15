@@ -26,7 +26,7 @@ func TestSetBotKeywordDoesNotWriteWhenTheReadFailed(t *testing.T) {
 	defer srv.Close()
 
 	c := NewClient(srv.URL)
-	if err := c.SetBotKeyword("tok", "спорт", "здоровье"); err == nil {
+	if err := c.SetBotKeyword("tok", "спорт", "tag", "здоровье"); err == nil {
 		t.Error("a failed read reported success")
 	}
 	if wrote {
@@ -34,7 +34,8 @@ func TestSetBotKeywordDoesNotWriteWhenTheReadFailed(t *testing.T) {
 	}
 }
 
-// The word is added, and everything the bot knows nothing about survives.
+// The word is added with its characteristic, and everything the bot knows
+// nothing about survives.
 func TestSetBotKeywordKeepsTheRestOfTheBlob(t *testing.T) {
 	var sent map[string]any
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -48,13 +49,15 @@ func TestSetBotKeywordKeepsTheRestOfTheBlob(t *testing.T) {
 			"data": map[string]any{"settings": map[string]any{
 				"work_start":        "09:00",
 				"quiet_hours_start": "22:00",
-				"bot":               map[string]any{"digest": true, "keywords": map[string]any{"дача": "отдых"}},
+				"bot": map[string]any{"digest": true, "keywords": map[string]any{
+					"дача": map[string]any{"field": "tag", "value": "отдых"},
+				}},
 			}},
 		})
 	}))
 	defer srv.Close()
 
-	if err := NewClient(srv.URL).SetBotKeyword("tok", "Спорт", "Здоровье"); err != nil {
+	if err := NewClient(srv.URL).SetBotKeyword("tok", "Созвон", "Calendar", " Работа "); err != nil {
 		t.Fatalf("SetBotKeyword: %v", err)
 	}
 
@@ -75,15 +78,19 @@ func TestSetBotKeywordKeepsTheRestOfTheBlob(t *testing.T) {
 		t.Error("a sibling key inside `bot` was dropped — the section must be rebuilt, not replaced")
 	}
 	words, _ := bot["keywords"].(map[string]any)
-	if words["спорт"] != "здоровье" {
-		t.Errorf("the new word is missing or not lowercased: %+v", words)
+	added, _ := words["созвон"].(map[string]any)
+	if added == nil {
+		t.Fatalf("the new word is missing or not lowercased: %+v", words)
 	}
-	if words["дача"] != "отдых" {
+	if added["field"] != "calendar" || added["value"] != "Работа" {
+		t.Errorf("stored %+v, want field calendar and value «Работа» — the value keeps its case, the field does not", added)
+	}
+	if _, ok := words["дача"]; !ok {
 		t.Error("an existing word was dropped")
 	}
 }
 
-func TestSetBotKeywordWithAnEmptyTagRemovesIt(t *testing.T) {
+func TestSetBotKeywordWithAnEmptyFieldRemovesIt(t *testing.T) {
 	var sent map[string]any
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPatch {
@@ -94,13 +101,16 @@ func TestSetBotKeywordWithAnEmptyTagRemovesIt(t *testing.T) {
 		}
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"data": map[string]any{"settings": map[string]any{
-				"bot": map[string]any{"keywords": map[string]any{"спорт": "здоровье", "дача": "отдых"}},
+				"bot": map[string]any{"keywords": map[string]any{
+					"спорт": map[string]any{"field": "tag", "value": "здоровье"},
+					"дача":  map[string]any{"field": "tag", "value": "отдых"},
+				}},
 			}},
 		})
 	}))
 	defer srv.Close()
 
-	if err := NewClient(srv.URL).SetBotKeyword("tok", "спорт", ""); err != nil {
+	if err := NewClient(srv.URL).SetBotKeyword("tok", "спорт", "", ""); err != nil {
 		t.Fatalf("SetBotKeyword: %v", err)
 	}
 	settings, _ := sent["settings"].(map[string]any)
@@ -109,8 +119,27 @@ func TestSetBotKeywordWithAnEmptyTagRemovesIt(t *testing.T) {
 	if _, still := words["спорт"]; still {
 		t.Error("the word was not removed")
 	}
-	if words["дача"] != "отдых" {
+	if _, ok := words["дача"]; !ok {
 		t.Error("removing one word removed another")
+	}
+}
+
+// 🔴 The first version of this feature stored every word as a bare string,
+// because every word was a tag. Those blobs still exist. Dropping them would
+// empty the vocabulary of whoever used that version — silently, which is the
+// part that makes it unacceptable.
+func TestLegacyStringKeywordsAreStillRead(t *testing.T) {
+	got := keywordsFrom(map[string]any{
+		"bot": map[string]any{"keywords": map[string]any{
+			"спорт":  "Здоровье",
+			"созвон": map[string]any{"field": "calendar", "value": "Работа"},
+		}},
+	})
+	if got["спорт"] != (Keyword{Field: "tag", Value: "здоровье"}) {
+		t.Errorf("legacy word read as %+v, want a tag «здоровье»", got["спорт"])
+	}
+	if got["созвон"] != (Keyword{Field: "calendar", Value: "Работа"}) {
+		t.Errorf("new-shape word read as %+v", got["созвон"])
 	}
 }
 
@@ -123,6 +152,7 @@ func TestKeywordsFromToleratesAnyShape(t *testing.T) {
 		{"bot": "не карта"},
 		{"bot": map[string]any{"keywords": "не карта"}},
 		{"bot": map[string]any{"keywords": map[string]any{"спорт": 42}}},
+		{"bot": map[string]any{"keywords": map[string]any{"спорт": map[string]any{"value": "нет поля"}}}},
 	} {
 		if got := keywordsFrom(settings); len(got) != 0 {
 			t.Errorf("%+v gave %+v, want an empty vocabulary", settings, got)
