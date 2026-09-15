@@ -12,18 +12,63 @@ import tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 func MainMenu() tgbotapi.ReplyKeyboardMarkup {
 	return tgbotapi.NewReplyKeyboard(
 		tgbotapi.NewKeyboardButtonRow(
-			tgbotapi.NewKeyboardButton("🏠 Меню"),
-			tgbotapi.NewKeyboardButton("🗓 Календарь"),
+			tgbotapi.NewKeyboardButton(menuRows[0][0].Label),
+			tgbotapi.NewKeyboardButton(menuRows[0][1].Label),
 		),
 		tgbotapi.NewKeyboardButtonRow(
-			tgbotapi.NewKeyboardButton("📅 События"),
-			tgbotapi.NewKeyboardButton("📋 Задачи"),
+			tgbotapi.NewKeyboardButton(menuRows[1][0].Label),
+			tgbotapi.NewKeyboardButton(menuRows[1][1].Label),
 		),
 		tgbotapi.NewKeyboardButtonRow(
-			tgbotapi.NewKeyboardButton("➕ Создать"),
-			tgbotapi.NewKeyboardButton("⚙️ Настройки"),
+			tgbotapi.NewKeyboardButton(menuRows[2][0].Label),
+			tgbotapi.NewKeyboardButton(menuRows[2][1].Label),
 		),
 	)
+}
+
+// Screen names. A press of a reply button opens one of these, and — since
+// 15.09 — abandons whatever flow was running first.
+const (
+	ScreenMenu     = "menu"
+	ScreenCalendar = "calendar"
+	ScreenAgenda   = "agenda"
+	ScreenTasks    = "tasks"
+	ScreenCreate   = "create"
+	ScreenSettings = "settings"
+)
+
+type menuEntrance struct {
+	Label  string
+	Screen string
+}
+
+// menuRows is the single declaration of the reply keyboard: MainMenu builds
+// the buttons from it and MenuScreen answers from it.
+//
+// 🔴 Derived, not retyped. The guard in package handlers that interrupts a
+// running flow asks MenuScreen whether a message is a button press. If that
+// set were a second hand-kept list, a seventh button would one day be added to
+// the keyboard and guarded by nobody — and the symptom would be Denis's: the
+// label becomes the title of the event he was creating.
+var menuRows = [3][2]menuEntrance{
+	{{"🏠 Меню", ScreenMenu}, {"🗓 Календарь", ScreenCalendar}},
+	{{"📅 События", ScreenAgenda}, {"📋 Задачи", ScreenTasks}},
+	{{"➕ Создать", ScreenCreate}, {"⚙️ Настройки", ScreenSettings}},
+}
+
+// MenuScreen reports which screen a reply-keyboard label opens.
+//
+// Matching is exact. A message that merely CONTAINS a label is not a press —
+// «напомнить про 📋 Задачи» is a note someone typed, not a button.
+func MenuScreen(text string) (string, bool) {
+	for _, row := range menuRows {
+		for _, e := range row {
+			if e.Label == text {
+				return e.Screen, true
+			}
+		}
+	}
+	return "", false
 }
 
 // HomeInline is the home screen, and it must reach EVERYWHERE the reply

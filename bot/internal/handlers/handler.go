@@ -127,6 +127,26 @@ func (h *Handler) HandleMessage(msg *tgbotapi.Message) {
 	}
 	us := h.store.GetOrCreate(chatID)
 
+	// 🔴 A menu button is a button, even in the middle of creating something.
+	//
+	// This check used to come AFTER the flow check, and that order was the
+	// whole defect Denis reported on 15.09: «🗓 Календарь» pressed while an
+	// event was being created arrived as the event's TITLE. A reply button is
+	// an ordinary text message as far as the Bot API is concerned, so nothing
+	// distinguishes it except asking — and asking late is the same as not
+	// asking.
+	//
+	// Abandoning the flow is deliberate rather than a pause: the user reached
+	// for a different part of the product, and a half-built draft waiting
+	// silently to swallow the next message is worse than losing it.
+	if screen, ok := keyboards.MenuScreen(msg.Text); ok {
+		if us.CurrentFlow != "" {
+			h.store.ClearFlow(chatID)
+		}
+		h.openScreen(chatID, screen)
+		return
+	}
+
 	if us.CurrentFlow != "" {
 		h.handleFlowInput(chatID, msg.Text)
 		return
@@ -142,18 +162,28 @@ func (h *Handler) HandleMessage(msg *tgbotapi.Message) {
 		return
 	}
 
-	switch msg.Text {
-	case "🏠 Меню":
+	h.sendHTMLWithKeyboard(chatID, "Не понял. Вот меню:", keyboards.HomeInline())
+}
+
+// openScreen renders the screen a reply-keyboard button names.
+//
+// It exists as its own function so the dispatch is one list rather than a
+// switch buried inside HandleMessage's other branches — TestEveryMenuScreenHasACase
+// reads it, and a button added to the keyboard without a case here fails loudly
+// instead of clearing the flow and then rendering nothing.
+func (h *Handler) openScreen(chatID int64, screen string) {
+	switch screen {
+	case keyboards.ScreenMenu:
 		h.handleMenu(chatID, 0)
-	case "🗓 Календарь":
+	case keyboards.ScreenCalendar:
 		h.handleCalendar(chatID, 0, time.Now())
-	case "📅 События":
+	case keyboards.ScreenAgenda:
 		h.handleAgenda(chatID, 0)
-	case "📋 Задачи":
+	case keyboards.ScreenTasks:
 		h.handleTasks(chatID, 0)
-	case "➕ Создать":
+	case keyboards.ScreenCreate:
 		h.sendHTMLWithKeyboard(chatID, "Что создаём?", keyboards.CreateMenu())
-	case "⚙️ Настройки":
+	case keyboards.ScreenSettings:
 		h.handleSettings(chatID, 0)
 	default:
 		h.sendHTMLWithKeyboard(chatID, "Не понял. Вот меню:", keyboards.HomeInline())
