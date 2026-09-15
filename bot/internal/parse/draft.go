@@ -21,6 +21,28 @@ type Draft struct {
 	End     time.Duration
 	HasTime bool
 	HasEnd  bool
+
+	// Repeat is an RFC 5545 RRULE, or empty when there is none.
+	// RepeatAsked is the state an API request cannot express: the word
+	// "повтор" was written but no frequency was given, so the card must ask.
+	Repeat      string
+	RepeatAsked bool
+
+	AllDay bool
+
+	// IsTask means the word "задача" was used: the bot creates a task and an
+	// event bound to it, so the entry can be ticked off.
+	IsTask bool
+
+	// Colour is a palette name from web/src/lib/calendar/palette.ts. Anything
+	// else would be stored and then not painted.
+	Colour string
+
+	// Calendar is the word that named a calendar; resolving it to an id needs
+	// the user's calendar list and therefore happens outside the parser.
+	Calendar string
+
+	Tags []string
 }
 
 // StartsAt composes the day and the start offset. Only meaningful when both
