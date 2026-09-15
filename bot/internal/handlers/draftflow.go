@@ -74,6 +74,12 @@ func (h *Handler) handleNewEventFlow(chatID int64, text string) {
 
 	switch us.FlowStep {
 	case "line":
+		// 🔴 Ask before assuming. A block of lines may be one entry with a long
+		// title or several entries, and the bot is not the one who knows which.
+		if parse.LooksLikeList(text, time.Now().In(h.location())) {
+			h.askListOrSingle(chatID, text)
+			return
+		}
 		st := h.parseIntoDraft(chatID, text)
 		if date, ok := us.FlowData["date"].(string); ok && date != "" && !st.D.HasDay {
 			if day, err := time.ParseInLocation("2006-01-02", date, h.location()); err == nil {
@@ -173,7 +179,14 @@ func (h *Handler) showCard(chatID int64, messageID int) {
 	}
 	us := h.store.GetOrCreate(chatID)
 	us.FlowStep = "card"
-	h.editOrSend(chatID, messageID, renderDraft(*st, time.Now().In(h.location())), keyboards.DraftCard())
+	card := keyboards.DraftCard()
+	if _, inList := listOf(h, chatID); inList {
+		// ✅ is deliberately absent inside a list: creating is the list's own
+		// button, and a per-entry ✅ would create one event and leave the rest
+		// silently uncreated.
+		card = keyboards.DraftCardInList()
+	}
+	h.editOrSend(chatID, messageID, renderDraft(*st, time.Now().In(h.location())), card)
 }
 
 func (h *Handler) lostDraft(chatID int64) {
@@ -190,6 +203,9 @@ func (h *Handler) handleDraftCallback(chatID int64, messageID int, data string) 
 		return false
 	}
 	us := h.store.GetOrCreate(chatID)
+	if us.CurrentFlow == "new_event" && h.handleListCallback(chatID, messageID, data) {
+		return true
+	}
 	if us.CurrentFlow != "new_event" {
 		// The card belongs to a flow that is over — most often because a menu
 		// button interrupted it. Saying so beats editing a message the state no
@@ -385,29 +401,56 @@ func (h *Handler) confirmDraft(chatID int64, messageID int) {
 // and that is said out loud rather than compensated for — a silent rollback
 // that can itself fail is worse than an honest sentence.
 func (h *Handler) createFromDraft(chatID int64, messageID int, st draftState) {
-	us := h.store.GetOrCreate(chatID)
 	loc := h.location()
+	start, end := draftBounds(st)
+
+	if err := h.createOne(chatID, st); err != nil {
+		h.store.ClearFlow(chatID)
+		h.editOrSend(chatID, messageID, "❌ "+err.Error(), keyboards.HomeInline())
+		return
+	}
+
+	h.store.ClearFlow(chatID)
+	h.editOrSend(chatID, messageID, fmt.Sprintf("✅ <b>Создано</b>\n%s\n🕐 %s",
+		format.Escape(st.Title), humanRange(start.In(loc), end.In(loc), time.Now().In(loc))),
+		keyboards.AgendaActions())
+}
+
+// draftBounds turns the draft's day and offsets into two instants. An all-day
+// event spans local midnight to local midnight; anything else runs an hour
+// unless an end was given.
+func draftBounds(st draftState) (time.Time, time.Time) {
+	if st.D.AllDay {
+		return st.D.Day, st.D.Day.AddDate(0, 0, 1)
+	}
+	start := st.D.StartsAt()
+	if st.D.HasEnd {
+		return start, st.D.EndsAt()
+	}
+	return start, start.Add(time.Hour)
+}
+
+// createOne writes one draft and reports what went wrong, if anything.
+//
+// 🔴 A draft marked «задача» becomes TWO objects: a task, and an event bound to
+// it by task_id. If the second call fails the first has already happened, and
+// that is said out loud rather than compensated for — a silent rollback that
+// can itself fail is worse than an honest sentence.
+func (h *Handler) createOne(chatID int64, st draftState) error {
+	us := h.store.GetOrCreate(chatID)
 
 	var taskID *string
 	if st.D.IsTask {
-		task, err := h.api.CreateTask(us.AuthToken, api.CreateTaskReq{Title: st.Title, Status: "TODO", Tags: st.D.Tags})
+		task, err := h.api.CreateTask(us.AuthToken, api.CreateTaskReq{
+			Title: st.Title, Status: "TODO", Tags: st.D.Tags,
+		})
 		if err != nil {
-			h.store.ClearFlow(chatID)
-			h.editOrSend(chatID, messageID, "❌ Не удалось создать задачу: "+err.Error(), keyboards.HomeInline())
-			return
+			return fmt.Errorf("задача не создана: %w", err)
 		}
 		taskID = &task.ID
 	}
 
-	start := st.D.StartsAt()
-	end := start.Add(time.Hour)
-	switch {
-	case st.D.AllDay:
-		start = st.D.Day
-		end = st.D.Day.AddDate(0, 0, 1)
-	case st.D.HasEnd:
-		end = st.D.EndsAt()
-	}
+	start, end := draftBounds(st)
 
 	req := api.CreateEventReq{
 		Title:           st.Title,
@@ -431,18 +474,11 @@ func (h *Handler) createFromDraft(chatID int64, messageID int, st draftState) {
 		req.CalendarID = &id
 	}
 
-	ev, err := h.api.CreateEvent(us.AuthToken, req)
-	h.store.ClearFlow(chatID)
-	if err != nil {
-		msg := "❌ Не удалось создать событие: " + err.Error()
+	if _, err := h.api.CreateEvent(us.AuthToken, req); err != nil {
 		if taskID != nil {
-			msg += "\n\n⚠ Задача при этом создана — она в списке задач."
+			return fmt.Errorf("событие не создано (%w), но задача создана — она в списке задач", err)
 		}
-		h.editOrSend(chatID, messageID, msg, keyboards.HomeInline())
-		return
+		return fmt.Errorf("событие не создано: %w", err)
 	}
-
-	h.editOrSend(chatID, messageID, fmt.Sprintf("✅ <b>Создано</b>\n%s\n🕐 %s",
-		format.Escape(ev.Title), humanRange(start.In(loc), end.In(loc), time.Now().In(loc))),
-		keyboards.AgendaActions())
+	return nil
 }

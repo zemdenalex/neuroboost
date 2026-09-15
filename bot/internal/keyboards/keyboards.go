@@ -7,7 +7,6 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
-
 // TaskActions is the card for one existing task.
 //
 // Срок / Оценка / Теги reuse the wizard's own step screens rather than

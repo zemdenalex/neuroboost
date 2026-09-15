@@ -1,6 +1,11 @@
 package keyboards
 
-import tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+import (
+	"fmt"
+	"strconv"
+
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+)
 
 // The confirmation card, Denis's design of 15.09: «в подтверждении должно быть
 // 3 кнопки подтвердить, изменить, удалить/отменить и если изменить то уже
@@ -170,6 +175,74 @@ func DraftBack() tgbotapi.InlineKeyboardMarkup {
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("⬅️ Назад", "dr_back"),
 			tgbotapi.NewInlineKeyboardButtonData("🗑 Отменить", "dr_cancel"),
+		),
+	)
+}
+
+// ListConfirm is the question Denis asked for by name: «это все должно
+// уточняться создать одну задачу с таким длинным описанием/названием или это
+// список задач».
+//
+// 🔴 The bot asks and never decides. Five tasks glued into one title and one
+// long title split into five tasks are equally wrong, and only the person who
+// typed it knows which they meant.
+func ListConfirm(n int) tgbotapi.InlineKeyboardMarkup {
+	return tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("Одна запись", "dr_one"),
+			tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("Список из %d", n), "dr_many"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("🗑 Отменить", "dr_cancel"),
+		),
+	)
+}
+
+// ListCard carries the same three answers as the single card. One card for the
+// whole list, not one per entry: eight confirmations in a row is worse than not
+// asking at all.
+func ListCard(n int) tgbotapi.InlineKeyboardMarkup {
+	return tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("✅ Создать %d", n), "dr_makeall"),
+			tgbotapi.NewInlineKeyboardButtonData("✏️ Изменить", "dr_pick"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("🗑 Отменить", "dr_cancel"),
+		),
+	)
+}
+
+// ListPick asks which entry to edit.
+func ListPick(n int) tgbotapi.InlineKeyboardMarkup {
+	var rows [][]tgbotapi.InlineKeyboardButton
+	var row []tgbotapi.InlineKeyboardButton
+	for i := 0; i < n; i++ {
+		row = append(row, tgbotapi.NewInlineKeyboardButtonData(
+			strconv.Itoa(i+1), "dr_item_"+strconv.Itoa(i)))
+		if len(row) == 5 {
+			rows, row = append(rows, row), nil
+		}
+	}
+	if len(row) > 0 {
+		rows = append(rows, row)
+	}
+	rows = append(rows, []tgbotapi.InlineKeyboardButton{
+		tgbotapi.NewInlineKeyboardButtonData("⬅️ К списку", "dr_list"),
+	})
+	return tgbotapi.NewInlineKeyboardMarkup(rows...)
+}
+
+// DraftCardInList is the single card while a list is open: the same three
+// buttons plus the way back to the list, which would otherwise be unreachable.
+func DraftCardInList() tgbotapi.InlineKeyboardMarkup {
+	return tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("✏️ Изменить", "dr_edit"),
+			tgbotapi.NewInlineKeyboardButtonData("⬅️ К списку", "dr_list"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("🗑 Отменить всё", "dr_cancel"),
 		),
 	)
 }
