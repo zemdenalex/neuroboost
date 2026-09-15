@@ -253,25 +253,29 @@ func (h *Handler) handleDraftCallback(chatID int64, messageID int, data string) 
 	if us.CurrentFlow == "new_task" && h.handleTaskListCallback(chatID, messageID, data) {
 		return true
 	}
-	if data == "dr_cancel" && us.CurrentFlow != "" {
+	// 🔴 ONE cancel branch, and it is here: before the flow is checked and
+	// before the draft is looked up.
+	//
+	// 🗑 is the one button that must work in every state — mid-list, on the
+	// «одна запись или список?» question where no draft exists yet, and after a
+	// menu press ended the flow. Handling it later would answer «черновик
+	// потерялся» to someone who was trying to throw the draft away.
+	//
+	// ⚠ There were briefly three copies of this branch, two of them
+	// unreachable, because each new state got its own. Unreachable code that
+	// LOOKS like the handler is worse than none: the next reader fixes the copy
+	// that never runs.
+	if data == "dr_cancel" {
 		h.store.ClearFlow(chatID)
 		h.editOrSend(chatID, messageID, "🗑 Отменено.", keyboards.HomeInline())
 		return true
 	}
+
 	if us.CurrentFlow != "new_event" {
 		// The card belongs to a flow that is over — most often because a menu
 		// button interrupted it. Saying so beats editing a message the state no
 		// longer backs.
 		h.editOrSend(chatID, messageID, "Это создание уже закрыто.", keyboards.HomeInline())
-		return true
-	}
-	// 🗑 is answered before the draft is looked up. It is the one button that
-	// must work in every state — including «одна запись или список?», where no
-	// draft exists yet and a lookup would answer "черновик потерялся" to
-	// someone who was trying to throw the draft away.
-	if data == "dr_cancel" {
-		h.store.ClearFlow(chatID)
-		h.editOrSend(chatID, messageID, "🗑 Отменено.", keyboards.HomeInline())
 		return true
 	}
 
@@ -284,10 +288,6 @@ func (h *Handler) handleDraftCallback(chatID int64, messageID int, data string) 
 	switch {
 	case data == "dr_ok":
 		h.confirmDraft(chatID, messageID)
-
-	case data == "dr_cancel":
-		h.store.ClearFlow(chatID)
-		h.editOrSend(chatID, messageID, "🗑 Отменено.", keyboards.HomeInline())
 
 	case data == "dr_back":
 		h.showCard(chatID, messageID)

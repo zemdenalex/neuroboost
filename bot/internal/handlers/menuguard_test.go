@@ -99,3 +99,41 @@ func TestEveryMenuScreenHasACase(t *testing.T) {
 		}
 	}
 }
+
+// 🔴 🗑 Отменить must have exactly ONE handler, and it must come before both
+// the flow check and the draft lookup.
+//
+// There were briefly three copies of it — one per state that needed it — and
+// two were unreachable. Unreachable code that looks like the handler is worse
+// than none: the next reader fixes the copy that never runs, and the button
+// stays broken in the state they were fixing it for.
+func TestCancelIsHandledOnceAndFirst(t *testing.T) {
+	src, err := os.ReadFile("draftflow.go")
+	if err != nil {
+		t.Fatalf("read draftflow.go: %v", err)
+	}
+	body, ok := funcBody(string(src),
+		"func (h *Handler) handleDraftCallback(chatID int64, messageID int, data string) bool {")
+	if !ok {
+		t.Fatal("handleDraftCallback not found — this scan is checking nothing")
+	}
+
+	if n := strings.Count(body, `data == "dr_cancel"`); n != 1 {
+		t.Errorf("handleDraftCallback tests for dr_cancel %d times, want exactly 1", n)
+	}
+
+	cancelAt := strings.Index(body, `data == "dr_cancel"`)
+	lookupAt := strings.Index(body, "st, ok := draftOf(h, chatID)")
+	flowAt := strings.Index(body, `us.CurrentFlow != "new_event"`)
+	if cancelAt < 0 || lookupAt < 0 || flowAt < 0 {
+		t.Fatal("the scan has drifted from the code it guards")
+	}
+	if cancelAt > lookupAt {
+		t.Error("cancel is handled after the draft lookup — pressing 🗑 with no draft " +
+			"answers «черновик потерялся» to someone throwing the draft away")
+	}
+	if cancelAt > flowAt {
+		t.Error("cancel is handled after the flow check — pressing 🗑 in the task flow " +
+			"answers «это создание уже закрыто»")
+	}
+}
