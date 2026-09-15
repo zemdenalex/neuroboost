@@ -255,7 +255,12 @@ func (h *Handler) showCard(chatID int64, messageID int) {
 	us := h.store.GetOrCreate(chatID)
 	us.FlowStep = "card"
 	card := keyboards.DraftCard(h.lang(chatID))
-	if _, inList := listOf(h, chatID); inList {
+	if st.EventID != "" {
+		// 🔴 «Сохранить», and no «Создать» anywhere on the screen. The words are
+		// the only thing telling the user whether they are about to add a second
+		// event or change the one they opened.
+		card = keyboards.DraftCardEditing(h.lang(chatID))
+	} else if _, inList := listOf(h, chatID); inList {
 		// ✅ is deliberately absent inside a list: creating is the list's own
 		// button, and a per-entry ✅ would create one event and leave the rest
 		// silently uncreated.
@@ -486,6 +491,10 @@ func (h *Handler) confirmDraft(chatID int64, messageID int) {
 		us.FlowStep = "edit:time"
 		h.editOrSend(chatID, messageID, h.t(chatID, "Во сколько? Например «14:00» или «14:00-15:30».", "What time? «14:00» or «14:00-15:30»."), keyboards.DraftBack(h.lang(chatID)))
 	default:
+		if st.EventID != "" {
+			h.updateFromDraft(chatID, messageID, *st)
+			return
+		}
 		h.createFromDraft(chatID, messageID, *st)
 	}
 }

@@ -18,6 +18,12 @@ import (
 // that has already cost one defect: a save from a wizard step read keys that
 // were written under different names and silently did nothing.
 type draftState struct {
+	// EventID is empty for a draft being created and set for one being
+	// edited. It is the ONLY thing separating a POST from a PATCH — and the
+	// card, the edit menu and every field screen are shared between the two,
+	// on purpose: two editors would be two places to forget a field.
+	EventID string
+
 	Title        string
 	D            parse.Draft
 	CalendarID   string

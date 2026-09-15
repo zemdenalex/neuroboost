@@ -256,6 +256,14 @@ func (h *Handler) HandleCallback(cb *tgbotapi.CallbackQuery) {
 		return
 	}
 
+	// The event screens own ev_/eve_/evd_/evdy_ and the picker. Asked before
+	// the switch for the same reason the card is: four prefixes that differ by
+	// one letter belong next to each other, not scattered through a long switch
+	// where one of them ends up unreachable.
+	if h.handleEventCallback(chatID, cb.Message.MessageID, data) {
+		return
+	}
+
 	switch {
 	case data == "main_menu":
 		h.handleMenu(chatID, cb.Message.MessageID)

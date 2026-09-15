@@ -22,14 +22,26 @@ func NewClient(base string) *Client {
 	}
 }
 
+// Event is as much of an event as the bot shows or edits.
+//
+// 🔴 Rrule, Tags, CalendarID and ReminderOffsets were absent until 16.09, and
+// their absence was invisible: the bot only ever CREATED events, so nothing
+// read them back. The moment it could edit one, a missing field here would have
+// meant loading an event, saving it, and silently dropping its repeat.
 type Event struct {
 	ID          string `json:"id"`
+	CalendarID  string `json:"calendar_id"`
 	Title       string `json:"title"`
 	Description string `json:"description"`
 	StartsAt    string `json:"starts_at"`
 	EndsAt      string `json:"ends_at"`
 	AllDay      bool   `json:"all_day"`
 	Color       string `json:"color"`
+
+	Rrule           *string  `json:"rrule,omitempty"`
+	Tags            []string `json:"tags"`
+	ReminderOffsets []int    `json:"reminder_offsets"`
+	IsShared        bool     `json:"is_shared"`
 }
 
 // CreateEventReq mirrors api-go's CreateEventRequest for the fields the bot
