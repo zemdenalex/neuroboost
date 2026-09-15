@@ -144,24 +144,6 @@ func BackToTasks() tgbotapi.InlineKeyboardMarkup {
 	)
 }
 
-// EventWhen offers the times people actually pick when they typed a title with
-// no time. Deliberately four coarse choices, not a clock: this keyboard exists
-// to rescue a half-typed line in one tap, and anything finer is faster to type.
-func EventWhen() tgbotapi.InlineKeyboardMarkup {
-	return tgbotapi.NewInlineKeyboardMarkup(
-		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("Сейчас", "when_now"),
-			tgbotapi.NewInlineKeyboardButtonData("Через час", "when_hour"),
-		),
-		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("Сегодня вечером", "when_evening"),
-			tgbotapi.NewInlineKeyboardButtonData("Завтра утром", "when_tomorrow"),
-		),
-	)
-}
-
-// SettingsMenu is the ⚙️ screen. One working control today; the button that
-// leads to it must do something, which is the whole point of the screen.
 func SettingsMenu() tgbotapi.InlineKeyboardMarkup {
 	return tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(

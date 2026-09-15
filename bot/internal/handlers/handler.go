@@ -231,6 +231,14 @@ func (h *Handler) HandleCallback(cb *tgbotapi.CallbackQuery) {
 		return
 	}
 
+	// The confirmation card owns every dr_/dre_ callback. It is asked before
+	// the switch rather than inside it because the card has a dozen buttons
+	// with three prefixes, and a dozen more cases in a switch this long is how
+	// one of them ends up unreachable.
+	if h.handleDraftCallback(chatID, cb.Message.MessageID, data) {
+		return
+	}
+
 	switch {
 	case data == "main_menu":
 		h.handleMenu(chatID, cb.Message.MessageID)
@@ -311,8 +319,6 @@ func (h *Handler) HandleCallback(cb *tgbotapi.CallbackQuery) {
 		h.handleWorkHours(chatID, cb.Message.MessageID)
 	case strings.HasPrefix(data, "wh_"):
 		h.handleWorkHourSet(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "wh_"))
-	case strings.HasPrefix(data, "when_"):
-		h.handleWhenSelect(chatID, cb.Message.MessageID, data)
 	case data == "nt_save":
 		h.handleTaskCardSave(chatID, cb.Message.MessageID)
 	case data == "nt_wizard":
