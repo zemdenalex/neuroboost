@@ -1,6 +1,10 @@
 package keyboards
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/zemdenalex/neuroboost-bot/internal/i18n"
+)
 
 // 🔴 The rule: every entrance on the reply keyboard is also reachable from the
 // home screen.
@@ -32,7 +36,7 @@ const homeEntrance = "🏠 Меню"
 
 func TestEveryReplyEntranceHasAnInlineWayIn(t *testing.T) {
 	home := map[string]bool{}
-	for _, row := range HomeInline().InlineKeyboard {
+	for _, row := range HomeInline(i18n.RU).InlineKeyboard {
 		for _, b := range row {
 			if b.CallbackData != nil {
 				home[*b.CallbackData] = true
@@ -44,7 +48,7 @@ func TestEveryReplyEntranceHasAnInlineWayIn(t *testing.T) {
 	}
 
 	seen := 0
-	for _, row := range MainMenu().Keyboard {
+	for _, row := range MainMenu(i18n.RU).Keyboard {
 		for _, b := range row {
 			if b.Text == homeEntrance {
 				continue

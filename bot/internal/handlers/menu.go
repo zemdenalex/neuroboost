@@ -28,16 +28,16 @@ func (h *Handler) handleMenu(chatID int64, messageID int) {
 
 	switch {
 	case evErr != nil && tErr != nil:
-		text += "Не смог загрузить сводку.\n"
+		text += h.t(chatID, "Не смог загрузить сводку.\n", "Could not load the summary.\n")
 	default:
-		text += fmt.Sprintf("Сегодня: %d событий · %d задач\n", len(events), len(tasks))
+		text += fmt.Sprintf(h.t(chatID, "Сегодня: %d событий · %d задач\n", "Today: %d events · %d tasks\n"), len(events), len(tasks))
 		if len(events) > 0 {
 			sort.Slice(events, func(i, j int) bool { return events[i].StartsAt < events[j].StartsAt })
-			text += fmt.Sprintf("Ближайшее: %s %s\n",
+			text += fmt.Sprintf(h.t(chatID, "Ближайшее: %s %s\n", "Next: %s %s\n"),
 				format.FormatTime(events[0].StartsAt, h.cfg.Timezone),
 				format.Escape(events[0].Title))
 		}
 	}
 
-	h.editOrSend(chatID, messageID, text, keyboards.HomeInline())
+	h.editOrSend(chatID, messageID, text, keyboards.HomeInline(h.lang(chatID)))
 }

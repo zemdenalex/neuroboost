@@ -7,6 +7,7 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 
 	"github.com/zemdenalex/neuroboost-bot/internal/format"
+	"github.com/zemdenalex/neuroboost-bot/internal/i18n"
 	"github.com/zemdenalex/neuroboost-bot/internal/keyboards"
 	"github.com/zemdenalex/neuroboost-bot/internal/parse"
 )
@@ -27,15 +28,14 @@ func (h *Handler) handleKeywords(chatID int64, messageID int) {
 
 	vocab, err := h.api.BotKeywords(us.AuthToken)
 	if err != nil {
-		h.editOrSend(chatID, messageID, "Не удалось прочитать настройки.", keyboards.SettingsMenu())
+		h.editOrSend(chatID, messageID, h.t(chatID, "Не удалось прочитать настройки.", "Could not read your settings."), keyboards.SettingsMenu(h.lang(chatID)))
 		return
 	}
 
 	var b strings.Builder
-	b.WriteString("🔤 <b>Свои слова</b>\n\n")
+	b.WriteString(h.t(chatID, "🔤 <b>Свои слова</b>\n\n", "🔤 <b>Your words</b>\n\n"))
 	if len(vocab) == 0 {
-		b.WriteString("Пока ни одного.\n\nСлово, написанное в строке создания, задаёт " +
-			"характеристику события — тег, цвет, календарь, дату — и в название не попадает.")
+		b.WriteString(h.t(chatID, "Пока ни одного.\n\nСлово, написанное в строке создания, задаёт характеристику события — тег, цвет, календарь, дату — и в название не попадает.", "None yet.\n\nA word written in a creation line sets one characteristic of the event — a tag, a colour, a calendar, a date — and stays out of the title."))
 	}
 
 	words := make([]string, 0, len(vocab))
@@ -70,12 +70,12 @@ func (h *Handler) handleKeywords(chatID int64, messageID int) {
 				tgbotapi.NewInlineKeyboardButtonData("🗑 "+w, data),
 			})
 		} else {
-			b.WriteString("   <i>(слишком длинное, чтобы удалить кнопкой)</i>\n")
+			b.WriteString(h.t(chatID, "   <i>(слишком длинное, чтобы удалить кнопкой)</i>\n", "   <i>(too long to delete with a button)</i>\n"))
 		}
 	}
 	rows = append(rows, []tgbotapi.InlineKeyboardButton{
-		tgbotapi.NewInlineKeyboardButtonData("➕ Добавить", "kw_add"),
-		tgbotapi.NewInlineKeyboardButtonData("⬅️ Назад", "settings_menu"),
+		tgbotapi.NewInlineKeyboardButtonData(h.t(chatID, "➕ Добавить", "➕ Add"), "kw_add"),
+		tgbotapi.NewInlineKeyboardButtonData(h.t(chatID, "⬅️ Назад", "⬅️ Back"), "settings_menu"),
 	})
 
 	h.editOrSend(chatID, messageID, b.String(), tgbotapi.NewInlineKeyboardMarkup(rows...))
@@ -87,9 +87,8 @@ func (h *Handler) startKeywordFlow(chatID int64, messageID int) {
 	us.FlowStep = "word"
 	us.FlowData = map[string]any{}
 	h.editOrSend(chatID, messageID,
-		"Напиши <b>одно слово</b>. Потом выберешь, что оно означает.\n\n"+
-			"Например: <code>созвон</code> — и дальше «Календарь», «Работа».",
-		keyboards.TriggerCancel())
+		h.t(chatID, "Напиши <b>одно слово</b>. Потом выберешь, что оно означает.\n\nНапример: <code>созвон</code> — и дальше «Календарь», «Работа».", "Write <b>one word</b>. Then you'll pick what it means.\n\nFor example: <code>созвон</code> — then «Calendar», «Работа»."),
+		keyboards.TriggerCancel(h.lang(chatID)))
 }
 
 // handleKeywordInput takes the word, and later the value when the chosen
@@ -104,7 +103,7 @@ func (h *Handler) handleKeywordInput(chatID int64, text string) {
 			// ⚠ One word, because matching is per token: a two-word trigger
 			// would never match anything and would look broken rather than
 			// unsupported.
-			h.sendText(chatID, "Нужно ровно одно слово, без пробелов.")
+			h.sendText(chatID, h.t(chatID, "Нужно ровно одно слово, без пробелов.", "One word exactly, no spaces."))
 			return
 		}
 		us.FlowData["word"] = word
@@ -117,8 +116,8 @@ func (h *Handler) handleKeywordInput(chatID int64, text string) {
 			names = append(names, tf.Name)
 		}
 		h.sendHTMLWithKeyboard(chatID,
-			"Что означает <code>"+format.Escape(word)+"</code>?",
-			keyboards.TriggerFieldPicker(labels, names))
+			h.t(chatID, "Что означает <code>", "What does <code>")+format.Escape(word)+h.t(chatID, "</code>?", "</code> mean?"),
+			keyboards.TriggerFieldPicker(h.lang(chatID), labels, names))
 
 	case "value":
 		field, _ := us.FlowData["field"].(string)
@@ -126,7 +125,7 @@ func (h *Handler) handleKeywordInput(chatID int64, text string) {
 
 	default:
 		h.store.ClearFlow(chatID)
-		h.sendHTMLWithKeyboard(chatID, "Что-то пошло не так.", keyboards.SettingsMenu())
+		h.sendHTMLWithKeyboard(chatID, h.t(chatID, "Что-то пошло не так.", "Something went wrong."), keyboards.SettingsMenu(h.lang(chatID)))
 	}
 }
 
@@ -151,13 +150,13 @@ func (h *Handler) handleKeywordCallback(chatID int64, messageID int, data string
 			// No value to give: the characteristic IS the answer.
 			h.saveKeyword(chatID, messageID, name, "")
 		case parse.FieldColour:
-			h.editOrSend(chatID, messageID, "Какой цвет у <code>"+format.Escape(word)+"</code>?",
-				keyboards.TriggerColourPicker())
+			h.editOrSend(chatID, messageID, h.t(chatID, "Какой цвет у <code>", "What colour is <code>")+format.Escape(word)+h.t(chatID, "</code>?", "</code>?"),
+				keyboards.TriggerColourPicker(h.lang(chatID)))
 		case parse.FieldRepeat:
-			h.editOrSend(chatID, messageID, "Как часто повторять?", keyboards.TriggerFreqPicker())
+			h.editOrSend(chatID, messageID, h.t(chatID, "Как часто повторять?", "How often should it repeat?"), keyboards.TriggerFreqPicker(h.lang(chatID)))
 		default:
 			us.FlowStep = "value"
-			h.editOrSend(chatID, messageID, valuePrompt(field, word), keyboards.TriggerCancel())
+			h.editOrSend(chatID, messageID, valuePrompt(h.lang(chatID), field, word), keyboards.TriggerCancel(h.lang(chatID)))
 		}
 		return true
 
@@ -172,19 +171,18 @@ func (h *Handler) handleKeywordCallback(chatID int64, messageID int, data string
 	return false
 }
 
-func valuePrompt(field parse.Field, word string) string {
+func valuePrompt(lang i18n.Lang, field parse.Field, word string) string {
 	switch field {
 	case parse.FieldTag:
-		return "Каким тегом? Напиши тег — или отправь <code>" + format.Escape(word) + "</code>, чтобы тег назывался так же."
+		return i18n.T(lang, "Каким тегом? Напиши тег — или отправь <code>", "Which tag? Write it — or send <code>") + format.Escape(word) + i18n.T(lang, "</code>, чтобы тег назывался так же.", "</code> to name the tag after the word.")
 	case parse.FieldCalendar:
-		return "В какой календарь? Напиши его название ровно так, как оно в приложении."
+		return i18n.T(lang, "В какой календарь? Напиши его название ровно так, как оно в приложении.", "Which calendar? Write its name exactly as it is in the app.")
 	case parse.FieldDay:
-		return "Какой день? Например: <code>завтра</code>, <code>среда</code>, <code>следующий понедельник</code>.\n\n" +
-			"⚠ Сохраню фразу, а не дату — «завтра» останется завтрашним днём и через неделю."
+		return i18n.T(lang, "Какой день? Например: <code>завтра</code>, <code>среда</code>, <code>следующий понедельник</code>.\n\n⚠ Сохраню фразу, а не дату — «завтра» останется завтрашним днём и через неделю.", "Which day? For example: <code>завтра</code>, <code>среда</code>, <code>следующий понедельник</code>.\n\n⚠ I store the phrase, not the date — «завтра» still means tomorrow a week from now.")
 	case parse.FieldTime:
-		return "Какое время? Например: <code>14:00</code> или <code>14:00-15:30</code>."
+		return i18n.T(lang, "Какое время? Например: <code>14:00</code> или <code>14:00-15:30</code>.", "What time? For example: <code>14:00</code> or <code>14:00-15:30</code>.")
 	}
-	return "Какое значение?"
+	return i18n.T(lang, "Какое значение?", "What value?")
 }
 
 func (h *Handler) saveKeyword(chatID int64, messageID int, field, value string) {
@@ -200,8 +198,8 @@ func (h *Handler) saveKeyword(chatID int64, messageID int, field, value string) 
 		// could not read first, because merging onto an empty map erases the
 		// rest of the user's settings (gotcha 21).
 		h.store.ClearFlow(chatID)
-		h.editOrSend(chatID, messageID, "❌ Не удалось сохранить: "+format.Escape(err.Error())+
-			"\n\nНастройки при этом не изменились.", keyboards.SettingsMenu())
+		h.editOrSend(chatID, messageID, h.t(chatID, "❌ Не удалось сохранить: ", "❌ Could not save: ")+format.Escape(err.Error())+
+			h.t(chatID, "\n\nНастройки при этом не изменились.", "\n\nNothing was changed."), keyboards.SettingsMenu(h.lang(chatID)))
 		return
 	}
 
@@ -212,8 +210,8 @@ func (h *Handler) saveKeyword(chatID int64, messageID int, field, value string) 
 func (h *Handler) handleKeywordDelete(chatID int64, messageID int, word string) {
 	us := h.store.GetOrCreate(chatID)
 	if err := h.api.SetBotKeyword(us.AuthToken, word, "", ""); err != nil {
-		h.editOrSend(chatID, messageID, "❌ Не удалось удалить: "+format.Escape(err.Error()),
-			keyboards.SettingsMenu())
+		h.editOrSend(chatID, messageID, h.t(chatID, "❌ Не удалось удалить: ", "❌ Could not delete: ")+format.Escape(err.Error()),
+			keyboards.SettingsMenu(h.lang(chatID)))
 		return
 	}
 	h.handleKeywords(chatID, messageID)

@@ -8,6 +8,7 @@ import (
 
 	"github.com/zemdenalex/neuroboost-bot/internal/api"
 	"github.com/zemdenalex/neuroboost-bot/internal/format"
+	"github.com/zemdenalex/neuroboost-bot/internal/i18n"
 	"github.com/zemdenalex/neuroboost-bot/internal/keyboards"
 	"github.com/zemdenalex/neuroboost-bot/internal/parse"
 )
@@ -22,7 +23,9 @@ import (
 // ⚠ Every example here is held against the parser by
 // TestGuideExamplesParseAsAdvertised. A guide that promises what the bot does
 // not do is worse than no guide.
-const creationGuide = `📅 <b>Новое событие</b>
+func creationGuide(lang i18n.Lang) string {
+	return i18n.T(lang,
+		`📅 <b>Новое событие</b>
 
 Напиши одной строкой. Вот что я понимаю:
 
@@ -46,14 +49,43 @@ const creationGuide = `📅 <b>Новое событие</b>
 <b>Своё слово</b> — ⚙️ Настройки → 🔤 Ключевые слова
 <b>Списком</b> — несколько строк сразу, спрошу, одна это запись или список
 
-Покажу, что понял, и спрошу подтверждение — создам только после него.`
+Покажу, что понял, и спрошу подтверждение — создам только после него.`,
+		`📅 <b>New event</b>
+
+Write it in one line. Here is what I understand:
+
+<code>Ужин завтра 19:00</code>
+   → Ужин · tomorrow · 19:00–20:00
+
+<code>среда 14:00-15:00 оркестр повтор</code>
+   → оркестр · Wed 16.09 · 14:00–15:00 · repeats — I will ask how often
+
+<code>анализы весь день четверг</code>
+   → анализы · Thu · all day
+
+<code>созвон работа синий 16.09 10:00</code>
+   → созвон · calendar «Работа» · blue · 16.09 10:00
+
+<code>зарядка каждый день 07:00 напомнить за 10м</code>
+   → зарядка · every day · 07:00 · reminder 10m before
+
+<b>Words:</b> задача · весь день · повтор · ежедневно · colours · #tag · напомнить за 15м
+<b>Days:</b> завтра · среда · следующая среда · пн · wednesday · 16.09
+<b>Your own word</b> — ⚙️ Settings → 🔤 Keywords
+<b>As a list</b> — several lines at once, I will ask whether it is one entry or a list
+
+⚠ The words above are the ones I recognise, and they work in both languages —
+they are not translated with the interface.
+
+I will show what I understood and ask you to confirm — nothing is created before that.`)
+}
 
 func (h *Handler) startNewEventFlow(chatID int64) {
 	us := h.store.GetOrCreate(chatID)
 	us.CurrentFlow = "new_event"
 	us.FlowStep = "line"
 	us.FlowData = map[string]any{}
-	h.sendHTML(chatID, creationGuide)
+	h.sendHTML(chatID, creationGuide(h.lang(chatID)))
 }
 
 // startNewEventForDay begins the same flow with the day already chosen, so
@@ -63,7 +95,9 @@ func (h *Handler) startNewEventForDay(chatID int64, date string) {
 	us.CurrentFlow = "new_event"
 	us.FlowStep = "line"
 	us.FlowData = map[string]any{"date": date}
-	h.sendHTML(chatID, "📅 <b>Событие на "+format.Escape(date)+"</b>\n\nНапиши время и название — например «18:00 Ужин».")
+	h.sendHTML(chatID, h.t(chatID, "📅 <b>Событие на ", "📅 <b>Event on ")+format.Escape(date)+
+		h.t(chatID, "</b>\n\nНапиши время и название — например «18:00 Ужин».",
+			"</b>\n\nWrite the time and the title — «18:00 Ужин», say."))
 }
 
 // draftOf returns the draft this chat is building, creating none if there is
@@ -123,7 +157,7 @@ func (h *Handler) handleNewEventFlow(chatID int64, text string) {
 		}
 		p := parse.ParseLine(text, time.Now().In(h.location()))
 		if !p.Draft.HasDay {
-			h.sendText(chatID, "Не понял дату. Например: «завтра», «среда», «16.09».")
+			h.sendText(chatID, h.t(chatID, "Не понял дату. Например: «завтра», «среда», «16.09».", "Didn't get the date. Try «завтра», «среда», «16.09»."))
 			return
 		}
 		st.D.Day, st.D.HasDay = p.Draft.Day, true
@@ -137,7 +171,7 @@ func (h *Handler) handleNewEventFlow(chatID int64, text string) {
 		}
 		p := parse.ParseLine(text, time.Now().In(h.location()))
 		if !p.Draft.HasTime {
-			h.sendText(chatID, "Не понял время. Например: «14:00» или «14:00-15:30».")
+			h.sendText(chatID, h.t(chatID, "Не понял время. Например: «14:00» или «14:00-15:30».", "Didn't get the time. Try «14:00» or «14:00-15:30»."))
 			return
 		}
 		st.D.Start, st.D.End = p.Draft.Start, p.Draft.End
@@ -147,7 +181,7 @@ func (h *Handler) handleNewEventFlow(chatID int64, text string) {
 
 	default:
 		h.store.ClearFlow(chatID)
-		h.sendHTMLWithKeyboard(chatID, "Что-то пошло не так.", keyboards.HomeInline())
+		h.sendHTMLWithKeyboard(chatID, h.t(chatID, "Что-то пошло не так.", "Something went wrong."), keyboards.HomeInline(h.lang(chatID)))
 	}
 }
 
@@ -220,19 +254,19 @@ func (h *Handler) showCard(chatID int64, messageID int) {
 	}
 	us := h.store.GetOrCreate(chatID)
 	us.FlowStep = "card"
-	card := keyboards.DraftCard()
+	card := keyboards.DraftCard(h.lang(chatID))
 	if _, inList := listOf(h, chatID); inList {
 		// ✅ is deliberately absent inside a list: creating is the list's own
 		// button, and a per-entry ✅ would create one event and leave the rest
 		// silently uncreated.
-		card = keyboards.DraftCardInList()
+		card = keyboards.DraftCardInList(h.lang(chatID))
 	}
-	h.editOrSend(chatID, messageID, renderDraft(*st, time.Now().In(h.location())), card)
+	h.editOrSend(chatID, messageID, renderDraft(h.lang(chatID), *st, time.Now().In(h.location())), card)
 }
 
 func (h *Handler) lostDraft(chatID int64) {
 	h.store.ClearFlow(chatID)
-	h.sendHTMLWithKeyboard(chatID, "Черновик потерялся — начнём заново.", keyboards.HomeInline())
+	h.sendHTMLWithKeyboard(chatID, h.t(chatID, "Черновик потерялся — начнём заново.", "Lost the draft — let's start over."), keyboards.HomeInline(h.lang(chatID)))
 }
 
 // handleDraftCallback answers every button of the confirmation card.
@@ -267,7 +301,7 @@ func (h *Handler) handleDraftCallback(chatID int64, messageID int, data string) 
 	// that never runs.
 	if data == "dr_cancel" {
 		h.store.ClearFlow(chatID)
-		h.editOrSend(chatID, messageID, "🗑 Отменено.", keyboards.HomeInline())
+		h.editOrSend(chatID, messageID, h.t(chatID, "🗑 Отменено.", "🗑 Cancelled."), keyboards.HomeInline(h.lang(chatID)))
 		return true
 	}
 
@@ -275,7 +309,7 @@ func (h *Handler) handleDraftCallback(chatID int64, messageID int, data string) 
 		// The card belongs to a flow that is over — most often because a menu
 		// button interrupted it. Saying so beats editing a message the state no
 		// longer backs.
-		h.editOrSend(chatID, messageID, "Это создание уже закрыто.", keyboards.HomeInline())
+		h.editOrSend(chatID, messageID, h.t(chatID, "Это создание уже закрыто.", "That one is already closed."), keyboards.HomeInline(h.lang(chatID)))
 		return true
 	}
 
@@ -294,38 +328,38 @@ func (h *Handler) handleDraftCallback(chatID int64, messageID int, data string) 
 
 	case data == "dr_edit":
 		us.FlowStep = "edit:menu"
-		h.editOrSend(chatID, messageID, "Что изменить?", keyboards.DraftEditMenu())
+		h.editOrSend(chatID, messageID, h.t(chatID, "Что изменить?", "What should I change?"), keyboards.DraftEditMenu(h.lang(chatID)))
 
 	case data == "dre_title":
 		us.FlowStep = "edit:title"
 		h.editOrSend(chatID, messageID,
-			"Напиши название. Здесь оно берётся <b>как есть</b> — ключевые слова не действуют.", keyboards.DraftBack())
+			h.t(chatID, "Напиши название. Здесь оно берётся <b>как есть</b> — ключевые слова не действуют.", "Write the title. Here it is taken <b>as is</b> — keywords do nothing."), keyboards.DraftBack(h.lang(chatID)))
 
 	case data == "dre_tags":
 		us.FlowStep = "edit:tags"
 		h.editOrSend(chatID, messageID,
-			"Теги через запятую. Здесь любое слово — тег, даже «полдень».", keyboards.DraftBack())
+			h.t(chatID, "Теги через запятую. Здесь любое слово — тег, даже «полдень».", "Tags, comma separated. Here any word is a tag, even «полдень»."), keyboards.DraftBack(h.lang(chatID)))
 
 	case data == "dre_date":
 		us.FlowStep = "edit:date"
-		h.editOrSend(chatID, messageID, "Когда? Кнопкой или напиши: «среда», «16.09».", keyboards.DraftDay())
+		h.editOrSend(chatID, messageID, h.t(chatID, "Когда? Кнопкой или напиши: «среда», «16.09».", "When? Use a button, or write «среда», «16.09»."), keyboards.DraftDay(h.lang(chatID)))
 
 	case data == "dre_time":
 		us.FlowStep = "edit:time"
-		h.editOrSend(chatID, messageID, "Во сколько? Например «14:00» или «14:00-15:30».", keyboards.DraftBack())
+		h.editOrSend(chatID, messageID, h.t(chatID, "Во сколько? Например «14:00» или «14:00-15:30».", "What time? «14:00» or «14:00-15:30»."), keyboards.DraftBack(h.lang(chatID)))
 
 	case data == "dre_repeat":
 		us.FlowStep = "ask:freq"
-		h.editOrSend(chatID, messageID, "Как часто повторять?", keyboards.FreqPicker())
+		h.editOrSend(chatID, messageID, h.t(chatID, "Как часто повторять?", "How often should it repeat?"), keyboards.FreqPicker(h.lang(chatID)))
 
 	case data == "dre_colour":
-		h.editOrSend(chatID, messageID, "Цвет события:", keyboards.ColourPicker())
+		h.editOrSend(chatID, messageID, h.t(chatID, "Цвет события:", "Event colour:"), keyboards.ColourPicker(h.lang(chatID)))
 
 	case data == "dre_cal":
 		h.showCalendarPicker(chatID, messageID)
 
 	case data == "dre_remind":
-		h.editOrSend(chatID, messageID, "За сколько напомнить?", keyboards.ReminderPicker())
+		h.editOrSend(chatID, messageID, h.t(chatID, "За сколько напомнить?", "How long before should I remind you?"), keyboards.ReminderPicker(h.lang(chatID)))
 
 	case data == "dre_allday":
 		st.D.AllDay = !st.D.AllDay
@@ -403,7 +437,7 @@ func (h *Handler) showCalendarPicker(chatID int64, messageID int) {
 	us := h.store.GetOrCreate(chatID)
 	cals, err := h.api.Calendars(us.AuthToken)
 	if err != nil || len(cals) == 0 {
-		h.editOrSend(chatID, messageID, "Не удалось прочитать календари.", keyboards.DraftCard())
+		h.editOrSend(chatID, messageID, h.t(chatID, "Не удалось прочитать календари.", "Could not read your calendars."), keyboards.DraftCard(h.lang(chatID)))
 		return
 	}
 	names := make([]string, len(cals))
@@ -411,7 +445,7 @@ func (h *Handler) showCalendarPicker(chatID int64, messageID int) {
 	for i, c := range cals {
 		names[i], ids[i] = c.Name, c.ID
 	}
-	h.editOrSend(chatID, messageID, "В какой календарь?", keyboards.CalendarPicker(names, ids))
+	h.editOrSend(chatID, messageID, h.t(chatID, "В какой календарь?", "Which calendar?"), keyboards.CalendarPicker(h.lang(chatID), names, ids))
 }
 
 func (h *Handler) calendarName(chatID int64, id string) string {
@@ -441,16 +475,16 @@ func (h *Handler) confirmDraft(chatID int64, messageID int) {
 	switch nextQuestion(*st) {
 	case askTitle:
 		us.FlowStep = "edit:title"
-		h.editOrSend(chatID, messageID, "Как назвать? Текст пойдёт в название как есть.", keyboards.DraftBack())
+		h.editOrSend(chatID, messageID, h.t(chatID, "Как назвать? Текст пойдёт в название как есть.", "What should it be called? The text goes in as is."), keyboards.DraftBack(h.lang(chatID)))
 	case askFreq:
 		us.FlowStep = "ask:freq"
-		h.editOrSend(chatID, messageID, "Как часто повторять?", keyboards.FreqPicker())
+		h.editOrSend(chatID, messageID, h.t(chatID, "Как часто повторять?", "How often should it repeat?"), keyboards.FreqPicker(h.lang(chatID)))
 	case askDate:
 		us.FlowStep = "edit:date"
-		h.editOrSend(chatID, messageID, "На какой день?", keyboards.DraftDay())
+		h.editOrSend(chatID, messageID, h.t(chatID, "На какой день?", "Which day?"), keyboards.DraftDay(h.lang(chatID)))
 	case askTime:
 		us.FlowStep = "edit:time"
-		h.editOrSend(chatID, messageID, "Во сколько? Например «14:00» или «14:00-15:30».", keyboards.DraftBack())
+		h.editOrSend(chatID, messageID, h.t(chatID, "Во сколько? Например «14:00» или «14:00-15:30».", "What time? «14:00» or «14:00-15:30»."), keyboards.DraftBack(h.lang(chatID)))
 	default:
 		h.createFromDraft(chatID, messageID, *st)
 	}
@@ -468,14 +502,14 @@ func (h *Handler) createFromDraft(chatID int64, messageID int, st draftState) {
 
 	if err := h.createOne(chatID, st); err != nil {
 		h.store.ClearFlow(chatID)
-		h.editOrSend(chatID, messageID, "❌ "+err.Error(), keyboards.HomeInline())
+		h.editOrSend(chatID, messageID, "❌ "+err.Error(), keyboards.HomeInline(h.lang(chatID)))
 		return
 	}
 
 	h.store.ClearFlow(chatID)
-	h.editOrSend(chatID, messageID, fmt.Sprintf("✅ <b>Создано</b>\n%s\n🕐 %s",
-		format.Escape(st.Title), humanRange(start.In(loc), end.In(loc), time.Now().In(loc))),
-		keyboards.AgendaActions())
+	h.editOrSend(chatID, messageID, fmt.Sprintf(h.t(chatID, "✅ <b>Создано</b>\n%s\n🕐 %s", "✅ <b>Created</b>\n%s\n🕐 %s"),
+		format.Escape(st.Title), humanRange(h.lang(chatID), start.In(loc), end.In(loc), time.Now().In(loc))),
+		keyboards.AgendaActions(h.lang(chatID)))
 }
 
 // draftBounds turns the draft's day and offsets into two instants. An all-day
@@ -507,7 +541,7 @@ func (h *Handler) createOne(chatID int64, st draftState) error {
 			Title: st.Title, Status: "TODO", Tags: st.D.Tags,
 		})
 		if err != nil {
-			return fmt.Errorf("задача не создана: %w", err)
+			return fmt.Errorf(h.t(chatID, "задача не создана: %w", "task not created: %w"), err)
 		}
 		taskID = &task.ID
 	}
@@ -538,9 +572,11 @@ func (h *Handler) createOne(chatID int64, st draftState) error {
 
 	if _, err := h.api.CreateEvent(us.AuthToken, req); err != nil {
 		if taskID != nil {
-			return fmt.Errorf("событие не создано (%w), но задача создана — она в списке задач", err)
+			return fmt.Errorf(h.t(chatID,
+				"событие не создано (%w), но задача создана — она в списке задач",
+				"event not created (%w), but the task was — it is in your task list"), err)
 		}
-		return fmt.Errorf("событие не создано: %w", err)
+		return fmt.Errorf(h.t(chatID, "событие не создано: %w", "event not created: %w"), err)
 	}
 	return nil
 }

@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"github.com/zemdenalex/neuroboost-bot/internal/i18n"
+
 	"strings"
 	"testing"
 	"time"
@@ -130,11 +132,11 @@ func TestParsePlanCallback(t *testing.T) {
 func scheduleKeyboards() map[string]tgbotapi.InlineKeyboardMarkup {
 	const uuid = "8f14e45f-ceea-467a-9575-0f0e2d4a2f1b"
 	return map[string]tgbotapi.InlineKeyboardMarkup{
-		"TaskActions":          keyboards.TaskActions(uuid),
-		"TaskScheduleWhen":     keyboards.TaskScheduleWhen(uuid),
-		"TaskScheduleDuration": keyboards.TaskScheduleDuration(uuid, "eve"),
-		"TaskDue":              keyboards.TaskDue(uuid),
-		"TaskEstimate":         keyboards.TaskEstimate(uuid),
+		"TaskActions":          keyboards.TaskActions(i18n.RU, uuid),
+		"TaskScheduleWhen":     keyboards.TaskScheduleWhen(i18n.RU, uuid),
+		"TaskScheduleDuration": keyboards.TaskScheduleDuration(i18n.RU, uuid, "eve"),
+		"TaskDue":              keyboards.TaskDue(i18n.RU, uuid),
+		"TaskEstimate":         keyboards.TaskEstimate(i18n.RU, uuid),
 	}
 }
 

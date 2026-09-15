@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/zemdenalex/neuroboost-bot/internal/i18n"
 	"github.com/zemdenalex/neuroboost-bot/internal/keyboards"
 )
 
@@ -34,13 +35,13 @@ var (
 
 func (h *Handler) handleSettings(chatID int64, messageID int) {
 	start, end := h.workHours(chatID)
-	h.editOrSend(chatID, messageID, settingsText(start, end), keyboards.SettingsMenu())
+	h.editOrSend(chatID, messageID, settingsText(h.lang(chatID), start, end), keyboards.SettingsMenu(h.lang(chatID)))
 }
 
-func settingsText(start, end string) string {
-	return "⚙️ <b>Настройки</b>\n\n" +
-		fmt.Sprintf("🕘 Рабочие часы: <b>%s – %s</b>\n\n", start, end) +
-		"Остальное — тема, масштаб, пресеты напоминаний — пока в вебе:\n" +
+func settingsText(lang i18n.Lang, start, end string) string {
+	return i18n.T(lang, "⚙️ <b>Настройки</b>\n\n", "⚙️ <b>Settings</b>\n\n") +
+		fmt.Sprintf(i18n.T(lang, "🕘 Рабочие часы: <b>%s – %s</b>\n\n", "🕘 Work hours: <b>%s – %s</b>\n\n"), start, end) +
+		i18n.T(lang, "Остальное — тема, масштаб, пресеты напоминаний — пока в вебе:\n", "The rest — theme, scale, reminder presets — is still on the web:\n") +
 		"https://neuroboost.website/settings"
 }
 
@@ -68,8 +69,8 @@ func settingString(settings map[string]any, key, fallback string) string {
 func (h *Handler) handleWorkHours(chatID int64, messageID int) {
 	start, end := h.workHours(chatID)
 	h.editOrSend(chatID, messageID,
-		fmt.Sprintf("🕘 <b>Рабочие часы</b>\n\nСейчас: <b>%s – %s</b>\n\nВыбери начало дня:", start, end),
-		keyboards.WorkHoursStart(startHours))
+		fmt.Sprintf(h.t(chatID, "🕘 <b>Рабочие часы</b>\n\nСейчас: <b>%s – %s</b>\n\nВыбери начало дня:", "🕘 <b>Work hours</b>\n\nNow: <b>%s – %s</b>\n\nPick the start of the day:"), start, end),
+		keyboards.WorkHoursStart(h.lang(chatID), startHours))
 }
 
 // handleWorkHourSet writes one end of the range.
@@ -102,26 +103,26 @@ func (h *Handler) handleWorkHourSet(chatID int64, messageID int, data string) {
 	// an overnight shift", so an inverted range here is always a mis-tap.
 	if !rangeIsSane(current, other) {
 		h.sendText(chatID, fmt.Sprintf(
-			"⚠ %s – %s не получится: конец дня должен быть позже начала. Выбери другое.",
+			h.t(chatID, "⚠ %s – %s не получится: конец дня должен быть позже начала. Выбери другое.", "⚠ %s – %s will not work: the day must end after it starts. Pick another."),
 			current, other))
 		return
 	}
 
 	us := h.store.GetOrCreate(chatID)
 	if _, err := h.api.PatchSettings(us.AuthToken, map[string]any{"work_" + which: value}); err != nil {
-		h.sendText(chatID, "❌ Не удалось сохранить: "+err.Error())
+		h.sendText(chatID, h.t(chatID, "❌ Не удалось сохранить: ", "❌ Could not save: ")+err.Error())
 		return
 	}
 
 	if which == "start" {
 		h.editOrSend(chatID, messageID,
-			fmt.Sprintf("🕘 Начало: <b>%s</b>\n\nТеперь конец дня:", value),
-			keyboards.WorkHoursEnd(endHours))
+			fmt.Sprintf(h.t(chatID, "🕘 Начало: <b>%s</b>\n\nТеперь конец дня:", "🕘 Start: <b>%s</b>\n\nNow the end of the day:"), value),
+			keyboards.WorkHoursEnd(h.lang(chatID), endHours))
 		return
 	}
 	h.editOrSend(chatID, messageID,
-		fmt.Sprintf("✅ <b>Рабочие часы: %s – %s</b>", current, other),
-		keyboards.BackToMenu())
+		fmt.Sprintf(h.t(chatID, "✅ <b>Рабочие часы: %s – %s</b>", "✅ <b>Work hours: %s – %s</b>"), current, other),
+		keyboards.BackToMenu(h.lang(chatID)))
 }
 
 // rangeIsSane compares "HH:MM" strings lexically, which is only valid because

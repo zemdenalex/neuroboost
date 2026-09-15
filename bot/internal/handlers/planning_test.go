@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"github.com/zemdenalex/neuroboost-bot/internal/i18n"
+
 	"strings"
 	"testing"
 )
@@ -17,7 +19,7 @@ func TestLoadBarFillsInProportion(t *testing.T) {
 		{4, 40, 1, "10%"},
 	}
 	for _, c := range cases {
-		got := loadBar(c.scheduled, c.available)
+		got := loadBar(i18n.RU, c.scheduled, c.available)
 		if filled := strings.Count(got, "▰"); filled != c.wantFilled {
 			t.Errorf("%v/%v: %d filled cells, want %d (%q)", c.scheduled, c.available, filled, c.wantFilled, got)
 		}
@@ -34,7 +36,7 @@ func TestLoadBarSurvivesZeroAvailableHours(t *testing.T) {
 	// 🔴 Reachable, not hypothetical: a user who unticks every working day has
 	// zero available hours, and ParseWorkWeek keeps that on purpose. Dividing by
 	// it would print "NaN%" into the chat, or +Inf cells into a loop.
-	got := loadBar(12, 0)
+	got := loadBar(i18n.RU, 12, 0)
 	if strings.Contains(got, "NaN") || strings.Contains(got, "Inf") {
 		t.Errorf("got %q", got)
 	}
@@ -50,7 +52,7 @@ func TestLoadBarClampsAnOverbookedWeek(t *testing.T) {
 	// Being over budget is the state this screen exists to reveal, so it must
 	// render rather than overflow: 60 of 40 hours is eleven cells if nothing
 	// clamps, and the percentage must still be the true one.
-	got := loadBar(60, 40)
+	got := loadBar(i18n.RU, 60, 40)
 	if filled := strings.Count(got, "▰"); filled != 10 {
 		t.Errorf("%d filled cells, want 10", filled)
 	}
@@ -72,8 +74,8 @@ func TestFormatHoursDropsAPointlessDecimal(t *testing.T) {
 		{6.5, "6.5ч"},
 		{25.5, "25.5ч"},
 	} {
-		if got := formatHours(c.in); got != c.want {
-			t.Errorf("formatHours(%v) = %q, want %q", c.in, got, c.want)
+		if got := formatHours(i18n.RU, c.in); got != c.want {
+			t.Errorf("formatHours(i18n.RU, %v) = %q, want %q", c.in, got, c.want)
 		}
 	}
 }
@@ -82,7 +84,7 @@ func TestPlanningTextSaysWhatToDoNext(t *testing.T) {
 	// The screen's whole point is that the tasks below are actionable. An empty
 	// week and a full one need different sentences, and the singular case needs
 	// a third — "Задач без времени: 1" reads as a bug report.
-	empty := planningText(0, 40, 0)
+	empty := planningText(i18n.RU, 0, 40, 0)
 	if !strings.Contains(empty, "нет") {
 		t.Errorf("empty week: %q", empty)
 	}
@@ -90,12 +92,12 @@ func TestPlanningTextSaysWhatToDoNext(t *testing.T) {
 		t.Errorf("empty week invites a tap on nothing: %q", empty)
 	}
 
-	one := planningText(8, 40, 1)
+	one := planningText(i18n.RU, 8, 40, 1)
 	if !strings.Contains(one, "Одна задача") {
 		t.Errorf("singular: %q", one)
 	}
 
-	many := planningText(8, 40, 6)
+	many := planningText(i18n.RU, 8, 40, 6)
 	if !strings.Contains(many, "6") {
 		t.Errorf("plural does not say how many: %q", many)
 	}

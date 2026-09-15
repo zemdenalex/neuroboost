@@ -1,6 +1,10 @@
 package keyboards
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/zemdenalex/neuroboost-bot/internal/i18n"
+)
 
 // 🔴 Denis, 15.09: «Если во время создания нажимается какая-то из кнопок меню,
 // то создание должно прекратиться, а не думать что название пункта меню это
@@ -14,7 +18,7 @@ import "testing"
 // be added one day and guarded by nobody.
 func TestMenuScreenCoversEveryReplyButton(t *testing.T) {
 	seen := 0
-	for _, row := range MainMenu().Keyboard {
+	for _, row := range MainMenu(i18n.RU).Keyboard {
 		for _, b := range row {
 			seen++
 			screen, ok := MenuScreen(b.Text)
@@ -47,7 +51,7 @@ func TestMenuScreenRejectsOrdinaryText(t *testing.T) {
 // screen rather than in the table.
 func TestMenuScreensAreDistinct(t *testing.T) {
 	seen := map[string]string{}
-	for _, row := range MainMenu().Keyboard {
+	for _, row := range MainMenu(i18n.RU).Keyboard {
 		for _, b := range row {
 			screen, _ := MenuScreen(b.Text)
 			if prev, dup := seen[screen]; dup {

@@ -12,6 +12,16 @@ type UserState struct {
 	CurrentFlow   string
 	FlowStep      string
 	FlowData      map[string]any
+
+	// Lang is the interface language, cached for this chat.
+	//
+	// 🔴 Cached, because every rendered screen needs it and reading it from
+	// the API per message would add an HTTP round trip to every keypress —
+	// parseIntoDraft already makes three. LangKnown is what tells a cached
+	// answer from an unset one, since "" is a valid zero value and would
+	// otherwise mean "re-read on every message".
+	Lang      string
+	LangKnown bool
 }
 
 type Store struct {

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/zemdenalex/neuroboost-bot/internal/format"
+	"github.com/zemdenalex/neuroboost-bot/internal/i18n"
 	"github.com/zemdenalex/neuroboost-bot/internal/keyboards"
 )
 
@@ -94,8 +95,8 @@ func (h *Handler) handleTaskScheduleWhen(chatID int64, messageID int, taskID str
 		return
 	}
 	h.editOrSend(chatID, messageID,
-		fmt.Sprintf("⏰ <b>%s</b>\n\nКогда заняться?", format.Escape(title)),
-		keyboards.TaskScheduleWhen(taskID))
+		fmt.Sprintf(h.t(chatID, "⏰ <b>%s</b>\n\nКогда заняться?", "⏰ <b>%s</b>\n\nWhen will you do it?"), format.Escape(title)),
+		keyboards.TaskScheduleWhen(h.lang(chatID), taskID))
 }
 
 // handleTaskScheduleDuration asks how long, once the slot is chosen.
@@ -121,16 +122,16 @@ func (h *Handler) handleTaskScheduleDuration(chatID int64, messageID int, data s
 	}
 
 	h.editOrSend(chatID, messageID,
-		fmt.Sprintf("⏰ <b>%s</b>\n🕐 %s\n\nНасколько?",
-			format.Escape(title), humanDay(start, time.Now().In(loc))),
-		keyboards.TaskScheduleDuration(taskID, slot))
+		fmt.Sprintf(h.t(chatID, "⏰ <b>%s</b>\n🕐 %s\n\nНасколько?", "⏰ <b>%s</b>\n🕐 %s\n\nFor how long?"),
+			format.Escape(title), humanDay(h.lang(chatID), start, time.Now().In(loc))),
+		keyboards.TaskScheduleDuration(h.lang(chatID), taskID, slot))
 }
 
 // handleTaskSchedule performs the scheduling.
 func (h *Handler) handleTaskSchedule(chatID int64, messageID int, data string) {
 	taskID, slot, minutes, ok := parsePlanCallback(data)
 	if !ok {
-		h.editOrSend(chatID, messageID, "Не понял кнопку.", keyboards.BackToTasks())
+		h.editOrSend(chatID, messageID, h.t(chatID, "Не понял кнопку.", "Didn't understand that button."), keyboards.BackToTasks(h.lang(chatID)))
 		return
 	}
 
@@ -145,12 +146,12 @@ func (h *Handler) handleTaskSchedule(chatID int64, messageID int, data string) {
 	err := h.api.ScheduleTask(us.AuthToken, taskID,
 		start.UTC().Format(time.RFC3339), end.UTC().Format(time.RFC3339))
 	if err != nil {
-		h.sendText(chatID, "❌ Не удалось запланировать: "+err.Error())
+		h.sendText(chatID, h.t(chatID, "❌ Не удалось запланировать: ", "❌ Could not schedule: ")+err.Error())
 		return
 	}
 
-	h.editOrSend(chatID, messageID, fmt.Sprintf("✅ <b>В календаре</b>\n🕐 %s",
-		humanRange(start, end, time.Now().In(loc))), keyboards.BackToTasks())
+	h.editOrSend(chatID, messageID, fmt.Sprintf(h.t(chatID, "✅ <b>В календаре</b>\n🕐 %s", "✅ <b>On the calendar</b>\n🕐 %s"),
+		humanRange(h.lang(chatID), start, end, time.Now().In(loc))), keyboards.BackToTasks(h.lang(chatID)))
 }
 
 // taskTitle looks a task up by id so the keyboards can name what they are about.
@@ -163,7 +164,7 @@ func (h *Handler) taskTitle(chatID int64, taskID string) (string, bool) {
 	us := h.store.GetOrCreate(chatID)
 	tasks, err := h.api.GetTasks(us.AuthToken, "")
 	if err != nil {
-		h.sendText(chatID, "❌ Не удалось загрузить задачу")
+		h.sendText(chatID, h.t(chatID, "❌ Не удалось загрузить задачу", "❌ Could not load the task"))
 		return "", false
 	}
 	for _, t := range tasks {
@@ -171,23 +172,23 @@ func (h *Handler) taskTitle(chatID int64, taskID string) (string, bool) {
 			return t.Title, true
 		}
 	}
-	h.sendText(chatID, "Задача не найдена — возможно, она уже удалена.")
+	h.sendText(chatID, h.t(chatID, "Задача не найдена — возможно, она уже удалена.", "Task not found — it may already be deleted."))
 	return "", false
 }
 
 // humanDay names the day the way the confirmation will, so the question and the
 // answer describe the same moment in the same words.
-func humanDay(t, now time.Time) string {
+func humanDay(lang i18n.Lang, t, now time.Time) string {
 	day := func(x time.Time) time.Time {
 		return time.Date(x.Year(), x.Month(), x.Day(), 0, 0, 0, 0, x.Location())
 	}
 	hhmm := t.Format("15:04")
 	switch days := int(day(t).Sub(day(now)).Hours() / 24); {
 	case days == 0:
-		return "Сегодня " + hhmm
+		return i18n.T(lang, "Сегодня ", "Today ") + hhmm
 	case days == 1:
-		return "Завтра " + hhmm
+		return i18n.T(lang, "Завтра ", "Tomorrow ") + hhmm
 	default:
-		return fmt.Sprintf("%d %s %s", t.Day(), monthGenitive(t.Month()), hhmm)
+		return fmt.Sprintf("%d %s %s", t.Day(), monthGenitive(lang, t.Month()), hhmm)
 	}
 }

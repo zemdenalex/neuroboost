@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"github.com/zemdenalex/neuroboost-bot/internal/i18n"
+
 	"strings"
 	"testing"
 	"time"
@@ -14,7 +16,7 @@ func TestAgendaGroupsByDayAndSaysWhichDay(t *testing.T) {
 		{Title: "Созвон", StartsAt: "2026-08-18T11:00:00Z"},
 		{Title: "Ужин", StartsAt: "2026-08-19T16:00:00Z"},
 	}
-	got := agendaText(events, now, "UTC")
+	got := agendaText(i18n.RU, events, now, "UTC")
 
 	if !strings.Contains(got, "Сегодня") {
 		t.Errorf("an event today is not labelled Сегодня:\n%s", got)
@@ -29,7 +31,7 @@ func TestAgendaGroupsByDayAndSaysWhichDay(t *testing.T) {
 
 func TestAgendaSaysSoWhenThereIsNothing(t *testing.T) {
 	now := time.Date(2026, 8, 18, 9, 0, 0, 0, time.UTC)
-	got := agendaText(nil, now, "UTC")
+	got := agendaText(i18n.RU, nil, now, "UTC")
 	if got == "" {
 		t.Error("an empty agenda rendered an empty message — the screen would look broken")
 	}
@@ -44,7 +46,7 @@ func TestAgendaEscapesTitlesForHTML(t *testing.T) {
 	// at all rather than one odd title.
 	now := time.Date(2026, 8, 18, 9, 0, 0, 0, time.UTC)
 	events := []api.Event{{Title: "R&D <срочно>", StartsAt: "2026-08-18T11:00:00Z"}}
-	got := agendaText(events, now, "UTC")
+	got := agendaText(i18n.RU, events, now, "UTC")
 	if strings.Contains(got, "<срочно>") {
 		t.Errorf("an unescaped title reached an HTML message:\n%s", got)
 	}

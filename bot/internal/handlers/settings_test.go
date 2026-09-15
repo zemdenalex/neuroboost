@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"github.com/zemdenalex/neuroboost-bot/internal/i18n"
+
 	"strings"
 	"testing"
 
@@ -111,8 +113,8 @@ func TestEveryOfferedHourParsesBackToItself(t *testing.T) {
 	// expectation, so it compared the lists to themselves: adding an hour to
 	// the handler changed both sides at once and the test stayed green. A
 	// control built from the thing it checks cannot fail for the bug it names.
-	check("start", keyboards.WorkHoursStart(startHours), []int{6, 7, 8, 9, 10, 11, 12})
-	check("end", keyboards.WorkHoursEnd(endHours), []int{14, 15, 16, 17, 18, 19, 20, 21, 22})
+	check("start", keyboards.WorkHoursStart(i18n.RU, startHours), []int{6, 7, 8, 9, 10, 11, 12})
+	check("end", keyboards.WorkHoursEnd(i18n.RU, endHours), []int{14, 15, 16, 17, 18, 19, 20, 21, 22})
 }
 
 // The two lists must overlap in a way that leaves a legal day available, or a

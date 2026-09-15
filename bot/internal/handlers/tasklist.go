@@ -7,6 +7,7 @@ import (
 
 	"github.com/zemdenalex/neuroboost-bot/internal/api"
 	"github.com/zemdenalex/neuroboost-bot/internal/format"
+	"github.com/zemdenalex/neuroboost-bot/internal/i18n"
 	"github.com/zemdenalex/neuroboost-bot/internal/keyboards"
 	"github.com/zemdenalex/neuroboost-bot/internal/parse"
 )
@@ -22,7 +23,9 @@ import (
 // of things to do, and «среда» in the middle of one is far more likely to be
 // part of what needs doing than a heading over the rest.
 
-const taskGuide = `➕ <b>Новая задача</b>
+func taskGuide(lang i18n.Lang) string {
+	return i18n.T(lang,
+		`➕ <b>Новая задача</b>
 
 Напиши название. Понимаю то же, что и в событиях:
 
@@ -36,14 +39,30 @@ const taskGuide = `➕ <b>Новая задача</b>
 3. Присесть</code>
    → спрошу, одна это задача или три
 
-Приоритет: <code>!1</code> срочно … <code>!5</code> если получится · Оценка: <code>30м</code>, <code>2ч</code>`
+Приоритет: <code>!1</code> срочно … <code>!5</code> если получится · Оценка: <code>30м</code>, <code>2ч</code>`,
+		`➕ <b>New task</b>
+
+Write the title. I understand the same words as for events:
+
+<code>позвонить в банк завтра 30м !1 #дела</code>
+   → позвонить в банк · tomorrow · 30 min · priority 1 · tag «дела»
+
+<b>As a list</b> — several lines at once:
+
+<code>1. Отжаться
+2. Подтянуться
+3. Присесть</code>
+   → I will ask whether that is one task or three
+
+Priority: <code>!1</code> urgent … <code>!5</code> if possible · Estimate: <code>30м</code>, <code>2ч</code>`)
+}
 
 func (h *Handler) startNewTaskFlow(chatID int64) {
 	us := h.store.GetOrCreate(chatID)
 	us.CurrentFlow = "new_task"
 	us.FlowStep = "title"
 	us.FlowData = map[string]any{}
-	h.sendHTML(chatID, taskGuide)
+	h.sendHTML(chatID, taskGuide(h.lang(chatID)))
 }
 
 // handleTaskListCallback answers the one/many question for tasks.
@@ -89,7 +108,7 @@ func (h *Handler) showTaskCard(chatID int64, text string) {
 		us.FlowData["tags"] = r.Tags
 	}
 	us.FlowStep = "card"
-	h.sendHTMLWithKeyboard(chatID, taskCardText(r, h.cfg.Timezone), keyboards.TaskCard())
+	h.sendHTMLWithKeyboard(chatID, taskCardText(h.lang(chatID), r, h.cfg.Timezone), keyboards.TaskCard(h.lang(chatID)))
 }
 
 // createTaskList writes one task per entry and names what did not make it.
@@ -120,13 +139,13 @@ func (h *Handler) createTaskList(chatID int64, messageID int, raw string) {
 
 	var b strings.Builder
 	if len(made) > 0 {
-		fmt.Fprintf(&b, "✅ <b>Создано задач: %d</b>\n• %s\n", len(made), strings.Join(made, "\n• "))
+		fmt.Fprintf(&b, h.t(chatID, "✅ <b>Создано задач: %d</b>\n• %s\n", "✅ <b>Tasks created: %d</b>\n• %s\n"), len(made), strings.Join(made, "\n• "))
 	}
 	if len(failed) > 0 {
-		b.WriteString("\n❌ <b>Не создано</b>\n• " + strings.Join(failed, "\n• "))
+		b.WriteString(h.t(chatID, "\n❌ <b>Не создано</b>\n• ", "\n❌ <b>Not created</b>\n• ") + strings.Join(failed, "\n• "))
 	}
 	if b.Len() == 0 {
-		b.WriteString("Нечего создавать.")
+		b.WriteString(h.t(chatID, "Нечего создавать.", "Nothing to create."))
 	}
-	h.editOrSend(chatID, messageID, b.String(), keyboards.BackToTasks())
+	h.editOrSend(chatID, messageID, b.String(), keyboards.BackToTasks(h.lang(chatID)))
 }

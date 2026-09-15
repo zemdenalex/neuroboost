@@ -8,6 +8,7 @@ import (
 
 	"github.com/zemdenalex/neuroboost-bot/internal/api"
 	"github.com/zemdenalex/neuroboost-bot/internal/format"
+	"github.com/zemdenalex/neuroboost-bot/internal/i18n"
 	"github.com/zemdenalex/neuroboost-bot/internal/keyboards"
 )
 
@@ -30,11 +31,11 @@ func (h *Handler) handlePlanning(chatID int64, messageID int) {
 	plan, err := h.api.WeekPlan(us.AuthToken)
 	if err != nil {
 		h.editOrSend(chatID, messageID,
-			"❌ Не удалось загрузить план: "+err.Error(), keyboards.BackToMenu())
+			h.t(chatID, "❌ Не удалось загрузить план: ", "❌ Could not load the plan: ")+err.Error(), keyboards.BackToMenu(h.lang(chatID)))
 		return
 	}
 
-	text := planningText(plan.ScheduledHours, plan.AvailableHours, len(plan.UnscheduledTasks))
+	text := planningText(h.lang(chatID), plan.ScheduledHours, plan.AvailableHours, len(plan.UnscheduledTasks))
 
 	// Highest priority first — 1 is Emergency, 5 is If Possible. Sorting the
 	// other way round is the standing trap in this codebase.
@@ -55,8 +56,8 @@ func (h *Handler) handlePlanning(chatID int64, messageID int) {
 		))
 	}
 	rows = append(rows, tgbotapi.NewInlineKeyboardRow(
-		tgbotapi.NewInlineKeyboardButtonData("🔄 Обновить", "planning"),
-		tgbotapi.NewInlineKeyboardButtonData("« Menu", "main_menu"),
+		tgbotapi.NewInlineKeyboardButtonData(h.t(chatID, "🔄 Обновить", "🔄 Refresh"), "planning"),
+		tgbotapi.NewInlineKeyboardButtonData(h.t(chatID, "« Меню", "« Menu"), "main_menu"),
 	))
 
 	h.editOrSend(chatID, messageID, text, tgbotapi.NewInlineKeyboardMarkup(rows...))
@@ -64,18 +65,18 @@ func (h *Handler) handlePlanning(chatID int64, messageID int) {
 
 // planningText is the whole message, built from three numbers so it can be
 // asserted without a bot, a store or a network.
-func planningText(scheduled, available float64, unscheduled int) string {
-	text := fmt.Sprintf("🗂 <b>План недели</b>\n\n%s\n", loadBar(scheduled, available))
-	text += fmt.Sprintf("Занято <b>%s</b> из <b>%s</b>\n\n",
-		formatHours(scheduled), formatHours(available))
+func planningText(lang i18n.Lang, scheduled, available float64, unscheduled int) string {
+	text := fmt.Sprintf(i18n.T(lang, "🗂 <b>План недели</b>\n\n%s\n", "🗂 <b>This week</b>\n\n%s\n"), loadBar(lang, scheduled, available))
+	text += fmt.Sprintf(i18n.T(lang, "Занято <b>%s</b> из <b>%s</b>\n\n", "<b>%s</b> of <b>%s</b> booked\n\n"),
+		formatHours(lang, scheduled), formatHours(lang, available))
 
 	switch {
 	case unscheduled == 0:
-		text += "✨ Незапланированных задач нет."
+		text += i18n.T(lang, "✨ Незапланированных задач нет.", "✨ Nothing left to schedule.")
 	case unscheduled == 1:
-		text += "Одна задача ждёт места в календаре — нажми, чтобы поставить:"
+		text += i18n.T(lang, "Одна задача ждёт места в календаре — нажми, чтобы поставить:", "One task is waiting for a slot — tap it to schedule:")
 	default:
-		text += fmt.Sprintf("Задач без времени: <b>%d</b>. Нажми любую, чтобы поставить в календарь:", unscheduled)
+		text += fmt.Sprintf(i18n.T(lang, "Задач без времени: <b>%d</b>. Нажми любую, чтобы поставить в календарь:", "Tasks with no time: <b>%d</b>. Tap any of them to schedule:"), unscheduled)
 	}
 	return text
 }
@@ -92,10 +93,10 @@ func planningText(scheduled, available float64, unscheduled int) string {
 // so a filled count of 15 already draws ten. A guard that cannot be reached is
 // not protection, it is a claim that something was handled — and the next
 // reader trusts it.
-func loadBar(scheduled, available float64) string {
+func loadBar(lang i18n.Lang, scheduled, available float64) string {
 	const cells = 10
 	if available <= 0 {
-		return "▱▱▱▱▱▱▱▱▱▱ рабочие часы не заданы"
+		return i18n.T(lang, "▱▱▱▱▱▱▱▱▱▱ рабочие часы не заданы", "▱▱▱▱▱▱▱▱▱▱ no work hours set")
 	}
 	filled := int(scheduled / available * cells)
 	bar := ""
@@ -110,11 +111,11 @@ func loadBar(scheduled, available float64) string {
 }
 
 // formatHours prints 6 rather than 6.0, and 6.5 rather than 6.50.
-func formatHours(h float64) string {
+func formatHours(lang i18n.Lang, h float64) string {
 	if h == float64(int(h)) {
-		return fmt.Sprintf("%dч", int(h))
+		return fmt.Sprintf(i18n.T(lang, "%dч", "%dh"), int(h))
 	}
-	return fmt.Sprintf("%.1fч", h)
+	return fmt.Sprintf(i18n.T(lang, "%.1fч", "%.1fh"), h)
 }
 
 // truncateLabel keeps a button label inside what a phone can show.

@@ -18,12 +18,12 @@ func (h *Handler) handleTasks(chatID int64, messageID int) {
 	tasks, err := h.api.GetTasks(us.AuthToken, "TODO")
 	if err != nil {
 		h.editOrSend(chatID, messageID,
-			"⚠️ Не дозвонился до сервера. Попробуй через минуту.", keyboards.HomeInline())
+			h.t(chatID, "⚠️ Не дозвонился до сервера. Попробуй через минуту.", "⚠️ Could not reach the server. Try again in a minute."), keyboards.HomeInline(h.lang(chatID)))
 		return
 	}
 
 	if len(tasks) == 0 {
-		h.editOrSend(chatID, messageID, "📋 <b>Задач нет</b>", keyboards.TaskListEmpty())
+		h.editOrSend(chatID, messageID, h.t(chatID, "📋 <b>Задач нет</b>", "📋 <b>No tasks</b>"), keyboards.TaskListEmpty(h.lang(chatID)))
 		return
 	}
 
@@ -57,7 +57,7 @@ func (h *Handler) handleTaskAction(chatID int64, messageID int, taskID string) {
 	us := h.store.GetOrCreate(chatID)
 	tasks, err := h.api.GetTasks(us.AuthToken, "")
 	if err != nil {
-		h.editOrSend(chatID, messageID, "❌ Не удалось загрузить задачу.", keyboards.BackToTasks())
+		h.editOrSend(chatID, messageID, h.t(chatID, "❌ Не удалось загрузить задачу.", "❌ Could not load the task."), keyboards.BackToTasks(h.lang(chatID)))
 		return
 	}
 
@@ -77,7 +77,7 @@ func (h *Handler) handleTaskAction(chatID int64, messageID int, taskID string) {
 	}
 
 	if !found {
-		h.editOrSend(chatID, messageID, "Задача не найдена.", keyboards.BackToTasks())
+		h.editOrSend(chatID, messageID, h.t(chatID, "Задача не найдена.", "Task not found."), keyboards.BackToTasks(h.lang(chatID)))
 		return
 	}
 
@@ -89,17 +89,17 @@ func (h *Handler) handleTaskAction(chatID int64, messageID int, taskID string) {
 		text += fmt.Sprintf("📅 Due: %s\n", format.FormatDate(dueDate, h.cfg.Timezone))
 	}
 
-	h.editOrSend(chatID, messageID, text, keyboards.TaskActions(taskID))
+	h.editOrSend(chatID, messageID, text, keyboards.TaskActions(h.lang(chatID), taskID))
 }
 
 func (h *Handler) handleTaskDone(chatID int64, messageID int, taskID string) {
 	us := h.store.GetOrCreate(chatID)
 	err := h.api.UpdateTask(us.AuthToken, taskID, map[string]any{"status": "DONE"})
 	if err != nil {
-		h.sendText(chatID, "❌ Не получилось: "+err.Error())
+		h.sendText(chatID, h.t(chatID, "❌ Не получилось: ", "❌ That didn't work: ")+err.Error())
 		return
 	}
-	h.sendText(chatID, "✅ Задача выполнена.")
+	h.sendText(chatID, h.t(chatID, "✅ Задача выполнена.", "✅ Task done."))
 	h.handleTasks(chatID, messageID)
 }
 
@@ -107,10 +107,10 @@ func (h *Handler) handleTaskDelete(chatID int64, messageID int, taskID string) {
 	us := h.store.GetOrCreate(chatID)
 	err := h.api.DeleteTask(us.AuthToken, taskID)
 	if err != nil {
-		h.sendText(chatID, "❌ Не получилось: "+err.Error())
+		h.sendText(chatID, h.t(chatID, "❌ Не получилось: ", "❌ That didn't work: ")+err.Error())
 		return
 	}
-	h.sendText(chatID, "🗑 Задача удалена.")
+	h.sendText(chatID, h.t(chatID, "🗑 Задача удалена.", "🗑 Task deleted."))
 	h.handleTasks(chatID, messageID)
 }
 
@@ -130,8 +130,8 @@ func (h *Handler) handleTaskDueMenu(chatID int64, messageID int, taskID string) 
 		return
 	}
 	h.editOrSend(chatID, messageID,
-		fmt.Sprintf("📅 <b>%s</b>\n\nКогда срок?", format.Escape(title)),
-		keyboards.TaskDue(taskID))
+		fmt.Sprintf(h.t(chatID, "📅 <b>%s</b>\n\nКогда срок?", "📅 <b>%s</b>\n\nWhen is it due?"), format.Escape(title)),
+		keyboards.TaskDue(h.lang(chatID), taskID))
 }
 
 // handleTaskDueSet answers task_due_set_<uuid>_<offset>, cut from the right —
@@ -140,12 +140,12 @@ func (h *Handler) handleTaskDueMenu(chatID int64, messageID int, taskID string) 
 func (h *Handler) handleTaskDueSet(chatID int64, messageID int, data string) {
 	idx := strings.LastIndex(data, "_")
 	if idx < 0 {
-		h.sendHTMLWithKeyboard(chatID, "Не понял кнопку.", keyboards.BackToTasks())
+		h.sendHTMLWithKeyboard(chatID, h.t(chatID, "Не понял кнопку.", "Didn't understand that button."), keyboards.BackToTasks(h.lang(chatID)))
 		return
 	}
 	taskID, offsetStr := data[:idx], data[idx+1:]
 	if taskID == "" || !dueOffsets[offsetStr] {
-		h.sendHTMLWithKeyboard(chatID, "Не понял кнопку.", keyboards.BackToTasks())
+		h.sendHTMLWithKeyboard(chatID, h.t(chatID, "Не понял кнопку.", "Didn't understand that button."), keyboards.BackToTasks(h.lang(chatID)))
 		return
 	}
 	offset, _ := strconv.Atoi(offsetStr)
@@ -155,7 +155,7 @@ func (h *Handler) handleTaskDueSet(chatID int64, messageID int, data string) {
 	if err := h.api.UpdateTask(us.AuthToken, taskID, map[string]any{
 		"due_date": due.Format(time.RFC3339),
 	}); err != nil {
-		h.sendText(chatID, "❌ Не удалось сохранить: "+err.Error())
+		h.sendText(chatID, h.t(chatID, "❌ Не удалось сохранить: ", "❌ Could not save: ")+err.Error())
 		return
 	}
 	h.handleTaskAction(chatID, messageID, taskID)
@@ -167,20 +167,20 @@ func (h *Handler) handleTaskEstimateMenu(chatID int64, messageID int, taskID str
 		return
 	}
 	h.editOrSend(chatID, messageID,
-		fmt.Sprintf("⏱ <b>%s</b>\n\nСколько времени займёт?", format.Escape(title)),
-		keyboards.TaskEstimate(taskID))
+		fmt.Sprintf(h.t(chatID, "⏱ <b>%s</b>\n\nСколько времени займёт?", "⏱ <b>%s</b>\n\nHow long will it take?"), format.Escape(title)),
+		keyboards.TaskEstimate(h.lang(chatID), taskID))
 }
 
 // handleTaskEstimateSet answers task_est_set_<uuid>_<minutes>.
 func (h *Handler) handleTaskEstimateSet(chatID int64, messageID int, data string) {
 	idx := strings.LastIndex(data, "_")
 	if idx < 0 {
-		h.sendHTMLWithKeyboard(chatID, "Не понял кнопку.", keyboards.BackToTasks())
+		h.sendHTMLWithKeyboard(chatID, h.t(chatID, "Не понял кнопку.", "Didn't understand that button."), keyboards.BackToTasks(h.lang(chatID)))
 		return
 	}
 	taskID, minStr := data[:idx], data[idx+1:]
 	if taskID == "" || !estimateOptions[minStr] {
-		h.sendHTMLWithKeyboard(chatID, "Не понял кнопку.", keyboards.BackToTasks())
+		h.sendHTMLWithKeyboard(chatID, h.t(chatID, "Не понял кнопку.", "Didn't understand that button."), keyboards.BackToTasks(h.lang(chatID)))
 		return
 	}
 	minutes, _ := strconv.Atoi(minStr)
@@ -189,7 +189,7 @@ func (h *Handler) handleTaskEstimateSet(chatID int64, messageID int, data string
 	if err := h.api.UpdateTask(us.AuthToken, taskID, map[string]any{
 		"estimated_minutes": minutes,
 	}); err != nil {
-		h.sendText(chatID, "❌ Не удалось сохранить: "+err.Error())
+		h.sendText(chatID, h.t(chatID, "❌ Не удалось сохранить: ", "❌ Could not save: ")+err.Error())
 		return
 	}
 	h.handleTaskAction(chatID, messageID, taskID)
@@ -207,7 +207,7 @@ func (h *Handler) handleTaskTagsPrompt(chatID int64, messageID int, taskID strin
 	us.FlowStep = "text"
 	us.FlowData["taskID"] = taskID
 	h.editOrSend(chatID, messageID,
-		fmt.Sprintf("🏷 <b>%s</b>\n\nТэги через запятую (или «cancel»):", format.Escape(title)),
+		fmt.Sprintf(h.t(chatID, "🏷 <b>%s</b>\n\nТеги через запятую (или «cancel»):", "🏷 <b>%s</b>\n\nTags, comma separated (or «cancel»):"), format.Escape(title)),
 		tgbotapi.NewInlineKeyboardMarkup())
 }
 
@@ -223,7 +223,7 @@ func (h *Handler) handleEditTaskTags(chatID int64, text string) {
 	taskID, _ := us.FlowData["taskID"].(string)
 	h.store.ClearFlow(chatID)
 	if taskID == "" {
-		h.sendHTMLWithKeyboard(chatID, "Не помню, к какой задаче это относится.", keyboards.HomeInline())
+		h.sendHTMLWithKeyboard(chatID, h.t(chatID, "Не помню, к какой задаче это относится.", "I've lost track of which task this is."), keyboards.HomeInline(h.lang(chatID)))
 		return
 	}
 
@@ -236,10 +236,10 @@ func (h *Handler) handleEditTaskTags(chatID int64, text string) {
 	}
 
 	if err := h.api.UpdateTask(us.AuthToken, taskID, map[string]any{"tags": tags}); err != nil {
-		h.sendText(chatID, "❌ Не удалось сохранить: "+err.Error())
+		h.sendText(chatID, h.t(chatID, "❌ Не удалось сохранить: ", "❌ Could not save: ")+err.Error())
 		return
 	}
-	h.sendText(chatID, "🏷 Тэги обновлены")
+	h.sendText(chatID, h.t(chatID, "🏷 Теги обновлены", "🏷 Tags updated"))
 	// 0: the tags arrived as a text message, so there is no screen of ours
 	// under the user thumb to edit — the card is posted fresh.
 	h.handleTaskAction(chatID, 0, taskID)

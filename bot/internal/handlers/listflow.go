@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/zemdenalex/neuroboost-bot/internal/format"
+	"github.com/zemdenalex/neuroboost-bot/internal/i18n"
 	"github.com/zemdenalex/neuroboost-bot/internal/keyboards"
 	"github.com/zemdenalex/neuroboost-bot/internal/parse"
 )
@@ -31,8 +32,10 @@ func (h *Handler) askListOrSingle(chatID int64, text string) {
 	us.FlowStep = "list:confirm"
 	n := len(parse.Entries(text))
 	h.sendHTMLWithKeyboard(chatID,
-		fmt.Sprintf("Это одна запись или список из %d?\n\n<i>Одной записью название будет целиком, со всеми строками.</i>", n),
-		keyboards.ListConfirm(n))
+		fmt.Sprintf(h.t(chatID,
+			"Это одна запись или список из %d?\n\n<i>Одной записью название будет целиком, со всеми строками.</i>",
+			"One entry, or a list of %d?\n\n<i>As one entry the title keeps every line.</i>"), n),
+		keyboards.ListConfirm(h.lang(chatID), n))
 }
 
 // buildList turns the remembered text into one draft per entry.
@@ -53,11 +56,11 @@ func (h *Handler) buildList(chatID int64) []*draftState {
 //
 // Entries are numbered because the edit step asks for a number, and a list
 // whose numbering exists only in the keyboard is a list nobody can point at.
-func renderList(list []*draftState, now time.Time) string {
+func renderList(lang i18n.Lang, list []*draftState, now time.Time) string {
 	var b strings.Builder
-	b.WriteString("📋 <b>Список из " + strconv.Itoa(len(list)) + "</b>\n\n")
+	b.WriteString(i18n.T(lang, "📋 <b>Список из ", "📋 <b>A list of ") + strconv.Itoa(len(list)) + "</b>\n\n")
 	for i, st := range list {
-		fmt.Fprintf(&b, "<b>%d.</b> %s\n", i+1, strings.ReplaceAll(renderDraft(*st, now), "\n", "\n    "))
+		fmt.Fprintf(&b, "<b>%d.</b> %s\n", i+1, strings.ReplaceAll(renderDraft(lang, *st, now), "\n", "\n    "))
 		b.WriteString("\n")
 	}
 	return strings.TrimRight(b.String(), "\n")
@@ -72,7 +75,7 @@ func (h *Handler) showList(chatID int64, messageID int) {
 	us := h.store.GetOrCreate(chatID)
 	us.FlowStep = "list"
 	delete(us.FlowData, "draft")
-	h.editOrSend(chatID, messageID, renderList(list, time.Now().In(h.location())), keyboards.ListCard(len(list)))
+	h.editOrSend(chatID, messageID, renderList(h.lang(chatID), list, time.Now().In(h.location())), keyboards.ListCard(h.lang(chatID), len(list)))
 }
 
 // createList writes every entry, and says by name which ones did not make it.
@@ -99,22 +102,23 @@ func (h *Handler) createList(chatID int64, messageID int) {
 
 	var b strings.Builder
 	if len(made) > 0 {
-		b.WriteString("✅ <b>Создано</b>\n• " + strings.Join(made, "\n• ") + "\n")
+		b.WriteString(h.t(chatID, "✅ <b>Создано</b>\n• ", "✅ <b>Created</b>\n• ") + strings.Join(made, "\n• ") + "\n")
 	}
 	if len(failed) > 0 {
-		b.WriteString("\n❌ <b>Не создано</b>\n• " + strings.Join(failed, "\n• ") +
-			"\n\nОстались в черновике — нажми «Создать», чтобы попробовать ещё раз.")
+		b.WriteString(h.t(chatID, "\n❌ <b>Не создано</b>\n• ", "\n❌ <b>Not created</b>\n• ") + strings.Join(failed, "\n• ") +
+			h.t(chatID, "\n\nОстались в черновике — нажми «Создать», чтобы попробовать ещё раз.",
+				"\n\nThey are still in the draft — press Create to try again."))
 	}
 
 	us := h.store.GetOrCreate(chatID)
 	if len(left) == 0 {
 		h.store.ClearFlow(chatID)
-		h.editOrSend(chatID, messageID, b.String(), keyboards.AgendaActions())
+		h.editOrSend(chatID, messageID, b.String(), keyboards.AgendaActions(h.lang(chatID)))
 		return
 	}
 	// Keep what failed, so a retry is one button and not a retyped block.
 	us.FlowData["list"] = left
-	h.editOrSend(chatID, messageID, b.String(), keyboards.ListCard(len(left)))
+	h.editOrSend(chatID, messageID, b.String(), keyboards.ListCard(h.lang(chatID), len(left)))
 }
 
 // handleListCallback answers the list buttons. Returns false for anything it
@@ -155,7 +159,7 @@ func (h *Handler) handleListCallback(chatID int64, messageID int, data string) b
 			h.lostDraft(chatID)
 			return true
 		}
-		h.editOrSend(chatID, messageID, "Какую строку изменить?", keyboards.ListPick(len(list)))
+		h.editOrSend(chatID, messageID, h.t(chatID, "Какую строку изменить?", "Which line should I change?"), keyboards.ListPick(h.lang(chatID), len(list)))
 		return true
 
 	case strings.HasPrefix(data, "dr_item_"):

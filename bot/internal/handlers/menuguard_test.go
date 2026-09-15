@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"github.com/zemdenalex/neuroboost-bot/internal/i18n"
+
 	"os"
 	"strings"
 	"testing"
@@ -80,7 +82,7 @@ func TestEveryMenuScreenHasACase(t *testing.T) {
 	// The map above is the literal expectation. Hold it against the keyboard
 	// so the two cannot drift: a button whose screen is missing here would be
 	// unguarded and this test would say so.
-	for _, row := range keyboards.MainMenu().Keyboard {
+	for _, row := range keyboards.MainMenu(i18n.RU).Keyboard {
 		for _, b := range row {
 			screen, known := keyboards.MenuScreen(b.Text)
 			if !known {

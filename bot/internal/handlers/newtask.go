@@ -9,6 +9,7 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 
 	"github.com/zemdenalex/neuroboost-bot/internal/format"
+	"github.com/zemdenalex/neuroboost-bot/internal/i18n"
 	"github.com/zemdenalex/neuroboost-bot/internal/keyboards"
 	"github.com/zemdenalex/neuroboost-bot/internal/parse"
 )
@@ -17,12 +18,12 @@ import (
 //
 // A card that shows "Срок: —" for a task with no due date trains the reader to
 // skip the line. Absent fields are absent.
-func taskCardText(r parse.TaskResult, tz string) string {
+func taskCardText(lang i18n.Lang, r parse.TaskResult, tz string) string {
 	title := r.Title
 	if title == "" {
-		title = "(без названия)"
+		title = i18n.T(lang, "(без названия)", "(untitled)")
 	}
-	text := "➕ <b>Новая задача</b>\n"
+	text := i18n.T(lang, "➕ <b>Новая задача</b>\n", "➕ <b>New task</b>\n")
 	if r.Priority != nil {
 		text += format.PriorityEmoji(*r.Priority) + " "
 	}
@@ -123,54 +124,54 @@ func wizardDueOffset(flowData map[string]any, loc *time.Location) string {
 // value. That has to work even when the known value is not one of the
 // keyboard's quick choices (an arbitrary parsed date, say), so the text
 // carries it independently of what the keyboard can mark.
-func wizardStepText(step string, flowData map[string]any, loc *time.Location) string {
+func wizardStepText(lang i18n.Lang, step string, flowData map[string]any, loc *time.Location) string {
 	switch step {
 	case "priority":
 		if p, ok := flowData["priority"].(int); ok {
-			return fmt.Sprintf("📝 <b>Подробнее</b>\n\nПриоритет? Сейчас: %s %s (можно заменить или пропустить)",
-				format.PriorityEmoji(p), format.PriorityLabel(p))
+			return fmt.Sprintf(i18n.T(lang, "📝 <b>Подробнее</b>\n\nПриоритет? Сейчас: %s %s (можно заменить или пропустить)", "📝 <b>More</b>\n\nPriority? Now: %s %s (replace it or skip)"),
+				format.PriorityEmoji(p), format.PriorityLabel(lang, p))
 		}
-		return "📝 <b>Подробнее</b>\n\nПриоритет? (можно пропустить)"
+		return i18n.T(lang, "📝 <b>Подробнее</b>\n\nПриоритет? (можно пропустить)", "📝 <b>More</b>\n\nPriority? (or skip)")
 	case "due":
 		if d, ok := flowData["due"].(string); ok && d != "" {
 			if t, err := time.Parse(time.RFC3339, d); err == nil {
-				return fmt.Sprintf("📝 <b>Подробнее</b>\n\nКогда сделать? Сейчас: %s (можно заменить или пропустить)",
+				return fmt.Sprintf(i18n.T(lang, "📝 <b>Подробнее</b>\n\nКогда сделать? Сейчас: %s (можно заменить или пропустить)", "📝 <b>More</b>\n\nWhen is it due? Now: %s (replace it or skip)"),
 					t.In(loc).Format("02.01"))
 			}
 		}
-		return "📝 <b>Подробнее</b>\n\nКогда сделать? (можно пропустить)"
+		return i18n.T(lang, "📝 <b>Подробнее</b>\n\nКогда сделать? (можно пропустить)", "📝 <b>More</b>\n\nWhen is it due? (or skip)")
 	case "estimate":
 		if m, ok := flowData["minutes"].(int); ok {
-			return fmt.Sprintf("📝 <b>Подробнее</b>\n\nСколько времени займёт? Сейчас: %s (можно заменить или пропустить)",
+			return fmt.Sprintf(i18n.T(lang, "📝 <b>Подробнее</b>\n\nСколько времени займёт? Сейчас: %s (можно заменить или пропустить)", "📝 <b>More</b>\n\nHow long will it take? Now: %s (replace it or skip)"),
 				format.Duration(m))
 		}
-		return "📝 <b>Подробнее</b>\n\nСколько времени займёт? (можно пропустить)"
+		return i18n.T(lang, "📝 <b>Подробнее</b>\n\nСколько времени займёт? (можно пропустить)", "📝 <b>More</b>\n\nHow long will it take? (or skip)")
 	}
-	return "📝 <b>Подробнее</b>"
+	return i18n.T(lang, "📝 <b>Подробнее</b>", "📝 <b>More</b>")
 }
 
 // wizardKeyboardFor is the keyboard for a given wizard step. Every one of
 // these carries both escapes — see keyboards.wizardEscapes. Each also marks
 // the button matching what is already known, when the known value lands on
 // one of the quick choices offered.
-func wizardKeyboardFor(step string, flowData map[string]any, loc *time.Location) tgbotapi.InlineKeyboardMarkup {
+func wizardKeyboardFor(lang i18n.Lang, step string, flowData map[string]any, loc *time.Location) tgbotapi.InlineKeyboardMarkup {
 	switch step {
 	case "priority":
 		var current *int
 		if p, ok := flowData["priority"].(int); ok {
 			current = &p
 		}
-		return keyboards.WizardPriority(current)
+		return keyboards.WizardPriority(lang, current)
 	case "due":
-		return keyboards.WizardDue(wizardDueOffset(flowData, loc))
+		return keyboards.WizardDue(lang, wizardDueOffset(flowData, loc))
 	case "estimate":
 		var current *int
 		if m, ok := flowData["minutes"].(int); ok {
 			current = &m
 		}
-		return keyboards.WizardEstimate(current)
+		return keyboards.WizardEstimate(lang, current)
 	}
-	return keyboards.TaskCard()
+	return keyboards.TaskCard(lang)
 }
 
 // advanceWizard moves to the next unanswered step and renders it, or — once
@@ -188,7 +189,7 @@ func (h *Handler) advanceWizard(chatID int64, messageID int, current string) {
 	}
 	us.FlowStep = "wizard:" + next
 	loc := h.location()
-	h.editOrSend(chatID, messageID, wizardStepText(next, us.FlowData, loc), wizardKeyboardFor(next, us.FlowData, loc))
+	h.editOrSend(chatID, messageID, wizardStepText(h.lang(chatID), next, us.FlowData, loc), wizardKeyboardFor(h.lang(chatID), next, us.FlowData, loc))
 }
 
 // handleTaskWizardStart is nt_wizard — "📝 Подробнее" pressed under the card.

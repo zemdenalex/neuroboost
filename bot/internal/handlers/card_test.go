@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/zemdenalex/neuroboost-bot/internal/i18n"
 	"github.com/zemdenalex/neuroboost-bot/internal/parse"
 )
 
@@ -55,7 +56,7 @@ func TestNextQuestionOrder(t *testing.T) {
 // date line out reads as "no date needed" — and "absent looks the same as
 // empty" is a defect this product has already shipped once.
 func TestCardNamesWhatIsMissing(t *testing.T) {
-	card := renderDraft(draftFrom("оркестр"), tuesday15())
+	card := renderDraft(i18n.RU, draftFrom("оркестр"), tuesday15())
 	if !strings.Contains(card, "дата не указана") {
 		t.Errorf("no missing-date line in:\n%s", card)
 	}
@@ -67,7 +68,7 @@ func TestCardNamesWhatIsMissing(t *testing.T) {
 func TestCardShowsWhatWasUnderstood(t *testing.T) {
 	st := draftFrom("среда 14:00-15:00 оркестр повтор синий #музыка")
 	st.CalendarName = "Работа"
-	card := renderDraft(st, tuesday15())
+	card := renderDraft(i18n.RU, st, tuesday15())
 
 	for _, want := range []string{
 		"оркестр",
@@ -87,14 +88,14 @@ func TestCardShowsWhatWasUnderstood(t *testing.T) {
 // A repeating range that crosses midnight prints two clock times, not a
 // negative one: 23:00–01:00 is two hours.
 func TestCardPrintsAMidnightCrossing(t *testing.T) {
-	card := renderDraft(draftFrom("смена 23:00-01:00 завтра"), tuesday15())
+	card := renderDraft(i18n.RU, draftFrom("смена 23:00-01:00 завтра"), tuesday15())
 	if !strings.Contains(card, "23:00–01:00") {
 		t.Errorf("card does not print the crossing range:\n%s", card)
 	}
 }
 
 func TestCardMarksATask(t *testing.T) {
-	card := renderDraft(draftFrom("отжаться задача завтра 10:00"), tuesday15())
+	card := renderDraft(i18n.RU, draftFrom("отжаться задача завтра 10:00"), tuesday15())
 	if !strings.Contains(card, "✅ <b>отжаться</b>") {
 		t.Errorf("a task is not marked as one:\n%s", card)
 	}
@@ -104,7 +105,7 @@ func TestCardMarksATask(t *testing.T) {
 // проще сориентироваться». The order is the requirement, so the order is what
 // is asserted — not merely that all three appear.
 func TestCardPutsDateThenTimeThenTitle(t *testing.T) {
-	card := renderDraft(draftFrom("оркестр среда 14:00-15:00"), tuesday15())
+	card := renderDraft(i18n.RU, draftFrom("оркестр среда 14:00-15:00"), tuesday15())
 
 	day := strings.Index(card, "🗓")
 	clock := strings.Index(card, "🕐")
@@ -123,7 +124,7 @@ func TestCardPutsDateThenTimeThenTitle(t *testing.T) {
 // which is what he asked for; reading it without the mark would turn a typo
 // into a fact he never checked.
 func TestCardFlagsALooseReading(t *testing.T) {
-	loose := renderDraft(draftFrom("обед завтра 13;00"), tuesday15())
+	loose := renderDraft(i18n.RU, draftFrom("обед завтра 13;00"), tuesday15())
 	if !strings.Contains(loose, "⚠ проверь") {
 		t.Errorf("«13;00» was read silently:\n%s", loose)
 	}
@@ -131,7 +132,7 @@ func TestCardFlagsALooseReading(t *testing.T) {
 	// The contrast that makes the assertion mean something: a strict time
 	// carries no mark, or every line would carry one and the mark would say
 	// nothing.
-	strict := renderDraft(draftFrom("обед завтра 13:00"), tuesday15())
+	strict := renderDraft(i18n.RU, draftFrom("обед завтра 13:00"), tuesday15())
 	if strings.Contains(strict, "⚠ проверь") {
 		t.Errorf("a strict time was flagged too:\n%s", strict)
 	}

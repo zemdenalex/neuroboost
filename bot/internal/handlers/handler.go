@@ -10,6 +10,7 @@ import (
 	"github.com/zemdenalex/neuroboost-bot/internal/api"
 	"github.com/zemdenalex/neuroboost-bot/internal/auth"
 	"github.com/zemdenalex/neuroboost-bot/internal/config"
+	"github.com/zemdenalex/neuroboost-bot/internal/i18n"
 	"github.com/zemdenalex/neuroboost-bot/internal/keyboards"
 	"github.com/zemdenalex/neuroboost-bot/internal/logsafe"
 	"github.com/zemdenalex/neuroboost-bot/internal/notifier"
@@ -23,7 +24,7 @@ import (
 // reminder is theirs.
 func (h *Handler) handleNotificationAction(chatID int64, from *tgbotapi.User, msg *tgbotapi.Message, action notifier.Callback) {
 	if from == nil {
-		h.sendText(chatID, "⚠️ Не понимаю, от кого это сообщение.")
+		h.sendText(chatID, h.t(chatID, "⚠️ Не понимаю, от кого это сообщение.", "⚠️ I can't tell who sent this."))
 		return
 	}
 	if h.cfg.ServiceToken == "" {
@@ -37,7 +38,7 @@ func (h *Handler) handleNotificationAction(chatID int64, from *tgbotapi.User, ms
 		h.cfg.ServiceToken, from.ID, action.ReminderID, action.Action, action.Minutes,
 	); err != nil {
 		log.Printf("notification action %s for %s failed: %v", action.Action, action.ReminderID, err)
-		h.sendText(chatID, "⚠️ Не получилось — попробуй ещё раз.")
+		h.sendText(chatID, h.t(chatID, "⚠️ Не получилось — попробуй ещё раз.", "⚠️ That didn't work — try again."))
 		return
 	}
 
@@ -47,7 +48,7 @@ func (h *Handler) handleNotificationAction(chatID int64, from *tgbotapi.User, ms
 	// them. The API answered 200 to every press and the chat said nothing, so
 	// the feature looked broken and got pressed seven times. The set of replies
 	// is now held against the set of buttons by TestEveryButtonHasAReply.
-	if reply := notifier.ActionReply(action.Action); reply != "" {
+	if reply := notifier.ActionReply(h.lang(chatID), action.Action); reply != "" {
 		h.sendText(chatID, reply)
 	}
 
@@ -97,7 +98,7 @@ func (h *Handler) ensureAuth(chatID int64, from *tgbotapi.User) bool {
 	if from == nil {
 		// Channel posts and some service messages carry no sender; there is no
 		// identity to log in as.
-		h.sendText(chatID, "⚠️ Не понимаю, кто ты в этом чате. Напиши боту напрямую.")
+		h.sendText(chatID, h.t(chatID, "⚠️ Не понимаю, кто ты в этом чате. Напиши боту напрямую.", "⚠️ I can't identify you in this chat. Message the bot directly."))
 		return false
 	}
 
@@ -112,7 +113,7 @@ func (h *Handler) ensureAuth(chatID int64, from *tgbotapi.User) bool {
 	token, expiresAt, err := h.api.TelegramLogin(payload)
 	if err != nil {
 		log.Printf("auth: login for chat %d failed: %v", chatID, err)
-		h.sendText(chatID, "⚠️ Не получилось войти. Попробуй через минуту.")
+		h.sendText(chatID, h.t(chatID, "⚠️ Не получилось войти. Попробуй через минуту.", "⚠️ Could not sign you in. Try in a minute."))
 		return false
 	}
 
@@ -157,12 +158,12 @@ func (h *Handler) HandleMessage(msg *tgbotapi.Message) {
 		case "start", "help":
 			h.handleStart(chatID)
 		default:
-			h.sendHTMLWithKeyboard(chatID, "Неизвестная команда.", keyboards.HomeInline())
+			h.sendHTMLWithKeyboard(chatID, h.t(chatID, "Неизвестная команда.", "Unknown command."), keyboards.HomeInline(h.lang(chatID)))
 		}
 		return
 	}
 
-	h.sendHTMLWithKeyboard(chatID, "Не понял. Вот меню:", keyboards.HomeInline())
+	h.sendHTMLWithKeyboard(chatID, h.t(chatID, "Не понял. Вот меню:", "Didn't get that. Here's the menu:"), keyboards.HomeInline(h.lang(chatID)))
 }
 
 // openScreen renders the screen a reply-keyboard button names.
@@ -182,13 +183,23 @@ func (h *Handler) openScreen(chatID int64, screen string) {
 	case keyboards.ScreenTasks:
 		h.handleTasks(chatID, 0)
 	case keyboards.ScreenCreate:
-		h.sendHTMLWithKeyboard(chatID, "Что создаём?", keyboards.CreateMenu())
+		h.sendHTMLWithKeyboard(chatID, h.t(chatID, "Что создаём?", "What are we creating?"), keyboards.CreateMenu(h.lang(chatID)))
 	case keyboards.ScreenSettings:
 		h.handleSettings(chatID, 0)
 	default:
-		h.sendHTMLWithKeyboard(chatID, "Не понял. Вот меню:", keyboards.HomeInline())
+		h.sendHTMLWithKeyboard(chatID, h.t(chatID, "Не понял. Вот меню:", "Didn't get that. Here's the menu:"), keyboards.HomeInline(h.lang(chatID)))
 	}
 }
+
+// bilingualTooOld is the one user-facing string in this bot that carries both
+// languages at once.
+//
+// 🔴 It is answered BEFORE ensureAuth, on a callback whose message Telegram no
+// longer sends us. There is no session, so there is no language to read — and
+// reading one would mean an API call on the path whose whole purpose is to stop
+// the spinner immediately. Both languages in one line is the honest answer;
+// picking one silently would be a guess.
+const bilingualTooOld = "Сообщение слишком старое / This message is too old"
 
 func (h *Handler) HandleCallback(cb *tgbotapi.CallbackQuery) {
 	// 🔴 CallbackQuery.Message is OPTIONAL in the Bot API. Telegram omits it
@@ -204,7 +215,7 @@ func (h *Handler) HandleCallback(cb *tgbotapi.CallbackQuery) {
 	// spinner turning on the user's button forever, which reads as a hung bot
 	// rather than as a stale message.
 	if cb.Message == nil {
-		if _, err := h.bot.Request(tgbotapi.NewCallback(cb.ID, "Сообщение слишком старое — открой бота и попробуй снова")); err != nil {
+		if _, err := h.bot.Request(tgbotapi.NewCallback(cb.ID, bilingualTooOld)); err != nil {
 			log.Printf("callback %s: could not answer a message-less callback: %s", cb.ID, logsafe.Redact(err))
 		}
 		return
@@ -251,7 +262,7 @@ func (h *Handler) HandleCallback(cb *tgbotapi.CallbackQuery) {
 	case data == "stats":
 		h.handleStats(chatID, cb.Message.MessageID)
 	case data == "create_menu":
-		h.editOrSend(chatID, cb.Message.MessageID, "Что создаём?", keyboards.CreateMenu())
+		h.editOrSend(chatID, cb.Message.MessageID, h.t(chatID, "Что создаём?", "What are we creating?"), keyboards.CreateMenu(h.lang(chatID)))
 	case data == "new_task":
 		h.startNewTaskFlow(chatID)
 	case data == "new_event":
@@ -321,6 +332,12 @@ func (h *Handler) HandleCallback(cb *tgbotapi.CallbackQuery) {
 		h.handlePlanning(chatID, cb.Message.MessageID)
 	case data == "settings_menu":
 		h.handleSettings(chatID, cb.Message.MessageID)
+	case data == "settings_lang":
+		h.handleLanguage(chatID, cb.Message.MessageID)
+	case data == "lang_ru":
+		h.handleLanguageSet(chatID, cb.Message.MessageID, string(i18n.RU))
+	case data == "lang_en":
+		h.handleLanguageSet(chatID, cb.Message.MessageID, string(i18n.EN))
 	case data == "settings_keywords":
 		h.handleKeywords(chatID, cb.Message.MessageID)
 	case data == "kw_add":

@@ -1,9 +1,13 @@
 package keyboards
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/zemdenalex/neuroboost-bot/internal/i18n"
+)
 
 func TestDayActionsFitTheCallbackBudget(t *testing.T) {
-	kb := DayActions("2026-08-18", "2026-08-17", "2026-08-19", 2026, 8)
+	kb := DayActions(i18n.RU, "2026-08-18", "2026-08-17", "2026-08-19", 2026, 8)
 	for _, row := range kb.InlineKeyboard {
 		for _, b := range row {
 			if b.CallbackData == nil {
@@ -18,7 +22,7 @@ func TestDayActionsFitTheCallbackBudget(t *testing.T) {
 
 func TestTaskActionsOfferTheOptionalFields(t *testing.T) {
 	id := "11111111-2222-3333-4444-555555555555" // 36 chars, a real UUID length
-	kb := TaskActions(id)
+	kb := TaskActions(i18n.RU, id)
 	want := map[string]bool{
 		"task_sched_" + id: false,
 		"task_due_" + id:   false,
@@ -47,7 +51,7 @@ func TestTaskActionsOfferTheOptionalFields(t *testing.T) {
 }
 
 func TestMonthGridOffersAJumpToToday(t *testing.T) {
-	kb := MonthGrid(2026, 8, "август", make([]string, 42), make([]string, 42), "2026-08-18")
+	kb := MonthGrid(i18n.RU, 2026, 8, "август", make([]string, 42), make([]string, 42), "2026-08-18")
 	var found bool
 	for _, row := range kb.InlineKeyboard {
 		for _, b := range row {

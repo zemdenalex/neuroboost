@@ -15,7 +15,7 @@ func (h *Handler) startNoteFlow(chatID int64) {
 	us := h.store.GetOrCreate(chatID)
 	us.CurrentFlow = "note"
 	us.FlowStep = "text"
-	h.sendText(chatID, "📝 Пришли заметку — сохраню её задачей.")
+	h.sendText(chatID, h.t(chatID, "📝 Пришли заметку — сохраню её задачей.", "📝 Send a note — I'll save it as a task."))
 }
 
 func (h *Handler) handleFlowInput(chatID int64, text string) {
@@ -40,7 +40,7 @@ func (h *Handler) handleFlowInput(chatID int64, text string) {
 		h.handleEditTaskTags(chatID, text)
 	default:
 		h.store.ClearFlow(chatID)
-		h.sendHTMLWithKeyboard(chatID, "Что-то пошло не так.", keyboards.HomeInline())
+		h.sendHTMLWithKeyboard(chatID, h.t(chatID, "Что-то пошло не так.", "Something went wrong."), keyboards.HomeInline(h.lang(chatID)))
 	}
 }
 
@@ -54,10 +54,10 @@ func (h *Handler) handleNoteFlow(chatID int64, text string) {
 	})
 	h.store.ClearFlow(chatID)
 	if err != nil {
-		h.sendText(chatID, "❌ Не удалось сохранить: "+err.Error())
+		h.sendText(chatID, h.t(chatID, "❌ Не удалось сохранить: ", "❌ Could not save: ")+err.Error())
 		return
 	}
-	h.sendText(chatID, "✅ Заметка сохранена задачей.")
+	h.sendText(chatID, h.t(chatID, "✅ Заметка сохранена задачей.", "✅ Note saved as a task."))
 }
 
 func (h *Handler) handleNewTaskFlow(chatID int64, text string) {
@@ -73,14 +73,14 @@ func (h *Handler) handleNewTaskFlow(chatID int64, text string) {
 			us.FlowStep = "list:confirm"
 			n := len(parse.Entries(text))
 			h.sendHTMLWithKeyboard(chatID,
-				fmt.Sprintf("Это одна задача или список из %d?\n\n<i>Одной задачей название будет целиком, со всеми строками.</i>", n),
-				keyboards.ListConfirm(n))
+				fmt.Sprintf(h.t(chatID, "Это одна задача или список из %d?\n\n<i>Одной задачей название будет целиком, со всеми строками.</i>", "One task, or a list of %d?\n\n<i>As one task the title keeps every line.</i>"), n),
+				keyboards.ListConfirm(h.lang(chatID), n))
 			return
 		}
 		h.showTaskCard(chatID, text)
 	default:
 		h.store.ClearFlow(chatID)
-		h.sendHTMLWithKeyboard(chatID, "Что-то пошло не так.", keyboards.HomeInline())
+		h.sendHTMLWithKeyboard(chatID, h.t(chatID, "Что-то пошло не так.", "Something went wrong."), keyboards.HomeInline(h.lang(chatID)))
 	}
 }
 
@@ -107,7 +107,7 @@ func (h *Handler) handleTaskCardSave(chatID int64, messageID int) {
 	title, _ := us.FlowData["title"].(string)
 	if title == "" {
 		h.store.ClearFlow(chatID)
-		h.sendHTMLWithKeyboard(chatID, "Не помню название.", keyboards.HomeInline())
+		h.sendHTMLWithKeyboard(chatID, h.t(chatID, "Не помню название.", "I've lost the title."), keyboards.HomeInline(h.lang(chatID)))
 		return
 	}
 
@@ -128,11 +128,11 @@ func (h *Handler) handleTaskCardSave(chatID int64, messageID int) {
 	task, err := h.api.CreateTask(us.AuthToken, req)
 	h.store.ClearFlow(chatID)
 	if err != nil {
-		h.editOrSend(chatID, messageID, "❌ Не удалось создать: "+err.Error(), keyboards.HomeInline())
+		h.editOrSend(chatID, messageID, h.t(chatID, "❌ Не удалось создать: ", "❌ Could not create: ")+err.Error(), keyboards.HomeInline(h.lang(chatID)))
 		return
 	}
 
 	h.editOrSend(chatID, messageID,
-		fmt.Sprintf("✅ <b>Задача создана</b>\n%s", format.Escape(task.Title)),
-		keyboards.HomeInline())
+		fmt.Sprintf(h.t(chatID, "✅ <b>Задача создана</b>\n%s", "✅ <b>Task created</b>\n%s"), format.Escape(task.Title)),
+		keyboards.HomeInline(h.lang(chatID)))
 }

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/zemdenalex/neuroboost-bot/internal/format"
+	"github.com/zemdenalex/neuroboost-bot/internal/i18n"
 	"github.com/zemdenalex/neuroboost-bot/internal/parse"
 )
 
@@ -64,18 +65,53 @@ func nextQuestion(st draftState) string {
 	}
 }
 
-var weekdayRu = [...]string{"воскресенье", "понедельник", "вторник", "среда", "четверг", "пятница", "суббота"}
-
-var freqRu = map[string]string{
-	"FREQ=DAILY":   "каждый день",
-	"FREQ=WEEKLY":  "каждую неделю",
-	"FREQ=MONTHLY": "каждый месяц",
-	"FREQ=YEARLY":  "каждый год",
+// weekdayName names the day on the card. Sunday first, because that is where
+// Go's time.Weekday starts — the ISO week begins on Monday everywhere else in
+// this product, and this array is indexed by the standard library, not by us.
+func weekdayName(lang i18n.Lang, w time.Weekday) string {
+	ru := [...]string{"воскресенье", "понедельник", "вторник", "среда", "четверг", "пятница", "суббота"}
+	en := [...]string{"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"}
+	return i18n.T(lang, ru[int(w)], en[int(w)])
 }
 
-var colourRu = map[string]string{
-	"blue": "синий", "violet": "фиолетовый", "green": "зелёный", "red": "красный",
-	"amber": "янтарный", "cyan": "голубой", "pink": "розовый", "slate": "серый",
+// freqName turns an RRULE into words. The RRULE itself is never translated —
+// it is what the server stores.
+func freqName(lang i18n.Lang, rrule string) string {
+	switch rrule {
+	case "FREQ=DAILY":
+		return i18n.T(lang, "каждый день", "every day")
+	case "FREQ=WEEKLY":
+		return i18n.T(lang, "каждую неделю", "every week")
+	case "FREQ=MONTHLY":
+		return i18n.T(lang, "каждый месяц", "every month")
+	case "FREQ=YEARLY":
+		return i18n.T(lang, "каждый год", "every year")
+	}
+	return rrule
+}
+
+// colourName turns a palette name into words. The palette name is what the web
+// paints from, so it is stored and never translated.
+func colourName(lang i18n.Lang, palette string) string {
+	switch palette {
+	case "blue":
+		return i18n.T(lang, "синий", "blue")
+	case "violet":
+		return i18n.T(lang, "фиолетовый", "violet")
+	case "green":
+		return i18n.T(lang, "зелёный", "green")
+	case "red":
+		return i18n.T(lang, "красный", "red")
+	case "amber":
+		return i18n.T(lang, "янтарный", "amber")
+	case "cyan":
+		return i18n.T(lang, "голубой", "cyan")
+	case "pink":
+		return i18n.T(lang, "розовый", "pink")
+	case "slate":
+		return i18n.T(lang, "серый", "slate")
+	}
+	return palette
 }
 
 // renderDraft writes the card.
@@ -87,7 +123,7 @@ var colourRu = map[string]string{
 // leaves out the date reads as "no date needed"; «⚠ дата не указана — спрошу»
 // reads as what it is. This product has already shipped one defect whose whole
 // shape was "absent looks the same as empty".
-func renderDraft(st draftState, now time.Time) string {
+func renderDraft(lang i18n.Lang, st draftState, now time.Time) string {
 	var b strings.Builder
 
 	// 🔴 Date, then time, then title. Denis, 15.09: «Плохо что сначала
@@ -100,23 +136,23 @@ func renderDraft(st draftState, now time.Time) string {
 	// know, because you just typed it.
 	if st.D.HasDay {
 		fmt.Fprintf(&b, "🗓 %s, %d %s%s\n",
-			weekdayRu[int(st.D.Day.Weekday())], st.D.Day.Day(), monthGenitive(st.D.Day.Month()),
-			checkMark(st.D.IsUncertain(parse.FieldDay)))
+			weekdayName(lang, st.D.Day.Weekday()), st.D.Day.Day(), monthGenitive(lang, st.D.Day.Month()),
+			checkMark(lang, st.D.IsUncertain(parse.FieldDay)))
 	} else {
-		b.WriteString("⚠ дата не указана — спрошу\n")
+		b.WriteString(i18n.T(lang, "⚠ дата не указана — спрошу\n", "⚠ no date — I will ask\n"))
 	}
 
 	switch {
 	case st.D.AllDay:
-		b.WriteString("🕐 весь день\n")
+		b.WriteString(i18n.T(lang, "🕐 весь день\n", "🕐 all day\n"))
 	case st.D.HasTime && st.D.HasEnd:
 		fmt.Fprintf(&b, "🕐 %s–%s%s\n", offsetHHMM(st.D.Start), offsetHHMM(st.D.End),
-			checkMark(st.D.IsUncertain(parse.FieldTime)))
+			checkMark(lang, st.D.IsUncertain(parse.FieldTime)))
 	case st.D.HasTime:
 		fmt.Fprintf(&b, "🕐 %s%s\n", offsetHHMM(st.D.Start),
-			checkMark(st.D.IsUncertain(parse.FieldTime)))
+			checkMark(lang, st.D.IsUncertain(parse.FieldTime)))
 	default:
-		b.WriteString("⚠ время не указано — спрошу\n")
+		b.WriteString(i18n.T(lang, "⚠ время не указано — спрошу\n", "⚠ no time — I will ask\n"))
 	}
 
 	icon := "📅"
@@ -125,27 +161,21 @@ func renderDraft(st draftState, now time.Time) string {
 	}
 	title := st.Title
 	if strings.TrimSpace(title) == "" {
-		title = "без названия"
+		title = i18n.T(lang, "без названия", "untitled")
 	}
 	fmt.Fprintf(&b, "%s <b>%s</b>\n", icon, format.Escape(title))
 
 	switch {
 	case st.D.Repeat != "":
-		name, ok := freqRu[st.D.Repeat]
-		if !ok {
-			name = st.D.Repeat
-		}
-		fmt.Fprintf(&b, "🔁 %s\n", format.Escape(name))
+		fmt.Fprintf(&b, "🔁 %s\n", format.Escape(freqName(lang, st.D.Repeat)))
 	case st.D.RepeatAsked:
-		b.WriteString("⚠ повтор — частота не указана, спрошу\n")
+		b.WriteString(i18n.T(lang,
+			"⚠ повтор — частота не указана, спрошу\n",
+			"⚠ repeats — no frequency given, I will ask\n"))
 	}
 
 	if st.D.Colour != "" {
-		name, ok := colourRu[st.D.Colour]
-		if !ok {
-			name = st.D.Colour
-		}
-		fmt.Fprintf(&b, "🎨 %s\n", format.Escape(name))
+		fmt.Fprintf(&b, "🎨 %s\n", format.Escape(colourName(lang, st.D.Colour)))
 	}
 	if st.CalendarName != "" {
 		fmt.Fprintf(&b, "📁 %s\n", format.Escape(st.CalendarName))
@@ -160,13 +190,13 @@ func renderDraft(st draftState, now time.Time) string {
 	// silent forever looks identical to one that will not.
 	if st.ReminderOffsets != nil {
 		if len(*st.ReminderOffsets) == 0 {
-			b.WriteString("🔕 не напоминать\n")
+			b.WriteString(i18n.T(lang, "🔕 не напоминать\n", "🔕 no reminder\n"))
 		} else {
 			parts := make([]string, 0, len(*st.ReminderOffsets))
 			for _, m := range *st.ReminderOffsets {
-				parts = append(parts, humanOffset(m))
+				parts = append(parts, humanOffset(lang, m))
 			}
-			fmt.Fprintf(&b, "🔔 за %s\n", strings.Join(parts, ", "))
+			fmt.Fprintf(&b, i18n.T(lang, "🔔 за %s\n", "🔔 %s before\n"), strings.Join(parts, ", "))
 		}
 	}
 
@@ -180,22 +210,22 @@ func renderDraft(st draftState, now time.Time) string {
 // «12:00 -12:50», which is what he asked for — but reading a sloppy format
 // silently turns a typo into a fact nobody checked. The mark is the difference
 // between a kindness and a guess.
-func checkMark(uncertain bool) string {
+func checkMark(lang i18n.Lang, uncertain bool) string {
 	if uncertain {
-		return " ⚠ проверь"
+		return i18n.T(lang, " ⚠ проверь", " ⚠ check this")
 	}
 	return ""
 }
 
 // humanOffset turns minutes-before into the words a person would use.
-func humanOffset(m int) string {
+func humanOffset(lang i18n.Lang, m int) string {
 	switch {
 	case m >= 1440 && m%1440 == 0:
-		return fmt.Sprintf("%d дн.", m/1440)
+		return fmt.Sprintf(i18n.T(lang, "%d дн.", "%dd"), m/1440)
 	case m >= 60 && m%60 == 0:
-		return fmt.Sprintf("%d ч.", m/60)
+		return fmt.Sprintf(i18n.T(lang, "%d ч.", "%dh"), m/60)
 	default:
-		return fmt.Sprintf("%d мин.", m)
+		return fmt.Sprintf(i18n.T(lang, "%d мин.", "%dm"), m)
 	}
 }
 

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/zemdenalex/neuroboost-bot/internal/format"
+	"github.com/zemdenalex/neuroboost-bot/internal/i18n"
 	"github.com/zemdenalex/neuroboost-bot/internal/keyboards"
 )
 
@@ -119,9 +120,9 @@ func (h *Handler) showMonth(chatID int64, messageID, year int, month time.Month)
 		dates[i] = c.Date.Format("2006-01-02")
 	}
 
-	text := fmt.Sprintf("🗓 <b>%s %d</b>\n\nВыбери день. 🔸 сегодня · • есть события",
-		monthNominative(month), year)
-	kb := keyboards.MonthGrid(year, int(month), monthNominative(month), labels, dates,
+	text := fmt.Sprintf(h.t(chatID, "🗓 <b>%s %d</b>\n\nВыбери день. 🔸 сегодня · • есть события", "🗓 <b>%s %d</b>\n\nPick a day. 🔸 today · • has events"),
+		monthNominative(h.lang(chatID), month), year)
+	kb := keyboards.MonthGrid(h.lang(chatID), year, int(month), monthNominative(h.lang(chatID), month), labels, dates,
 		time.Now().In(loc).Format("2006-01-02"))
 
 	h.editOrSend(chatID, messageID, text, kb)
@@ -177,7 +178,7 @@ func (h *Handler) handleCalendarDay(chatID int64, messageID int, date string) {
 	loc := h.location()
 	day, err := time.ParseInLocation("2006-01-02", date, loc)
 	if err != nil {
-		h.editOrSend(chatID, messageID, "Не понял дату.", keyboards.HomeInline())
+		h.editOrSend(chatID, messageID, h.t(chatID, "Не понял дату.", "Didn't get the date."), keyboards.HomeInline(h.lang(chatID)))
 		return
 	}
 
@@ -186,7 +187,7 @@ func (h *Handler) handleCalendarDay(chatID int64, messageID int, date string) {
 	if !okPrev || !okNext {
 		// Unparseable date from callback_data: say so rather than render a day
 		// that is not the one asked for.
-		h.editOrSend(chatID, messageID, "Не понял дату.", keyboards.HomeInline())
+		h.editOrSend(chatID, messageID, h.t(chatID, "Не понял дату.", "Didn't get the date."), keyboards.HomeInline(h.lang(chatID)))
 		return
 	}
 
@@ -200,13 +201,13 @@ func (h *Handler) handleCalendarDay(chatID int64, messageID int, date string) {
 	us := h.store.GetOrCreate(chatID)
 	events, err := h.api.GetEvents(us.AuthToken, from, to)
 	if err != nil {
-		h.editOrSend(chatID, messageID, "❌ Не удалось загрузить день: "+err.Error(), keyboards.HomeInline())
+		h.editOrSend(chatID, messageID, h.t(chatID, "❌ Не удалось загрузить день: ", "❌ Could not load the day: ")+err.Error(), keyboards.HomeInline(h.lang(chatID)))
 		return
 	}
 
-	text := fmt.Sprintf("📅 <b>%d %s %d</b>\n\n", day.Day(), monthGenitive(day.Month()), day.Year())
+	text := fmt.Sprintf("📅 <b>%d %s %d</b>\n\n", day.Day(), monthGenitive(h.lang(chatID), day.Month()), day.Year())
 	if len(events) == 0 {
-		text += "Пусто."
+		text += h.t(chatID, "Пусто.", "Nothing here.")
 	} else {
 		sort.Slice(events, func(i, j int) bool { return events[i].StartsAt < events[j].StartsAt })
 		for _, e := range events {
@@ -216,7 +217,7 @@ func (h *Handler) handleCalendarDay(chatID int64, messageID int, date string) {
 	}
 
 	h.editOrSend(chatID, messageID, text,
-		keyboards.DayActions(date, prev, next, day.Year(), int(day.Month())))
+		keyboards.DayActions(h.lang(chatID), date, prev, next, day.Year(), int(day.Month())))
 }
 
 // handleCalendarBack returns from a day to the month it was opened from.
@@ -240,10 +241,17 @@ func (h *Handler) handleCalendarBack(chatID int64, messageID int, pos string) {
 	h.showMonth(chatID, messageID, year, time.Month(month))
 }
 
-func monthNominative(m time.Month) string {
-	names := [...]string{
+// monthNominative names a month on its own, as a heading — «Январь», not
+// «января». The genitive form lives in events.go and answers a different
+// question («16 сентября»); one function cannot serve both without a flag.
+func monthNominative(lang i18n.Lang, m time.Month) string {
+	ru := [...]string{
 		"Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
 		"Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь",
 	}
-	return names[int(m)-1]
+	en := [...]string{
+		"January", "February", "March", "April", "May", "June",
+		"July", "August", "September", "October", "November", "December",
+	}
+	return i18n.T(lang, ru[int(m)-1], en[int(m)-1])
 }

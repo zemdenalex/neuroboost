@@ -1,6 +1,10 @@
 package keyboards
 
-import tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+import (
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+
+	"github.com/zemdenalex/neuroboost-bot/internal/i18n"
+)
 
 // Keyboards for ⚙️ Настройки → 🔤 Ключевые слова.
 //
@@ -12,11 +16,10 @@ import tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 
 // TriggerFieldPicker asks what a word stands for.
 //
-// The labels come from parse.TriggerFields, but this package cannot import
-// parse (parse would then import keyboards through nothing, but the dependency
-// still points the wrong way for a package of pure rendering), so the caller
-// passes them in — already paired with the stored names.
-func TriggerFieldPicker(labels, names []string) tgbotapi.InlineKeyboardMarkup {
+// The labels are passed in already translated: they come from
+// parse.TriggerFields, and this package of pure rendering must not depend on
+// the parser.
+func TriggerFieldPicker(lang i18n.Lang, labels, names []string) tgbotapi.InlineKeyboardMarkup {
 	var rows [][]tgbotapi.InlineKeyboardButton
 	for i := 0; i < len(labels); i += 2 {
 		row := []tgbotapi.InlineKeyboardButton{
@@ -28,51 +31,52 @@ func TriggerFieldPicker(labels, names []string) tgbotapi.InlineKeyboardMarkup {
 		rows = append(rows, row)
 	}
 	rows = append(rows, []tgbotapi.InlineKeyboardButton{
-		tgbotapi.NewInlineKeyboardButtonData("⬅️ Назад", "settings_keywords"),
+		tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "⬅️ Назад", "⬅️ Back"), "settings_keywords"),
 	})
 	return tgbotapi.NewInlineKeyboardMarkup(rows...)
 }
 
 // TriggerColourPicker offers the palette for a word that means a colour.
-func TriggerColourPicker() tgbotapi.InlineKeyboardMarkup {
+func TriggerColourPicker(lang i18n.Lang) tgbotapi.InlineKeyboardMarkup {
 	var rows [][]tgbotapi.InlineKeyboardButton
-	for i := 0; i < len(draftColours); i += 2 {
+	colours := draftColours(lang)
+	for i := 0; i < len(colours); i += 2 {
 		row := []tgbotapi.InlineKeyboardButton{
-			tgbotapi.NewInlineKeyboardButtonData(draftColours[i].Label, "kwv_col_"+draftColours[i].Name),
+			tgbotapi.NewInlineKeyboardButtonData(colours[i].Label, "kwv_col_"+colours[i].Name),
 		}
-		if i+1 < len(draftColours) {
-			row = append(row, tgbotapi.NewInlineKeyboardButtonData(draftColours[i+1].Label, "kwv_col_"+draftColours[i+1].Name))
+		if i+1 < len(colours) {
+			row = append(row, tgbotapi.NewInlineKeyboardButtonData(colours[i+1].Label, "kwv_col_"+colours[i+1].Name))
 		}
 		rows = append(rows, row)
 	}
 	rows = append(rows, []tgbotapi.InlineKeyboardButton{
-		tgbotapi.NewInlineKeyboardButtonData("⬅️ Назад", "settings_keywords"),
+		tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "⬅️ Назад", "⬅️ Back"), "settings_keywords"),
 	})
 	return tgbotapi.NewInlineKeyboardMarkup(rows...)
 }
 
 // TriggerFreqPicker offers the frequencies for a word that means a repeat.
-func TriggerFreqPicker() tgbotapi.InlineKeyboardMarkup {
+func TriggerFreqPicker(lang i18n.Lang) tgbotapi.InlineKeyboardMarkup {
 	return tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("Каждый день", "kwv_freq_DAILY"),
-			tgbotapi.NewInlineKeyboardButtonData("Каждую неделю", "kwv_freq_WEEKLY"),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "Каждый день", "Every day"), "kwv_freq_DAILY"),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "Каждую неделю", "Every week"), "kwv_freq_WEEKLY"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("Каждый месяц", "kwv_freq_MONTHLY"),
-			tgbotapi.NewInlineKeyboardButtonData("Каждый год", "kwv_freq_YEARLY"),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "Каждый месяц", "Every month"), "kwv_freq_MONTHLY"),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "Каждый год", "Every year"), "kwv_freq_YEARLY"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("⬅️ Назад", "settings_keywords"),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "⬅️ Назад", "⬅️ Back"), "settings_keywords"),
 		),
 	)
 }
 
 // TriggerCancel is what a text-input step shows.
-func TriggerCancel() tgbotapi.InlineKeyboardMarkup {
+func TriggerCancel(lang i18n.Lang) tgbotapi.InlineKeyboardMarkup {
 	return tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("⬅️ Назад", "settings_keywords"),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "⬅️ Назад", "⬅️ Back"), "settings_keywords"),
 		),
 	)
 }

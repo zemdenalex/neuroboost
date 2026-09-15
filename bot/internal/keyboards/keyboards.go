@@ -5,6 +5,8 @@ import (
 	"strconv"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+
+	"github.com/zemdenalex/neuroboost-bot/internal/i18n"
 )
 
 // TaskActions is the card for one existing task.
@@ -18,22 +20,25 @@ import (
 // UUID is the longest button ON THIS CARD, at 47; the screens these three
 // buttons open (TaskDue, TaskEstimate below) carry a longer "_set_" callback
 // of their own and are asserted the same way.
-func TaskActions(taskID string) tgbotapi.InlineKeyboardMarkup {
+//
+// ⚠ Translating the LABELS changes none of that arithmetic: the budget is on
+// callback_data, which is never translated.
+func TaskActions(lang i18n.Lang, taskID string) tgbotapi.InlineKeyboardMarkup {
 	return tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("⏰ Запланировать", "task_sched_"+taskID),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "⏰ Запланировать", "⏰ Schedule"), "task_sched_"+taskID),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("📅 Срок", "task_due_"+taskID),
-			tgbotapi.NewInlineKeyboardButtonData("⏱ Оценка", "task_est_"+taskID),
-			tgbotapi.NewInlineKeyboardButtonData("🏷 Теги", "task_tag_"+taskID),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "📅 Срок", "📅 Due"), "task_due_"+taskID),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "⏱ Оценка", "⏱ Estimate"), "task_est_"+taskID),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🏷 Теги", "🏷 Tags"), "task_tag_"+taskID),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("✅ Done", "task_done_"+taskID),
-			tgbotapi.NewInlineKeyboardButtonData("🗑 Delete", "task_delete_"+taskID),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "✅ Готово", "✅ Done"), "task_done_"+taskID),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🗑 Удалить", "🗑 Delete"), "task_delete_"+taskID),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("« Назад", "top_tasks"),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "« Назад", "« Back"), "top_tasks"),
 		),
 	)
 }
@@ -58,20 +63,20 @@ func TaskActions(taskID string) tgbotapi.InlineKeyboardMarkup {
 // prefix, one level more specific than the card's own "task_due_"/"task_est_"
 // — HandleCallback must check the "_set_" prefix first, same rule as every
 // other prefix switch in this bot.
-func TaskDue(taskID string) tgbotapi.InlineKeyboardMarkup {
+func TaskDue(lang i18n.Lang, taskID string) tgbotapi.InlineKeyboardMarkup {
 	return tgbotapi.NewInlineKeyboardMarkup(
-		dueRow("task_due_set_"+taskID+"_", ""),
+		dueRow(lang, "task_due_set_"+taskID+"_", ""),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("« Отмена", "task_action_"+taskID),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "« Отмена", "« Cancel"), "task_action_"+taskID),
 		),
 	)
 }
 
-func TaskEstimate(taskID string) tgbotapi.InlineKeyboardMarkup {
+func TaskEstimate(lang i18n.Lang, taskID string) tgbotapi.InlineKeyboardMarkup {
 	return tgbotapi.NewInlineKeyboardMarkup(
-		estimateRow("task_est_set_"+taskID+"_", ""),
+		estimateRow(lang, "task_est_set_"+taskID+"_", ""),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("« Отмена", "task_action_"+taskID),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "« Отмена", "« Cancel"), "task_action_"+taskID),
 		),
 	)
 }
@@ -91,42 +96,47 @@ func TaskEstimate(taskID string) tgbotapi.InlineKeyboardMarkup {
 // keyboards_test.go asserts the limit rather than trusting the arithmetic here.
 
 // TaskScheduleWhen asks which day and hour, in the four shapes people pick.
-func TaskScheduleWhen(taskID string) tgbotapi.InlineKeyboardMarkup {
+func TaskScheduleWhen(lang i18n.Lang, taskID string) tgbotapi.InlineKeyboardMarkup {
 	return tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("Сейчас", "task_when_"+taskID+"_now"),
-			tgbotapi.NewInlineKeyboardButtonData("Через час", "task_when_"+taskID+"_hour"),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "Сейчас", "Now"), "task_when_"+taskID+"_now"),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "Через час", "In an hour"), "task_when_"+taskID+"_hour"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("Сегодня вечером", "task_when_"+taskID+"_eve"),
-			tgbotapi.NewInlineKeyboardButtonData("Завтра утром", "task_when_"+taskID+"_tmr"),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "Сегодня вечером", "This evening"), "task_when_"+taskID+"_eve"),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "Завтра утром", "Tomorrow morning"), "task_when_"+taskID+"_tmr"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("« Отмена", "task_action_"+taskID),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "« Отмена", "« Cancel"), "task_action_"+taskID),
 		),
 	)
 }
 
 // TaskScheduleDuration asks how long, carrying the slot forward so the answer
 // needs nothing remembered.
-func TaskScheduleDuration(taskID, slot string) tgbotapi.InlineKeyboardMarkup {
+func TaskScheduleDuration(lang i18n.Lang, taskID, slot string) tgbotapi.InlineKeyboardMarkup {
 	at := func(minutes string) tgbotapi.InlineKeyboardButton {
-		label := map[string]string{"15": "⏱ 15м", "30": "⏰ 30м", "60": "⏰ 1ч", "120": "⏰ 2ч"}[minutes]
+		label := map[string]string{
+			"15":  i18n.T(lang, "⏱ 15м", "⏱ 15m"),
+			"30":  i18n.T(lang, "⏰ 30м", "⏰ 30m"),
+			"60":  i18n.T(lang, "⏰ 1ч", "⏰ 1h"),
+			"120": i18n.T(lang, "⏰ 2ч", "⏰ 2h"),
+		}[minutes]
 		return tgbotapi.NewInlineKeyboardButtonData(label, "task_plan_"+taskID+"_"+slot+"_"+minutes)
 	}
 	return tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(at("15"), at("30")),
 		tgbotapi.NewInlineKeyboardRow(at("60"), at("120")),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("« Назад", "task_sched_"+taskID),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "« Назад", "« Back"), "task_sched_"+taskID),
 		),
 	)
 }
 
-func BackToMenu() tgbotapi.InlineKeyboardMarkup {
+func BackToMenu(lang i18n.Lang) tgbotapi.InlineKeyboardMarkup {
 	return tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("« Menu", "main_menu"),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "« Меню", "« Menu"), "main_menu"),
 		),
 	)
 }
@@ -135,24 +145,27 @@ func BackToMenu() tgbotapi.InlineKeyboardMarkup {
 // — a real button back to the task list, not prose that names one which the
 // user may no longer have on screen (or, once, does not exist at all: this
 // replaced text naming the reply keyboard this branch deleted).
-func BackToTasks() tgbotapi.InlineKeyboardMarkup {
+func BackToTasks(lang i18n.Lang) tgbotapi.InlineKeyboardMarkup {
 	return tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("📋 Задачи", "top_tasks"),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "📋 Задачи", "📋 Tasks"), "top_tasks"),
 		),
 	)
 }
 
-func SettingsMenu() tgbotapi.InlineKeyboardMarkup {
+func SettingsMenu(lang i18n.Lang) tgbotapi.InlineKeyboardMarkup {
 	return tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("🕘 Рабочие часы", "settings_workhours"),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🕘 Рабочие часы", "🕘 Work hours"), "settings_workhours"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("🔤 Ключевые слова", "settings_keywords"),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🔤 Ключевые слова", "🔤 Keywords"), "settings_keywords"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("« Menu", "main_menu"),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🌐 Язык", "🌐 Language"), "settings_lang"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "« Меню", "« Menu"), "main_menu"),
 		),
 	)
 }
@@ -162,15 +175,15 @@ func SettingsMenu() tgbotapi.InlineKeyboardMarkup {
 // The hour list is a parameter rather than a constant here so the handler owns
 // what is offered and the keyboard owns only how it looks — and so a test can
 // hand it an absurd list and watch the row-packing hold.
-func WorkHoursStart(hours []int) tgbotapi.InlineKeyboardMarkup {
-	return hourKeyboard(hours, "wh_start_", "settings_menu")
+func WorkHoursStart(lang i18n.Lang, hours []int) tgbotapi.InlineKeyboardMarkup {
+	return hourKeyboard(lang, hours, "wh_start_", "settings_menu")
 }
 
-func WorkHoursEnd(hours []int) tgbotapi.InlineKeyboardMarkup {
-	return hourKeyboard(hours, "wh_end_", "settings_menu")
+func WorkHoursEnd(lang i18n.Lang, hours []int) tgbotapi.InlineKeyboardMarkup {
+	return hourKeyboard(lang, hours, "wh_end_", "settings_menu")
 }
 
-func hourKeyboard(hours []int, prefix, back string) tgbotapi.InlineKeyboardMarkup {
+func hourKeyboard(lang i18n.Lang, hours []int, prefix, back string) tgbotapi.InlineKeyboardMarkup {
 	var rows [][]tgbotapi.InlineKeyboardButton
 	var row []tgbotapi.InlineKeyboardButton
 	for _, h := range hours {
@@ -185,7 +198,7 @@ func hourKeyboard(hours []int, prefix, back string) tgbotapi.InlineKeyboardMarku
 		rows = append(rows, row)
 	}
 	rows = append(rows, tgbotapi.NewInlineKeyboardRow(
-		tgbotapi.NewInlineKeyboardButtonData("« Назад", back),
+		tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "« Назад", "« Back"), back),
 	))
 	return tgbotapi.NewInlineKeyboardMarkup(rows...)
 }
@@ -200,8 +213,21 @@ func hourKeyboard(hours []int, prefix, back string) tgbotapi.InlineKeyboardMarku
 // weekdayNoop is the header row. Telegram has no inert button, so the cells
 // carry "noop" — which the router must accept and ignore. A callback nothing
 // answers leaves the spinner turning on the user's screen.
-func MonthGrid(year, month int, monthName string, labels, dates []string, todayISO string) tgbotapi.InlineKeyboardMarkup {
+//
+// ⚠ monthName arrives already translated: the handler knows the language and
+// the month, and building the name here would mean a second calendar.
+func MonthGrid(lang i18n.Lang, year, month int, monthName string, labels, dates []string, todayISO string) tgbotapi.InlineKeyboardMarkup {
 	pos := strconv.Itoa(year) + "_" + strconv.Itoa(month)
+
+	weekdays := [7]string{
+		i18n.T(lang, "Пн", "Mo"), i18n.T(lang, "Вт", "Tu"), i18n.T(lang, "Ср", "We"),
+		i18n.T(lang, "Чт", "Th"), i18n.T(lang, "Пт", "Fr"), i18n.T(lang, "Сб", "Sa"),
+		i18n.T(lang, "Вс", "Su"),
+	}
+	header := make([]tgbotapi.InlineKeyboardButton, 0, 7)
+	for _, w := range weekdays {
+		header = append(header, tgbotapi.NewInlineKeyboardButtonData(w, "noop"))
+	}
 
 	rows := [][]tgbotapi.InlineKeyboardButton{
 		tgbotapi.NewInlineKeyboardRow(
@@ -209,15 +235,7 @@ func MonthGrid(year, month int, monthName string, labels, dates []string, todayI
 			tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("%s %d", monthName, year), "noop"),
 			tgbotapi.NewInlineKeyboardButtonData("➡", "cal_next_"+pos),
 		),
-		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("Пн", "noop"),
-			tgbotapi.NewInlineKeyboardButtonData("Вт", "noop"),
-			tgbotapi.NewInlineKeyboardButtonData("Ср", "noop"),
-			tgbotapi.NewInlineKeyboardButtonData("Чт", "noop"),
-			tgbotapi.NewInlineKeyboardButtonData("Пт", "noop"),
-			tgbotapi.NewInlineKeyboardButtonData("Сб", "noop"),
-			tgbotapi.NewInlineKeyboardButtonData("Вс", "noop"),
-		),
+		header,
 	}
 
 	for i := 0; i+7 <= len(labels) && i+7 <= len(dates); i += 7 {
@@ -229,8 +247,8 @@ func MonthGrid(year, month int, monthName string, labels, dates []string, todayI
 	}
 
 	rows = append(rows, tgbotapi.NewInlineKeyboardRow(
-		tgbotapi.NewInlineKeyboardButtonData("📅 Сегодня", "cal_day_"+todayISO),
-		tgbotapi.NewInlineKeyboardButtonData("🏠 Меню", "main_menu"),
+		tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "📅 Сегодня", "📅 Today"), "cal_day_"+todayISO),
+		tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🏠 Меню", "🏠 Menu"), "main_menu"),
 	))
 	return tgbotapi.NewInlineKeyboardMarkup(rows...)
 }
@@ -238,20 +256,21 @@ func MonthGrid(year, month int, monthName string, labels, dates []string, todayI
 // DayActions is the day screen. Paging first, because that is the regression
 // people feel: v0.2.1 let you walk day to day from here (handler calendar_day_,
 // index.mjs:750) and this bot made you go back to the grid every time.
-func DayActions(date, prev, next string, year, month int) tgbotapi.InlineKeyboardMarkup {
+func DayActions(lang i18n.Lang, date, prev, next string, year, month int) tgbotapi.InlineKeyboardMarkup {
 	return tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("⬅", "cal_day_"+prev),
-			tgbotapi.NewInlineKeyboardButtonData("Сегодня", "cal_today"),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "Сегодня", "Today"), "cal_today"),
 			tgbotapi.NewInlineKeyboardButtonData("➡", "cal_day_"+next),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("➕ Событие на этот день", "cal_new_"+date),
+			tgbotapi.NewInlineKeyboardButtonData(
+				i18n.T(lang, "➕ Событие на этот день", "➕ Event on this day"), "cal_new_"+date),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("« К месяцу",
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "« К месяцу", "« To month"),
 				"cal_back_"+strconv.Itoa(year)+"_"+strconv.Itoa(month)),
-			tgbotapi.NewInlineKeyboardButtonData("🏠 Меню", "main_menu"),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🏠 Меню", "🏠 Menu"), "main_menu"),
 		),
 	)
 }

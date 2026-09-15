@@ -1,6 +1,8 @@
 package notifier
 
 import (
+	"github.com/zemdenalex/neuroboost-bot/internal/i18n"
+
 	"strings"
 	"testing"
 )
@@ -184,7 +186,7 @@ func TestEveryButtonHasAReply(t *testing.T) {
 				if !ok {
 					t.Fatalf("%s: button data does not parse: %q", kind, *b.CallbackData)
 				}
-				if ActionReply(cb.Action) == "" {
+				if ActionReply(i18n.RU, cb.Action) == "" {
 					t.Errorf("%s: pressing %q says nothing back — a silent success reads as a failure",
 						kind, cb.Action)
 				}

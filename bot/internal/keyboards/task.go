@@ -6,6 +6,7 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 
 	"github.com/zemdenalex/neuroboost-bot/internal/format"
+	"github.com/zemdenalex/neuroboost-bot/internal/i18n"
 )
 
 // TaskCard is what a parsed line offers.
@@ -13,16 +14,17 @@ import (
 // 🔴 ✅ Создать is FIRST and always enabled. Denis, 18.08: "all of them
 // shouldn't be required to create the task". The wizard is an offer underneath
 // it, never a gate in front of it.
-func TaskCard() tgbotapi.InlineKeyboardMarkup {
+func TaskCard(lang i18n.Lang) tgbotapi.InlineKeyboardMarkup {
 	return tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("✅ Создать", "nt_save"),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "✅ Создать", "✅ Create"), "nt_save"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("📝 Подробнее (по шагам)", "nt_wizard"),
+			tgbotapi.NewInlineKeyboardButtonData(
+				i18n.T(lang, "📝 Подробнее (по шагам)", "📝 More (step by step)"), "nt_wizard"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("❌ Отмена", "main_menu"),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "❌ Отмена", "❌ Cancel"), "main_menu"),
 		),
 	)
 }
@@ -36,9 +38,9 @@ func TaskCard() tgbotapi.InlineKeyboardMarkup {
 // step whose value is already known shows it as the current value and lets
 // you replace it." The matching button gets a "✓ " prefix; every button stays
 // live, because replacing the known value is exactly what a tap here does.
-func WizardPriority(current *int) tgbotapi.InlineKeyboardMarkup {
+func WizardPriority(lang i18n.Lang, current *int) tgbotapi.InlineKeyboardMarkup {
 	label := func(p int) string {
-		text := format.PriorityEmoji(p) + " " + format.PriorityLabel(p)
+		text := format.PriorityEmoji(p) + " " + format.PriorityLabel(lang, p)
 		if current != nil && *current == p {
 			return "✓ " + text
 		}
@@ -55,7 +57,7 @@ func WizardPriority(current *int) tgbotapi.InlineKeyboardMarkup {
 			tgbotapi.NewInlineKeyboardButtonData(label(5), "nt_p_5"),
 			tgbotapi.NewInlineKeyboardButtonData(label(0), "nt_p_0"),
 		),
-		wizardEscapes(),
+		wizardEscapes(lang),
 	)
 }
 
@@ -63,22 +65,22 @@ func WizardPriority(current *int) tgbotapi.InlineKeyboardMarkup {
 // nothing is known, or when it is known but does not land on one of these
 // three quick choices (the step's own text carries the exact date in that
 // case — see newtask.go: wizardStepText).
-func WizardDue(current string) tgbotapi.InlineKeyboardMarkup {
+func WizardDue(lang i18n.Lang, current string) tgbotapi.InlineKeyboardMarkup {
 	return tgbotapi.NewInlineKeyboardMarkup(
-		dueRow("nt_d_", current),
-		wizardEscapes(),
+		dueRow(lang, "nt_d_", current),
+		wizardEscapes(lang),
 	)
 }
 
 // current is the known estimate in minutes, or nil when nothing is known.
-func WizardEstimate(current *int) tgbotapi.InlineKeyboardMarkup {
+func WizardEstimate(lang i18n.Lang, current *int) tgbotapi.InlineKeyboardMarkup {
 	marked := ""
 	if current != nil {
 		marked = strconv.Itoa(*current)
 	}
 	return tgbotapi.NewInlineKeyboardMarkup(
-		estimateRow("nt_e_", marked),
-		wizardEscapes(),
+		estimateRow(lang, "nt_e_", marked),
+		wizardEscapes(lang),
 	)
 }
 
@@ -89,7 +91,7 @@ func WizardEstimate(current *int) tgbotapi.InlineKeyboardMarkup {
 // them is edited. Only the callback prefix varies between those callers, which
 // pass marked = "" — they are editing, not resuming a wizard, so there is no
 // "current step value" to highlight.
-func dueRow(prefix, marked string) []tgbotapi.InlineKeyboardButton {
+func dueRow(lang i18n.Lang, prefix, marked string) []tgbotapi.InlineKeyboardButton {
 	label := func(text, val string) string {
 		if marked != "" && marked == val {
 			return "✓ " + text
@@ -97,13 +99,13 @@ func dueRow(prefix, marked string) []tgbotapi.InlineKeyboardButton {
 		return text
 	}
 	return tgbotapi.NewInlineKeyboardRow(
-		tgbotapi.NewInlineKeyboardButtonData(label("Сегодня", "0"), prefix+"0"),
-		tgbotapi.NewInlineKeyboardButtonData(label("Завтра", "1"), prefix+"1"),
-		tgbotapi.NewInlineKeyboardButtonData(label("Через неделю", "7"), prefix+"7"),
+		tgbotapi.NewInlineKeyboardButtonData(label(i18n.T(lang, "Сегодня", "Today"), "0"), prefix+"0"),
+		tgbotapi.NewInlineKeyboardButtonData(label(i18n.T(lang, "Завтра", "Tomorrow"), "1"), prefix+"1"),
+		tgbotapi.NewInlineKeyboardButtonData(label(i18n.T(lang, "Через неделю", "In a week"), "7"), prefix+"7"),
 	)
 }
 
-func estimateRow(prefix, marked string) []tgbotapi.InlineKeyboardButton {
+func estimateRow(lang i18n.Lang, prefix, marked string) []tgbotapi.InlineKeyboardButton {
 	label := func(text, val string) string {
 		if marked != "" && marked == val {
 			return "✓ " + text
@@ -111,18 +113,18 @@ func estimateRow(prefix, marked string) []tgbotapi.InlineKeyboardButton {
 		return text
 	}
 	return tgbotapi.NewInlineKeyboardRow(
-		tgbotapi.NewInlineKeyboardButtonData(label("15м", "15"), prefix+"15"),
-		tgbotapi.NewInlineKeyboardButtonData(label("30м", "30"), prefix+"30"),
-		tgbotapi.NewInlineKeyboardButtonData(label("1ч", "60"), prefix+"60"),
-		tgbotapi.NewInlineKeyboardButtonData(label("2ч", "120"), prefix+"120"),
+		tgbotapi.NewInlineKeyboardButtonData(label(i18n.T(lang, "15м", "15m"), "15"), prefix+"15"),
+		tgbotapi.NewInlineKeyboardButtonData(label(i18n.T(lang, "30м", "30m"), "30"), prefix+"30"),
+		tgbotapi.NewInlineKeyboardButtonData(label(i18n.T(lang, "1ч", "1h"), "60"), prefix+"60"),
+		tgbotapi.NewInlineKeyboardButtonData(label(i18n.T(lang, "2ч", "2h"), "120"), prefix+"120"),
 	)
 }
 
 // wizardEscapes is the row that makes "nothing is required" true. It is one
 // function so a new step cannot be added without it.
-func wizardEscapes() []tgbotapi.InlineKeyboardButton {
+func wizardEscapes(lang i18n.Lang) []tgbotapi.InlineKeyboardButton {
 	return tgbotapi.NewInlineKeyboardRow(
-		tgbotapi.NewInlineKeyboardButtonData("⏭ Пропустить", "nt_skip"),
-		tgbotapi.NewInlineKeyboardButtonData("✅ Создать сейчас", "nt_save"),
+		tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "⏭ Пропустить", "⏭ Skip"), "nt_skip"),
+		tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "✅ Создать сейчас", "✅ Create now"), "nt_save"),
 	)
 }

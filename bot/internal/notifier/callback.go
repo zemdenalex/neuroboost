@@ -1,6 +1,8 @@
 package notifier
 
 import (
+	"github.com/zemdenalex/neuroboost-bot/internal/i18n"
+
 	"strconv"
 	"strings"
 
@@ -82,6 +84,19 @@ func ParseCallback(data string) (Callback, bool) {
 //
 // A digest gets none: it is a summary of several things, so "done" and "later"
 // have no single subject to act on.
+// 🔴 Keyboard is the one user-facing thing in this bot that stays Russian-only,
+// and the reason is structural rather than an oversight.
+//
+// It is built by the NOTIFIER, which runs on the service token and knows the
+// recipient only as a Telegram id — no session, no settings, and deliberately
+// no access to the store (see state.go: the store is safe precisely because the
+// notifier never receives it). Reading a language here would mean an API call
+// per notification, on the path that must stay cheap because it runs every
+// minute for every user.
+//
+// The honest fix is for the API to send the language alongside the pending
+// notification. Until then this is a known gap, named here rather than left to
+// be discovered.
 func Keyboard(sourceKind, reminderID string) *tgbotapi.InlineKeyboardMarkup {
 	var row []tgbotapi.InlineKeyboardButton
 
@@ -175,18 +190,18 @@ func ParseMinutes(raw string) int {
 // A pure function, so ActionsAllHaveReplies can hold it against the buttons the
 // keyboards actually emit. A switch buried in a handler that needs a live bot
 // could not be tested, which is why the gap shipped.
-func ActionReply(action string) string {
+func ActionReply(lang i18n.Lang, action string) string {
 	switch action {
 	case ActionSnooze:
-		return "⏰ Напомню через 10 минут."
+		return i18n.T(lang, "⏰ Напомню через 10 минут.", "⏰ I will remind you in 10 minutes.")
 	case ActionDone:
-		return "✅ Готово."
+		return i18n.T(lang, "✅ Готово.", "✅ Done.")
 	case ActionAck:
 		return "👌"
 	case ActionAccept:
-		return "✅ Календарь добавлен — он появится в списке."
+		return i18n.T(lang, "✅ Календарь добавлен — он появится в списке.", "✅ Calendar added — it will show up in the list.")
 	case ActionDecline:
-		return "Приглашение отклонено."
+		return i18n.T(lang, "Приглашение отклонено.", "Invitation declined.")
 	}
 	return ""
 }

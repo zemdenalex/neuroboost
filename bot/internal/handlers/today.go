@@ -26,7 +26,7 @@ func (h *Handler) handleToday(chatID int64, messageID int) {
 	events, err := h.api.GetEvents(us.AuthToken, from, to)
 	if err != nil {
 		h.editOrSend(chatID, messageID,
-			"❌ Не удалось загрузить события: "+err.Error(), keyboards.BackToMenu())
+			h.t(chatID, "❌ Не удалось загрузить события: ", "❌ Could not load events: ")+err.Error(), keyboards.BackToMenu(h.lang(chatID)))
 		return
 	}
 
@@ -63,13 +63,13 @@ func (h *Handler) handleToday(chatID int64, messageID int) {
 		}
 	}
 
-	h.editOrSend(chatID, messageID, text, keyboards.BackToMenu())
+	h.editOrSend(chatID, messageID, text, keyboards.BackToMenu(h.lang(chatID)))
 }
 
 func (h *Handler) handleStats(chatID int64, messageID int) {
 	h.editOrSend(chatID, messageID,
 		"📊 <b>Stats</b>\n\nComing soon! Track your productivity trends here.",
-		keyboards.BackToMenu())
+		keyboards.BackToMenu(h.lang(chatID)))
 }
 
 // dayBounds is the half-open UTC range covering one local calendar day.

@@ -1,6 +1,8 @@
 package keyboards
 
 import (
+	"github.com/zemdenalex/neuroboost-bot/internal/i18n"
+
 	"strings"
 	"testing"
 
@@ -8,7 +10,7 @@ import (
 )
 
 func TestTaskCardSaveIsFirstAndAlwaysEnabled(t *testing.T) {
-	kb := TaskCard()
+	kb := TaskCard(i18n.RU)
 	if len(kb.InlineKeyboard) == 0 || len(kb.InlineKeyboard[0]) == 0 {
 		t.Fatal("TaskCard has no rows")
 	}
@@ -19,7 +21,7 @@ func TestTaskCardSaveIsFirstAndAlwaysEnabled(t *testing.T) {
 }
 
 func TestTaskCardHasCancel(t *testing.T) {
-	kb := TaskCard()
+	kb := TaskCard(i18n.RU)
 	found := false
 	for _, row := range kb.InlineKeyboard {
 		for _, btn := range row {
@@ -37,9 +39,9 @@ func TestTaskCardHasCancel(t *testing.T) {
 // "⏭ Пропустить" for this field, "✅ Создать сейчас" for all remaining ones.
 func TestEveryWizardKeyboardOffersBothEscapes(t *testing.T) {
 	kbs := map[string]tgbotapi.InlineKeyboardMarkup{
-		"priority": WizardPriority(nil),
-		"due":      WizardDue(""),
-		"estimate": WizardEstimate(nil),
+		"priority": WizardPriority(i18n.RU, nil),
+		"due":      WizardDue(i18n.RU, ""),
+		"estimate": WizardEstimate(i18n.RU, nil),
 	}
 	for name, kb := range kbs {
 		var skip, save bool
@@ -70,24 +72,34 @@ func TestEveryWizardKeyboardOffersBothEscapes(t *testing.T) {
 // cue. Denis' priority keyboard (TaskPriority, now removed) always carried it;
 // the wizard's must too.
 func TestWizardPriorityLabelsCarryWords(t *testing.T) {
-	kb := WizardPriority(nil)
-	for _, want := range []string{"Emergency", "Urgent", "Normal", "Low", "If Possible", "Buffer"} {
-		found := false
-		for _, row := range kb.InlineKeyboard {
-			for _, b := range row {
-				if strings.Contains(b.Text, want) {
-					found = true
+	// ⚠ The words are now per-language. The rule this test guards did not
+	// change — a bare digit still says nothing about which end is urgent — so
+	// it is checked in BOTH languages rather than in whichever one the labels
+	// happened to be written in.
+	cases := map[i18n.Lang][]string{
+		i18n.RU: {"Срочно", "Важно", "Обычное", "Неспешное", "Если получится", "Буфер"},
+		i18n.EN: {"Emergency", "Urgent", "Normal", "Low", "If possible", "Buffer"},
+	}
+	for lang, words := range cases {
+		kb := WizardPriority(lang, nil)
+		for _, want := range words {
+			found := false
+			for _, row := range kb.InlineKeyboard {
+				for _, b := range row {
+					if strings.Contains(b.Text, want) {
+						found = true
+					}
 				}
 			}
-		}
-		if !found {
-			t.Errorf("no wizard priority button names %q — a bare digit does not say which end is urgent", want)
+			if !found {
+				t.Errorf("[%s] no wizard priority button names %q — a bare digit does not say which end is urgent", lang, want)
+			}
 		}
 	}
 }
 
 func TestWizardPriorityLayoutIsTwoRowsOfThree(t *testing.T) {
-	kb := WizardPriority(nil)
+	kb := WizardPriority(i18n.RU, nil)
 	if len(kb.InlineKeyboard) < 2 || len(kb.InlineKeyboard[0]) != 3 || len(kb.InlineKeyboard[1]) != 3 {
 		t.Fatalf("wizard priority layout changed shape: %d rows, first two have %d/%d buttons",
 			len(kb.InlineKeyboard), len(kb.InlineKeyboard[0]), len(kb.InlineKeyboard[1]))
@@ -99,7 +111,7 @@ func TestWizardPriorityLayoutIsTwoRowsOfThree(t *testing.T) {
 // mark the button matching the known value.
 func TestWizardKeyboardsMarkTheKnownValue(t *testing.T) {
 	p := 2
-	kb := WizardPriority(&p)
+	kb := WizardPriority(i18n.RU, &p)
 	marked := 0
 	for _, row := range kb.InlineKeyboard {
 		for _, b := range row {
@@ -112,10 +124,10 @@ func TestWizardKeyboardsMarkTheKnownValue(t *testing.T) {
 		}
 	}
 	if marked != 1 {
-		t.Errorf("WizardPriority(2) marked %d buttons, want exactly 1", marked)
+		t.Errorf("WizardPriority(i18n.RU, 2) marked %d buttons, want exactly 1", marked)
 	}
 
-	due := WizardDue("1")
+	due := WizardDue(i18n.RU, "1")
 	marked = 0
 	for _, row := range due.InlineKeyboard {
 		for _, b := range row {
@@ -128,11 +140,11 @@ func TestWizardKeyboardsMarkTheKnownValue(t *testing.T) {
 		}
 	}
 	if marked != 1 {
-		t.Errorf("WizardDue(\"1\") marked %d buttons, want exactly 1", marked)
+		t.Errorf("WizardDue(i18n.RU, \"1\") marked %d buttons, want exactly 1", marked)
 	}
 
 	m := 30
-	est := WizardEstimate(&m)
+	est := WizardEstimate(i18n.RU, &m)
 	marked = 0
 	for _, row := range est.InlineKeyboard {
 		for _, b := range row {
@@ -145,15 +157,15 @@ func TestWizardKeyboardsMarkTheKnownValue(t *testing.T) {
 		}
 	}
 	if marked != 1 {
-		t.Errorf("WizardEstimate(30) marked %d buttons, want exactly 1", marked)
+		t.Errorf("WizardEstimate(i18n.RU, 30) marked %d buttons, want exactly 1", marked)
 	}
 }
 
 func TestWizardKeyboardsMarkNothingWhenNothingIsKnown(t *testing.T) {
 	for name, kb := range map[string]tgbotapi.InlineKeyboardMarkup{
-		"priority": WizardPriority(nil),
-		"due":      WizardDue(""),
-		"estimate": WizardEstimate(nil),
+		"priority": WizardPriority(i18n.RU, nil),
+		"due":      WizardDue(i18n.RU, ""),
+		"estimate": WizardEstimate(i18n.RU, nil),
 	} {
 		for _, row := range kb.InlineKeyboard {
 			for _, b := range row {
