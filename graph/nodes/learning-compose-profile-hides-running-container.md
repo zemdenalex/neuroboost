@@ -6,12 +6,13 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-08-10
 tags: [neuroboost, docker, deploy, telegram]
-weight: { importance: 4, connectivity: 4, access: 1, last_accessed: 2026-08-10 }
+weight: { importance: 5, connectivity: 5, access: 2, last_accessed: 2026-09-16 }
 sources:
   - command: "docker compose -f docker-compose.dev.yml config --services  # → db api web (bot скрыт)"
   - command: "docker ps --filter name=neuroboost-dev-bot  # → Up 9 minutes ПОСЛЕ деплоя с профилем"
 stakes: medium
 links:
+  - relates-to: learning-compose-build-can-start-a-silent-container
   - relates-to: entity-bot-runs-on-nl2
   - relates-to: learning-merge-to-main-is-the-release
 ---

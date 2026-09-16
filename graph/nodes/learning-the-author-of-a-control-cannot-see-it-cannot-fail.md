@@ -6,7 +6,7 @@ status: verified
 verified_by: session-f4ad9d3d
 verified_at: 2026-08-23
 tags: [neuroboost, bot, testing, method]
-weight: { importance: 5, connectivity: 7, access: 2, last_accessed: 2026-09-11 }
+weight: { importance: 5, connectivity: 7, access: 2, last_accessed: 2026-09-16 }
 sources:
   - file: "bot/internal/parse/task_test.go"
   - file: "docs/resheniya-bot-navigation-2026-08-19.md"

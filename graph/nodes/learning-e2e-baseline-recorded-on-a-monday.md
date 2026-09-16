@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-08-11
 tags: [neuroboost, e2e, calendar, mobile, testing]
-weight: { importance: 5, connectivity: 9, access: 6, last_accessed: 2026-09-11 }
+weight: { importance: 5, connectivity: 11, access: 7, last_accessed: 2026-09-16 }
 sources:
   - command: "corepack pnpm exec playwright test recurring-scope --project=mobile  # 2 failed, воспроизводимо"
   - command: "web/e2e-results/.../test-failed-1.png  # заголовок «Monday, August 10» при сегодня 11.08"
@@ -17,6 +17,7 @@ links:
   - relates-to: learning-two-neighbouring-paths-one-broken-reading-finds-neither
   - relates-to: learning-stale-comment-outlived-its-constraint
   - relates-to: entity-e2e-playwright-harness
+  - relates-to: learning-e2e-fixture-time-in-runner-zone-fails-nightly
   - relates-to: learning-stale-comment-outlived-its-constraint
 ---
 11.08 две мобильные спеки `recurring-scope` упали **без единой правки, их касающейся**. Первая

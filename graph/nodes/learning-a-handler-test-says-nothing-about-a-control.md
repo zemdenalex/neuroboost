@@ -6,12 +6,13 @@ status: verified
 verified_by: session-01VRP8SC
 verified_at: 2026-09-11
 tags: [neuroboost, testing, frontend, method]
-weight: { importance: 5, connectivity: 4, access: 1, last_accessed: 2026-09-11 }
+weight: { importance: 5, connectivity: 11, access: 2, last_accessed: 2026-09-16 }
 sources:
   - file: "docs/defekty-sreza-1-2026-09-10.md"
   - file: "web/src/components/TaskSidebar/taskControls.test.ts"
 stakes: high
 links:
+  - relates-to: learning-a-scan-for-one-language-is-blind-to-the-other
   - relates-to: learning-a-test-that-cannot-fail-guards-nothing
   - relates-to: learning-a-button-is-not-a-feature
   - relates-to: learning-the-author-of-a-control-cannot-see-it-cannot-fail

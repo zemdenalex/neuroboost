@@ -945,3 +945,58 @@ C6 (приглашение из настроек) — функция, вне о�
 **Suggested skills for next session:** получить список от Дениса, затем
 `superpowers:brainstorming` по патчу бота (объём известен только из его слов).
 Выкатка бота — **руками** на nl-2 из тега, `ls` его `src/` перед словом «готово».
+
+## [2026-09-16] recall | decision-bot-patch-v04111-before-mobile, decision-v0412-focus-is-the-event-window, learning-e2e-baseline-recorded-on-a-monday, learning-a-handler-test-says-nothing-about-a-control, learning-green-tests-are-not-a-deployed-bot, learning-compose-profile-hides-running-container, entity-e2e-playwright-harness
+
+---
+
+## [2026-09-16] Сессия: бот на естественном языке → прод v0.4.11.1, полная проверка на очереди
+
+**Прод теперь `v0.4.11.1`** (`e496053`), схема **16/clean**, веб и api-go не менялись.
+Прод-бот `@NeuroBoost_assistant_bot` выкачен руками на nl-2 из тега, healthy.
+Бэкап `/root/backups/nb-prod-pre-v0.4.11.1-2026-09-16.dump` проверен восстановлением.
+`develop` = `main` + docs, всё запушено.
+
+### Что сделано
+
+- **Пять пунктов списка Дениса + четыре замечания после прохода.** Токенизатор вместо
+  подстрок (дефект «завтрак» → «к»), дни недели ru/en, нестрогие форматы времени с меткой
+  «⚠ проверь», слова-триггеры, карточка подтверждения, списки событий и задач, отмена
+  создания кнопкой меню. Правила — [[decision-bot-nl-creation-rules-15-09]].
+- **i18n бота**, 346 строк, пары `T(lang, ru, en)`. 🔴 Скан переводов видел только
+  кириллицу — [[learning-a-scan-for-one-language-is-blind-to-the-other]].
+- **Редактирование событий** в боте. 🔴 Повторы не открывались — синтетический id списка
+  не понимает одиночный GET: [[entity-recurring-instance-ids-are-list-only]].
+- **e2e падал каждую ночь** — время фикстуры по часам раннера:
+  [[learning-e2e-fixture-time-in-runner-zone-fails-nightly]].
+- ⚠ Сборка бота молча стартовала пустой контейнер —
+  [[learning-compose-build-can-start-a-silent-container]].
+- Заметки релиза `docs/relizy/v0.4.11.1.md`, разбор прохода
+  `docs/razbor-prohoda-bota-2026-09-16.md`.
+
+### Открыто — на Денисе
+
+- 🔴 **Полная проверка всех областей** — `docs/proverka-polnaya-2026-09-16.md`, 103 пункта.
+  Часть 1 перечисляет всё уже известное, чтобы он об этом не писал. Блок Y — свободные
+  вопросы для фокуса v0.4.12, включая **нужен ли миниапп** (его не существует).
+- Спека v0.4.12 (окно событий) всё ещё ждёт ревью — `docs/superpowers/specs/2026-09-11-calendar-event-window-design.md`.
+
+### Открыто — бот, v0.4.11.2 (его замечания 16.09)
+
+Свой период повтора (🟢 API уже умеет INTERVAL/COUNT/UNTIL) · события на несколько дней ·
+напоминания галочками и своим временем · карточка подтверждения у списка задач.
+Плюс: язык кнопок под уведомлением (нужен api-go), `GET /api/events/{id}` для instance-id.
+
+### Открыто — «больше CI/CD и тестов» (его слова 16.09), отдельный разговор
+
+### Читать первыми
+
+`decision-bot-nl-creation-rules-15-09` · `entity-recurring-instance-ids-are-list-only` ·
+`learning-a-scan-for-one-language-is-blind-to-the-other` · `decision-v0412-focus-is-the-event-window`
+
+**Числа не переносить.** На 16.09: прод `v0.4.11.1`, схема 16, бот 232 теста.
+
+**Suggested skills for next session:** разобрать заполненную полную проверку —
+`superpowers:brainstorming` по фокусу v0.4.12 с её выводами; затем
+`superpowers:writing-plans` по спеке окна. Для v0.4.11.2 — продолжение спеки
+`2026-09-15-bot-natural-language-creation-design.md`.
