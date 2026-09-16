@@ -4,9 +4,14 @@ Calendar-first productivity app for neurodivergent users. Go backend + React/Typ
 PostgreSQL + Telegram bot. "The calendar is truth; tasks exist to support scheduling and reflection."
 
 **Live:** https://neuroboost.website · **Staging:** https://dev.neuroboost.website
-**Released:** `v0.4.10` (18.08.2026 — P1 + P2 + P3 срезы 1–4, 16 миграций) · **Unreleased:**
+**Released:** `v0.4.11.1` (16.09.2026 — бот на естественном языке, 16 миграций) · **Unreleased:**
 всё, что после, — на `develop`
 
+> 🟢 **Последний релиз — `v0.4.11.1` (16.09.2026), целиком ботовый.** Разбор строки
+> естественным языком, карточка подтверждения, списки, язык интерфейса ru/en,
+> редактирование событий. Заметки — `docs/relizy/v0.4.11.1.md`, приёмка —
+> `ref/feedback/bot-proverka-otvet-denisa-2026-09-16.md`.
+>
 > ⚠️ **Прочитать до всего остального:**
 > - **Работа идёт на `develop`**, далеко впереди `main`. Свежий клон приземляется на `main` и не
 >   видит ни тестов, ни последних миграций. **`git checkout develop` до чтения кода.**
