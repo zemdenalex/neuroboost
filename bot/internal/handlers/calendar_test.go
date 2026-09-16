@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"github.com/zemdenalex/neuroboost-bot/internal/i18n"
+
 	"strings"
 	"testing"
 	"time"
@@ -146,7 +148,7 @@ func TestMonthGridButtonsAreRoutedAndFit(t *testing.T) {
 		labels[i] = "88"
 		dates[i] = "2026-08-01"
 	}
-	kb := keyboards.MonthGrid(2026, 8, "Август", labels, dates, "2026-08-18")
+	kb := keyboards.MonthGrid(i18n.RU, 2026, 8, "Август", labels, dates, "2026-08-18")
 
 	routed := []string{"cal_prev_", "cal_next_", "cal_day_", "cal_back_", "noop", "main_menu"}
 	var seen int
@@ -185,7 +187,7 @@ func TestMonthGridRowsAreSevenWide(t *testing.T) {
 		labels[i] = "1"
 		dates[i] = "2026-08-01"
 	}
-	kb := keyboards.MonthGrid(2026, 8, "Август", labels, dates, "2026-08-18")
+	kb := keyboards.MonthGrid(i18n.RU, 2026, 8, "Август", labels, dates, "2026-08-18")
 
 	// Rows 2..7 are the weeks. Telegram renders whatever it is given, so a row
 	// of six and a row of eight would simply look wrong and never error.
@@ -202,7 +204,7 @@ func TestMonthGridRowsAreSevenWide(t *testing.T) {
 func TestMonthGridIgnoresAShortLabelSlice(t *testing.T) {
 	// Defensive: a truncated slice must not panic mid-render and leave the user
 	// with no keyboard at all. Fewer weeks is a visible bug; a crash is a dead bot.
-	kb := keyboards.MonthGrid(2026, 8, "Август", []string{"1", "2"}, []string{"a", "b"}, "2026-08-18")
+	kb := keyboards.MonthGrid(i18n.RU, 2026, 8, "Август", []string{"1", "2"}, []string{"a", "b"}, "2026-08-18")
 	if len(kb.InlineKeyboard) != 3 {
 		t.Errorf("got %d rows, want 3 (nav + weekdays + menu)", len(kb.InlineKeyboard))
 	}

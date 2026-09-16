@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-08-13
 tags: [neuroboost, bot, deploy, infra]
-weight: { importance: 5, connectivity: 7, access: 7, last_accessed: 2026-08-23 }
+weight: { importance: 5, connectivity: 10, access: 9, last_accessed: 2026-09-15 }
 sources:
   - command: "ssh 62.76.228.106 docker ps → api/db/web, контейнера бота НЕТ"
   - command: "ssh 185.214.10.107 docker ps → neuroboost-dev-bot, neuroboost-prod-bot (Up 2 days)"
@@ -17,6 +17,8 @@ links:
   - relates-to: learning-merge-to-main-is-the-release
   - relates-to: workitem-bot-authtoken-never-set
   - relates-to: learning-sent-measures-delivery-not-usefulness
+  - relates-to: decision-v0412-focus-is-the-event-window
+  - relates-to: decision-bot-patch-v04111-before-mobile
 ---
 🔴 **`deploy-dev` в CI обновляет api, web и db — и не знает про бота.** Бот работает на
 **другой машине** (`185.214.10.107`), его исходники лежат в `/opt/neuroboost-bot/src` простой

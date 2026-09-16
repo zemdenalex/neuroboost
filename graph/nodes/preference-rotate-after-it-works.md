@@ -6,13 +6,13 @@ status: verified
 source: "Денис, дословно, 2026-08-10 03:32"
 verified_at: 2026-08-10
 tags: [neuroboost, security, credentials, working-style]
-weight: { importance: 4, connectivity: 2, access: 1, last_accessed: 2026-08-10 }
+weight: { importance: 5, connectivity: 6, access: 2, last_accessed: 2026-09-11 }
 stakes: medium
 links:
   - relates-to: entity-server-topology
   - relates-to: workitem-p2-notifications-last-mile
+  - relates-to: decision-bot-token-rotation-dropped
 ---
-
 Когда секрет засветился по ходу работы (токен в логах, ключ в транскрипте) — **работу не
 останавливать ради ротации**. Копить список «к ротации» и отдавать его в финальном отчёте.
 

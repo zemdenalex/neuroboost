@@ -9,7 +9,7 @@ import (
 func (h *Handler) handleStart(chatID int64) {
 	msg := tgbotapi.NewMessage(chatID, "🧠 <b>NeuroBoost</b>")
 	msg.ParseMode = "HTML"
-	msg.ReplyMarkup = keyboards.MainMenu()
+	msg.ReplyMarkup = keyboards.MainMenu(h.lang(chatID))
 	h.send(chatID, msg)
 	h.handleMenu(chatID, 0)
 }

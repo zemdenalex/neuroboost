@@ -6,7 +6,7 @@ status: verified
 verified_by: session-f4ad9d3d
 verified_at: 2026-08-23
 tags: [neuroboost, bot, navigation, method]
-weight: { importance: 5, connectivity: 4, access: 1, last_accessed: 2026-08-23 }
+weight: { importance: 5, connectivity: 5, access: 2, last_accessed: 2026-09-11 }
 sources:
   - file: "docs/defekty-prohod-vdvoem-2026-08-23.md"
   - file: "bot/internal/keyboards/menu.go"

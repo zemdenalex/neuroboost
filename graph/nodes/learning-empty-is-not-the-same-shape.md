@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-08-18
 tags: [neuroboost, migrations, evidence, incident, postgres]
-weight: { importance: 5, connectivity: 5, access: 5, last_accessed: 2026-08-18 }
+weight: { importance: 5, connectivity: 5, access: 5, last_accessed: 2026-09-11 }
 sources:
   - commit: "6178dce — миграция 000016 + internal/reminders/schema_shape_test.go"
   - file: "docs/release-readiness-2026-08-18.md §3.5 — где я написал вывод, который не следовал"

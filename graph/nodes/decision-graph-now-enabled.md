@@ -2,19 +2,16 @@
 id: decision-graph-now-enabled
 title: "Architecture: NeuroBoost now uses `graph/` for memory management (reverses prior deliberate choice)"
 type: decision
-status: proposed
-proposed_by: consolidator
+status: verified
 proposed_at: 2026-08-10
 tags: [neuroboost, architecture, memory-management, project-meta]
-weight: { importance: 4, connectivity: 3, access: 1, last_accessed: 2026-08-10 }
+weight: { importance: 5, connectivity: 2, access: 1, last_accessed: 2026-09-11 }
 sources:
   - file: ".remember/night-loop-2026-08-10.md lines 12–36"
   - file: "CLAUDE.md §Memory — **new** (was: 'This project has **no `graph/`**, deliberately')"
-stakes: high
 links:
   - related-to: memory-split-claude-graph-remember
 ---
-
 **Summary:** `CLAUDE.md` is being rewritten to reflect that NeuroBoost now maintains a `graph/` directory (same as other ventures: V001, V004). Prior guidance stated deliberately no graph.
 
 ⚠ **Правка 2026-08-10:** исходная формулировка узла гласила «this reversal was approved by Denis

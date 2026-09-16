@@ -2,14 +2,13 @@
 id: workitem-bot-what-denis-called-bad
 title: "Претензии Дениса к боту 19.08 — что из них про невыкаченный код, а что настоящее"
 type: work-item
-status: open
+status: verified
 verified_by: session-04e1a014
 verified_at: 2026-08-19
 tags: [neuroboost, bot, ux, denis]
-weight: { importance: 5, connectivity: 3, access: 2, last_accessed: 2026-08-23 }
+weight: { importance: 5, connectivity: 3, access: 2, last_accessed: 2026-09-11 }
 sources:
   - file: "docs/proverka-bota-2026-08-19.md"
-stakes: high
 links:
   - relates-to: learning-green-tests-are-not-a-deployed-bot
   - relates-to: decision-brainstorm-the-bot-before-building-more

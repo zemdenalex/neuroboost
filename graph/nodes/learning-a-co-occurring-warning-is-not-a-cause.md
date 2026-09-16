@@ -6,7 +6,7 @@ status: verified
 verified_by: session-f4ad9d3d
 verified_at: 2026-08-23
 tags: [neuroboost, web, calendar, diagnosis, method]
-weight: { importance: 5, connectivity: 3, access: 1, last_accessed: 2026-08-23 }
+weight: { importance: 5, connectivity: 8, access: 2, last_accessed: 2026-09-11 }
 sources:
   - file: "web/src/components/Calendar/WeekGrid/WeekGrid.tsx"
   - file: "docs/defekty-prohod-vdvoem-2026-08-23.md"
@@ -15,6 +15,7 @@ links:
   - relates-to: learning-explain-a-red-test-with-numbers
   - relates-to: learning-drag-flicker-comment-lied
   - relates-to: learning-a-test-that-cannot-fail-guards-nothing
+  - relates-to: learning-a-warning-counted-is-not-a-warning-read
 ---
 Денис сообщил: на телефоне, планшете и в узком окне на компьютере **события исчезают при
 прокрутке вверх-вниз**, и приложил консоль, где десятки раз повторялось `Unable to

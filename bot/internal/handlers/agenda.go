@@ -7,6 +7,7 @@ import (
 
 	"github.com/zemdenalex/neuroboost-bot/internal/api"
 	"github.com/zemdenalex/neuroboost-bot/internal/format"
+	"github.com/zemdenalex/neuroboost-bot/internal/i18n"
 	"github.com/zemdenalex/neuroboost-bot/internal/keyboards"
 )
 
@@ -19,9 +20,11 @@ const agendaHorizon = 14 * 24 * time.Hour
 
 // agendaText renders the upcoming list. Pure, so the day labels and the
 // ordering are testable without a bot or an API.
-func agendaText(events []api.Event, now time.Time, tz string) string {
+func agendaText(lang i18n.Lang, events []api.Event, now time.Time, tz string) string {
 	if len(events) == 0 {
-		return "📅 <b>Ближайшие события</b>\n─────────────\nНичего не запланировано на две недели вперёд."
+		return i18n.T(lang,
+			"📅 <b>Ближайшие события</b>\n─────────────\nНичего не запланировано на две недели вперёд.",
+			"📅 <b>Upcoming</b>\n─────────────\nNothing scheduled for the next two weeks.")
 	}
 
 	sorted := make([]api.Event, len(events))
@@ -35,7 +38,7 @@ func agendaText(events []api.Event, now time.Time, tz string) string {
 	today := now.In(loc).Format("2006-01-02")
 	tomorrow := now.In(loc).AddDate(0, 0, 1).Format("2006-01-02")
 
-	text := "📅 <b>Ближайшие события</b>\n─────────────\n"
+	text := i18n.T(lang, "📅 <b>Ближайшие события</b>\n─────────────\n", "📅 <b>Upcoming</b>\n─────────────\n")
 	lastDay := ""
 	for _, e := range sorted {
 		start, err := time.Parse(time.RFC3339, e.StartsAt)
@@ -49,9 +52,9 @@ func agendaText(events []api.Event, now time.Time, tz string) string {
 		if day != lastDay {
 			switch day {
 			case today:
-				text += "\n<b>Сегодня</b>\n"
+				text += i18n.T(lang, "\n<b>Сегодня</b>\n", "\n<b>Today</b>\n")
 			case tomorrow:
-				text += "\n<b>Завтра</b>\n"
+				text += i18n.T(lang, "\n<b>Завтра</b>\n", "\n<b>Tomorrow</b>\n")
 			default:
 				text += fmt.Sprintf("\n<b>%s</b>\n", start.In(loc).Format("02.01, Mon"))
 			}
@@ -73,8 +76,8 @@ func (h *Handler) handleAgenda(chatID int64, messageID int) {
 	events, err := h.api.GetEvents(us.AuthToken, from, to)
 	if err != nil {
 		h.editOrSend(chatID, messageID,
-			"⚠️ Не дозвонился до сервера. Попробуй через минуту.", keyboards.HomeInline())
+			h.t(chatID, "⚠️ Не дозвонился до сервера. Попробуй через минуту.", "⚠️ Could not reach the server. Try again in a minute."), keyboards.HomeInline(h.lang(chatID)))
 		return
 	}
-	h.editOrSend(chatID, messageID, agendaText(events, now, h.cfg.Timezone), keyboards.AgendaActions())
+	h.editOrSend(chatID, messageID, agendaText(h.lang(chatID), events, now, h.cfg.Timezone), keyboards.AgendaActions(h.lang(chatID)))
 }

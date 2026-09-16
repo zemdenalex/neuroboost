@@ -6,7 +6,7 @@ status: verified
 verified_by: session-f4ad9d3d
 verified_at: 2026-08-23
 tags: [neuroboost, bot, testing, method]
-weight: { importance: 5, connectivity: 4, access: 1, last_accessed: 2026-08-23 }
+weight: { importance: 5, connectivity: 7, access: 2, last_accessed: 2026-09-11 }
 sources:
   - file: "bot/internal/parse/task_test.go"
   - file: "docs/resheniya-bot-navigation-2026-08-19.md"
@@ -15,6 +15,7 @@ links:
   - relates-to: learning-a-test-that-cannot-fail-guards-nothing
   - relates-to: learning-fixture-data-can-disarm-a-control
   - relates-to: learning-a-control-nobody-runs-hides-a-control-that-cannot-work
+  - relates-to: learning-a-handler-test-says-nothing-about-a-control
 ---
 Я требую от каждого теста доказательства, что он умеет краснеть, и сам пишу саботаж, которым
 это доказывается. Для парсера строки задачи я предписал: заменить границу в шаблоне приоритета

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/zemdenalex/neuroboost-bot/internal/i18n"
 )
 
 func PriorityEmoji(p int) string {
@@ -29,20 +31,25 @@ func PriorityEmoji(p int) string {
 // Emergency, 5 is If Possible, 0 is the separate Buffer bucket — so a bare
 // digit tells the reader nothing about which end is urgent. The word is the
 // only cue.
-func PriorityLabel(p int) string {
+//
+// ⚠ These were English-only until 16.09, in a bot that spoke Russian
+// everywhere else — a leftover from the first version nobody flagged because
+// «Urgent» is legible to a Russian reader. Legible is not the same as
+// translated.
+func PriorityLabel(lang i18n.Lang, p int) string {
 	switch p {
 	case 1:
-		return "Emergency"
+		return i18n.T(lang, "Срочно", "Emergency")
 	case 2:
-		return "Urgent"
+		return i18n.T(lang, "Важно", "Urgent")
 	case 3:
-		return "Normal"
+		return i18n.T(lang, "Обычное", "Normal")
 	case 4:
-		return "Low"
+		return i18n.T(lang, "Неспешное", "Low")
 	case 5:
-		return "If Possible"
+		return i18n.T(lang, "Если получится", "If possible")
 	case 0:
-		return "Buffer"
+		return i18n.T(lang, "Буфер", "Buffer")
 	default:
 		return ""
 	}

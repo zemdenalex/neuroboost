@@ -6,7 +6,7 @@ status: verified
 verified_by: session-f4ad9d3d
 verified_at: 2026-08-23
 tags: [neuroboost, release, denis]
-weight: { importance: 5, connectivity: 3, access: 1, last_accessed: 2026-08-23 }
+weight: { importance: 5, connectivity: 6, access: 2, last_accessed: 2026-09-11 }
 sources:
   - file: "docs/superpowers/specs/2026-08-23-post-walkthrough-fixes-and-release-design.md"
 stakes: high
@@ -14,6 +14,7 @@ links:
   - relates-to: entity-prod-runs-a-build-no-branch-points-at
   - relates-to: preference-rotate-after-it-works
   - relates-to: learning-merge-to-main-is-the-release
+  - relates-to: learning-a-stale-local-ref-answers-confidently
 ---
 После прохода вдвоём Денис выбрал, как выкатываться, и выбрал не самое быстрое.
 

@@ -134,9 +134,9 @@ func TestParseTaskPriorityRequiresStandaloneMarker(t *testing.T) {
 	// boundary, "!1" inside "!12" would match, orphan the "2" by cutting the
 	// marker out, and silently mark the task Emergency.
 	cases := []string{
-		"позвонить !12",     // a longer number: !1 must not be read out of !12
-		"тест!3",             // "!" glued to a word with no separating space
-		"срочно!5 звонок",    // same, marker in the middle of the line
+		"позвонить !12",   // a longer number: !1 must not be read out of !12
+		"тест!3",          // "!" glued to a word with no separating space
+		"срочно!5 звонок", // same, marker in the middle of the line
 	}
 	for _, in := range cases {
 		r := ParseTask(in, now())

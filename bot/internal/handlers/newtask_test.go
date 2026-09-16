@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"github.com/zemdenalex/neuroboost-bot/internal/i18n"
+
 	"encoding/json"
 	"strings"
 	"testing"
@@ -12,7 +14,7 @@ import (
 
 func TestTaskCardShowsOnlyWhatWasParsed(t *testing.T) {
 	r := parse.ParseTask("позвонить в банк", time.Date(2026, 8, 18, 10, 0, 0, 0, time.UTC))
-	got := taskCardText(r, "UTC")
+	got := taskCardText(i18n.RU, r, "UTC")
 	if !strings.Contains(got, "позвонить в банк") {
 		t.Errorf("the title is missing:\n%s", got)
 	}
@@ -23,7 +25,7 @@ func TestTaskCardShowsOnlyWhatWasParsed(t *testing.T) {
 
 func TestTaskCardShowsEverythingThatWasParsed(t *testing.T) {
 	r := parse.ParseTask("позвонить в банк завтра 30м !1", time.Date(2026, 8, 18, 10, 0, 0, 0, time.UTC))
-	got := taskCardText(r, "UTC")
+	got := taskCardText(i18n.RU, r, "UTC")
 	for _, want := range []string{"📅", "⏱", "30"} {
 		if !strings.Contains(got, want) {
 			t.Errorf("card is missing %q:\n%s", want, got)
@@ -33,7 +35,7 @@ func TestTaskCardShowsEverythingThatWasParsed(t *testing.T) {
 
 func TestTaskCardEscapesTheTitle(t *testing.T) {
 	r := parse.ParseTask("R&D <срочно>", time.Date(2026, 8, 18, 10, 0, 0, 0, time.UTC))
-	got := taskCardText(r, "UTC")
+	got := taskCardText(i18n.RU, r, "UTC")
 	if strings.Contains(got, "<срочно>") {
 		t.Errorf("an unescaped title reached an HTML message:\n%s", got)
 	}
@@ -69,26 +71,26 @@ func TestWizardStepTextShowsTheKnownValue(t *testing.T) {
 	loc := time.UTC
 
 	flowData := map[string]any{"priority": 1}
-	got := wizardStepText("priority", flowData, loc)
-	if !strings.Contains(got, "Emergency") {
+	got := wizardStepText(i18n.RU, "priority", flowData, loc)
+	if !strings.Contains(got, "Срочно") {
 		t.Errorf("priority step text does not show the known value:\n%s", got)
 	}
 
 	due := time.Date(2026, 8, 25, 0, 0, 0, 0, time.UTC).Format(time.RFC3339)
 	flowData = map[string]any{"due": due}
-	got = wizardStepText("due", flowData, loc)
+	got = wizardStepText(i18n.RU, "due", flowData, loc)
 	if !strings.Contains(got, "25.08") {
 		t.Errorf("due step text does not show the known date:\n%s", got)
 	}
 
 	flowData = map[string]any{"minutes": 45}
-	got = wizardStepText("estimate", flowData, loc)
+	got = wizardStepText(i18n.RU, "estimate", flowData, loc)
 	if !strings.Contains(got, "45") {
 		t.Errorf("estimate step text does not show the known minutes:\n%s", got)
 	}
 
 	// Nothing known — the old, unconditional prompt.
-	got = wizardStepText("priority", map[string]any{}, loc)
+	got = wizardStepText(i18n.RU, "priority", map[string]any{}, loc)
 	if strings.Contains(got, "Сейчас") {
 		t.Errorf("priority step text claims a current value with nothing known:\n%s", got)
 	}
@@ -96,7 +98,7 @@ func TestWizardStepTextShowsTheKnownValue(t *testing.T) {
 
 func TestWizardKeyboardForMarksTheKnownValue(t *testing.T) {
 	loc := time.UTC
-	kb := wizardKeyboardFor("priority", map[string]any{"priority": 3}, loc)
+	kb := wizardKeyboardFor(i18n.RU, "priority", map[string]any{"priority": 3}, loc)
 	found := false
 	for _, row := range kb.InlineKeyboard {
 		for _, b := range row {
@@ -106,7 +108,7 @@ func TestWizardKeyboardForMarksTheKnownValue(t *testing.T) {
 		}
 	}
 	if !found {
-		t.Error("wizardKeyboardFor(priority) with priority=3 known did not mark nt_p_3")
+		t.Error("wizardKeyboardFor(i18n.RU, priority) with priority=3 known did not mark nt_p_3")
 	}
 }
 

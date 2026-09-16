@@ -831,3 +831,117 @@ C6 (приглашение из настроек) — функция, вне о�
 **Suggested skills for next session:** `superpowers:writing-plans` по спеке выше (срез 1),
 затем `superpowers:subagent-driven-development`. Для C3 и тач-драга — сперва
 `superpowers:systematic-debugging`, воспроизвести на staging до планирования починки.
+
+## [2026-09-11] recall | entity-prod-runs-a-build-no-branch-points-at, decision-safety-wave-before-any-release, learning-merge-to-main-is-the-release, learning-a-test-that-cannot-fail-guards-nothing, learning-a-co-occurring-warning-is-not-a-cause, learning-a-rule-satisfied-literally-can-keep-the-defect, learning-the-author-of-a-control-cannot-see-it-cannot-fail, entity-bot-deploys-by-hand-not-by-ci, learning-green-tests-are-not-a-deployed-bot, learning-explain-a-red-test-with-numbers, entity-e2e-playwright-harness, learning-a-button-is-not-a-feature, preference-rotate-after-it-works, entity-server-topology, learning-a-duplicated-type-breaks-when-one-copy-is-extended
+
+---
+
+## [2026-09-11] Сессия: пересчёт после паузы, разбор среза 1, C3, релиз v0.4.11, спека на v0.4.12
+
+**Прод теперь `v0.4.11`** (`f4ce145`), схема **16/clean**, веб через CI, бот выкачен руками
+из тега. Дерево чистое, незапушенного нет.
+
+### 🔴 Главное: центральное утверждение прошлой сессии было неверным
+
+`entity-prod-runs-a-build-no-branch-points-at` помечен **disproven**. Прод стоял ровно на
+`origin/main`; «main от 19 июля», «341 коммит», «8 миграций», «тег-сирота» — всё выросло
+из **локального `main`, отставшего на 301 коммит**. `git rev-list --count main..develop`
+считает по локальной ветке и отвечает уверенно. Разбор —
+[[learning-a-stale-local-ref-answers-confidently]].
+
+🔴 **Считать от `origin/...`, и проверять сам хост:** `cd /opt/neuroboost && git log -1`.
+
+### Что сделано
+
+- **Разбор прохода среза 1** — `docs/defekty-sreza-1-2026-09-10.md`, 11 пунктов до `file:line`.
+- **C3 диагностирован в браузере** (агент на fable) — `docs/diagnoz-c3-2026-09-10.md`.
+  Stale closure: `handleSave` не держал `calendarId` в deps → поле вырезалось из тела PATCH.
+  **Два моих чтения кода дали два неверных ответа**; браузер дал верный за один прогон.
+- **Четыре починки** (`ab5f315`): C3 · карандаш в строке задачи · «+ Задача» в шапке ·
+  `effectAllowed` → `copyMove`. Все приняты Денисом 11.09.
+- **`calendar-move.spec.ts` показан красным на настоящем staging**: без починки 2 failed,
+  с ней 50 passed.
+- **Релиз v0.4.11**: дамп снят и **проверен восстановлением**
+  (`/root/backups/nb-prod-pre-v0.4.11-2026-09-11.dump`, 19 таблиц / 6 юзеров / 23 события),
+  `main` влит в `develop` (мерж был НЕ ff), теги `v0.4.10` и `v0.4.11` запушены.
+- **Бот выкачен руками** на nl-2 из тега. 🔴 Сразу после веб-релиза в
+  `/opt/neuroboost-bot-prod/src/` ещё лежала сборка от 18.08 — половина релиза не состоялась
+  бы молча. Проверять `ls` на сервере, а не CI.
+
+### Открыто
+
+- 🔴 **Спека v0.4.12 ждёт ревью Дениса** —
+  `docs/superpowers/specs/2026-09-11-calendar-event-window-design.md`. Он сказал «прочту
+  потом». **В код не превращать до его слова.** Решения записаны в
+  [[decision-v0412-focus-is-the-event-window]].
+- 🟡 Три замечания Дениса 11.09, не вошедшие в фокус: отметка «общая» у задачи (цвет,
+  ответственный) · связь задачи и созданного из неё события · редактор задачи модалкой
+  поверх календаря вместо ухода на страницу задач.
+- 🟡 Вопрос не решён: делать ли `--max-warnings 0` в CI. Линт **вызывается** (`ci.yml:117`),
+  но warning не роняет сборку — именно так C3 прожил недели
+  ([[learning-a-warning-counted-is-not-a-warning-read]]). Сейчас 3 warning'а.
+- 🟡 Делать ли pipeline для выкатки бота: ключ от nl-2 пришлось бы класть в секреты GitHub,
+  а рядом боевой exit-узел Nivium.
+- ⚪ `entity-prod-runs-a-build-no-branch-points-at` в статусе `disproven` — LINT считает его
+  «ждущим подтверждения». Оставлен намеренно: показывает, как звучит вывод из протухшего ref'а.
+
+### Читать первыми в следующей сессии
+
+`decision-v0412-focus-is-the-event-window` · `learning-a-stale-local-ref-answers-confidently` ·
+`learning-a-warning-counted-is-not-a-warning-read` ·
+`learning-a-handler-test-says-nothing-about-a-control` · `decision-bot-token-rotation-dropped`
+
+**Числа не переносить, и считать от `origin`.** На 11.09: прод `v0.4.11`, схема 16,
+`develop` = `origin/main` + свежие docs-коммиты, миграций 16.
+
+**Suggested skills for next session:** дождаться ревью спеки, затем
+`superpowers:writing-plans` по ней и `superpowers:subagent-driven-development`.
+Для трёх замечаний про задачи — `superpowers:brainstorming` отдельной спекой.
+
+## [2026-09-15] recall | learning-a-stale-local-ref-answers-confidently, decision-v0412-focus-is-the-event-window, entity-bot-deploys-by-hand-not-by-ci, learning-green-tests-are-not-a-deployed-bot, learning-merge-to-main-is-the-release, entity-server-topology, decision-bot-token-rotation-dropped
+
+---
+
+## [2026-09-15] Сессия: сверка состояния и смена порядка работ
+
+Короткая сессия. Кода не трогали, дерево чистое, незапушенного нет.
+
+### Сверено (от `origin` и от самого хоста, а не по памяти)
+
+Прод держит **v0.4.11** четвёртые сутки: хост на `f4ce145`, схема **16/clean**, три
+контейнера и прод-бот `Up 4 days (healthy)`, теги `v0.4.10` и `v0.4.11` на remote.
+`develop` впереди на **6** коммитов — только `docs/` и `graph/`, кода ноль.
+
+🟢 [[learning-a-stale-local-ref-answers-confidently]] сработал сразу: считал от
+`origin/main` и проверил `cd /opt/neuroboost && git log -1`, а не локальные ветки.
+
+### 🔴 Порядок работ изменён
+
+Денис: *«включим это в 0.4.11.1, а потом уже перейдем к 12 где улучшим мобилку»*.
+Перед окном событий встаёт **патч по боту** — [[decision-bot-patch-v04111-before-mobile]].
+Спека v0.4.12 остаётся верной, но ждёт своей очереди.
+
+### Открыто
+
+- 🔴 **Ждём от Дениса список замечаний по боту.** Он сказал, что напишет, и не прислал.
+  Без списка объёма патча нет; придумывать за него нельзя — прошлый раз половина ценного
+  была про **отсутствующее**, а не про сломанное.
+- 🔴 **Спека v0.4.12 так и не прочитана** —
+  `docs/superpowers/specs/2026-09-11-calendar-event-window-design.md`, статус «черновик на
+  ревью». В код до его слова не идём.
+- ⚠ **Прод руками он не проходил** — приёмка 11.09 была по staging. Не считать сделанным.
+- 🟡 Три замечания 11.09 без спеки: отметка «общая» у задачи · связь задачи и события ·
+  редактор задачи модалкой поверх календаря.
+- 🟡 Не решено: `--max-warnings 0` в CI (сейчас 3 warning'а) и pipeline для выкатки бота.
+
+### Читать первыми в следующей сессии
+
+`decision-bot-patch-v04111-before-mobile` · `decision-v0412-focus-is-the-event-window` ·
+`entity-bot-deploys-by-hand-not-by-ci` · `learning-green-tests-are-not-a-deployed-bot`
+
+**Числа не переносить, считать от `origin`.** На 15.09: прод `v0.4.11`, схема 16,
+`develop` = `origin/main` + 6 docs/graph-коммитов, миграций 16.
+
+**Suggested skills for next session:** получить список от Дениса, затем
+`superpowers:brainstorming` по патчу бота (объём известен только из его слов).
+Выкатка бота — **руками** на nl-2 из тега, `ls` его `src/` перед словом «готово».

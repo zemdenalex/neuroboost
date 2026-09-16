@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-08-19
 tags: [neuroboost, bot, planning, denis]
-weight: { importance: 5, connectivity: 5, access: 2, last_accessed: 2026-08-23 }
+weight: { importance: 5, connectivity: 7, access: 2, last_accessed: 2026-09-15 }
 sources:
   - file: "graph/log.md 2026-08-19"
 stakes: high
@@ -14,6 +14,7 @@ links:
   - relates-to: workitem-bot-what-denis-called-bad
   - relates-to: learning-green-tests-are-not-a-deployed-bot
   - relates-to: decision-restore-what-the-rewrite-dropped
+  - relates-to: decision-bot-patch-v04111-before-mobile
 ---
 Его слова, дословно: *«let's focus on planning what the bot should look like and implementing
 it, improving the code and making more functions, so planning and brainstorming then

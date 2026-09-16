@@ -1,6 +1,8 @@
 package keyboards
 
 import (
+	"github.com/zemdenalex/neuroboost-bot/internal/i18n"
+
 	"strings"
 	"testing"
 )
@@ -15,7 +17,7 @@ var wantEntrances = []string{
 }
 
 func TestMainMenuHasExactlySixEntrances(t *testing.T) {
-	kb := MainMenu()
+	kb := MainMenu(i18n.RU)
 	var got []string
 	for _, row := range kb.Keyboard {
 		for _, b := range row {
@@ -37,7 +39,7 @@ func TestMainMenuCarriesNoActions(t *testing.T) {
 	// never actions. "New Task", "Note" and "New Event" used to sit here, which
 	// is why every inline screen ended up pointing back at it in prose.
 	banned := []string{"Note", "Заметк", "New Task", "New Event", "Stats", "Статист", "Planning", "Планир"}
-	kb := MainMenu()
+	kb := MainMenu(i18n.RU)
 	for _, row := range kb.Keyboard {
 		for _, b := range row {
 			for _, bad := range banned {
@@ -50,7 +52,7 @@ func TestMainMenuCarriesNoActions(t *testing.T) {
 }
 
 func TestHomeInlineCallbacksFitTelegramsBudget(t *testing.T) {
-	for _, row := range HomeInline().InlineKeyboard {
+	for _, row := range HomeInline(i18n.RU).InlineKeyboard {
 		for _, b := range row {
 			if b.CallbackData == nil {
 				continue

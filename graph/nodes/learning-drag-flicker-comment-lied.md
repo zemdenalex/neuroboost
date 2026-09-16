@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-08-11
 tags: [neuroboost, calendar, drag, ux]
-weight: { importance: 4, connectivity: 5, access: 1, last_accessed: 2026-08-23 }
+weight: { importance: 5, connectivity: 5, access: 1, last_accessed: 2026-09-11 }
 sources:
   - command: "corepack pnpm exec playwright test drag-commit-repaint --project=desktop  # до правки delta=0px (fail), после — delta=44px (pass)"
   - file: "web/src/pages/Calendar/Calendar.tsx:47-55 (loadEvents)"

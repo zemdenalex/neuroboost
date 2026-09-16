@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-08-15
 tags: [neuroboost, typescript, api, duplication]
-weight: { importance: 4, connectivity: 4, access: 1, last_accessed: 2026-08-15 }
+weight: { importance: 4, connectivity: 3, access: 2, last_accessed: 2026-09-11 }
 sources:
   - file: "web/src/api/index.ts + web/src/components/Calendar/EventEditor/editor.types.ts — два CreateEventBody"
   - file: "web/src/types/index.ts + web/src/components/Calendar/WeekGrid/weekgrid.types.ts — два NbEvent"

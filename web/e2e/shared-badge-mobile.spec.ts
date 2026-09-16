@@ -7,6 +7,7 @@ import {
   type Page,
 } from '@playwright/test'
 import { applySession } from './fixtures/auth'
+import { localMidnightUtc } from './fixtures/localTime'
 
 /**
  * The 👥 badge and the author's name, measured inside the block that holds
@@ -82,11 +83,25 @@ async function register(label: string, name: string): Promise<Account> {
   }
 }
 
-/** Today at a given local hour and minute. */
-function todayAt(hour: number, minutes = 0): Date {
-  const d = new Date()
-  d.setHours(hour, minutes, 0, 0)
-  return d
+/**
+ * Today at a given hour, in the ACCOUNT's timezone — not the runner's.
+ *
+ * 🔴 This used to be `new Date(); d.setHours(hour)`, which is the runner's
+ * local time, and the runner is UTC. The grid lays out LOCAL days, so between
+ * 21:00 and 24:00 UTC — after midnight in Moscow — "today at 10:00 UTC" is
+ * YESTERDAY for the account, and at 375px the mobile grid shows one day. The
+ * event was created, rendered nowhere, and the spec failed on the positive
+ * control it carries for exactly this reason.
+ *
+ * It is not flaky: it failed every run inside that three-hour window and passed
+ * outside it. The green run at 18:13 UTC and the two red ones at 21:33 and
+ * 21:37 are the same code.
+ *
+ * `localMidnightUtc` is what the drag specs already use, for the same reason,
+ * written down in fixtures/localTime.ts.
+ */
+function localAt(timeZone: string, hour: number, minutes = 0): Date {
+  return new Date(localMidnightUtc(timeZone, 0) + (hour * 60 + minutes) * 60_000)
 }
 
 /**
@@ -194,9 +209,15 @@ test.describe('shared-event badge at 375px', () => {
       })
       expect(accepted.status(), await accepted.text()).toBe(204)
 
+      // The account's own zone, read from the API rather than assumed: the
+      // browser session below is the OWNER's, so the grid draws the owner's
+      // local day.
+      const me = (await (await owner.api.get('/api/auth/me')).json()).data
+      const timeZone: string = me.timezone || 'Europe/Moscow'
+
       const events: Array<[string, Date, number]> = [
-        [SHORT_EVENT, todayAt(10), 30],
-        [LONG_EVENT, todayAt(12), 90],
+        [SHORT_EVENT, localAt(timeZone, 10), 30],
+        [LONG_EVENT, localAt(timeZone, 12), 90],
       ]
       for (const [title, start, minutes] of events) {
         const res = await guest.api.post('/api/events', {

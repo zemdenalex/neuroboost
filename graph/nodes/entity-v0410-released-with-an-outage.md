@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-08-18
 tags: [neuroboost, release, prod, incident]
-weight: { importance: 5, connectivity: 6, access: 6, last_accessed: 2026-08-23 }
+weight: { importance: 5, connectivity: 7, access: 6, last_accessed: 2026-09-11 }
 sources:
   - commit: "46d775d (merge на main) · тег v0.4.10 · 6178dce (починка)"
   - file: "docs/release-readiness-2026-08-18.md · docs/analiz-bot-vs-web-2026-08-18.md"

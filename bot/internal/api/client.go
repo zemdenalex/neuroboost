@@ -22,20 +22,57 @@ func NewClient(base string) *Client {
 	}
 }
 
+// Event is as much of an event as the bot shows or edits.
+//
+// 🔴 Rrule, Tags, CalendarID and ReminderOffsets were absent until 16.09, and
+// their absence was invisible: the bot only ever CREATED events, so nothing
+// read them back. The moment it could edit one, a missing field here would have
+// meant loading an event, saving it, and silently dropping its repeat.
 type Event struct {
 	ID          string `json:"id"`
+	CalendarID  string `json:"calendar_id"`
 	Title       string `json:"title"`
 	Description string `json:"description"`
 	StartsAt    string `json:"starts_at"`
 	EndsAt      string `json:"ends_at"`
 	AllDay      bool   `json:"all_day"`
 	Color       string `json:"color"`
+
+	Rrule           *string  `json:"rrule,omitempty"`
+	Tags            []string `json:"tags"`
+	ReminderOffsets []int    `json:"reminder_offsets"`
+	IsShared        bool     `json:"is_shared"`
 }
 
+// CreateEventReq mirrors api-go's CreateEventRequest for the fields the bot
+// sends.
+//
+// 🔴 Every optional field is a pointer or omitempty, and ReminderOffsets
+// especially. POST /api/events applies the user's default preset when the key
+// is ABSENT; an explicit empty array means "stay silent forever", which is the
+// exact defect this product hit on 12.08. Those are different events, and a
+// plain []int cannot tell them apart.
 type CreateEventReq struct {
-	Title    string `json:"title"`
-	StartsAt string `json:"starts_at"`
-	EndsAt   string `json:"ends_at"`
+	Title      string  `json:"title"`
+	StartsAt   string  `json:"starts_at"`
+	EndsAt     string  `json:"ends_at"`
+	AllDay     bool    `json:"all_day,omitempty"`
+	Rrule      *string `json:"rrule,omitempty"`
+	Colour     *string `json:"color,omitempty"`
+	CalendarID *string `json:"calendar_id,omitempty"`
+	TaskID     *string `json:"task_id,omitempty"`
+
+	Tags            []string `json:"tags,omitempty"`
+	ReminderOffsets *[]int   `json:"reminder_offsets,omitempty"`
+}
+
+// Calendar is one of the user's calendars, as much of it as the bot needs to
+// resolve a word like «работа» to an id.
+type Calendar struct {
+	ID       string `json:"id"`
+	Name     string `json:"name"`
+	Colour   string `json:"color"`
+	IsShared bool   `json:"is_shared"`
 }
 
 type Task struct {
@@ -189,6 +226,19 @@ func (c *Client) CreateEvent(token string, req CreateEventReq) (*Event, error) {
 	}
 	err := c.post("/api/events", token, req, &resp)
 	return &resp.Data, err
+}
+
+// Calendars lists the calendars this user can write to.
+//
+// Needed for the keyword «календарь работа» and for a bare word that happens to
+// name a calendar. The bot could not read this list at all before 15.09, which
+// is why an event from the bot always landed in the personal calendar.
+func (c *Client) Calendars(token string) ([]Calendar, error) {
+	var resp struct {
+		Data []Calendar `json:"data"`
+	}
+	err := c.get("/api/calendars", token, nil, &resp)
+	return resp.Data, err
 }
 
 func (c *Client) GetTasks(token string, status string) ([]Task, error) {
