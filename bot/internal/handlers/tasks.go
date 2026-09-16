@@ -29,7 +29,7 @@ func (h *Handler) handleTasks(chatID int64, messageID int) {
 
 	sort.Slice(tasks, func(i, j int) bool { return tasks[i].Priority < tasks[j].Priority })
 
-	text := fmt.Sprintf("📋 <b>Tasks (%d)</b>\n\n", len(tasks))
+	text := fmt.Sprintf(h.t(chatID, "📋 <b>Задачи (%d)</b>\n\n", "📋 <b>Tasks (%d)</b>\n\n"), len(tasks))
 
 	var rows [][]tgbotapi.InlineKeyboardButton
 	for i, t := range tasks {
@@ -45,8 +45,12 @@ func (h *Handler) handleTasks(chatID int64, messageID int) {
 			tgbotapi.NewInlineKeyboardButtonData(label, "task_action_"+t.ID),
 		))
 	}
+	// З2, Denis 16.09: «в пункте меню задачи нет кнопки создать, надо
+	// добавить». The list was a dead end — every other screen offers the thing
+	// it is a list of.
 	rows = append(rows, tgbotapi.NewInlineKeyboardRow(
-		tgbotapi.NewInlineKeyboardButtonData("« Menu", "main_menu"),
+		tgbotapi.NewInlineKeyboardButtonData(h.t(chatID, "➕ Задача", "➕ Task"), "new_task"),
+		tgbotapi.NewInlineKeyboardButtonData(h.t(chatID, "« Меню", "« Menu"), "main_menu"),
 	))
 
 	kb := tgbotapi.NewInlineKeyboardMarkup(rows...)

@@ -117,14 +117,22 @@ func ParseEventList(text string, now time.Time) []Parsed {
 	return out
 }
 
-// ParseTaskList reads a block into one parsed line per task. No day inherits
-// here: a task list is a list of things to do, and its lines do not describe a
-// schedule the way an event block does.
-func ParseTaskList(text string, now time.Time) []Parsed {
+// ParseTaskList reads a block into one task per entry.
+//
+// 🔴 ParseTask, not ParseLine. They read DIFFERENT vocabularies: an event line
+// knows about colours and repeats, a task line knows about `!1` priorities and
+// `30м` estimates. Running a task list through the event parser is what Denis
+// hit on 16.09 — \«Отжаться 1ч\» became a task literally called \«Отжаться 1ч\»,
+// while the same words typed as a SINGLE task parsed correctly, because that
+// path always used ParseTask.
+//
+// No day inherits here: a task list is a list of things to do, and its lines do
+// not describe a schedule the way an event block does.
+func ParseTaskList(text string, now time.Time) []TaskResult {
 	entries := Entries(text)
-	out := make([]Parsed, 0, len(entries))
+	out := make([]TaskResult, 0, len(entries))
 	for _, e := range entries {
-		out = append(out, ParseLine(e, now))
+		out = append(out, ParseTask(e, now))
 	}
 	return out
 }

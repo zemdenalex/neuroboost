@@ -124,9 +124,22 @@ func (h *Handler) createTaskList(chatID int64, messageID int, raw string) {
 		if strings.TrimSpace(p.Title) == "" {
 			continue
 		}
+		// Everything the task vocabulary understood, not just the title: a
+		// priority or an estimate dropped here is a word the user typed and the
+		// bot silently ignored.
 		req := api.CreateTaskReq{Title: p.Title, Status: "TODO"}
-		if len(p.Draft.Tags) > 0 {
-			req.Tags = p.Draft.Tags
+		if p.Priority != nil {
+			req.Priority = p.Priority
+		}
+		if p.EstimatedMinutes != nil {
+			req.EstimatedMinutes = p.EstimatedMinutes
+		}
+		if p.DueDate != nil {
+			due := p.DueDate.Format(time.RFC3339)
+			req.DueDate = &due
+		}
+		if len(p.Tags) > 0 {
+			req.Tags = p.Tags
 		}
 		if _, err := h.api.CreateTask(us.AuthToken, req); err != nil {
 			failed = append(failed, format.Escape(p.Title)+" — "+format.Escape(err.Error()))

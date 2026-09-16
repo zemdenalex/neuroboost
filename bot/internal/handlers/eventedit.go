@@ -128,7 +128,8 @@ func (h *Handler) handleEventPicker(chatID int64, messageID int) {
 // handleEventCard shows one event and what can be done to it.
 func (h *Handler) handleEventCard(chatID int64, messageID int, eventID string) {
 	us := h.store.GetOrCreate(chatID)
-	ev, err := h.api.GetEvent(us.AuthToken, eventID)
+	parentID, _, isInstance := splitInstanceID(eventID)
+	ev, err := h.api.GetEvent(us.AuthToken, parentID)
 	if err != nil || ev == nil || ev.ID == "" {
 		h.editOrSend(chatID, messageID, h.t(chatID,
 			"❌ Не удалось открыть событие — возможно, оно уже удалено.",
@@ -140,15 +141,25 @@ func (h *Handler) handleEventCard(chatID int64, messageID int, eventID string) {
 	h.store.ClearFlow(chatID)
 	st := draftFromEvent(*ev, h.location())
 	st.CalendarName = h.calendarName(chatID, ev.CalendarID)
-	h.editOrSend(chatID, messageID,
-		renderDraft(h.lang(chatID), st, time.Now().In(h.location())),
-		keyboards.EventCard(h.lang(chatID), eventID))
+
+	text := renderDraft(h.lang(chatID), st, time.Now().In(h.location()))
+	if isInstance {
+		// 🔴 Said BEFORE anything changes. The card shows the series — its own
+		// first occurrence, not the one that was tapped — and a screen that
+		// silently swapped the date under the user would be worse than one that
+		// explains itself.
+		text += h.t(chatID,
+			"\n\n⚠ Это повторяющееся событие. Открыта вся серия, и изменения применятся ко всем повторам.",
+			"\n\n⚠ This event repeats. The whole series is open, and changes apply to every occurrence.")
+	}
+	h.editOrSend(chatID, messageID, text, keyboards.EventCard(h.lang(chatID), parentID))
 }
 
 // handleEventEdit opens the existing event in the creation card.
 func (h *Handler) handleEventEdit(chatID int64, messageID int, eventID string) {
 	us := h.store.GetOrCreate(chatID)
-	ev, err := h.api.GetEvent(us.AuthToken, eventID)
+	parentID, _, _ := splitInstanceID(eventID)
+	ev, err := h.api.GetEvent(us.AuthToken, parentID)
 	if err != nil || ev == nil || ev.ID == "" {
 		h.editOrSend(chatID, messageID, h.t(chatID,
 			"❌ Не удалось открыть событие.", "❌ Could not open the event."),
@@ -173,7 +184,8 @@ func (h *Handler) handleEventDeleteAsk(chatID int64, messageID int, eventID stri
 
 func (h *Handler) handleEventDelete(chatID int64, messageID int, eventID string) {
 	us := h.store.GetOrCreate(chatID)
-	if err := h.api.DeleteEvent(us.AuthToken, eventID); err != nil {
+	parentID, _, _ := splitInstanceID(eventID)
+	if err := h.api.DeleteEvent(us.AuthToken, parentID); err != nil {
 		h.editOrSend(chatID, messageID,
 			h.t(chatID, "❌ Не удалось удалить: ", "❌ Could not delete: ")+format.Escape(err.Error()),
 			keyboards.AgendaActions(h.lang(chatID)))

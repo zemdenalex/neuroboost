@@ -149,3 +149,34 @@ func TestEntriesSplitsASingleLineOnCommasOnly(t *testing.T) {
 		t.Errorf("got %v, want 2 entries", got)
 	}
 }
+
+// 🔴 A task list reads the TASK vocabulary, not the event one. Denis, 16.09:
+// «Отжаться 1ч» came back as a task literally called «Отжаться 1ч», while the
+// same words typed as a single task parsed correctly — because the single path
+// used ParseTask and the list path used ParseLine.
+func TestTaskListReadsEstimatesAndPriorities(t *testing.T) {
+	block := "1. Отжаться 1ч\n2. Подтянуться 10м !1\n3. Присесть 5 мин #спорт"
+	got := ParseTaskList(block, tuesday15())
+
+	if len(got) != 3 {
+		t.Fatalf("got %d tasks, want 3", len(got))
+	}
+	if got[0].Title != "Отжаться" {
+		t.Errorf("task 0 title = %q, want %q — the estimate stayed in the name", got[0].Title, "Отжаться")
+	}
+	if got[0].EstimatedMinutes == nil || *got[0].EstimatedMinutes != 60 {
+		t.Errorf("task 0 estimate = %v, want 60", got[0].EstimatedMinutes)
+	}
+	if got[1].Title != "Подтянуться" {
+		t.Errorf("task 1 title = %q", got[1].Title)
+	}
+	if got[1].Priority == nil || *got[1].Priority != 1 {
+		t.Errorf("task 1 priority = %v, want 1", got[1].Priority)
+	}
+	if got[2].Title != "Присесть" {
+		t.Errorf("task 2 title = %q", got[2].Title)
+	}
+	if len(got[2].Tags) != 1 || got[2].Tags[0] != "спорт" {
+		t.Errorf("task 2 tags = %v", got[2].Tags)
+	}
+}

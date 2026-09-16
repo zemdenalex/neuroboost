@@ -255,3 +255,41 @@ func TestNoEventPrefixIsAPrefixOfAnother(t *testing.T) {
 		}
 	}
 }
+
+// 🔴 A recurring event comes back from the list as `<uuid>:YYYY-MM-DD`, and
+// GET /api/events/{id} does not understand that form — it casts the id to a
+// uuid and fails. Denis hit it on 16.09: «С повторяющимися пишет ❌ Не удалось
+// открыть событие».
+func TestSplitInstanceIDSeparatesTheSeriesFromTheOccurrence(t *testing.T) {
+	parent, occ, isInstance := splitInstanceID("11111111-2222-3333-4444-555555555555:2026-09-23")
+	if !isInstance {
+		t.Fatal("an occurrence id was not recognised — the bot would ask the API for a uuid it cannot parse")
+	}
+	if parent != "11111111-2222-3333-4444-555555555555" {
+		t.Errorf("parent = %q", parent)
+	}
+	if occ != "2026-09-23" {
+		t.Errorf("occurrence = %q", occ)
+	}
+}
+
+// A plain id passes through untouched, so every caller can funnel ids through
+// this without asking which kind it holds.
+func TestSplitInstanceIDLeavesAPlainIDAlone(t *testing.T) {
+	for _, id := range []string{
+		"11111111-2222-3333-4444-555555555555",
+		"",
+		"no-colon-here",
+		// A colon with something that is not a date after it is not an
+		// occurrence — splitting on it would invent a parent that does not exist.
+		"11111111-2222-3333-4444-555555555555:notadate",
+	} {
+		parent, occ, isInstance := splitInstanceID(id)
+		if isInstance {
+			t.Errorf("%q was read as an occurrence (parent %q, occ %q)", id, parent, occ)
+		}
+		if parent != id {
+			t.Errorf("%q came back as %q", id, parent)
+		}
+	}
+}

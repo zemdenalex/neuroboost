@@ -244,3 +244,75 @@ func TestEveryPairedTableExemptionStillExists(t *testing.T) {
 		}
 	}
 }
+
+// 🔴 The scan above looks for CYRILLIC outside i18n.T. That is half a rule, and
+// the missing half shipped: «📋 <b>Tasks (%d)</b>» and «« Menu» went to
+// production-bound builds untranslated, invisible to a test that only knows how
+// to recognise Russian. Denis found them by reading the screen (H6).
+//
+// This half asks the other question: does any text reach the user as a BARE
+// LITERAL, whatever language it happens to be in. It works on the sinks — the
+// four send/edit calls and the two button constructors — because those are
+// where text leaves the program.
+
+// userFacingSink matches a call that puts a string in front of a person, with
+// a bare string literal in its text position.
+var userFacingSinks = []*regexp.Regexp{
+	regexp.MustCompile(`\.(sendText|sendHTML|sendHTMLWithKeyboard)\(chatID,\s*"`),
+	regexp.MustCompile(`\.editOrSend\(chatID,\s*\w+,\s*"`),
+	regexp.MustCompile(`NewInlineKeyboardButtonData\(\s*"`),
+	regexp.MustCompile(`NewKeyboardButton\(\s*"`),
+}
+
+// hasLetters reports whether a literal carries language at all. An arrow or a
+// bare emoji — "⬅", "➡" — reads the same in every language and needs no pair.
+var hasLetters = regexp.MustCompile(`[A-Za-zА-Яа-яЁё]`)
+
+func TestNoTextReachesTheUserAsABareLiteral(t *testing.T) {
+	for _, dir := range scannedDirs {
+		entries, err := os.ReadDir(dir)
+		if err != nil {
+			t.Fatalf("read %s: %v", dir, err)
+		}
+		for _, e := range entries {
+			name := e.Name()
+			if e.IsDir() || !strings.HasSuffix(name, ".go") || strings.HasSuffix(name, "_test.go") {
+				continue
+			}
+			path := filepath.Join(dir, name)
+			src, err := os.ReadFile(path)
+			if err != nil {
+				t.Fatalf("read %s: %v", path, err)
+			}
+			checkSinks(t, path, string(src))
+		}
+	}
+}
+
+func checkSinks(t *testing.T, path, src string) {
+	t.Helper()
+	for i, line := range strings.Split(src, "\n") {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "//") || inPairedTable(strings.Split(src, "\n"), i) {
+			continue
+		}
+		for _, sink := range userFacingSinks {
+			loc := sink.FindStringIndex(line)
+			if loc == nil {
+				continue
+			}
+			// The literal starts at the quote the pattern ended on.
+			rest := line[loc[1]-1:]
+			end := strings.Index(rest[1:], `"`)
+			if end < 0 {
+				continue
+			}
+			literal := rest[1 : end+1]
+			if !hasLetters.MatchString(literal) {
+				continue // an arrow or an emoji carries no language
+			}
+			t.Errorf("%s:%d: text reaches the user as a bare literal — %q. "+
+				"Wrap it in i18n.T(lang, ru, en) or h.t(chatID, ru, en).", path, i+1, literal)
+		}
+	}
+}

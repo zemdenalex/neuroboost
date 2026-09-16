@@ -35,20 +35,22 @@ func (h *Handler) handleToday(chatID int64, messageID int) {
 		tasks = nil
 	}
 
-	text := fmt.Sprintf("🎯 <b>Today's Focus</b> — %s\n🕐 %s (%s)\n\n",
+	text := fmt.Sprintf(h.t(chatID,
+		"🎯 <b>Сегодня</b> — %s\n🕐 %s (%s)\n\n",
+		"🎯 <b>Today's focus</b> — %s\n🕐 %s (%s)\n\n"),
 		now.Format("Mon, Jan 2"),
 		now.Format("15:04"),
 		h.cfg.Timezone,
 	)
 
-	text += fmt.Sprintf("📅 <b>Events: %d</b>\n", len(events))
+	text += fmt.Sprintf(h.t(chatID, "📅 <b>События: %d</b>\n", "📅 <b>Events: %d</b>\n"), len(events))
 	sort.Slice(events, func(i, j int) bool { return events[i].StartsAt < events[j].StartsAt })
 	for _, e := range events {
 		text += fmt.Sprintf("  %s — %s\n", format.FormatTime(e.StartsAt, h.cfg.Timezone), format.Escape(e.Title))
 	}
 
 	if len(tasks) > 0 {
-		text += fmt.Sprintf("\n🎯 <b>Tasks: %d</b>\n", len(tasks))
+		text += fmt.Sprintf(h.t(chatID, "\n🎯 <b>Задачи: %d</b>\n", "\n🎯 <b>Tasks: %d</b>\n"), len(tasks))
 		sort.Slice(tasks, func(i, j int) bool { return tasks[i].Priority < tasks[j].Priority })
 		limit := 5
 		if len(tasks) < limit {
@@ -68,7 +70,9 @@ func (h *Handler) handleToday(chatID int64, messageID int) {
 
 func (h *Handler) handleStats(chatID int64, messageID int) {
 	h.editOrSend(chatID, messageID,
-		"📊 <b>Stats</b>\n\nComing soon! Track your productivity trends here.",
+		h.t(chatID,
+			"📊 <b>Статистика</b>\n\nСкоро — здесь будут тренды по твоей неделе.",
+			"📊 <b>Stats</b>\n\nComing soon — your weekly trends will live here."),
 		keyboards.BackToMenu(h.lang(chatID)))
 }
 
