@@ -2,6 +2,7 @@ package keyboards
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -162,24 +163,84 @@ func DraftDay(lang i18n.Lang) tgbotapi.InlineKeyboardMarkup {
 // invisible unless both are on the keyboard: the first leaves the field absent
 // so the server applies the user's preset, the second writes an empty list and
 // means silence forever.
-func ReminderPicker(lang i18n.Lang) tgbotapi.InlineKeyboardMarkup {
-	return tgbotapi.NewInlineKeyboardMarkup(
+//
+// 🔴 Ticks, not one answer (Denis, 16.09: «должны быть множественным выбором
+// (кроме не напоминать — снимает все)… а также можно свое время»). A tap
+// toggles and the picker stays open; «Готово» returns to the card. A typed time
+// joins the offered ones as a button of its own, so it can be unticked too.
+func ReminderPicker(lang i18n.Lang, offsets *[]int) tgbotapi.InlineKeyboardMarkup {
+	chosen := map[int]bool{}
+	shown := []int{10, 30, 60, 1440}
+	if offsets != nil {
+		for _, m := range *offsets {
+			chosen[m] = true
+			if !containsOffset(shown, m) {
+				shown = append(shown, m)
+			}
+		}
+	}
+	sort.Ints(shown)
+
+	var rows [][]tgbotapi.InlineKeyboardButton
+	var row []tgbotapi.InlineKeyboardButton
+	for _, m := range shown {
+		label := offsetLabel(lang, m)
+		if chosen[m] {
+			label = "✅ " + label
+		}
+		row = append(row, tgbotapi.NewInlineKeyboardButtonData(label, "dr_rem_"+strconv.Itoa(m)))
+		if len(row) == 2 {
+			rows, row = append(rows, row), nil
+		}
+	}
+	if len(row) > 0 {
+		rows = append(rows, row)
+	}
+
+	mark := func(on bool, label string) string {
+		if on {
+			return "✅ " + label
+		}
+		return label
+	}
+	rows = append(rows,
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "За 10 минут", "10 minutes before"), "dr_rem_10"),
-			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "За 30 минут", "30 minutes before"), "dr_rem_30"),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "✏️ Своё время", "✏️ Own time"), "dr_rem_custom"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "За час", "An hour before"), "dr_rem_60"),
-			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "За день", "A day before"), "dr_rem_1440"),
+			tgbotapi.NewInlineKeyboardButtonData(mark(offsets == nil, i18n.T(lang, "По умолчанию", "My default")), "dr_rem_default"),
+			tgbotapi.NewInlineKeyboardButtonData(mark(offsets != nil && len(*offsets) == 0, i18n.T(lang, "Не напоминать", "No reminder")), "dr_rem_none"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "По умолчанию", "My default"), "dr_rem_default"),
-			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "Не напоминать", "No reminder"), "dr_rem_none"),
-		),
-		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "⬅️ Назад", "⬅️ Back"), "dr_back"),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "✔️ Готово", "✔️ Done"), "dr_rem_done"),
 		),
 	)
+	return tgbotapi.NewInlineKeyboardMarkup(rows...)
+}
+
+func containsOffset(xs []int, x int) bool {
+	for _, v := range xs {
+		if v == x {
+			return true
+		}
+	}
+	return false
+}
+
+// offsetLabel says an offset the way the picker always has: «За час».
+func offsetLabel(lang i18n.Lang, m int) string {
+	switch {
+	case m == 60:
+		return i18n.T(lang, "За час", "An hour before")
+	case m == 1440:
+		return i18n.T(lang, "За день", "A day before")
+	case m%1440 == 0:
+		return fmt.Sprintf(i18n.T(lang, "За %d дн.", "%d days before"), m/1440)
+	case m%60 == 0:
+		return fmt.Sprintf(i18n.T(lang, "За %d ч.", "%d hours before"), m/60)
+	default:
+		return fmt.Sprintf(i18n.T(lang, "За %d мин.", "%d minutes before"), m)
+	}
 }
 
 // DraftBack is what a text-input step shows: the user is expected to type, but

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -162,6 +163,22 @@ func (h *Handler) handleNewEventFlow(chatID int64, text string) {
 		// when it is made of keywords.
 		st.Title = parse.ParseLineRaw(text)
 		h.showCard(chatID, 0)
+
+	case "edit:remind":
+		st, ok := draftOf(h, chatID)
+		if !ok {
+			h.lostDraft(chatID)
+			return
+		}
+		n, read := parse.ReminderOffsetText(text)
+		if !read {
+			h.sendHTMLWithKeyboard(chatID, h.t(chatID,
+				"Не понял время. Например «2ч», «45 минут», «за день».",
+				"Could not read that. «2h», «45 min», «a day», say."), keyboards.DraftBack(h.lang(chatID)))
+			return
+		}
+		toggleReminder(st, n, true)
+		h.showReminderPicker(chatID, 0, st)
 
 	case "edit:tags":
 		st, ok := draftOf(h, chatID)
@@ -387,7 +404,7 @@ func (h *Handler) handleDraftCallback(chatID int64, messageID int, data string) 
 		h.showCalendarPicker(chatID, messageID)
 
 	case data == "dre_remind":
-		h.editOrSend(chatID, messageID, h.t(chatID, "За сколько напомнить?", "How long before should I remind you?"), keyboards.ReminderPicker(h.lang(chatID)))
+		h.showReminderPicker(chatID, messageID, st)
 
 	case data == "dre_allday":
 		st.D.AllDay = !st.D.AllDay
@@ -426,10 +443,18 @@ func (h *Handler) handleDraftCallback(chatID int64, messageID int, data string) 
 		st.D.HasDay = true
 		h.showCard(chatID, messageID)
 
-	case strings.HasPrefix(data, "dr_rem_"):
-		mins := strings.TrimPrefix(data, "dr_rem_")
-		h.setReminder(st, mins)
+	case data == "dr_rem_done":
 		h.showCard(chatID, messageID)
+
+	case data == "dr_rem_custom":
+		us.FlowStep = "edit:remind"
+		h.editOrSend(chatID, messageID, h.t(chatID,
+			"За сколько напомнить? Например «2ч», «45 минут», «за день».",
+			"How long before? «2h», «45 min», «a day», say."), keyboards.DraftBack(h.lang(chatID)))
+
+	case strings.HasPrefix(data, "dr_rem_"):
+		h.setReminder(st, strings.TrimPrefix(data, "dr_rem_"))
+		h.showReminderPicker(chatID, messageID, st)
 
 	default:
 		return false
@@ -443,6 +468,10 @@ func (h *Handler) handleDraftCallback(chatID int64, messageID int, data string) 
 // 🔴 They are different events. POST /api/events applies the user's default
 // preset when reminder_offsets is ABSENT; an explicit empty array means stay
 // silent forever. The nil pointer is "absent" and it is the default.
+//
+// A number TOGGLES: ticked joins the list, ticked again leaves it. Unticking the
+// last one leaves an explicit empty list — «no reminder» — because that is what
+// the picker then shows, and the card must not say otherwise.
 func (h *Handler) setReminder(st *draftState, mins string) {
 	if mins == "none" {
 		empty := []int{}
@@ -454,11 +483,38 @@ func (h *Handler) setReminder(st *draftState, mins string) {
 		return
 	}
 	n, err := strconv.Atoi(mins)
-	if err != nil {
+	if err != nil || n <= 0 {
 		return
 	}
-	offsets := []int{n}
+	toggleReminder(st, n, false)
+}
+
+// toggleReminder flips one offset; onlyAdd is the typed-time path, where
+// writing a time that is already ticked must not untick it.
+func toggleReminder(st *draftState, n int, onlyAdd bool) {
+	offsets := []int{}
+	if st.ReminderOffsets != nil {
+		offsets = append(offsets, (*st.ReminderOffsets)...)
+	}
+	for i, m := range offsets {
+		if m == n {
+			if !onlyAdd {
+				offsets = append(offsets[:i], offsets[i+1:]...)
+			}
+			st.ReminderOffsets = &offsets
+			return
+		}
+	}
+	offsets = append(offsets, n)
+	sort.Ints(offsets)
 	st.ReminderOffsets = &offsets
+}
+
+func (h *Handler) showReminderPicker(chatID int64, messageID int, st *draftState) {
+	h.store.GetOrCreate(chatID).FlowStep = "card"
+	h.editOrSend(chatID, messageID,
+		h.t(chatID, "🔔 Когда напомнить? Можно отметить несколько.", "🔔 When should I remind you? Tick as many as you like."),
+		keyboards.ReminderPicker(h.lang(chatID), st.ReminderOffsets))
 }
 
 func (h *Handler) showCalendarPicker(chatID int64, messageID int) {
