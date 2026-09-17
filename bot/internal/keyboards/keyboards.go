@@ -165,6 +165,12 @@ func SettingsMenu(lang i18n.Lang) tgbotapi.InlineKeyboardMarkup {
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🌐 Язык", "🌐 Language"), "settings_lang"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
+			// The second entrance Denis asked for on 18.09 — «и там, и в
+			// настройках». Both lead to the same callback: two screens for one
+			// thing is how the two drift apart.
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "📁 Календари", "📁 Calendars"), "cls"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
 			// Onboarding again, on demand — language, clock, and how to write.
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🔄 Пройти настройку заново", "🔄 Run setup again"), "ob_start"),
 		),
@@ -252,6 +258,13 @@ func MonthGrid(lang i18n.Lang, year, month int, monthName string, labels, dates 
 
 	rows = append(rows, tgbotapi.NewInlineKeyboardRow(
 		tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "📅 Сегодня", "📅 Today"), "cal_day_"+todayISO),
+		// 🔴 Denis, 18.09, asked for this in the MAIN menu. It is here instead
+		// because the main menu is a fixed [3][2] reply keyboard (menu.go:56)
+		// and a seventh button breaks both MainMenu and the guard that tells a
+		// button press from a typed line. This screen is itself a main-menu
+		// entrance, so the cost is one tap, not a burial in settings — where
+		// nobody found the language on 17.09.
+		tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "📁 Календари", "📁 Calendars"), "cls"),
 		tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🏠 Меню", "🏠 Menu"), "main_menu"),
 	))
 	return tgbotapi.NewInlineKeyboardMarkup(rows...)

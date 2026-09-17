@@ -150,7 +150,12 @@ func TestMonthGridButtonsAreRoutedAndFit(t *testing.T) {
 	}
 	kb := keyboards.MonthGrid(i18n.RU, 2026, 8, "Август", labels, dates, "2026-08-18")
 
-	routed := []string{"cal_prev_", "cal_next_", "cal_day_", "cal_back_", "noop", "main_menu"}
+	// «cls» opens the calendars screen, added 18.09 and routed by
+	// handleCalendarsCallback. 🔴 Note what this list does NOT contain: «cl_».
+	// The calendars screen deliberately avoids the «cal_» prefix this grid owns,
+	// and the day of the collision is recorded in
+	// TestCalendarScreenDoesNotSwallowTheMonthGrid.
+	routed := []string{"cal_prev_", "cal_next_", "cal_day_", "cal_back_", "noop", "main_menu", "cls"}
 	var seen int
 	for _, row := range kb.InlineKeyboard {
 		for _, b := range row {
@@ -174,9 +179,9 @@ func TestMonthGridButtonsAreRoutedAndFit(t *testing.T) {
 			}
 		}
 	}
-	// 3 header + 7 weekday + 42 days + 2 footer (today, menu).
-	if seen != 54 {
-		t.Errorf("grid has %d buttons, want 54", seen)
+	// 3 header + 7 weekday + 42 days + 3 footer (today, calendars, menu).
+	if seen != 55 {
+		t.Errorf("grid has %d buttons, want 55", seen)
 	}
 }
 

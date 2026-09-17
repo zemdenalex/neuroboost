@@ -298,6 +298,14 @@ func (h *Handler) HandleCallback(cb *tgbotapi.CallbackQuery) {
 		return
 	}
 
+	// The calendar screens own cals/cal_. Asked here rather than in the switch
+	// for the same reason as the others: the prefixes overlap each other
+	// («cal_» is a prefix of «cal_new»), and ordering that matters belongs in
+	// one place where it can be read at a glance.
+	if h.handleCalendarsCallback(chatID, cb.Message.MessageID, data) {
+		return
+	}
+
 	switch {
 	case data == "main_menu":
 		h.handleMenu(chatID, cb.Message.MessageID)

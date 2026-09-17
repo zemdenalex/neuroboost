@@ -27,6 +27,13 @@ func (h *Handler) handleFlowInput(chatID int64, text string) {
 		return
 	}
 
+	// The calendar screens carry their target in the flow name («cal:name:<id>»),
+	// so they are matched by prefix rather than listed one case per action.
+	if strings.HasPrefix(us.CurrentFlow, calendarFlowPrefix) {
+		h.handleCalendarText(chatID, us.CurrentFlow, text)
+		return
+	}
+
 	switch us.CurrentFlow {
 	case onboardFlow:
 		h.handleOnboardText(chatID, text)

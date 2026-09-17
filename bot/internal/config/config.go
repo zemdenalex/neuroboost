@@ -11,6 +11,14 @@ type Config struct {
 	// ServiceToken authenticates the notifier against /api/svc. No default:
 	// unset means notifications stay off rather than failing every minute.
 	ServiceToken string
+	// BotUsername is this bot's @name, used to build invite links
+	// (https://t.me/<username>?start=inv_<token>).
+	//
+	// 🔴 Read from the environment, never hardcoded: dev and prod are two
+	// different bots on the same host (@NeuroBoost_dev_bot and
+	// @NeuroBoost_assistant_bot), and a baked-in name would send every dev
+	// invitation to the production bot — where the calendar does not exist.
+	BotUsername string
 }
 
 func Load() Config {

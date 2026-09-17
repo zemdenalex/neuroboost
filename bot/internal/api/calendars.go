@@ -169,3 +169,20 @@ func (c *Client) AcceptInviteLink(token, linkToken string) (*CalendarDetail, err
 func (c *Client) LeaveCalendar(token, id, userID string) error {
 	return c.del("/api/calendars/"+id+"/members/"+userID, token)
 }
+
+// MyUserID returns the caller's own user id.
+//
+// Leaving a calendar is a DELETE on /members/{userId} with your OWN id — the
+// API distinguishes leaving from removing by comparing the two — so the bot
+// has to know who it is. Nothing else in the bot needed this until now.
+func (c *Client) MyUserID(token string) (string, error) {
+	var resp struct {
+		Data struct {
+			ID string `json:"id"`
+		} `json:"data"`
+	}
+	if err := c.get("/api/auth/me", token, nil, &resp); err != nil {
+		return "", err
+	}
+	return resp.Data.ID, nil
+}
