@@ -85,6 +85,11 @@ func (h *Handler) handleNewTaskFlow(chatID int64, text string) {
 		}
 		h.showTaskCard(chatID, text)
 	default:
+		// «✏️ Переписать» on one entry of a task list.
+		if strings.HasPrefix(us.FlowStep, "list:rewrite:") {
+			h.rewriteTaskListEntry(chatID, text)
+			return
+		}
 		h.store.ClearFlow(chatID)
 		h.sendHTMLWithKeyboard(chatID, h.t(chatID, "Что-то пошло не так.", "Something went wrong."), keyboards.HomeInline(h.lang(chatID)))
 	}

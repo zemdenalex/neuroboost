@@ -263,3 +263,19 @@ func DraftCardInList(lang i18n.Lang) tgbotapi.InlineKeyboardMarkup {
 		),
 	)
 }
+
+// TaskListItem is one task picked from the list: rewrite it, drop it, or go
+// back. dr_trew_/dr_tdel_ are distinct from every other dr_ prefix — no one of
+// them is a prefix of another.
+func TaskListItem(lang i18n.Lang, i int) tgbotapi.InlineKeyboardMarkup {
+	n := strconv.Itoa(i)
+	return tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "✏️ Переписать", "✏️ Rewrite"), "dr_trew_"+n),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🗑 Убрать из списка", "🗑 Remove from list"), "dr_tdel_"+n),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "⬅️ К списку", "⬅️ Back to list"), "dr_list"),
+		),
+	)
+}

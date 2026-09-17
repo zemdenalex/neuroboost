@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -112,10 +113,117 @@ func (h *Handler) handleTaskListCallback(chatID int64, messageID int, data strin
 
 	case "dr_many":
 		raw, _ := us.FlowData["raw"].(string)
-		h.createTaskList(chatID, messageID, raw)
+		us.FlowData["tasks"] = parse.ParseTaskList(raw, time.Now().In(h.location(chatID)))
+		h.showTaskList(chatID, messageID)
 		return true
 	}
-	return false
+
+	tasks, ok := us.FlowData["tasks"].([]parse.TaskResult)
+	if !ok {
+		return false
+	}
+	switch {
+	case data == "dr_makeall":
+		h.createTaskList(chatID, messageID, tasks)
+	case data == "dr_list":
+		us.FlowStep = "list"
+		h.showTaskList(chatID, messageID)
+	case data == "dr_pick":
+		h.editOrSend(chatID, messageID, h.t(chatID, "Какую задачу изменить?", "Which task to change?"), keyboards.ListPick(h.lang(chatID), len(tasks)))
+	case strings.HasPrefix(data, "dr_item_"):
+		i, valid := listIndex(strings.TrimPrefix(data, "dr_item_"), len(tasks))
+		if !valid {
+			h.showTaskList(chatID, messageID)
+			return true
+		}
+		h.editOrSend(chatID, messageID, taskCardText(h.lang(chatID), tasks[i], h.timezone(chatID)), keyboards.TaskListItem(h.lang(chatID), i))
+	case strings.HasPrefix(data, "dr_tdel_"):
+		i, valid := listIndex(strings.TrimPrefix(data, "dr_tdel_"), len(tasks))
+		if valid {
+			tasks = append(tasks[:i:i], tasks[i+1:]...)
+			us.FlowData["tasks"] = tasks
+		}
+		if len(tasks) == 0 {
+			h.store.ClearFlow(chatID)
+			h.editOrSend(chatID, messageID, h.t(chatID, "Список пуст — ничего не создано.", "The list is empty — nothing was created."), keyboards.BackToTasks(h.lang(chatID)))
+			return true
+		}
+		h.showTaskList(chatID, messageID)
+	case strings.HasPrefix(data, "dr_trew_"):
+		i, valid := listIndex(strings.TrimPrefix(data, "dr_trew_"), len(tasks))
+		if !valid {
+			h.showTaskList(chatID, messageID)
+			return true
+		}
+		us.FlowStep = "list:rewrite:" + strconv.Itoa(i)
+		h.editOrSend(chatID, messageID, h.t(chatID,
+			"Напиши эту задачу заново — приоритет, оценка и срок читаются как обычно.",
+			"Write this task again — priority, estimate and due date are read as usual."), tgbotapi.NewInlineKeyboardMarkup())
+	default:
+		return false
+	}
+	return true
+}
+
+// listIndex reads the entry number a button carries and checks it still
+// exists: a list can shrink while an older message still shows its buttons.
+func listIndex(raw string, n int) (int, bool) {
+	i, err := strconv.Atoi(raw)
+	return i, err == nil && i >= 0 && i < n
+}
+
+// rewriteTaskListEntry replaces one entry with a freshly typed line, read with
+// the task vocabulary — the same words a new task understands.
+func (h *Handler) rewriteTaskListEntry(chatID int64, text string) {
+	us := h.store.GetOrCreate(chatID)
+	tasks, ok := us.FlowData["tasks"].([]parse.TaskResult)
+	i, valid := listIndex(strings.TrimPrefix(us.FlowStep, "list:rewrite:"), len(tasks))
+	if !ok || !valid {
+		h.lostDraft(chatID)
+		return
+	}
+	tasks[i] = parse.ParseTask(text, time.Now().In(h.location(chatID)))
+	h.showTaskList(chatID, 0)
+}
+
+// showTaskList is the task list's confirmation card.
+//
+// 🔴 Denis, 16.09: «он не подтверждает а сразу создает, надо чтобы подтверждал
+// как с событиями». Same shape as the event list — one card for the whole list,
+// numbered, because «Изменить» asks for a number.
+func (h *Handler) showTaskList(chatID int64, messageID int) {
+	us := h.store.GetOrCreate(chatID)
+	tasks, _ := us.FlowData["tasks"].([]parse.TaskResult)
+	lang := h.lang(chatID)
+
+	var b strings.Builder
+	fmt.Fprintf(&b, i18n.T(lang, "📋 <b>Список задач: %d</b>\n", "📋 <b>Task list: %d</b>\n"), len(tasks))
+	for i, t := range tasks {
+		title := t.Title
+		if title == "" {
+			title = i18n.T(lang, "(без названия)", "(untitled)")
+		}
+		fmt.Fprintf(&b, "\n%d. ", i+1)
+		if t.Priority != nil {
+			b.WriteString(format.PriorityEmoji(*t.Priority) + " ")
+		}
+		b.WriteString(format.Escape(title))
+		var meta []string
+		if t.DueDate != nil {
+			meta = append(meta, "📅 "+t.DueDate.Format("02.01"))
+		}
+		if t.EstimatedMinutes != nil {
+			meta = append(meta, "⏱ "+format.Duration(*t.EstimatedMinutes))
+		}
+		if len(t.Tags) > 0 {
+			meta = append(meta, "🏷 "+format.Escape(strings.Join(t.Tags, ", ")))
+		}
+		if len(meta) > 0 {
+			b.WriteString("\n    " + strings.Join(meta, " · "))
+		}
+	}
+	us.FlowStep = "list"
+	h.editOrSend(chatID, messageID, b.String(), keyboards.ListCard(lang, len(tasks)))
 }
 
 // showTaskCard is the single-task path, unchanged in behaviour from before the
@@ -145,9 +253,8 @@ func (h *Handler) showTaskCard(chatID int64, text string) {
 //
 // 🔴 Named, not counted. «Создано 5 из 8» leaves the reader to work out which
 // three need doing again, which is the only part of the answer they needed.
-func (h *Handler) createTaskList(chatID int64, messageID int, raw string) {
+func (h *Handler) createTaskList(chatID int64, messageID int, parsed []parse.TaskResult) {
 	us := h.store.GetOrCreate(chatID)
-	parsed := parse.ParseTaskList(raw, time.Now().In(h.location(chatID)))
 
 	var made, failed []string
 	for _, p := range parsed {
