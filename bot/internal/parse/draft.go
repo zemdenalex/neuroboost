@@ -13,6 +13,12 @@ type Draft struct {
 	Day    time.Time
 	HasDay bool
 
+	// BareWeekday says the day came from a weekday word with no modifier —
+	// «пятница», not «следующая пятница», «17.09» or «завтра». Only such a day
+	// is a guess about WHICH week, and only it may be moved by a list whose
+	// headers run in order (ParseEventList).
+	BareWeekday bool
+
 	// Start and End are offsets from Day's midnight, not instants: the day and
 	// the time are chosen by different recognisers and may arrive in either
 	// order. HasEnd stays false when only a start was given, so the caller —

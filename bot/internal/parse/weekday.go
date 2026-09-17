@@ -95,10 +95,12 @@ func recogniseWeekday(toks []Token, now time.Time, d *Draft) bool {
 		// Walk backwards over an optional modifier and an optional preposition.
 		first := i
 		shift := 0
+		modified := false
 		if j := first - 1; j >= 0 && toks[j].Field == FieldNone {
 			if s, isMod := weekdayShift[toks[j].Norm]; isMod {
 				shift = s
 				first = j
+				modified = true
 			}
 		}
 		if j := first - 1; j >= 0 && toks[j].Field == FieldNone && dayPrepositions[toks[j].Norm] {
@@ -107,6 +109,7 @@ func recogniseWeekday(toks []Token, now time.Time, d *Draft) bool {
 
 		d.Day = weekdayDate(target, shift, now)
 		d.HasDay = true
+		d.BareWeekday = !modified
 		for k := first; k <= i; k++ {
 			toks[k].Field = FieldDay
 		}

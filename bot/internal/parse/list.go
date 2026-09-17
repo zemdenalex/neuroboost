@@ -101,6 +101,17 @@ func ParseEventList(text string, now time.Time) []Parsed {
 	for _, e := range entries {
 		p := ParseLine(e, now)
 
+		// 🔴 Days in a block run forwards. «monday … tuesday … friday» written
+		// on a Wednesday is next week in order, and read line by line it put
+		// Friday the 18th before Monday the 21st (Mufid's block, 16.09). A bare
+		// weekday that would land before the day above it moves a week on.
+		// Explicit dates, «завтра» and «следующая» are left exactly as written.
+		if p.Draft.HasDay && p.Draft.BareWeekday && haveDay {
+			for p.Draft.Day.Before(day) {
+				p.Draft.Day = p.Draft.Day.AddDate(0, 0, 7)
+			}
+		}
+
 		if p.Draft.HasDay && !p.Draft.HasTime && !p.Draft.AllDay && p.Title == "" {
 			day, haveDay = p.Draft.Day, true
 			continue
