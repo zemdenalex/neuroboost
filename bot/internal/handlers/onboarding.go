@@ -83,9 +83,18 @@ func (h *Handler) showOnboardLang(chatID int64, messageID int) {
 	h.editOrSend(chatID, messageID, body, tgbotapi.NewInlineKeyboardMarkup(rows...))
 }
 
-// utcOffsets are the zones the clock screen offers, as hours east of UTC.
-// Russia spans +2…+12; everything else is «Другое…».
-var utcOffsets = []int{2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}
+// clockOffsets are the zones the clock screen offers: the account's own and
+// its neighbours, as hours east of UTC. Centred on the account (review 17.09):
+// a fixed UTC+2…+12 row never marked anything for a user in New York.
+func clockOffsets(currentHours int) []int {
+	var out []int
+	for h := currentHours - 3; h <= currentHours+7; h++ {
+		if h >= -12 && h <= 14 {
+			out = append(out, h)
+		}
+	}
+	return out
+}
 
 // showOnboardTZ asks what time it is rather than which zone the user is in:
 // everyone knows the first, few could name «Asia/Yekaterinburg».
@@ -97,7 +106,7 @@ func (h *Handler) showOnboardTZ(chatID int64, messageID int) {
 
 	rows := [][]tgbotapi.InlineKeyboardButton{}
 	row := []tgbotapi.InlineKeyboardButton{}
-	for _, hours := range utcOffsets {
+	for _, hours := range clockOffsets(currentOffset / 3600) {
 		loc := time.FixedZone("", hours*3600)
 		label := mark(hours*3600 == currentOffset) + now.In(loc).Format("15:04")
 		row = append(row, tgbotapi.NewInlineKeyboardButtonData(label, fmt.Sprintf("ob_tzset_%d", hours)))

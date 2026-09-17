@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 	"strings"
 	"sync"
 	"testing"
@@ -252,5 +253,21 @@ func TestOnboardingExamplesParseAsAdvertised(t *testing.T) {
 		if p.Title != "стоматолог" && p.Title != "dentist" {
 			t.Errorf("%q: title %q", line, p.Title)
 		}
+	}
+}
+
+// Review finding 3: the clock buttons are offsets from the ACCOUNT's zone, so a
+// user in New York sees their own time marked, not a fixed UTC+2…+12 row.
+func TestClockButtonsCentreOnTheAccountZone(t *testing.T) {
+	acc := &fakeAccount{timezone: "America/New_York", settings: map[string]any{}}
+	h, fake, chat := onboardHandler(t, acc)
+
+	sayAs(h, chat, "/start", "en")
+	press(h, chat, "ob_tz")
+
+	markup := fake.last(t).Markup
+	// A ticked TIME — «✅ Correct, next» carries a tick of its own.
+	if !regexp.MustCompile(`✅ \d{2}:\d{2}`).MatchString(markup) {
+		t.Errorf("no clock is marked for an account in New York: %s", markup)
 	}
 }

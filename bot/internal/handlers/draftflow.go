@@ -164,7 +164,21 @@ func (h *Handler) handleNewEventFlow(chatID int64, text string) {
 		st.Title = parse.ParseLineRaw(text)
 		h.showCard(chatID, 0)
 
-	case "edit:freq":
+	case "card":
+		// 🔴 Review 17.09: text typed on the card used to wipe the draft. A new
+		// draft retyped is a correction — read it as the line again. While a
+		// list or an existing event is open, a retyped line cannot say which
+		// entry it replaces, so the card stays and says so.
+		st, ok := draftOf(h, chatID)
+		_, inList := listOf(h, chatID)
+		if ok && st.EventID == "" && !inList {
+			us.FlowStep = "line"
+			h.handleNewEventFlow(chatID, text)
+			return
+		}
+		h.keepDraft(chatID)
+
+	case "ask:freq", "edit:freq":
 		st, ok := draftOf(h, chatID)
 		if !ok {
 			h.lostDraft(chatID)
@@ -198,7 +212,7 @@ func (h *Handler) handleNewEventFlow(chatID int64, text string) {
 		}
 		h.showCard(chatID, 0)
 
-	case "edit:remind":
+	case "edit:remind", "pick:remind":
 		st, ok := draftOf(h, chatID)
 		if !ok {
 			h.lostDraft(chatID)
@@ -260,9 +274,26 @@ func (h *Handler) handleNewEventFlow(chatID int64, text string) {
 		h.showCard(chatID, 0)
 
 	default:
-		h.store.ClearFlow(chatID)
-		h.sendHTMLWithKeyboard(chatID, h.t(chatID, "Что-то пошло не так.", "Something went wrong."), keyboards.HomeInline(h.lang(chatID)))
+		// 🔴 Never ClearFlow here. This branch used to answer «Что-то пошло
+		// не так» and throw the draft away for any text typed on a screen that
+		// expects a button — the edit menu, a list question. The draft stays.
+		h.keepDraft(chatID)
 	}
+}
+
+// keepDraft answers text the current screen cannot read: the draft survives,
+// and the user is told what the screen wants.
+func (h *Handler) keepDraft(chatID int64) {
+	if _, ok := draftOf(h, chatID); !ok {
+		if _, inList := listOf(h, chatID); !inList {
+			h.lostDraft(chatID)
+			return
+		}
+	}
+	h.sendHTMLWithKeyboard(chatID, h.t(chatID,
+		"Здесь нужна кнопка — черновик на месте. «🗑 Отменить», чтобы начать заново.",
+		"This screen needs a button — the draft is still here. «🗑 Cancel» to start over."),
+		keyboards.DraftBack(h.lang(chatID)))
 }
 
 // parseIntoDraft runs the pipeline and then resolves a calendar name, which
@@ -442,9 +473,11 @@ func (h *Handler) handleDraftCallback(chatID int64, messageID int, data string) 
 			h.editOrSend(chatID, messageID, h.t(chatID, "Сначала выбери, как часто повторять.", "Choose how often it repeats first."), keyboards.FreqPicker(h.lang(chatID)))
 			return true
 		}
+		// The end may be typed straight onto this screen (review 17.09).
+		us.FlowStep = "edit:rend"
 		h.editOrSend(chatID, messageID, h.t(chatID,
-			"Когда закончить повтор?",
-			"When should the series end?"), keyboards.RepeatEndPicker(h.lang(chatID)))
+			"Когда закончить повтор? Можно сразу написать «10 раз» или «до 01.12».",
+			"When should the series end? You can just write «10 times» or «until 01.12»."), keyboards.RepeatEndPicker(h.lang(chatID)))
 
 	case data == "dr_rend_never":
 		st.D.RepeatCount, st.D.RepeatUntil = 0, time.Time{}
@@ -578,7 +611,8 @@ func toggleReminder(st *draftState, n int, onlyAdd bool) {
 }
 
 func (h *Handler) showReminderPicker(chatID int64, messageID int, st *draftState) {
-	h.store.GetOrCreate(chatID).FlowStep = "card"
+	// Its own step, so a time typed onto the picker is read as one.
+	h.store.GetOrCreate(chatID).FlowStep = "pick:remind"
 	h.editOrSend(chatID, messageID,
 		h.t(chatID, "🔔 Когда напомнить? Можно отметить несколько.", "🔔 When should I remind you? Tick as many as you like."),
 		keyboards.ReminderPicker(h.lang(chatID), st.ReminderOffsets))
