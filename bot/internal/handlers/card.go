@@ -255,42 +255,85 @@ func renderDraft(lang i18n.Lang, st draftState, now time.Time) string {
 			"✅ plus a task — it can be ticked off\n"))
 	}
 
+	// 🔴 From here down every characteristic is printed, filled or not. Denis,
+	// 18.09: «в базовых карточках должна быть вся информация, просто говоря
+	// "нет" для характеристик без значения, чтобы люди знали, что они
+	// существуют».
+	//
+	// The old card printed a field only when it had a value, which meant the
+	// bot taught its own feature set by accident: whatever you had never typed,
+	// you had no way to learn about. It is also why the difference between a
+	// task and an event stayed unclear — the card never showed the fields the
+	// two differ in.
 	switch {
 	case st.D.Repeat != "":
-		fmt.Fprintf(&b, "🔁 %s\n", format.Escape(repeatName(lang, st.D)))
+		b.WriteString(fieldLine("🔁", i18n.T(lang, "Повтор:", "Repeat:"), format.Escape(repeatName(lang, st.D))))
 	case st.D.RepeatAsked:
+		// Stronger than «нет»: a question that is about to be asked is not an
+		// absence, and printing «нет» here would answer it silently.
 		b.WriteString(i18n.T(lang,
 			"⚠ повтор — частота не указана, спрошу\n",
 			"⚠ repeats — no frequency given, I will ask\n"))
+	default:
+		b.WriteString(fieldLine("🔁", i18n.T(lang, "Повтор:", "Repeat:"), noneWord(lang)))
 	}
 
-	if st.D.Colour != "" {
-		fmt.Fprintf(&b, "🎨 %s\n", format.Escape(colourName(lang, st.D.Colour)))
-	}
-	if st.CalendarName != "" {
-		fmt.Fprintf(&b, "📁 %s\n", format.Escape(st.CalendarName))
-	}
-	if len(st.D.Tags) > 0 {
-		fmt.Fprintf(&b, "🏷 %s\n", format.Escape(strings.Join(st.D.Tags, ", ")))
-	}
+	b.WriteString(fieldLine("📁", i18n.T(lang, "Календарь:", "Calendar:"),
+		orNone(lang, format.Escape(st.CalendarName))))
 
-	// 🔴 Three states, three sentences. Saying nothing for the nil case is
-	// correct — it means "my usual reminders", which is what the server will
-	// do — but «не напоминать» has to be visible, or an event that will stay
-	// silent forever looks identical to one that will not.
-	if st.ReminderOffsets != nil {
-		if len(*st.ReminderOffsets) == 0 {
-			b.WriteString(i18n.T(lang, "🔕 не напоминать\n", "🔕 no reminder\n"))
-		} else {
-			parts := make([]string, 0, len(*st.ReminderOffsets))
-			for _, m := range *st.ReminderOffsets {
-				parts = append(parts, humanOffset(lang, m))
-			}
-			fmt.Fprintf(&b, i18n.T(lang, "🔔 за %s\n", "🔔 %s before\n"), strings.Join(parts, ", "))
+	// 🔴 Three states, three sentences, and none of them is «нет». Saying
+	// nothing for the nil case used to be correct-but-invisible: it means "my
+	// usual reminders", which is what the server will do — while «не
+	// напоминать» means silence forever. Collapsing either into «нет» would
+	// merge two different futures into one word.
+	switch {
+	case st.ReminderOffsets == nil:
+		b.WriteString(fieldLine("🔔", i18n.T(lang, "Напомнить:", "Remind:"),
+			i18n.T(lang, "как обычно", "as usual")))
+	case len(*st.ReminderOffsets) == 0:
+		b.WriteString(fieldLine("🔕", i18n.T(lang, "Напомнить:", "Remind:"),
+			i18n.T(lang, "не напоминать", "never")))
+	default:
+		parts := make([]string, 0, len(*st.ReminderOffsets))
+		for _, m := range *st.ReminderOffsets {
+			parts = append(parts, humanOffset(lang, m))
 		}
+		joined := strings.Join(parts, ", ")
+		b.WriteString(fieldLine("🔔", i18n.T(lang, "Напомнить:", "Remind:"),
+			i18n.T(lang, "за "+joined, joined+" before")))
 	}
+
+	b.WriteString(fieldLine("🏷", i18n.T(lang, "Теги:", "Tags:"),
+		orNone(lang, format.Escape(strings.Join(st.D.Tags, ", ")))))
+	b.WriteString(fieldLine("🎨", i18n.T(lang, "Цвет:", "Colour:"),
+		orNone(lang, format.Escape(colourName(lang, st.D.Colour)))))
 
 	return strings.TrimRight(b.String(), "\n")
+}
+
+// fieldLine prints one characteristic of a card, ALWAYS.
+//
+// No column padding: Telegram renders HTML in a proportional font, so spaces
+// would align nothing and only look ragged on a narrow phone.
+func fieldLine(icon, label, value string) string {
+	return fmt.Sprintf("%s %s %s\n", icon, label, value)
+}
+
+// noneWord is the word an empty characteristic is printed with.
+func noneWord(lang i18n.Lang) string {
+	return i18n.T(lang, "нет", "none")
+}
+
+// orNone renders an empty value as a word rather than as a blank.
+//
+// 🔴 A blank after a label reads as a bug in the bot; «нет» reads as an answer.
+// The difference matters because the whole point of printing empty fields is to
+// teach that the field exists.
+func orNone(lang i18n.Lang, value string) string {
+	if strings.TrimSpace(value) == "" {
+		return noneWord(lang)
+	}
+	return value
 }
 
 // checkMark flags a value the parser read from a loose format.

@@ -158,3 +158,61 @@ func TestTagEditingIgnoresEmptyPieces(t *testing.T) {
 		t.Errorf("got %v, want [дела]", tags)
 	}
 }
+
+// 🔴 Denis, 18.09: «в базовых карточках должна быть вся информация, просто
+// говоря "нет" для характеристик без значения, чтобы люди знали, что они
+// существуют».
+//
+// A field printed only when filled is invisible to the person who has never
+// filled it — and that is how someone concludes the app has no repeats, no
+// tags and no calendars. It is also the mechanical reason «разница между
+// задачами и событиями» stayed unclear: the card never showed what the two
+// differ in.
+func TestCardNamesEveryFieldEvenWhenEmpty(t *testing.T) {
+	st := draftFrom("стоматолог завтра 15:00")
+	st.CalendarName = "Личный"
+	card := renderDraft(i18n.RU, st, tuesday15())
+
+	for _, label := range []string{"Повтор:", "Календарь:", "Напомнить:", "Теги:", "Цвет:"} {
+		if !strings.Contains(card, label) {
+			t.Errorf("карточка не называет %q — человек не узнает, что поле есть:\n%s", label, card)
+		}
+	}
+	// The negative control for the labels: they must be there AND carry the
+	// word «нет», not a blank that reads as a rendering bug.
+	if n := strings.Count(card, "нет"); n < 3 {
+		t.Errorf("пустые поля сказали «нет» только %d раза:\n%s", n, card)
+	}
+}
+
+// The control that stops the card from passing by printing «нет» everywhere.
+func TestCardStillPrintsRealValues(t *testing.T) {
+	st := draftFrom("оркестр среда 14:00-15:00 каждую неделю синий #музыка")
+	st.CalendarName = "Работа"
+	card := renderDraft(i18n.RU, st, tuesday15())
+
+	for _, want := range []string{"Работа", "музыка", "синий"} {
+		if !strings.Contains(card, want) {
+			t.Errorf("заполненное поле %q потерялось:\n%s", want, card)
+		}
+	}
+	if strings.Contains(card, "Теги: нет") || strings.Contains(card, "Цвет: нет") {
+		t.Errorf("заполненное поле напечаталось как «нет»:\n%s", card)
+	}
+}
+
+// Both languages, because a label added in one is a label missing in the other
+// — that is exactly how «Notification button language» became a defect.
+func TestCardNamesEveryFieldInEnglishToo(t *testing.T) {
+	st := draftFrom("стоматолог завтра 15:00")
+	card := renderDraft(i18n.EN, st, tuesday15())
+
+	for _, label := range []string{"Repeat:", "Calendar:", "Remind:", "Tags:", "Colour:"} {
+		if !strings.Contains(card, label) {
+			t.Errorf("the English card does not name %q:\n%s", label, card)
+		}
+	}
+	if !strings.Contains(card, "none") {
+		t.Errorf("empty fields did not say «none»:\n%s", card)
+	}
+}
