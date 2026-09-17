@@ -26,6 +26,13 @@ type fakeAccount struct {
 	settings map[string]any
 	patches  []map[string]any
 	down     bool
+	// writes records every POST/PATCH outside /api/auth/me, body decoded.
+	writes []recordedWrite
+}
+
+type recordedWrite struct {
+	Method, Path string
+	Body         map[string]any
 }
 
 func (a *fakeAccount) serve(w http.ResponseWriter, r *http.Request) {
@@ -36,6 +43,14 @@ func (a *fakeAccount) serve(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if r.URL.Path != "/api/auth/me" {
+		if r.Method == http.MethodPost || r.Method == http.MethodPatch {
+			body, _ := io.ReadAll(r.Body)
+			var decoded map[string]any
+			_ = json.Unmarshal(body, &decoded)
+			a.writes = append(a.writes, recordedWrite{r.Method, r.URL.Path, decoded})
+			_ = json.NewEncoder(w).Encode(map[string]any{"data": map[string]any{"id": "e1", "title": decoded["title"]}})
+			return
+		}
 		_ = json.NewEncoder(w).Encode(map[string]any{"data": []any{}})
 		return
 	}

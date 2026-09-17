@@ -7,6 +7,7 @@ import (
 	"github.com/zemdenalex/neuroboost-bot/internal/api"
 	"github.com/zemdenalex/neuroboost-bot/internal/format"
 	"github.com/zemdenalex/neuroboost-bot/internal/keyboards"
+	"github.com/zemdenalex/neuroboost-bot/internal/parse"
 )
 
 // Editing an event from the bot.
@@ -68,7 +69,7 @@ func draftFromEvent(e api.Event, loc *time.Location) draftState {
 	}
 
 	if e.Rrule != nil && *e.Rrule != "" {
-		st.D.Repeat = *e.Rrule
+		parse.SplitRRule(*e.Rrule, &st.D)
 	}
 	if e.Color != "" {
 		st.D.Colour = e.Color
@@ -214,7 +215,7 @@ func (h *Handler) updateFromDraft(chatID int64, messageID int, st draftState) {
 	startsAt := start.UTC().Format(time.RFC3339)
 	endsAt := end.UTC().Format(time.RFC3339)
 	allDay := st.D.AllDay
-	rrule := st.D.Repeat
+	rrule := st.D.RRule()
 	colour := st.D.Colour
 
 	req := api.UpdateEventReq{

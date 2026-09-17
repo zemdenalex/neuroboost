@@ -15,6 +15,8 @@ type recogniser struct {
 // 🔴 The order is part of the contract, not an implementation detail, and
 // three places in it are load-bearing:
 //
+//   - repeat-end before date, because «до 01.12» after a repeat is the end of
+//     the series and not the day of the event;
 //   - date before time, because a dot is ambiguous: «16.09» is a date and
 //     «14.00» is a time, and only trying the date first separates them;
 //   - repeat before weekday, because «каждый вторник» is a rule AND a start
@@ -25,6 +27,7 @@ type recogniser struct {
 // TestRecogniserOrderIsFixed holds this list so a reordering during a refactor
 // fails loudly instead of changing behaviour quietly.
 var recognisers = []recogniser{
+	{"repeat-end", func(t []Token, now time.Time, d *Draft) bool { return recogniseRepeatEnd(t, now, d) }},
 	{"date", func(t []Token, now time.Time, d *Draft) bool { return recogniseExplicitDate(t, now, d) }},
 	{"relative-day", func(t []Token, now time.Time, d *Draft) bool { return recogniseRelativeDay(t, now, d) }},
 	{"repeat", func(t []Token, _ time.Time, d *Draft) bool { return recogniseRepeat(t, d) }},

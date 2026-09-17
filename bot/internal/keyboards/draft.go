@@ -45,6 +45,7 @@ func draftFields(lang i18n.Lang) []struct{ Label, Data string } {
 		{i18n.T(lang, "Дата", "Date"), "dre_date"},
 		{i18n.T(lang, "Время", "Time"), "dre_time"},
 		{i18n.T(lang, "Повтор", "Repeat"), "dre_repeat"},
+		{i18n.T(lang, "Конец повтора", "Repeat ends"), "dre_rend"},
 		{i18n.T(lang, "Календарь", "Calendar"), "dre_cal"},
 		{i18n.T(lang, "Цвет", "Colour"), "dre_colour"},
 		{i18n.T(lang, "Теги", "Tags"), "dre_tags"},
@@ -86,7 +87,23 @@ func FreqPicker(lang i18n.Lang) tgbotapi.InlineKeyboardMarkup {
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "Каждый год", "Every year"), "dr_freq_YEARLY"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
+			// «таблетки раз в 3 дня» — Denis, 16.09: «надо чтобы свои варианты были».
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "✏️ Своя частота", "✏️ Custom"), "dr_freq_CUSTOM"),
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "Без повтора", "No repeat"), "dr_freq_NONE"),
+		),
+	)
+}
+
+// RepeatEndPicker ends a series: never, or a count or a date typed as text.
+// Not asked at creation — «lots of steps» — only offered under «Изменить».
+func RepeatEndPicker(lang i18n.Lang) tgbotapi.InlineKeyboardMarkup {
+	return tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "Никогда", "Never"), "dr_rend_never"),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "✏️ N раз или до даты", "✏️ N times or a date"), "dr_rend_text"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "⬅️ Назад", "⬅️ Back"), "dr_back"),
 		),
 	)
 }

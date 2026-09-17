@@ -164,6 +164,40 @@ func (h *Handler) handleNewEventFlow(chatID int64, text string) {
 		st.Title = parse.ParseLineRaw(text)
 		h.showCard(chatID, 0)
 
+	case "edit:freq":
+		st, ok := draftOf(h, chatID)
+		if !ok {
+			h.lostDraft(chatID)
+			return
+		}
+		read, valid := parse.RepeatText(text, time.Now().In(h.location(chatID)))
+		if !valid {
+			h.sendHTMLWithKeyboard(chatID, h.t(chatID,
+				"Не понял частоту. Например «раз в 3 дня» или «каждые 2 недели».",
+				"Could not read that. «every 3 days» or «every 2 weeks», say."), keyboards.DraftBack(h.lang(chatID)))
+			return
+		}
+		st.D.Repeat, st.D.RepeatAsked = read.Repeat, false
+		// An end typed with the period replaces the old one; none typed keeps it.
+		if read.RepeatCount > 0 || !read.RepeatUntil.IsZero() {
+			st.D.RepeatCount, st.D.RepeatUntil = read.RepeatCount, read.RepeatUntil
+		}
+		h.showCard(chatID, 0)
+
+	case "edit:rend":
+		st, ok := draftOf(h, chatID)
+		if !ok {
+			h.lostDraft(chatID)
+			return
+		}
+		if !parse.RepeatEndText(text, time.Now().In(h.location(chatID)), &st.D) {
+			h.sendHTMLWithKeyboard(chatID, h.t(chatID,
+				"Не понял. Например «10 раз» или «до 01.12».",
+				"Could not read that. «10 times» or «until 01.12», say."), keyboards.DraftBack(h.lang(chatID)))
+			return
+		}
+		h.showCard(chatID, 0)
+
 	case "edit:remind":
 		st, ok := draftOf(h, chatID)
 		if !ok {
@@ -397,6 +431,25 @@ func (h *Handler) handleDraftCallback(chatID int64, messageID int, data string) 
 		us.FlowStep = "ask:freq"
 		h.editOrSend(chatID, messageID, h.t(chatID, "Как часто повторять?", "How often should it repeat?"), keyboards.FreqPicker(h.lang(chatID)))
 
+	case data == "dre_rend":
+		if st.D.Repeat == "" && !st.D.RepeatAsked {
+			h.editOrSend(chatID, messageID, h.t(chatID, "Сначала выбери, как часто повторять.", "Choose how often it repeats first."), keyboards.FreqPicker(h.lang(chatID)))
+			return true
+		}
+		h.editOrSend(chatID, messageID, h.t(chatID,
+			"Когда закончить повтор?",
+			"When should the series end?"), keyboards.RepeatEndPicker(h.lang(chatID)))
+
+	case data == "dr_rend_never":
+		st.D.RepeatCount, st.D.RepeatUntil = 0, time.Time{}
+		h.showCard(chatID, messageID)
+
+	case data == "dr_rend_text":
+		us.FlowStep = "edit:rend"
+		h.editOrSend(chatID, messageID, h.t(chatID,
+			"Напиши «10 раз» или «до 01.12».",
+			"Write «10 times» or «until 01.12»."), keyboards.DraftBack(h.lang(chatID)))
+
 	case data == "dre_colour":
 		h.editOrSend(chatID, messageID, h.t(chatID, "Цвет события:", "Event colour:"), keyboards.ColourPicker(h.lang(chatID)))
 
@@ -415,11 +468,19 @@ func (h *Handler) handleDraftCallback(chatID int64, messageID int, data string) 
 
 	case strings.HasPrefix(data, "dr_freq_"):
 		freq := strings.TrimPrefix(data, "dr_freq_")
+		if freq == "CUSTOM" {
+			us.FlowStep = "edit:freq"
+			h.editOrSend(chatID, messageID, h.t(chatID,
+				"Как часто? Например «раз в 3 дня», «каждые 2 недели», «раз в месяц 10 раз».",
+				"How often? «every 3 days», «every 2 weeks», «every month 10 times», say."), keyboards.DraftBack(h.lang(chatID)))
+			return true
+		}
 		st.D.RepeatAsked = false
 		if freq == "NONE" {
 			st.D.Repeat = ""
+			st.D.RepeatCount, st.D.RepeatUntil = 0, time.Time{}
 		} else {
-			st.D.Repeat = "FREQ=" + freq
+			st.D.Repeat = parse.FreqRule(freq)
 		}
 		h.showCard(chatID, messageID)
 
@@ -645,8 +706,7 @@ func (h *Handler) createOne(chatID int64, st draftState) error {
 		TaskID:          taskID,
 		ReminderOffsets: st.ReminderOffsets,
 	}
-	if st.D.Repeat != "" {
-		rrule := st.D.Repeat
+	if rrule := st.D.RRule(); rrule != "" {
 		req.Rrule = &rrule
 	}
 	if st.D.Colour != "" {

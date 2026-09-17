@@ -165,7 +165,7 @@ func (h *Handler) handleKeywordCallback(chatID int64, messageID int, data string
 		return true
 
 	case strings.HasPrefix(data, "kwv_freq_"):
-		h.saveKeyword(chatID, messageID, "repeat", "FREQ="+strings.TrimPrefix(data, "kwv_freq_"))
+		h.saveKeyword(chatID, messageID, "repeat", parse.FreqRule(strings.TrimPrefix(data, "kwv_freq_")))
 		return true
 	}
 	return false

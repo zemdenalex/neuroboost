@@ -34,6 +34,12 @@ type Draft struct {
 	Repeat      string
 	RepeatAsked bool
 
+	// RepeatCount and RepeatUntil end a series: «10 раз», «до 01.12». They
+	// live apart from Repeat so that «повтор 10 раз» can keep its count while
+	// the frequency is still to be asked. RRule joins them. At most one is set.
+	RepeatCount int
+	RepeatUntil time.Time
+
 	AllDay bool
 
 	// IsTask means the word "задача" was used: the bot creates a task and an

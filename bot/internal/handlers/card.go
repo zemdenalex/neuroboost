@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -80,9 +81,25 @@ func weekdayName(lang i18n.Lang, w time.Weekday) string {
 	return i18n.T(lang, ru[int(w)], en[int(w)])
 }
 
+// repeatName says the whole rule in words: the period, then the end.
+// «раз в 3 дня · 10 раз», «каждый год · до 01.12».
+func repeatName(lang i18n.Lang, d parse.Draft) string {
+	name := freqName(lang, d.Repeat)
+	switch {
+	case d.RepeatCount > 0:
+		name += " · " + fmt.Sprintf(i18n.T(lang, "%d раз", "%d times"), d.RepeatCount)
+	case !d.RepeatUntil.IsZero():
+		name += " · " + i18n.T(lang, "до ", "until ") + d.RepeatUntil.Format("02.01.2006")
+	}
+	return name
+}
+
 // freqName turns an RRULE into words. The RRULE itself is never translated —
 // it is what the server stores.
 func freqName(lang i18n.Lang, rrule string) string {
+	if n, unit, ok := intervalOf(rrule); ok {
+		return intervalName(lang, n, unit)
+	}
 	switch rrule {
 	case "FREQ=DAILY":
 		return i18n.T(lang, "каждый день", "every day")
@@ -90,10 +107,58 @@ func freqName(lang i18n.Lang, rrule string) string {
 		return i18n.T(lang, "каждую неделю", "every week")
 	case "FREQ=MONTHLY":
 		return i18n.T(lang, "каждый месяц", "every month")
-	case "FREQ=YEARLY":
+	case "FREQ=YEARLY", "FREQ=MONTHLY;INTERVAL=12":
 		return i18n.T(lang, "каждый год", "every year")
 	}
 	return rrule
+}
+
+// intervalOf reads «FREQ=X;INTERVAL=N» with N ≥ 2. A year is stored as twelve
+// months (parse/repeat.go), so multiples of twelve months are said as years.
+func intervalOf(rrule string) (int, string, bool) {
+	parts := strings.Split(rrule, ";")
+	if len(parts) != 2 || !strings.HasPrefix(parts[0], "FREQ=") || !strings.HasPrefix(parts[1], "INTERVAL=") {
+		return 0, "", false
+	}
+	n, err := strconv.Atoi(strings.TrimPrefix(parts[1], "INTERVAL="))
+	if err != nil || n < 2 {
+		return 0, "", false
+	}
+	freq := strings.TrimPrefix(parts[0], "FREQ=")
+	if freq == "MONTHLY" && n%12 == 0 {
+		if n == 12 {
+			return 0, "", false // «каждый год», said by freqName
+		}
+		return n / 12, "YEARLY", true
+	}
+	return n, freq, true
+}
+
+// intervalName: «раз в 3 дня» / «every 3 days». Each language formats its own
+// sentence — Russian needs the plural form, English does not take one.
+func intervalName(lang i18n.Lang, n int, freq string) string {
+	switch freq {
+	case "DAILY":
+		return i18n.T(lang, fmt.Sprintf("раз в %d %s", n, ruPlural(n, "день", "дня", "дней")), fmt.Sprintf("every %d days", n))
+	case "WEEKLY":
+		return i18n.T(lang, fmt.Sprintf("раз в %d %s", n, ruPlural(n, "неделю", "недели", "недель")), fmt.Sprintf("every %d weeks", n))
+	case "MONTHLY":
+		return i18n.T(lang, fmt.Sprintf("раз в %d %s", n, ruPlural(n, "месяц", "месяца", "месяцев")), fmt.Sprintf("every %d months", n))
+	default:
+		return i18n.T(lang, fmt.Sprintf("раз в %d %s", n, ruPlural(n, "год", "года", "лет")), fmt.Sprintf("every %d years", n))
+	}
+}
+
+// ruPlural picks the Russian form for a count: 1 день, 3 дня, 5 дней.
+func ruPlural(n int, one, few, many string) string {
+	switch {
+	case n%10 == 1 && n%100 != 11:
+		return one
+	case n%10 >= 2 && n%10 <= 4 && (n%100 < 12 || n%100 > 14):
+		return few
+	default:
+		return many
+	}
 }
 
 // colourName turns a palette name into words. The palette name is what the web
@@ -173,7 +238,7 @@ func renderDraft(lang i18n.Lang, st draftState, now time.Time) string {
 
 	switch {
 	case st.D.Repeat != "":
-		fmt.Fprintf(&b, "🔁 %s\n", format.Escape(freqName(lang, st.D.Repeat)))
+		fmt.Fprintf(&b, "🔁 %s\n", format.Escape(repeatName(lang, st.D)))
 	case st.D.RepeatAsked:
 		b.WriteString(i18n.T(lang,
 			"⚠ повтор — частота не указана, спрошу\n",
