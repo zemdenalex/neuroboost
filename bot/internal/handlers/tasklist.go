@@ -92,7 +92,7 @@ func (h *Handler) handleTaskListCallback(chatID int64, messageID int, data strin
 // list mode existed.
 func (h *Handler) showTaskCard(chatID int64, text string) {
 	us := h.store.GetOrCreate(chatID)
-	r := parse.ParseTask(text, time.Now().In(h.location()))
+	r := parse.ParseTask(text, time.Now().In(h.location(chatID)))
 
 	us.FlowData["title"] = r.Title
 	if r.Priority != nil {
@@ -108,7 +108,7 @@ func (h *Handler) showTaskCard(chatID int64, text string) {
 		us.FlowData["tags"] = r.Tags
 	}
 	us.FlowStep = "card"
-	h.sendHTMLWithKeyboard(chatID, taskCardText(h.lang(chatID), r, h.cfg.Timezone), keyboards.TaskCard(h.lang(chatID)))
+	h.sendHTMLWithKeyboard(chatID, taskCardText(h.lang(chatID), r, h.timezone(chatID)), keyboards.TaskCard(h.lang(chatID)))
 }
 
 // createTaskList writes one task per entry and names what did not make it.
@@ -117,7 +117,7 @@ func (h *Handler) showTaskCard(chatID int64, text string) {
 // three need doing again, which is the only part of the answer they needed.
 func (h *Handler) createTaskList(chatID int64, messageID int, raw string) {
 	us := h.store.GetOrCreate(chatID)
-	parsed := parse.ParseTaskList(raw, time.Now().In(h.location()))
+	parsed := parse.ParseTaskList(raw, time.Now().In(h.location(chatID)))
 
 	var made, failed []string
 	for _, p := range parsed {

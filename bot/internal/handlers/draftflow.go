@@ -115,13 +115,13 @@ func (h *Handler) handleNewEventFlow(chatID int64, text string) {
 	case "line":
 		// 🔴 Ask before assuming. A block of lines may be one entry with a long
 		// title or several entries, and the bot is not the one who knows which.
-		if parse.LooksLikeList(text, time.Now().In(h.location())) {
+		if parse.LooksLikeList(text, time.Now().In(h.location(chatID))) {
 			h.askListOrSingle(chatID, text)
 			return
 		}
 		st := h.parseIntoDraft(chatID, text)
 		if date, ok := us.FlowData["date"].(string); ok && date != "" && !st.D.HasDay {
-			if day, err := time.ParseInLocation("2006-01-02", date, h.location()); err == nil {
+			if day, err := time.ParseInLocation("2006-01-02", date, h.location(chatID)); err == nil {
 				st.D.Day, st.D.HasDay = day, true
 			}
 		}
@@ -155,7 +155,7 @@ func (h *Handler) handleNewEventFlow(chatID int64, text string) {
 			h.lostDraft(chatID)
 			return
 		}
-		p := parse.ParseLine(text, time.Now().In(h.location()))
+		p := parse.ParseLine(text, time.Now().In(h.location(chatID)))
 		if !p.Draft.HasDay {
 			h.sendText(chatID, h.t(chatID, "Не понял дату. Например: «завтра», «среда», «16.09».", "Didn't get the date. Try «завтра», «среда», «16.09»."))
 			return
@@ -169,7 +169,7 @@ func (h *Handler) handleNewEventFlow(chatID int64, text string) {
 			h.lostDraft(chatID)
 			return
 		}
-		p := parse.ParseLine(text, time.Now().In(h.location()))
+		p := parse.ParseLine(text, time.Now().In(h.location(chatID)))
 		if !p.Draft.HasTime {
 			h.sendText(chatID, h.t(chatID, "Не понял время. Например: «14:00» или «14:00-15:30».", "Didn't get the time. Try «14:00» or «14:00-15:30»."))
 			return
@@ -193,7 +193,7 @@ func (h *Handler) handleNewEventFlow(chatID int64, text string) {
 // failure this rewrite exists to end.
 func (h *Handler) parseIntoDraft(chatID int64, text string) draftState {
 	us := h.store.GetOrCreate(chatID)
-	p := parse.ParseLine(text, time.Now().In(h.location()))
+	p := parse.ParseLine(text, time.Now().In(h.location(chatID)))
 	st := draftState{D: p.Draft}
 
 	if cals, err := h.api.Calendars(us.AuthToken); err == nil && len(cals) > 0 {
@@ -221,7 +221,7 @@ func (h *Handler) parseIntoDraft(chatID int64, text string) draftState {
 			}
 			rules[word] = parse.Trigger{Field: field, Value: kw.Value}
 		}
-		parse.RecogniseCustomTriggers(p.Tokens, rules, time.Now().In(h.location()), &st.D)
+		parse.RecogniseCustomTriggers(p.Tokens, rules, time.Now().In(h.location(chatID)), &st.D)
 	}
 
 	// A custom word may name a calendar. Resolving it needs the list again,
@@ -266,7 +266,7 @@ func (h *Handler) showCard(chatID int64, messageID int) {
 		// silently uncreated.
 		card = keyboards.DraftCardInList(h.lang(chatID))
 	}
-	h.editOrSend(chatID, messageID, renderDraft(h.lang(chatID), *st, time.Now().In(h.location())), card)
+	h.editOrSend(chatID, messageID, renderDraft(h.lang(chatID), *st, time.Now().In(h.location(chatID))), card)
 }
 
 func (h *Handler) lostDraft(chatID int64) {
@@ -398,7 +398,7 @@ func (h *Handler) handleDraftCallback(chatID int64, messageID int, data string) 
 		if err != nil {
 			return true
 		}
-		now := time.Now().In(h.location())
+		now := time.Now().In(h.location(chatID))
 		st.D.Day = time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location()).AddDate(0, 0, n)
 		st.D.HasDay = true
 		h.showCard(chatID, messageID)
@@ -506,7 +506,7 @@ func (h *Handler) confirmDraft(chatID int64, messageID int) {
 // and that is said out loud rather than compensated for — a silent rollback
 // that can itself fail is worse than an honest sentence.
 func (h *Handler) createFromDraft(chatID int64, messageID int, st draftState) {
-	loc := h.location()
+	loc := h.location(chatID)
 	start, end := draftBounds(st)
 
 	if err := h.createOne(chatID, st); err != nil {

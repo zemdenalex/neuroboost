@@ -188,7 +188,7 @@ func (h *Handler) advanceWizard(chatID int64, messageID int, current string) {
 		return
 	}
 	us.FlowStep = "wizard:" + next
-	loc := h.location()
+	loc := h.location(chatID)
 	h.editOrSend(chatID, messageID, wizardStepText(h.lang(chatID), next, us.FlowData, loc), wizardKeyboardFor(h.lang(chatID), next, us.FlowData, loc))
 }
 
@@ -240,7 +240,7 @@ func (h *Handler) handleWizardDue(chatID int64, messageID int, raw string) {
 	if err != nil {
 		return
 	}
-	due := time.Now().In(h.location()).AddDate(0, 0, offset)
+	due := time.Now().In(h.location(chatID)).AddDate(0, 0, offset)
 	us.FlowData["due"] = due.Format(time.RFC3339)
 	h.advanceWizard(chatID, messageID, "due")
 }

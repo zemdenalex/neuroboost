@@ -141,8 +141,18 @@ func (h *Handler) HandleMessage(msg *tgbotapi.Message) {
 	// for a different part of the product, and a half-built draft waiting
 	// silently to swallow the next message is worse than losing it.
 	if screen, ok := keyboards.MenuScreen(msg.Text); ok {
+		// 🔴 A menu press in the middle of onboarding is «skip», not a trap —
+		// the same rule as for every other flow, plus the flag, or the next
+		// press would start it all over again.
+		if us.CurrentFlow == onboardFlow {
+			h.finishOnboarding(chatID)
+		}
 		if us.CurrentFlow != "" {
 			h.store.ClearFlow(chatID)
+		}
+		if h.needsOnboarding(chatID) {
+			h.startOnboarding(chatID, 0, msg.From.LanguageCode)
+			return
 		}
 		h.openScreen(chatID, screen)
 		return
@@ -156,6 +166,10 @@ func (h *Handler) HandleMessage(msg *tgbotapi.Message) {
 	if msg.IsCommand() {
 		switch msg.Command() {
 		case "start", "help":
+			if h.needsOnboarding(chatID) {
+				h.startOnboarding(chatID, 0, msg.From.LanguageCode)
+				return
+			}
 			h.handleStart(chatID)
 		default:
 			h.sendHTMLWithKeyboard(chatID, h.t(chatID, "Неизвестная команда.", "Unknown command."), keyboards.HomeInline(h.lang(chatID)))
@@ -252,6 +266,11 @@ func (h *Handler) HandleCallback(cb *tgbotapi.CallbackQuery) {
 	// the switch rather than inside it because the card has a dozen buttons
 	// with three prefixes, and a dozen more cases in a switch this long is how
 	// one of them ends up unreachable.
+	// Onboarding owns ob_.
+	if h.handleOnboardCallback(chatID, cb.Message.MessageID, data, cb.From) {
+		return
+	}
+
 	// Quick add's question owns qa_; it hands over to the card's flows.
 	if h.handleQuickCallback(chatID, cb.Message.MessageID, data) {
 		return
@@ -328,7 +347,7 @@ func (h *Handler) HandleCallback(cb *tgbotapi.CallbackQuery) {
 	// "its own message". The day view edits in place too now, so grid and day
 	// share one message and the exception no longer had anything to protect.
 	case data == "cal_today":
-		h.handleCalendarDay(chatID, cb.Message.MessageID, time.Now().In(h.location()).Format("2006-01-02"))
+		h.handleCalendarDay(chatID, cb.Message.MessageID, time.Now().In(h.location(chatID)).Format("2006-01-02"))
 	case strings.HasPrefix(data, "cal_new_"):
 		h.startNewEventForDay(chatID, strings.TrimPrefix(data, "cal_new_"))
 	case strings.HasPrefix(data, "cal_prev_"), strings.HasPrefix(data, "cal_next_"):

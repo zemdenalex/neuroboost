@@ -84,7 +84,7 @@ func draftFromEvent(e api.Event, loc *time.Location) draftState {
 // handleEventPicker turns the agenda into something tappable.
 func (h *Handler) handleEventPicker(chatID int64, messageID int) {
 	us := h.store.GetOrCreate(chatID)
-	loc := h.location()
+	loc := h.location(chatID)
 	now := time.Now().In(loc)
 
 	events, err := h.api.GetEvents(us.AuthToken,
@@ -139,10 +139,10 @@ func (h *Handler) handleEventCard(chatID int64, messageID int, eventID string) {
 	}
 
 	h.store.ClearFlow(chatID)
-	st := draftFromEvent(*ev, h.location())
+	st := draftFromEvent(*ev, h.location(chatID))
 	st.CalendarName = h.calendarName(chatID, ev.CalendarID)
 
-	text := renderDraft(h.lang(chatID), st, time.Now().In(h.location()))
+	text := renderDraft(h.lang(chatID), st, time.Now().In(h.location(chatID)))
 	if isInstance {
 		// 🔴 Said BEFORE anything changes. The card shows the series — its own
 		// first occurrence, not the one that was tapped — and a screen that
@@ -167,7 +167,7 @@ func (h *Handler) handleEventEdit(chatID int64, messageID int, eventID string) {
 		return
 	}
 
-	st := draftFromEvent(*ev, h.location())
+	st := draftFromEvent(*ev, h.location(chatID))
 	st.CalendarName = h.calendarName(chatID, ev.CalendarID)
 
 	us.CurrentFlow = "new_event"
@@ -241,7 +241,7 @@ func (h *Handler) updateFromDraft(chatID int64, messageID int, st draftState) {
 		return
 	}
 
-	loc := h.location()
+	loc := h.location(chatID)
 	h.editOrSend(chatID, messageID,
 		h.t(chatID, "💾 <b>Сохранено</b>\n", "💾 <b>Saved</b>\n")+
 			format.Escape(st.Title)+"\n🕐 "+

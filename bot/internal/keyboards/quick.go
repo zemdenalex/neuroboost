@@ -22,3 +22,17 @@ func QuickAddKind(lang i18n.Lang) tgbotapi.InlineKeyboardMarkup {
 		),
 	)
 }
+
+// OnboardNext is where onboarding hands over: the three places a new user goes
+// first, as buttons.
+func OnboardNext(lang i18n.Lang) tgbotapi.InlineKeyboardMarkup {
+	return tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "➕ Создать", "➕ Create"), "create_menu"),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🗓 Календарь", "🗓 Calendar"), "cal_open"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "⚙️ Настройки", "⚙️ Settings"), "settings_menu"),
+		),
+	)
+}

@@ -53,12 +53,37 @@ func monthGenitive(lang i18n.Lang, m time.Month) string {
 	return i18n.T(lang, ru[int(m)-1], en[int(m)-1])
 }
 
-// location resolves the configured timezone once, falling back to UTC rather
-// than to whatever the container happens to be set to.
-func (h *Handler) location() *time.Location {
-	loc, err := time.LoadLocation(h.cfg.Timezone)
+// location is the user's own timezone, falling back to UTC rather than to
+// whatever the container happens to be set to.
+func (h *Handler) location(chatID int64) *time.Location {
+	loc, err := time.LoadLocation(h.timezone(chatID))
 	if err != nil || loc == nil {
 		return time.UTC
 	}
 	return loc
+}
+
+// timezone is this user's IANA zone, from their account.
+//
+// 🔴 It used to be h.cfg.Timezone — ONE zone for every user of the bot, set in
+// the container's environment. Onboarding asks people what time it is for them
+// (v0.4.11.2), and an answer that nothing reads would be a question that lies.
+//
+// Cached like the language, and like the language a failed read is NOT cached:
+// it falls back to the configured zone for this one message and tries again
+// on the next.
+func (h *Handler) timezone(chatID int64) string {
+	us := h.store.GetOrCreate(chatID)
+	if us.TZKnown {
+		return us.TZ
+	}
+	tz, err := h.api.MyTimezone(us.AuthToken)
+	if err != nil || tz == "" {
+		return h.cfg.Timezone
+	}
+	if _, err := time.LoadLocation(tz); err != nil {
+		return h.cfg.Timezone
+	}
+	us.TZ, us.TZKnown = tz, true
+	return tz
 }

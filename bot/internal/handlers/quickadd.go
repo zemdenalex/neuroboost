@@ -27,7 +27,7 @@ func (h *Handler) handleQuickAdd(chatID int64, text string) {
 	// to an event, which only the event card can build; without one it is a
 	// plain task with a due day.
 	if parse.IsTaskLine(text) {
-		if parse.ParseLine(text, time.Now().In(h.location())).Draft.HasTime {
+		if parse.ParseLine(text, time.Now().In(h.location(chatID))).Draft.HasTime {
 			h.quickAs(chatID, "event", text)
 		} else {
 			h.quickAs(chatID, "task", text)

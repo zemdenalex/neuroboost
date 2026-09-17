@@ -11,10 +11,10 @@ import (
 
 func (h *Handler) handleToday(chatID int64, messageID int) {
 	us := h.store.GetOrCreate(chatID)
-	// h.location() rather than LoadLocation with a dropped error: that returned
+	// h.location(chatID) rather than LoadLocation with a dropped error: that returned
 	// a nil *Location on a bad TZ name, and time.Date panics on nil — in the
 	// handler behind the most-pressed button in the bot.
-	loc := h.location()
+	loc := h.location(chatID)
 	now := time.Now().In(loc)
 
 	// 🔴 Built in the user's zone, then converted. This used to stamp the local
@@ -40,13 +40,13 @@ func (h *Handler) handleToday(chatID int64, messageID int) {
 		"🎯 <b>Today's focus</b> — %s\n🕐 %s (%s)\n\n"),
 		now.Format("Mon, Jan 2"),
 		now.Format("15:04"),
-		h.cfg.Timezone,
+		h.timezone(chatID),
 	)
 
 	text += fmt.Sprintf(h.t(chatID, "📅 <b>События: %d</b>\n", "📅 <b>Events: %d</b>\n"), len(events))
 	sort.Slice(events, func(i, j int) bool { return events[i].StartsAt < events[j].StartsAt })
 	for _, e := range events {
-		text += fmt.Sprintf("  %s — %s\n", format.FormatTime(e.StartsAt, h.cfg.Timezone), format.Escape(e.Title))
+		text += fmt.Sprintf("  %s — %s\n", format.FormatTime(e.StartsAt, h.timezone(chatID)), format.Escape(e.Title))
 	}
 
 	if len(tasks) > 0 {

@@ -42,7 +42,7 @@ func (h *Handler) askListOrSingle(chatID int64, text string) {
 func (h *Handler) buildList(chatID int64) []*draftState {
 	us := h.store.GetOrCreate(chatID)
 	raw, _ := us.FlowData["raw"].(string)
-	now := time.Now().In(h.location())
+	now := time.Now().In(h.location(chatID))
 
 	parsed := parse.ParseEventList(raw, now)
 	list := make([]*draftState, 0, len(parsed))
@@ -75,7 +75,7 @@ func (h *Handler) showList(chatID int64, messageID int) {
 	us := h.store.GetOrCreate(chatID)
 	us.FlowStep = "list"
 	delete(us.FlowData, "draft")
-	h.editOrSend(chatID, messageID, renderList(h.lang(chatID), list, time.Now().In(h.location())), keyboards.ListCard(h.lang(chatID), len(list)))
+	h.editOrSend(chatID, messageID, renderList(h.lang(chatID), list, time.Now().In(h.location(chatID))), keyboards.ListCard(h.lang(chatID), len(list)))
 }
 
 // createList writes every entry, and says by name which ones did not make it.

@@ -28,6 +28,8 @@ func (h *Handler) handleFlowInput(chatID int64, text string) {
 	}
 
 	switch us.CurrentFlow {
+	case onboardFlow:
+		h.handleOnboardText(chatID, text)
 	case quickFlow:
 		// A new line while the question is still open replaces the old one:
 		// the latest thing typed is what the user wants to create.
@@ -72,7 +74,7 @@ func (h *Handler) handleNewTaskFlow(chatID int64, text string) {
 		// 🔴 Ask before assuming. Denis, 15.09: «С задачами ты сделал тоже
 		// списки?» — no, and three lines silently became one task carrying a
 		// three-line title.
-		if parse.LooksLikeList(text, time.Now().In(h.location())) {
+		if parse.LooksLikeList(text, time.Now().In(h.location(chatID))) {
 			us.FlowData["raw"] = text
 			us.FlowStep = "list:confirm"
 			n := len(parse.Entries(text))
