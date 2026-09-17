@@ -24,6 +24,11 @@ import (
 // api/tasks.ts).
 
 // eventPickLabel is what one event looks like as a button.
+// allDayMark is what stands in place of a clock time on a button. Not a
+// translated word: a button label has ~30 characters and the date already
+// carries the meaning.
+const allDayMark = "•"
+
 func eventPickLabel(e api.Event, loc *time.Location) string {
 	title := strings.TrimSpace(e.Title)
 	if title == "" {
@@ -34,10 +39,24 @@ func eventPickLabel(e api.Event, loc *time.Location) string {
 	if len([]rune(title)) > 28 {
 		title = string([]rune(title)[:27]) + "…"
 	}
-	if t, err := time.Parse(time.RFC3339, e.StartsAt); err == nil {
-		return t.In(loc).Format("02.01 15:04") + " · " + title
+	start, err := time.Parse(time.RFC3339, e.StartsAt)
+	if err != nil {
+		return title
 	}
-	return title
+	// 🔴 An all-day event began at midnight, and «14.10 00:00» reads as a
+	// midnight appointment; a 16-day holiday read as a single day, which is
+	// what made Denis think it had become sixteen events (17.09).
+	if e.AllDay {
+		from := start.In(loc)
+		if end, err := time.Parse(time.RFC3339, e.EndsAt); err == nil {
+			last := end.In(loc).AddDate(0, 0, -1)
+			if last.After(from) {
+				return from.Format("02.01") + "–" + last.Format("02.01") + " · " + title
+			}
+		}
+		return from.Format("02.01") + " " + allDayMark + " · " + title
+	}
+	return start.In(loc).Format("02.01 15:04") + " · " + title
 }
 
 // draftFromEvent loads an existing event into the same shape the creation card

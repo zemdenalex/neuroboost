@@ -31,7 +31,7 @@ func TaskCard(lang i18n.Lang, switchable bool) tgbotapi.InlineKeyboardMarkup {
 	if switchable {
 		rows = append(rows, tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "📅 Сделать событием", "📅 Make it an event"), "qa_event"),
-			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "📝 Заметкой", "📝 Make it a note"), "qa_note"),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "📝 Сделать заметкой", "📝 Make it a note"), "qa_note"),
 		))
 	}
 	rows = append(rows, tgbotapi.NewInlineKeyboardRow(

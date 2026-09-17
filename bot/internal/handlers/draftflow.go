@@ -178,6 +178,11 @@ func (h *Handler) handleNewEventFlow(chatID int64, text string) {
 			}
 		}
 		us.FlowData["draft"] = &st
+		if len(st.D.MoreDays) > 0 {
+			// Several dates in one line mean a question, not a guess.
+			h.askManyDates(chatID, 0)
+			return
+		}
 		h.showCard(chatID, 0)
 
 	case "edit:title":
@@ -462,6 +467,11 @@ func (h *Handler) handleDraftCallback(chatID int64, messageID int, data string) 
 	// unreachable, because each new state got its own. Unreachable code that
 	// LOOKS like the handler is worse than none: the next reader fixes the copy
 	// that never runs.
+	// Several dates in one line have their own question (manydates.go).
+	if strings.HasPrefix(data, "dr_d") && h.handleDatesCallback(chatID, messageID, data) {
+		return true
+	}
+
 	if data == "dr_cancel" {
 		h.store.ClearFlow(chatID)
 		h.editOrSend(chatID, messageID, h.t(chatID, "🗑 Отменено.", "🗑 Cancelled."), keyboards.HomeInline(h.lang(chatID)))

@@ -19,6 +19,11 @@ type Draft struct {
 	// EndDay is what the card prints.
 	EndDay time.Time
 
+	// MoreDays holds the SECOND and later explicit dates in a line —
+	// «созвон 14.10 16.10». What they mean is a question for the user: a span,
+	// or one event per date (Denis, 17.09). Empty for an ordinary line.
+	MoreDays []time.Time
+
 	// BareWeekday says the day came from a weekday word with no modifier —
 	// «пятница», not «следующая пятница», «17.09» or «завтра». Only such a day
 	// is a guess about WHICH week, and only it may be moved by a list whose

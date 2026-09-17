@@ -247,6 +247,13 @@ func renderDraft(lang i18n.Lang, st draftState, now time.Time) string {
 		title = i18n.T(lang, "без названия", "untitled")
 	}
 	fmt.Fprintf(&b, "%s <b>%s</b>\n", icon, format.Escape(title))
+	if st.D.IsTask {
+		// 🔴 Denis, 17.09: «карточка одна, но теперь непонятно, что ещё и
+		// задача была создана». The ✅ icon alone did not say it.
+		b.WriteString(i18n.T(lang,
+			"✅ и задача — её можно отметить выполненной\n",
+			"✅ plus a task — it can be ticked off\n"))
+	}
 
 	switch {
 	case st.D.Repeat != "":

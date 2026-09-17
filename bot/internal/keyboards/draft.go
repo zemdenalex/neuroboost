@@ -380,3 +380,51 @@ func TaskListItem(lang i18n.Lang, i int) tgbotapi.InlineKeyboardMarkup {
 		),
 	)
 }
+
+// ManyDates is what a line with two or more dates gets: one event across them
+// all, or one per date.
+//
+// 🔴 Asked, never guessed (Denis, 17.09: «если просто 2 даты написано, то он
+// должен спросить… и дать варианты»).
+func ManyDates(lang i18n.Lang, from, to string) tgbotapi.InlineKeyboardMarkup {
+	return tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(
+				fmt.Sprintf(i18n.T(lang, "📆 Одно событие: %s – %s", "📆 One event: %s – %s"), from, to), "dr_dspan"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "☑️ Выбрать даты", "☑️ Pick the dates"), "dr_dpick"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🗑 Отменить", "🗑 Cancel"), "dr_cancel"),
+		),
+	)
+}
+
+// DatePicker ticks the dates an event should be created on. Every date starts
+// ticked: the user wrote them all.
+func DatePicker(lang i18n.Lang, labels []string, chosen []bool) tgbotapi.InlineKeyboardMarkup {
+	var rows [][]tgbotapi.InlineKeyboardButton
+	var row []tgbotapi.InlineKeyboardButton
+	for i, label := range labels {
+		if i < len(chosen) && chosen[i] {
+			label = "✅ " + label
+		}
+		row = append(row, tgbotapi.NewInlineKeyboardButtonData(label, "dr_dtog_"+strconv.Itoa(i)))
+		if len(row) == 3 {
+			rows, row = append(rows, row), nil
+		}
+	}
+	if len(row) > 0 {
+		rows = append(rows, row)
+	}
+	rows = append(rows,
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "✅ Создать выбранные", "✅ Create the ticked ones"), "dr_dmake"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🗑 Отменить", "🗑 Cancel"), "dr_cancel"),
+		),
+	)
+	return tgbotapi.NewInlineKeyboardMarkup(rows...)
+}

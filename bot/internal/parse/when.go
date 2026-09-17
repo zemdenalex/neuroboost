@@ -99,6 +99,7 @@ func recogniseRelativeDay(toks []Token, now time.Time, d *Draft) bool {
 // for both. A token that cannot be a date — «09.30», there being no thirtieth
 // month — is left alone and the time recogniser takes it.
 func recogniseExplicitDate(toks []Token, now time.Time, d *Draft) bool {
+	found := false
 	for i, t := range toks {
 		if t.Field != FieldNone {
 			continue
@@ -124,15 +125,22 @@ func recogniseExplicitDate(toks []Token, now time.Time, d *Draft) bool {
 			candidate = candidate.AddDate(1, 0, 0)
 		}
 
+		if d.HasDay {
+			// A second date in the same line: kept, and the caller asks what
+			// the pair means rather than guessing.
+			d.MoreDays = append(d.MoreDays, candidate)
+			toks[i].Field = FieldDay
+			continue
+		}
 		d.Day = candidate
 		d.HasDay = true
 		if m[2] != "." {
 			d.MarkUncertain(FieldDay)
 		}
 		toks[i].Field = FieldDay
-		return true
+		found = true
 	}
-	return false
+	return found
 }
 
 // clockValue turns hours and optional minutes into an offset from midnight.
@@ -173,6 +181,21 @@ func compactClock(norm string) (time.Duration, bool) {
 		return 0, false
 	}
 	return clockValue(m[1], m[2])
+}
+
+// lastWordOf reports whether token i is the last unclaimed token of the line.
+//
+// 🔴 Denis, 17.09: «стоматолог 1500» — people write the time at the end as
+// readily as at the start. Only a COMPACT clock (three or four digits) is read
+// there: a bare «12» at the end is far more often a count, and «отжаться 1330
+// раз» is safe because «раз» comes after it.
+func lastWordOf(toks []Token, i int) bool {
+	for j := i + 1; j < len(toks); j++ {
+		if toks[j].Field == FieldNone {
+			return false
+		}
+	}
+	return i > 0
 }
 
 // timeExpectedAt reports whether a lone number at index i can be a start time.
@@ -307,7 +330,7 @@ func readStart(toks []Token, i int) (dur time.Duration, sep, mm string, width in
 	// «1330», «900», «0100» — a clock with the colon left out. Denis, 17.09.
 	// Only where a time is expected, and always LOOSE: «2026» is a year to
 	// everyone except this branch.
-	if v, ok := compactClock(t.Norm); ok && (timeExpectedAt(toks, i) || timePrepositionBefore(toks, i)) {
+	if v, ok := compactClock(t.Norm); ok && (timeExpectedAt(toks, i) || timePrepositionBefore(toks, i) || lastWordOf(toks, i)) {
 		return v, "", "", 1, true
 	}
 
