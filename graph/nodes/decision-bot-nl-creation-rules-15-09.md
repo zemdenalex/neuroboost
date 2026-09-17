@@ -6,13 +6,15 @@ status: verified
 verified_by: session-01VRP8SC
 verified_at: 2026-09-16
 tags: [neuroboost, bot, decision, parsing, i18n]
-weight: { importance: 5, connectivity: 3, access: 1, last_accessed: 2026-09-16 }
+weight: { importance: 5, connectivity: 7, access: 2, last_accessed: 2026-09-18 }
 sources:
   - file: "ref/feedback/bot-zamechaniya-denisa-2026-09-15.md"
   - file: "ref/feedback/bot-prohod-otvet-denisa-2026-09-15.md"
   - file: "docs/superpowers/specs/2026-09-15-bot-natural-language-creation-design.md"
 stakes: high
 links:
+  - superseded-by: decision-bot-fixes-from-four-passes-17-09
+  - relates-to: decision-onboarding-is-the-first-minute-17-09
   - implements: decision-bot-patch-v04111-before-mobile
   - relates-to: learning-a-scan-for-one-language-is-blind-to-the-other
   - relates-to: entity-recurring-instance-ids-are-list-only

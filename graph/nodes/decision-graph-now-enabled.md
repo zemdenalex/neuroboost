@@ -5,7 +5,7 @@ type: decision
 status: verified
 proposed_at: 2026-08-10
 tags: [neuroboost, architecture, memory-management, project-meta]
-weight: { importance: 5, connectivity: 2, access: 1, last_accessed: 2026-09-16 }
+weight: { importance: 5, connectivity: 2, access: 1, last_accessed: 2026-09-18 }
 sources:
   - file: ".remember/night-loop-2026-08-10.md lines 12–36"
   - file: "CLAUDE.md §Memory — **new** (was: 'This project has **no `graph/`**, deliberately')"

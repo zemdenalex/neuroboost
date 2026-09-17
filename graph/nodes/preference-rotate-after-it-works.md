@@ -6,7 +6,7 @@ status: verified
 source: "Денис, дословно, 2026-08-10 03:32"
 verified_at: 2026-08-10
 tags: [neuroboost, security, credentials, working-style]
-weight: { importance: 5, connectivity: 6, access: 2, last_accessed: 2026-09-16 }
+weight: { importance: 5, connectivity: 6, access: 2, last_accessed: 2026-09-18 }
 stakes: medium
 links:
   - relates-to: entity-server-topology

@@ -6,14 +6,13 @@ status: proposed
 proposed_by: consolidator
 proposed_at: 2026-08-10
 tags: [neuroboost, testing, ci-cd, verification, lessons-learned]
-weight: { importance: 3, connectivity: 2, access: 1, last_accessed: 2026-08-10 }
+weight: { importance: 3, connectivity: 2, access: 2, last_accessed: 2026-09-18 }
 sources:
   - file: ".remember/night-loop-2026-08-10.md §8-бис (rules from FilinTermy, Archifex, AVOCAR, Nivium, KaUnion)"
 stakes: medium
 links:
   - related-to: workitem-p2-notifications-last-mile
 ---
-
 **Summary:** Five explicit rules extracted from neighbouring projects and documented for NeuroBoost's night-loop work.
 
 **1. FilinTermy — verify cycles cost real time; build a local harness first**

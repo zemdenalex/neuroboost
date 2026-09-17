@@ -6,7 +6,7 @@ status: verified
 verified_by: session-01VRP8SC
 verified_at: 2026-09-11
 tags: [neuroboost, testing, ci, method]
-weight: { importance: 5, connectivity: 8, access: 1, last_accessed: 2026-09-16 }
+weight: { importance: 5, connectivity: 8, access: 1, last_accessed: 2026-09-18 }
 sources:
   - file: "docs/diagnoz-c3-2026-09-10.md"
   - file: "web/src/components/Calendar/EventEditor/useEditorForm.ts"

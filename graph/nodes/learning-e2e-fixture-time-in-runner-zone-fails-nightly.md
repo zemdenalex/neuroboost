@@ -6,12 +6,14 @@ status: verified
 verified_by: session-01VRP8SC
 verified_at: 2026-09-16
 tags: [neuroboost, e2e, ci, timezone, testing]
-weight: { importance: 4, connectivity: 4, access: 1, last_accessed: 2026-09-16 }
+weight: { importance: 5, connectivity: 5, access: 2, last_accessed: 2026-09-18 }
 sources:
   - file: "web/e2e/shared-badge-mobile.spec.ts"
   - file: "web/e2e/fixtures/localTime.ts"
 stakes: medium
 links:
+  - relates-to: learning-two-pushes-within-five-minutes-break-each-others-e2e
+  - relates-to: learning-my-own-query-lied-twice-in-one-night
   - relates-to: learning-e2e-baseline-recorded-on-a-monday
   - relates-to: entity-e2e-playwright-harness
 ---

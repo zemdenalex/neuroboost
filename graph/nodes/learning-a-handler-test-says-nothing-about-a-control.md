@@ -6,7 +6,7 @@ status: verified
 verified_by: session-01VRP8SC
 verified_at: 2026-09-11
 tags: [neuroboost, testing, frontend, method]
-weight: { importance: 5, connectivity: 11, access: 2, last_accessed: 2026-09-16 }
+weight: { importance: 5, connectivity: 11, access: 2, last_accessed: 2026-09-18 }
 sources:
   - file: "docs/defekty-sreza-1-2026-09-10.md"
   - file: "web/src/components/TaskSidebar/taskControls.test.ts"

@@ -1000,3 +1000,50 @@ C6 (приглашение из настроек) — функция, вне о�
 `superpowers:brainstorming` по фокусу v0.4.12 с её выводами; затем
 `superpowers:writing-plans` по спеке окна. Для v0.4.11.2 — продолжение спеки
 `2026-09-15-bot-natural-language-creation-design.md`.
+
+## [2026-09-18] recall | decision-bot-patch-v04111-before-mobile, decision-bot-nl-creation-rules-15-09, entity-recurring-instance-ids-are-list-only, learning-a-scan-for-one-language-is-blind-to-the-other, learning-compose-build-can-start-a-silent-container, entity-bot-deploys-by-hand-not-by-ci, learning-green-tests-are-not-a-deployed-bot, learning-e2e-fixture-time-in-runner-zone-fails-nightly, rule-control-that-could-not-fail, peer-project-lessons-for-ci-and-testing
+
+## [2026-09-18 01:10] continuation — v0.4.11.2 на проде
+
+**Сделано.** `v0.4.11.2` выкачен на прод 17.09 в 23:35, тег = `3d1e152`, 29 коммитов от
+v0.4.11.1. Релиз снова **целиком ботовый**: `api-go` и `web` не менялись, миграций нет, схема
+16/чисто. Бэкап снят и **проверен восстановлением** (8 пользователей / 41 событие / 9 задач /
+6 календарей / 19 таблиц). Прод-бот выкачен руками на nl-2 — «Bot authorized», health ok.
+Заметки — `docs/relizy/v0.4.11.2.md`.
+
+Что в релизе: онбординг (язык по Telegram, пояс по часам, «просто напиши мне») · быстрое
+добавление · свой период повтора с концом серии · события на несколько дней · напоминания
+галочками · карточка у списка задач · редактирование события одним экраном · пагинация по 10 ·
+короткие гайды со словами-триггерами столбиком. Бот теперь читает **пояс каждого пользователя**,
+а не один общий. 314 тестов (было 232).
+
+**Проверка:** четыре прохода Дениса за вечер, всё зелёное на четвёртом; плюс дымовой прогон на
+проде — событие и задача создались с верным временем, онбординг записал `lang: ru`,
+`onboarded: true`. Ответы — четыре файла `ref/feedback/bot-*-2026-09-17.md`, они же названы в
+`CLAUDE.md`.
+
+**Открыто — v0.4.11.3, всё требует `api-go` (значит релиз прода с мержем):**
+1. 🔴 утренний дайджест приходит по-английски всем — строки зашиты в
+   `api-go/internal/reminders/digest.go:46,59,65` (заметила Настя, она получает его каждое утро);
+2. 🔴 нельзя превратить задачу в событие и обратно (Настя);
+3. кнопка «сообщить об ошибке» и «предложить улучшение» в боте, как в вебе (Денис, 23:33);
+4. заметки о релизе в боте (Денис, 23:33);
+5. связка email ↔ Telegram — спека готова и ждёт ревью:
+   `docs/superpowers/specs/2026-09-17-account-linking-design.md` (§0.0 — весь список выше);
+6. язык кнопок под уведомлением · редактирование одного вхождения повтора · API должен
+   отвергать RRULE, который сам не разбирает.
+
+⚠ **Без связки аккаунтов Денис не может проверять бота в вебе на dev** — вход по email/паролю
+работает только потому, что у его записи есть и email, и tg_id. У Насти и Муфида такого нет.
+
+**Читать первыми:** [[decision-bot-fixes-from-four-passes-17-09]] ·
+[[decision-onboarding-is-the-first-minute-17-09]] ·
+[[learning-a-fake-that-accepts-anything-is-not-a-control]] ·
+[[learning-my-own-query-lied-twice-in-one-night]] ·
+[[learning-two-pushes-within-five-minutes-break-each-others-e2e]].
+
+**Suggested skills for next session:** `superpowers:brainstorming` по v0.4.11.3 (спека связки
+уже есть — с неё и начать ревью), затем `superpowers:writing-plans`; при работе с базой —
+`supabase:supabase-postgres-best-practices` для слияния аккаунтов. Отдельный разговор про
+CI/CD: `concurrency` в `ci.yml` (два push'а подряд ломают e2e друг другу) и
+[[peer-project-lessons-for-ci-and-testing]].

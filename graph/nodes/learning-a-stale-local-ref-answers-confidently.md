@@ -6,7 +6,7 @@ status: verified
 verified_by: session-01VRP8SC
 verified_at: 2026-09-11
 tags: [neuroboost, git, method, release]
-weight: { importance: 5, connectivity: 8, access: 2, last_accessed: 2026-09-16 }
+weight: { importance: 5, connectivity: 8, access: 2, last_accessed: 2026-09-18 }
 sources:
   - file: "docs/superpowers/specs/2026-08-23-post-walkthrough-fixes-and-release-design.md"
   - file: "graph/nodes/entity-prod-runs-a-build-no-branch-points-at.md"
