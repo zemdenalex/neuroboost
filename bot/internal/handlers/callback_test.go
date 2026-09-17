@@ -24,6 +24,15 @@ type fakeTelegram struct {
 	srv    *httptest.Server
 	mu     sync.Mutex
 	called []string
+	// texts holds the text and the reply markup of every sendMessage and
+	// editMessageText, in order — what the user would have read.
+	texts []sentText
+}
+
+type sentText struct {
+	Method string
+	Text   string
+	Markup string
 }
 
 func newFakeTelegram(t *testing.T) (*tgbotapi.BotAPI, *fakeTelegram) {
@@ -34,8 +43,12 @@ func newFakeTelegram(t *testing.T) (*tgbotapi.BotAPI, *fakeTelegram) {
 		parts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
 		method := parts[len(parts)-1]
 
+		_ = r.ParseForm()
 		f.mu.Lock()
 		f.called = append(f.called, method)
+		if text := r.Form.Get("text"); text != "" {
+			f.texts = append(f.texts, sentText{Method: method, Text: text, Markup: r.Form.Get("reply_markup")})
+		}
 		f.mu.Unlock()
 
 		w.Header().Set("Content-Type", "application/json")
@@ -56,6 +69,21 @@ func newFakeTelegram(t *testing.T) (*tgbotapi.BotAPI, *fakeTelegram) {
 		t.Fatalf("could not build a bot against the fake: %v", err)
 	}
 	return bot, f
+}
+
+func (f *fakeTelegram) sent() []sentText {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return append([]sentText(nil), f.texts...)
+}
+
+func (f *fakeTelegram) last(t *testing.T) sentText {
+	t.Helper()
+	all := f.sent()
+	if len(all) == 0 {
+		t.Fatalf("the bot sent nothing; calls = %v", f.calls())
+	}
+	return all[len(all)-1]
 }
 
 func (f *fakeTelegram) calls() []string {

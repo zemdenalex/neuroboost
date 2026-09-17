@@ -28,6 +28,10 @@ func (h *Handler) handleFlowInput(chatID int64, text string) {
 	}
 
 	switch us.CurrentFlow {
+	case quickFlow:
+		// A new line while the question is still open replaces the old one:
+		// the latest thing typed is what the user wants to create.
+		h.handleQuickAdd(chatID, text)
 	case "note":
 		h.handleNoteFlow(chatID, text)
 	case "new_task":

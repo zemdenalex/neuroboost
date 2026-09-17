@@ -163,6 +163,12 @@ func (h *Handler) HandleMessage(msg *tgbotapi.Message) {
 		return
 	}
 
+	// Text from nowhere is a request to create something — quickadd.go.
+	if strings.TrimSpace(msg.Text) != "" {
+		h.handleQuickAdd(chatID, msg.Text)
+		return
+	}
+
 	h.sendHTMLWithKeyboard(chatID, h.t(chatID, "Не понял. Вот меню:", "Didn't get that. Here's the menu:"), keyboards.HomeInline(h.lang(chatID)))
 }
 
@@ -246,6 +252,11 @@ func (h *Handler) HandleCallback(cb *tgbotapi.CallbackQuery) {
 	// the switch rather than inside it because the card has a dozen buttons
 	// with three prefixes, and a dozen more cases in a switch this long is how
 	// one of them ends up unreachable.
+	// Quick add's question owns qa_; it hands over to the card's flows.
+	if h.handleQuickCallback(chatID, cb.Message.MessageID, data) {
+		return
+	}
+
 	if h.handleDraftCallback(chatID, cb.Message.MessageID, data) {
 		return
 	}
