@@ -42,6 +42,12 @@ func Entries(text string) []string {
 			parts = append(parts, s)
 		}
 	}
+	if len(parts) == 1 {
+		// No line breaks, no commas — but perhaps two days, each with its own
+		// title. The reference day only decides titles, not dates, so the
+		// wall clock is good enough here.
+		return splitByDays(parts[0], time.Now())
+	}
 	return parts
 }
 
@@ -71,7 +77,7 @@ func LooksLikeList(text string, now time.Time) bool {
 	if strings.Contains(text, ",") {
 		return !ParseLine(text, now).Draft.HasTime
 	}
-	return false
+	return len(splitByDays(text, now)) > 1
 }
 
 // ParseEventList reads a block into one draft per entry, with day headers

@@ -162,6 +162,19 @@ func strictClock(sep, mm string) bool { return sep == ":" && mm != "" }
 // twelve repetitions, and reading that as noon would be worse than not reading
 // «12 обед» at all. Denis asked for the first; the second is the price of
 // asking, and this is where it is paid.
+// timePrepositions introduce a clock time: «в 15», «at 3».
+var timePrepositions = map[string]bool{"в": true, "во": true, "at": true}
+
+// timePrepositionBefore reports whether token i follows an unclaimed «в»/«at».
+//
+// 🔴 Denis, 17.09: «завтра в 15 стоматолог». A bare number after «в» is a time
+// wherever it stands — the preposition says so. It is still a LOOSE reading
+// and is marked: «встреча в 2 этапа» is the price, and ⚠ on the card is how it
+// gets paid.
+func timePrepositionBefore(toks []Token, i int) bool {
+	return i > 0 && toks[i-1].Field == FieldNone && timePrepositions[toks[i-1].Norm]
+}
+
 func timeExpectedAt(toks []Token, i int) bool {
 	for j := 0; j < i; j++ {
 		if toks[j].Field == FieldNone {
@@ -205,7 +218,13 @@ func recogniseTimeRange(toks []Token, d *Draft) bool {
 
 		last := i + width - 1
 		claim := func(to int) {
-			for k := i; k <= to; k++ {
+			from := i
+			// «в 15:00», «at 3» — the preposition goes with the time, or it
+			// washes up in the title as «стоматолог в».
+			if timePrepositionBefore(toks, i) {
+				from = i - 1
+			}
+			for k := from; k <= to; k++ {
 				toks[k].Field = FieldTime
 			}
 		}
@@ -254,7 +273,7 @@ func readStart(toks []Token, i int) (dur time.Duration, sep, mm string, width in
 	}
 
 	// A lone number, and possibly a lone pair of minutes after it: «10 00».
-	if m := bareNumRe.FindStringSubmatch(t.Norm); m != nil && timeExpectedAt(toks, i) {
+	if m := bareNumRe.FindStringSubmatch(t.Norm); m != nil && (timeExpectedAt(toks, i) || timePrepositionBefore(toks, i)) {
 		if i+1 < len(toks) && toks[i+1].Field == FieldNone && bareMinRe.MatchString(toks[i+1].Norm) {
 			if v, good := clockValue(m[1], toks[i+1].Norm); good {
 				return v, " ", toks[i+1].Norm, 2, true
