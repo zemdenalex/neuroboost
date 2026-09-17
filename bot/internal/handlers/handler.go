@@ -57,7 +57,7 @@ func (h *Handler) handleNotificationAction(chatID int64, from *tgbotapi.User, ms
 	// accepted invitation stays accepted, so "Отклонить" underneath it is a
 	// control that no longer does what it says.
 	if msg != nil {
-		empty := tgbotapi.NewInlineKeyboardMarkup()
+		empty := keyboards.None()
 		edit := tgbotapi.NewEditMessageReplyMarkup(chatID, msg.MessageID, empty)
 		if _, err := h.bot.Request(edit); err != nil {
 			// Not worth telling the user: the action itself succeeded and the
@@ -433,7 +433,11 @@ func (h *Handler) sendHTML(chatID int64, text string) {
 func (h *Handler) sendHTMLWithKeyboard(chatID int64, text string, kb tgbotapi.InlineKeyboardMarkup) {
 	msg := tgbotapi.NewMessage(chatID, text)
 	msg.ParseMode = "HTML"
-	msg.ReplyMarkup = kb
+	// No buttons means no markup at all on a new message — and never a nil
+	// keyboard, which Telegram refuses outright (keyboards.None).
+	if len(kb.InlineKeyboard) > 0 {
+		msg.ReplyMarkup = kb
+	}
 	h.send(chatID, msg)
 }
 
@@ -464,6 +468,9 @@ func shouldSendNew(messageID int, editErr error) bool {
 // editOrSend renders a screen onto the message it was triggered from, or posts
 // a new one when there is nothing to edit.
 func (h *Handler) editOrSend(chatID int64, messageID int, text string, kb tgbotapi.InlineKeyboardMarkup) {
+	if kb.InlineKeyboard == nil {
+		kb = keyboards.None()
+	}
 	if messageID != 0 {
 		edit := tgbotapi.NewEditMessageTextAndMarkup(chatID, messageID, text, kb)
 		edit.ParseMode = "HTML"

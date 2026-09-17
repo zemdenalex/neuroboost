@@ -55,6 +55,11 @@ func TestTaskListRewritesAnEntry(t *testing.T) {
 	press(h, chat, "dr_many")
 	press(h, chat, "dr_item_0")
 	press(h, chat, "dr_trew_0")
+	// The prompt must reach the screen — on 17.09 it was refused by Telegram
+	// and the button looked dead, while typing blindly still worked.
+	if prompt := fake.last(t).Text; !strings.Contains(prompt, "заново") {
+		t.Fatalf("«Переписать» showed no prompt; last message: %q", prompt)
+	}
 	say(h, chat, "Отжаться 50 раз 1ч !2")
 
 	card := fake.last(t).Text

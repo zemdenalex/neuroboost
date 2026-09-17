@@ -212,7 +212,7 @@ func (h *Handler) handleTaskTagsPrompt(chatID int64, messageID int, taskID strin
 	us.FlowData["taskID"] = taskID
 	h.editOrSend(chatID, messageID,
 		fmt.Sprintf(h.t(chatID, "🏷 <b>%s</b>\n\nТеги через запятую (или «cancel»):", "🏷 <b>%s</b>\n\nTags, comma separated (or «cancel»):"), format.Escape(title)),
-		tgbotapi.NewInlineKeyboardMarkup())
+		keyboards.None())
 }
 
 // handleEditTaskTags is the text-flow answer to handleTaskTagsPrompt, routed

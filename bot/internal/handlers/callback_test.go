@@ -46,12 +46,29 @@ func newFakeTelegram(t *testing.T) (*tgbotapi.BotAPI, *fakeTelegram) {
 		_ = r.ParseForm()
 		f.mu.Lock()
 		f.called = append(f.called, method)
-		if text := r.Form.Get("text"); text != "" {
-			f.texts = append(f.texts, sentText{Method: method, Text: text, Markup: r.Form.Get("reply_markup")})
-		}
 		f.mu.Unlock()
 
 		w.Header().Set("Content-Type", "application/json")
+
+		// 🔴 Real Telegram rejects a keyboard serialised as null — «Bad
+		// Request: field "inline_keyboard" must be of type Array». This fake
+		// used to accept anything, so three dead buttons (Другое…, 📖,
+		// Переписать) passed their tests and failed on Denis's phone, 17.09.
+		// A fake that cannot say no is not a control.
+		if strings.Contains(r.Form.Get("reply_markup"), `"inline_keyboard":null`) {
+			w.WriteHeader(http.StatusBadRequest)
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"ok": false, "error_code": 400,
+				"description": `Bad Request: field "inline_keyboard" must be of type Array`,
+			})
+			return
+		}
+		// Recorded only once accepted: a message Telegram refused was never read.
+		if text := r.Form.Get("text"); text != "" {
+			f.mu.Lock()
+			f.texts = append(f.texts, sentText{Method: method, Text: text, Markup: r.Form.Get("reply_markup")})
+			f.mu.Unlock()
+		}
 		switch method {
 		case "getMe":
 			_ = json.NewEncoder(w).Encode(map[string]any{

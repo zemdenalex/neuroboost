@@ -211,7 +211,7 @@ func (h *Handler) onboardClosing(chatID int64, messageID int) {
 	done := tgbotapi.NewMessage(chatID, i18n.T(lang, "✅ Готово.", "✅ Done."))
 	done.ReplyMarkup = keyboards.MainMenu(lang)
 	if messageID != 0 {
-		h.editOrSend(chatID, messageID, i18n.T(lang, "🧠 NeuroBoost", "🧠 NeuroBoost"), tgbotapi.NewInlineKeyboardMarkup())
+		h.editOrSend(chatID, messageID, i18n.T(lang, "🧠 NeuroBoost", "🧠 NeuroBoost"), keyboards.None())
 	}
 	h.send(chatID, done)
 
@@ -294,12 +294,12 @@ func (h *Handler) handleOnboardCallback(chatID int64, messageID int, data string
 		us.FlowStep = "tz_text"
 		h.editOrSend(chatID, messageID, h.t(chatID,
 			"Напиши свой пояс: «UTC+5» или «Asia/Yekaterinburg».",
-			"Write your zone: «UTC+5» or «Asia/Yekaterinburg»."), tgbotapi.NewInlineKeyboardMarkup())
+			"Write your zone: «UTC+5» or «Asia/Yekaterinburg»."), keyboards.None())
 	case data == "ob_finish":
 		h.onboardClosing(chatID, messageID)
 	case data == "ob_skip":
 		h.finishOnboarding(chatID)
-		h.editOrSend(chatID, messageID, h.t(chatID, "Хорошо, пропускаем.", "Okay, skipping."), tgbotapi.NewInlineKeyboardMarkup())
+		h.editOrSend(chatID, messageID, h.t(chatID, "Хорошо, пропускаем.", "Okay, skipping."), keyboards.None())
 		h.handleStart(chatID)
 	default:
 		return false

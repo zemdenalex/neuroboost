@@ -6,8 +6,6 @@ import (
 	"strings"
 	"time"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-
 	"github.com/zemdenalex/neuroboost-bot/internal/api"
 	"github.com/zemdenalex/neuroboost-bot/internal/format"
 	"github.com/zemdenalex/neuroboost-bot/internal/i18n"
@@ -93,7 +91,7 @@ func (h *Handler) handleGuideFull(chatID int64, messageID int, kind string) {
 	if kind == "task" {
 		text = taskGuide(lang)
 	}
-	h.editOrSend(chatID, messageID, text, tgbotapi.NewInlineKeyboardMarkup())
+	h.editOrSend(chatID, messageID, text, keyboards.None())
 }
 
 // handleTaskListCallback answers the one/many question for tasks.
@@ -158,7 +156,7 @@ func (h *Handler) handleTaskListCallback(chatID int64, messageID int, data strin
 		us.FlowStep = "list:rewrite:" + strconv.Itoa(i)
 		h.editOrSend(chatID, messageID, h.t(chatID,
 			"Напиши эту задачу заново — приоритет, оценка и срок читаются как обычно.",
-			"Write this task again — priority, estimate and due date are read as usual."), tgbotapi.NewInlineKeyboardMarkup())
+			"Write this task again — priority, estimate and due date are read as usual."), keyboards.None())
 	default:
 		return false
 	}

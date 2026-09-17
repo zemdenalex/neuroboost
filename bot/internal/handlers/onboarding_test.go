@@ -271,3 +271,20 @@ func TestClockButtonsCentreOnTheAccountZone(t *testing.T) {
 		t.Errorf("no clock is marked for an account in New York: %s", markup)
 	}
 }
+
+// Denis, 17.09 (A6): «Другое…» did nothing — its prompt was refused by Telegram.
+func TestOtherZoneButtonAsksAndReads(t *testing.T) {
+	acc := &fakeAccount{timezone: "Europe/Moscow", settings: map[string]any{}}
+	h, fake, chat := onboardHandler(t, acc)
+
+	sayAs(h, chat, "/start", "ru")
+	press(h, chat, "ob_tz")
+	press(h, chat, "ob_tzother")
+	if prompt := fake.last(t).Text; !strings.Contains(prompt, "UTC+5") {
+		t.Fatalf("«Другое…» showed no prompt; last message: %q", prompt)
+	}
+	sayAs(h, chat, "UTC+5", "ru")
+	if acc.timezone != "Etc/GMT-5" {
+		t.Errorf("typed «UTC+5» left the zone at %q", acc.timezone)
+	}
+}

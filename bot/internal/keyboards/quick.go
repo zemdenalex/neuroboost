@@ -56,3 +56,15 @@ func BackToList(lang i18n.Lang) tgbotapi.InlineKeyboardMarkup {
 		),
 	)
 }
+
+// None is «no buttons» in a form Telegram accepts.
+//
+// 🔴 tgbotapi.NewInlineKeyboardMarkup() with no rows serialises as
+// {"inline_keyboard":null}, and Telegram refuses it — «field "inline_keyboard"
+// must be of type Array». Refused as an edit AND as the fallback send, so the
+// screen simply never changed: «Другое…», «📖» and «Переписать» were dead on
+// Denis's phone on 17.09 while their tests passed. An empty array is accepted,
+// and on an edit it removes the old buttons.
+func None() tgbotapi.InlineKeyboardMarkup {
+	return tgbotapi.InlineKeyboardMarkup{InlineKeyboard: [][]tgbotapi.InlineKeyboardButton{}}
+}
