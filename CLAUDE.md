@@ -4,9 +4,14 @@ Calendar-first productivity app for neurodivergent users. Go backend + React/Typ
 PostgreSQL + Telegram bot. "The calendar is truth; tasks exist to support scheduling and reflection."
 
 **Live:** https://neuroboost.website · **Staging:** https://dev.neuroboost.website
-**Released:** `v0.4.10` (18.08.2026 — P1 + P2 + P3 срезы 1–4, 16 миграций) · **Unreleased:**
+**Released:** `v0.4.11.1` (16.09.2026 — бот на естественном языке, 16 миграций) · **Unreleased:**
 всё, что после, — на `develop`
 
+> 🟢 **Последний релиз — `v0.4.11.1` (16.09.2026), целиком ботовый.** Разбор строки
+> естественным языком, карточка подтверждения, списки, язык интерфейса ru/en,
+> редактирование событий. Заметки — `docs/relizy/v0.4.11.1.md`, приёмка —
+> `ref/feedback/bot-proverka-otvet-denisa-2026-09-16.md`.
+>
 > ⚠️ **Прочитать до всего остального:**
 > - **Работа идёт на `develop`**, далеко впереди `main`. Свежий клон приземляется на `main` и не
 >   видит ни тестов, ни последних миграций. **`git checkout develop` до чтения кода.**
@@ -38,6 +43,11 @@ PostgreSQL + Telegram bot. "The calendar is truth; tasks exist to support schedu
 
 **Реестр внешнего материала: `docs/sources.md`** (заведён 18.08 — до него внешних источников
 у проекта не было вовсе). Источники истины из него, которые нельзя заменять своей памятью:
+- 🔴 **Бот v0.4.11.1 (15–16.09) — что Денис попросил и как принял.** Список замечаний
+  дословно — `ref/feedback/bot-zamechaniya-denisa-2026-09-15.md`; первый проход —
+  `ref/feedback/bot-prohod-otvet-denisa-2026-09-15.md`; приёмка, 56 из 59 —
+  `ref/feedback/bot-proverka-otvet-denisa-2026-09-16.md`. Открытые его замечания
+  (свой период повтора, события на несколько дней, напоминания галочками) — v0.4.11.2
 - 🔴 **Приёмка перед релизом v0.4.11 (11.09) — самое свежее свидетельство** —
   `ref/feedback/proverka-pered-relizom-otvet-denisa-2026-09-11.md`. Все четыре починки
   работают, регрессий нет. Три замечания уровня продукта — фокус следующего релиза:

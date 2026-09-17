@@ -32,6 +32,9 @@ var (
 	tagRe = regexp.MustCompile(`#([\p{L}\p{N}_]+)`)
 )
 
+// dueDatePrepositions are swallowed with a due day: «на завтра», «for tomorrow».
+var dueDatePrepositions = map[string]bool{"на": true, "к": true, "до": true, "for": true, "by": true}
+
 // ParseTask reads a line like "позвонить в банк завтра 30м !1 #дела".
 //
 // `now` is a parameter rather than a clock read so the behaviour is testable
@@ -79,15 +82,32 @@ func ParseTask(line string, now time.Time) TaskResult {
 	// The day words and explicit dates are already solved for events; reuse
 	// that shape rather than growing a second dialect of the same thing.
 	day := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
-	lower := strings.ToLower(text)
-	for _, rd := range relativeDays {
-		if idx := strings.Index(lower, rd.word); idx >= 0 {
-			d := day.AddDate(0, 0, rd.days)
+
+	// 🔴 By token, not by substring. «Index(lower, "завтра")» found «завтра»
+	// inside «завтрак» — the exact defect that once titled an event «к» — and
+	// it survived here after the event parser was rebuilt on tokens.
+	toks := Tokenize(text)
+	for i, t := range toks {
+		if taskWords[t.Norm] {
+			// «задача» named the kind; quick add already acted on it, and it
+			// is not part of what needs doing.
+			toks[i].Field = FieldKind
+			continue
+		}
+		if res.DueDate != nil {
+			continue
+		}
+		if offset, ok := relativeDayWords[t.Norm]; ok && offset >= 0 {
+			d := day.AddDate(0, 0, offset)
 			res.DueDate = &d
-			text = text[:idx] + text[idx+len(rd.word):]
-			break
+			toks[i].Field = FieldDay
+			// «на завтра», «for tomorrow» — the preposition goes with the day.
+			if i > 0 && toks[i-1].Field == FieldNone && dueDatePrepositions[toks[i-1].Norm] {
+				toks[i-1].Field = FieldDay
+			}
 		}
 	}
+	text = Title(toks)
 	if res.DueDate == nil {
 		if m := dateRe.FindStringSubmatch(text); m != nil {
 			d, _ := strconv.Atoi(m[1])

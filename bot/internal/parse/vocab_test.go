@@ -35,7 +35,9 @@ func TestNamedFrequenciesNeedNoQuestion(t *testing.T) {
 		"weekly":        "FREQ=WEEKLY",
 		"ежемесячно":    "FREQ=MONTHLY",
 		"каждый месяц":  "FREQ=MONTHLY",
-		"ежегодно":      "FREQ=YEARLY",
+		// Twelve months, not FREQ=YEARLY: the API cannot parse YEARLY, and an
+		// unparsable rule repeats never (repeat.go).
+		"ежегодно": "FREQ=MONTHLY;INTERVAL=12",
 	}
 	for line, want := range cases {
 		toks := Tokenize("оркестр " + line)
@@ -56,8 +58,10 @@ func TestNamedFrequenciesNeedNoQuestion(t *testing.T) {
 	}
 }
 
-// 🔴 «каждый вторник» is two facts at once: the rule repeats weekly on
-// Tuesdays, AND the first one is the coming Tuesday. So the repeat recogniser
+// 🔴 «каждый вторник» is two facts at once: the rule repeats weekly, AND the
+// first one is the coming Tuesday — and together they ARE «every Tuesday».
+// (It used to be FREQ=WEEKLY;BYDAY=TU, which the API rejects: the event was
+// shown once and never repeated.) So the repeat recogniser
 // claims only «каждый» and deliberately leaves the weekday for the weekday
 // recogniser — which is also why repeat runs before it.
 func TestEveryWeekdayLeavesTheDayForTheDayRecogniser(t *testing.T) {
@@ -66,8 +70,8 @@ func TestEveryWeekdayLeavesTheDayForTheDayRecogniser(t *testing.T) {
 	if !recogniseRepeat(toks, &d) {
 		t.Fatal("not recognised")
 	}
-	if d.Repeat != "FREQ=WEEKLY;BYDAY=TU" {
-		t.Errorf("Repeat = %q, want %q", d.Repeat, "FREQ=WEEKLY;BYDAY=TU")
+	if d.Repeat != "FREQ=WEEKLY" {
+		t.Errorf("Repeat = %q, want %q", d.Repeat, "FREQ=WEEKLY")
 	}
 	if !recogniseWeekday(toks, tuesday15(), &d) {
 		t.Fatal("the weekday was swallowed by the repeat recogniser")

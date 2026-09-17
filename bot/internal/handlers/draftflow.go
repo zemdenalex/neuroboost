@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -33,7 +34,7 @@ func creationGuide(lang i18n.Lang) string {
    → Ужин · завтра · 19:00–20:00
 
 <code>среда 14:00-15:00 оркестр повтор</code>
-   → оркестр · ср 16.09 · 14:00–15:00 · повтор — спрошу частоту
+   → оркестр · ср · 14:00–15:00 · повтор — спрошу частоту
 
 <code>анализы весь день четверг</code>
    → анализы · чт · весь день
@@ -44,10 +45,24 @@ func creationGuide(lang i18n.Lang) string {
 <code>зарядка каждый день 07:00 напомнить за 10м</code>
    → зарядка · каждый день · 07:00 · напомню за 10 мин.
 
-<b>Слова:</b> задача · весь день · повтор · ежедневно · цвета · #тег · напомнить за 15м
-<b>Дни:</b> завтра · среда · следующая среда · пн · wednesday · 16.09
-<b>Своё слово</b> — ⚙️ Настройки → 🔤 Ключевые слова
-<b>Списком</b> — несколько строк сразу, спрошу, одна это запись или список
+<b>Слова-триггеры</b> — пишешь в строке, я убираю их из названия:
+
+<code>задача</code> — создам ещё и задачу, связанную с событием
+<code>весь день</code> — без времени, на весь день
+<code>с 14.10 по 29.10</code> — событие на несколько дней
+<code>повтор</code> — спрошу, как часто
+<code>каждый день</code> · <code>раз в 3 дня</code> · <code>через день</code> — период повтора
+<code>10 раз</code> · <code>до 01.12</code> — когда повтор кончится
+<code>синий</code> · <code>красный</code> · <code>зелёный</code> … — цвет события
+<code>#тег</code> — тег
+<code>напомнить за 15м</code> · <code>напомни за час</code> — напоминание
+<b>название календаря</b> — положу событие в него
+
+<b>Дни:</b> <code>завтра</code> · <code>среда</code> · <code>следующая среда</code> · <code>пн</code> · <code>wednesday</code> · <code>16.09</code>
+<b>Время:</b> <code>14:00</code> · <code>14:00-15:30</code> · <code>1330</code> · <code>в 15</code> · <code>полдень</code>
+
+<b>Своё слово</b> — ⚙️ Настройки → 🔤 Ключевые слова: любое слово можно назначить тегом, цветом, календарём, датой, временем или повтором.
+<b>Списком</b> — несколько строк сразу, спрошу, одна это запись или список.
 
 Покажу, что понял, и спрошу подтверждение — создам только после него.`,
 		`📅 <b>New event</b>
@@ -58,7 +73,7 @@ Write it in one line. Here is what I understand:
    → Ужин · tomorrow · 19:00–20:00
 
 <code>среда 14:00-15:00 оркестр повтор</code>
-   → оркестр · Wed 16.09 · 14:00–15:00 · repeats — I will ask how often
+   → оркестр · Wed · 14:00–15:00 · repeats — I will ask how often
 
 <code>анализы весь день четверг</code>
    → анализы · Thu · all day
@@ -69,15 +84,51 @@ Write it in one line. Here is what I understand:
 <code>зарядка каждый день 07:00 напомнить за 10м</code>
    → зарядка · every day · 07:00 · reminder 10m before
 
-<b>Words:</b> задача · весь день · повтор · ежедневно · colours · #tag · напомнить за 15м
-<b>Days:</b> завтра · среда · следующая среда · пн · wednesday · 16.09
-<b>Your own word</b> — ⚙️ Settings → 🔤 Keywords
-<b>As a list</b> — several lines at once, I will ask whether it is one entry or a list
+<b>Trigger words</b> — write them in the line and I take them out of the title:
 
-⚠ The words above are the ones I recognise, and they work in both languages —
-they are not translated with the interface.
+<code>задача</code> — also creates a task, linked to the event
+<code>весь день</code> — no time, all day
+<code>с 14.10 по 29.10</code> — an event over several days
+<code>повтор</code> — I will ask how often
+<code>каждый день</code> · <code>раз в 3 дня</code> · <code>через день</code> — how often it repeats
+<code>10 раз</code> · <code>до 01.12</code> — when the series ends
+<code>синий</code> · <code>красный</code> · <code>зелёный</code> … — the colour
+<code>#тег</code> — a tag
+<code>напомнить за 15м</code> · <code>напомни за час</code> — a reminder
+<b>a calendar name</b> — puts the event in it
+
+<b>Days:</b> <code>завтра</code> · <code>среда</code> · <code>следующая среда</code> · <code>пн</code> · <code>wednesday</code> · <code>16.09</code>
+<b>Times:</b> <code>14:00</code> · <code>14:00-15:30</code> · <code>1330</code> · <code>в 15</code> · <code>полдень</code>
+
+<b>Your own word</b> — ⚙️ Settings → 🔤 Keywords: any word can stand for a tag, a colour, a calendar, a date, a time or a repeat.
+<b>As a list</b> — several lines at once, I will ask whether it is one entry or a list.
+
+⚠ These words work in both languages and are not translated with the interface.
 
 I will show what I understood and ask you to confirm — nothing is created before that.`)
+}
+
+// creationGuideShort is what opens by default since v0.4.11.2.
+//
+// 🔴 The full guide above is twenty lines, and the first outside users said
+// «lots of steps» and «слишком много всего». Two examples say what the bot is
+// for; the vocabulary is one tap away (📖), not deleted.
+func creationGuideShort(lang i18n.Lang) string {
+	return i18n.T(lang,
+		`📅 <b>Новое событие</b>
+
+Напиши одной строкой, например:
+<code>Ужин завтра 19:00</code>
+<code>зарядка каждый день 07:00</code>
+
+Можно несколько строк сразу — списком.`,
+		`📅 <b>New event</b>
+
+Write it in one line, for example:
+<code>Ужин завтра 19:00</code>
+<code>зарядка каждый день 07:00</code>
+
+Several lines at once work too — as a list.`)
 }
 
 func (h *Handler) startNewEventFlow(chatID int64) {
@@ -85,7 +136,7 @@ func (h *Handler) startNewEventFlow(chatID int64) {
 	us.CurrentFlow = "new_event"
 	us.FlowStep = "line"
 	us.FlowData = map[string]any{}
-	h.sendHTML(chatID, creationGuide(h.lang(chatID)))
+	h.sendHTMLWithKeyboard(chatID, creationGuideShort(h.lang(chatID)), keyboards.GuideMore(h.lang(chatID), "event"))
 }
 
 // startNewEventForDay begins the same flow with the day already chosen, so
@@ -115,17 +166,23 @@ func (h *Handler) handleNewEventFlow(chatID int64, text string) {
 	case "line":
 		// 🔴 Ask before assuming. A block of lines may be one entry with a long
 		// title or several entries, and the bot is not the one who knows which.
-		if parse.LooksLikeList(text, time.Now().In(h.location())) {
+		if parse.LooksLikeList(text, time.Now().In(h.location(chatID))) {
 			h.askListOrSingle(chatID, text)
 			return
 		}
 		st := h.parseIntoDraft(chatID, text)
+		h.applyQuickKind(&st)
 		if date, ok := us.FlowData["date"].(string); ok && date != "" && !st.D.HasDay {
-			if day, err := time.ParseInLocation("2006-01-02", date, h.location()); err == nil {
+			if day, err := time.ParseInLocation("2006-01-02", date, h.location(chatID)); err == nil {
 				st.D.Day, st.D.HasDay = day, true
 			}
 		}
 		us.FlowData["draft"] = &st
+		if len(st.D.MoreDays) > 0 {
+			// Several dates in one line mean a question, not a guess.
+			h.askManyDates(chatID, 0)
+			return
+		}
 		h.showCard(chatID, 0)
 
 	case "edit:title":
@@ -139,6 +196,70 @@ func (h *Handler) handleNewEventFlow(chatID int64, text string) {
 		// when it is made of keywords.
 		st.Title = parse.ParseLineRaw(text)
 		h.showCard(chatID, 0)
+
+	case "card":
+		// 🔴 Review 17.09: text typed on the card used to wipe the draft. A new
+		// draft retyped is a correction — read it as the line again. While a
+		// list or an existing event is open, a retyped line cannot say which
+		// entry it replaces, so the card stays and says so.
+		st, ok := draftOf(h, chatID)
+		_, inList := listOf(h, chatID)
+		if ok && st.EventID == "" && !inList {
+			us.FlowStep = "line"
+			h.handleNewEventFlow(chatID, text)
+			return
+		}
+		h.keepDraft(chatID)
+
+	case "ask:freq", "edit:freq":
+		st, ok := draftOf(h, chatID)
+		if !ok {
+			h.lostDraft(chatID)
+			return
+		}
+		read, valid := parse.RepeatText(text, time.Now().In(h.location(chatID)))
+		if !valid {
+			h.sendHTMLWithKeyboard(chatID, h.t(chatID,
+				"Не понял частоту. Например «раз в 3 дня» или «каждые 2 недели».",
+				"Could not read that. «every 3 days» or «every 2 weeks», say."), keyboards.DraftBack(h.lang(chatID)))
+			return
+		}
+		st.D.Repeat, st.D.RepeatAsked = read.Repeat, false
+		// An end typed with the period replaces the old one; none typed keeps it.
+		if read.RepeatCount > 0 || !read.RepeatUntil.IsZero() {
+			st.D.RepeatCount, st.D.RepeatUntil = read.RepeatCount, read.RepeatUntil
+		}
+		h.showCard(chatID, 0)
+
+	case "edit:rend":
+		st, ok := draftOf(h, chatID)
+		if !ok {
+			h.lostDraft(chatID)
+			return
+		}
+		if !parse.RepeatEndText(text, time.Now().In(h.location(chatID)), &st.D) {
+			h.sendHTMLWithKeyboard(chatID, h.t(chatID,
+				"Не понял. Например «10 раз» или «до 01.12».",
+				"Could not read that. «10 times» or «until 01.12», say."), keyboards.DraftBack(h.lang(chatID)))
+			return
+		}
+		h.showCard(chatID, 0)
+
+	case "edit:remind", "pick:remind":
+		st, ok := draftOf(h, chatID)
+		if !ok {
+			h.lostDraft(chatID)
+			return
+		}
+		n, read := parse.ReminderOffsetText(text)
+		if !read {
+			h.sendHTMLWithKeyboard(chatID, h.t(chatID,
+				"Не понял время. Например «2ч», «45 минут», «за день».",
+				"Could not read that. «2h», «45 min», «a day», say."), keyboards.DraftBack(h.lang(chatID)))
+			return
+		}
+		toggleReminder(st, n, true)
+		h.showReminderPicker(chatID, 0, st)
 
 	case "edit:tags":
 		st, ok := draftOf(h, chatID)
@@ -155,12 +276,18 @@ func (h *Handler) handleNewEventFlow(chatID int64, text string) {
 			h.lostDraft(chatID)
 			return
 		}
-		p := parse.ParseLine(text, time.Now().In(h.location()))
+		p := parse.ParseLine(text, time.Now().In(h.location(chatID)))
 		if !p.Draft.HasDay {
 			h.sendText(chatID, h.t(chatID, "Не понял дату. Например: «завтра», «среда», «16.09».", "Didn't get the date. Try «завтра», «среда», «16.09»."))
 			return
 		}
 		st.D.Day, st.D.HasDay = p.Draft.Day, true
+		// A span typed here replaces the old one; a single day ends it.
+		st.D.EndDay = p.Draft.EndDay
+		if !p.Draft.EndDay.IsZero() {
+			st.D.AllDay, st.D.HasTime, st.D.HasEnd = p.Draft.AllDay, p.Draft.HasTime, p.Draft.HasEnd
+			st.D.Start, st.D.End = p.Draft.Start, p.Draft.End
+		}
 		h.showCard(chatID, 0)
 
 	case "edit:time":
@@ -169,7 +296,7 @@ func (h *Handler) handleNewEventFlow(chatID int64, text string) {
 			h.lostDraft(chatID)
 			return
 		}
-		p := parse.ParseLine(text, time.Now().In(h.location()))
+		p := parse.ParseLine(text, time.Now().In(h.location(chatID)))
 		if !p.Draft.HasTime {
 			h.sendText(chatID, h.t(chatID, "Не понял время. Например: «14:00» или «14:00-15:30».", "Didn't get the time. Try «14:00» or «14:00-15:30»."))
 			return
@@ -180,9 +307,35 @@ func (h *Handler) handleNewEventFlow(chatID int64, text string) {
 		h.showCard(chatID, 0)
 
 	default:
-		h.store.ClearFlow(chatID)
-		h.sendHTMLWithKeyboard(chatID, h.t(chatID, "Что-то пошло не так.", "Something went wrong."), keyboards.HomeInline(h.lang(chatID)))
+		// 🔴 Never ClearFlow here. This branch used to answer «Что-то пошло
+		// не так» and throw the draft away for any text typed on a screen that
+		// expects a button — the edit menu, a list question. The draft stays.
+		h.keepDraft(chatID)
 	}
+}
+
+// keepDraft answers text the current screen cannot read: the draft survives,
+// and the user is told what the screen wants.
+func (h *Handler) keepDraft(chatID int64) {
+	_, hasDraft := draftOf(h, chatID)
+	_, inList := listOf(h, chatID)
+	if !hasDraft && !inList {
+		h.lostDraft(chatID)
+		return
+	}
+	if !hasDraft {
+		// A list with no entry picked: «back to the card» would find no card
+		// and wipe the list, so the way back is to the list itself.
+		h.sendHTMLWithKeyboard(chatID, h.t(chatID,
+			"Здесь нужна кнопка — список на месте.",
+			"This screen needs a button — the list is still here."),
+			keyboards.BackToList(h.lang(chatID)))
+		return
+	}
+	h.sendHTMLWithKeyboard(chatID, h.t(chatID,
+		"Здесь нужна кнопка — черновик на месте. «🗑 Отменить», чтобы начать заново.",
+		"This screen needs a button — the draft is still here. «🗑 Cancel» to start over."),
+		keyboards.DraftBack(h.lang(chatID)))
 }
 
 // parseIntoDraft runs the pipeline and then resolves a calendar name, which
@@ -193,7 +346,7 @@ func (h *Handler) handleNewEventFlow(chatID int64, text string) {
 // failure this rewrite exists to end.
 func (h *Handler) parseIntoDraft(chatID int64, text string) draftState {
 	us := h.store.GetOrCreate(chatID)
-	p := parse.ParseLine(text, time.Now().In(h.location()))
+	p := parse.ParseLine(text, time.Now().In(h.location(chatID)))
 	st := draftState{D: p.Draft}
 
 	if cals, err := h.api.Calendars(us.AuthToken); err == nil && len(cals) > 0 {
@@ -221,7 +374,7 @@ func (h *Handler) parseIntoDraft(chatID int64, text string) draftState {
 			}
 			rules[word] = parse.Trigger{Field: field, Value: kw.Value}
 		}
-		parse.RecogniseCustomTriggers(p.Tokens, rules, time.Now().In(h.location()), &st.D)
+		parse.RecogniseCustomTriggers(p.Tokens, rules, time.Now().In(h.location(chatID)), &st.D)
 	}
 
 	// A custom word may name a calendar. Resolving it needs the list again,
@@ -259,14 +412,24 @@ func (h *Handler) showCard(chatID int64, messageID int) {
 		// 🔴 «Сохранить», and no «Создать» anywhere on the screen. The words are
 		// the only thing telling the user whether they are about to add a second
 		// event or change the one they opened.
-		card = keyboards.DraftCardEditing(h.lang(chatID))
+		// Since 17.09 the fields themselves sit on this screen (EventEditor):
+		// an opened event is one tap from any change.
+		card = keyboards.EventEditor(h.lang(chatID), st.EventID)
 	} else if _, inList := listOf(h, chatID); inList {
 		// ✅ is deliberately absent inside a list: creating is the list's own
 		// button, and a per-entry ✅ would create one event and leave the rest
 		// silently uncreated.
 		card = keyboards.DraftCardInList(h.lang(chatID))
 	}
-	h.editOrSend(chatID, messageID, renderDraft(h.lang(chatID), *st, time.Now().In(h.location())), card)
+	text := renderDraft(h.lang(chatID), *st, time.Now().In(h.location(chatID)))
+	if series, _ := us.FlowData["series"].(bool); series && st.EventID != "" {
+		// Repeated on every redraw, not only on opening: the warning matters
+		// most right before «Сохранить».
+		text += h.t(chatID,
+			"\n\n⚠ Это повторяющееся событие. Изменения применятся ко всей серии.",
+			"\n\n⚠ This event repeats. Changes apply to the whole series.")
+	}
+	h.editOrSend(chatID, messageID, text, card)
 }
 
 func (h *Handler) lostDraft(chatID int64) {
@@ -304,6 +467,11 @@ func (h *Handler) handleDraftCallback(chatID int64, messageID int, data string) 
 	// unreachable, because each new state got its own. Unreachable code that
 	// LOOKS like the handler is worse than none: the next reader fixes the copy
 	// that never runs.
+	// Several dates in one line have their own question (manydates.go).
+	if strings.HasPrefix(data, "dr_d") && h.handleDatesCallback(chatID, messageID, data) {
+		return true
+	}
+
 	if data == "dr_cancel" {
 		h.store.ClearFlow(chatID)
 		h.editOrSend(chatID, messageID, h.t(chatID, "🗑 Отменено.", "🗑 Cancelled."), keyboards.HomeInline(h.lang(chatID)))
@@ -327,6 +495,20 @@ func (h *Handler) handleDraftCallback(chatID int64, messageID int, data string) 
 	switch {
 	case data == "dr_ok":
 		h.confirmDraft(chatID, messageID)
+
+	case data == "dr_swap":
+		st.D.Day, st.D.EndDay = st.D.EndDay, st.D.Day
+		// The dates were read correctly; only their order was wrong, so the
+		// ⚠ that flagged the order goes with it.
+		st.D.Uncertain = withoutField(st.D.Uncertain, parse.FieldDay)
+		h.showCard(chatID, messageID)
+
+	case data == "dr_daytext":
+		us.FlowStep = "edit:date"
+		h.editOrSend(chatID, messageID, h.t(chatID,
+			"Напиши дату: «16.09», «среда», «завтра» — или промежуток «с 14.10 по 29.10».",
+			"Write the date: «16.09», «среда», «завтра» — or a span «с 14.10 по 29.10»."),
+			keyboards.DraftBack(h.lang(chatID)))
 
 	case data == "dr_back":
 		h.showCard(chatID, messageID)
@@ -357,6 +539,27 @@ func (h *Handler) handleDraftCallback(chatID int64, messageID int, data string) 
 		us.FlowStep = "ask:freq"
 		h.editOrSend(chatID, messageID, h.t(chatID, "Как часто повторять?", "How often should it repeat?"), keyboards.FreqPicker(h.lang(chatID)))
 
+	case data == "dre_rend":
+		if st.D.Repeat == "" && !st.D.RepeatAsked {
+			h.editOrSend(chatID, messageID, h.t(chatID, "Сначала выбери, как часто повторять.", "Choose how often it repeats first."), keyboards.FreqPicker(h.lang(chatID)))
+			return true
+		}
+		// The end may be typed straight onto this screen (review 17.09).
+		us.FlowStep = "edit:rend"
+		h.editOrSend(chatID, messageID, h.t(chatID,
+			"Когда закончить повтор? Можно сразу написать «10 раз» или «до 01.12».",
+			"When should the series end? You can just write «10 times» or «until 01.12»."), keyboards.RepeatEndPicker(h.lang(chatID)))
+
+	case data == "dr_rend_never":
+		st.D.RepeatCount, st.D.RepeatUntil = 0, time.Time{}
+		h.showCard(chatID, messageID)
+
+	case data == "dr_rend_text":
+		us.FlowStep = "edit:rend"
+		h.editOrSend(chatID, messageID, h.t(chatID,
+			"Напиши «10 раз» или «до 01.12».",
+			"Write «10 times» or «until 01.12»."), keyboards.DraftBack(h.lang(chatID)))
+
 	case data == "dre_colour":
 		h.editOrSend(chatID, messageID, h.t(chatID, "Цвет события:", "Event colour:"), keyboards.ColourPicker(h.lang(chatID)))
 
@@ -364,7 +567,7 @@ func (h *Handler) handleDraftCallback(chatID int64, messageID int, data string) 
 		h.showCalendarPicker(chatID, messageID)
 
 	case data == "dre_remind":
-		h.editOrSend(chatID, messageID, h.t(chatID, "За сколько напомнить?", "How long before should I remind you?"), keyboards.ReminderPicker(h.lang(chatID)))
+		h.showReminderPicker(chatID, messageID, st)
 
 	case data == "dre_allday":
 		st.D.AllDay = !st.D.AllDay
@@ -375,11 +578,19 @@ func (h *Handler) handleDraftCallback(chatID int64, messageID int, data string) 
 
 	case strings.HasPrefix(data, "dr_freq_"):
 		freq := strings.TrimPrefix(data, "dr_freq_")
+		if freq == "CUSTOM" {
+			us.FlowStep = "edit:freq"
+			h.editOrSend(chatID, messageID, h.t(chatID,
+				"Как часто? Например «раз в 3 дня», «каждые 2 недели», «раз в месяц 10 раз».",
+				"How often? «every 3 days», «every 2 weeks», «every month 10 times», say."), keyboards.DraftBack(h.lang(chatID)))
+			return true
+		}
 		st.D.RepeatAsked = false
 		if freq == "NONE" {
 			st.D.Repeat = ""
+			st.D.RepeatCount, st.D.RepeatUntil = 0, time.Time{}
 		} else {
-			st.D.Repeat = "FREQ=" + freq
+			st.D.Repeat = parse.FreqRule(freq)
 		}
 		h.showCard(chatID, messageID)
 
@@ -398,15 +609,25 @@ func (h *Handler) handleDraftCallback(chatID int64, messageID int, data string) 
 		if err != nil {
 			return true
 		}
-		now := time.Now().In(h.location())
+		now := time.Now().In(h.location(chatID))
 		st.D.Day = time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location()).AddDate(0, 0, n)
 		st.D.HasDay = true
+		// A day button picks ONE day: whatever span was there is gone.
+		st.D.EndDay = time.Time{}
 		h.showCard(chatID, messageID)
 
-	case strings.HasPrefix(data, "dr_rem_"):
-		mins := strings.TrimPrefix(data, "dr_rem_")
-		h.setReminder(st, mins)
+	case data == "dr_rem_done":
 		h.showCard(chatID, messageID)
+
+	case data == "dr_rem_custom":
+		us.FlowStep = "edit:remind"
+		h.editOrSend(chatID, messageID, h.t(chatID,
+			"За сколько напомнить? Например «2ч», «45 минут», «за день».",
+			"How long before? «2h», «45 min», «a day», say."), keyboards.DraftBack(h.lang(chatID)))
+
+	case strings.HasPrefix(data, "dr_rem_"):
+		h.setReminder(st, strings.TrimPrefix(data, "dr_rem_"))
+		h.showReminderPicker(chatID, messageID, st)
 
 	default:
 		return false
@@ -420,6 +641,10 @@ func (h *Handler) handleDraftCallback(chatID int64, messageID int, data string) 
 // 🔴 They are different events. POST /api/events applies the user's default
 // preset when reminder_offsets is ABSENT; an explicit empty array means stay
 // silent forever. The nil pointer is "absent" and it is the default.
+//
+// A number TOGGLES: ticked joins the list, ticked again leaves it. Unticking the
+// last one leaves an explicit empty list — «no reminder» — because that is what
+// the picker then shows, and the card must not say otherwise.
 func (h *Handler) setReminder(st *draftState, mins string) {
 	if mins == "none" {
 		empty := []int{}
@@ -431,11 +656,39 @@ func (h *Handler) setReminder(st *draftState, mins string) {
 		return
 	}
 	n, err := strconv.Atoi(mins)
-	if err != nil {
+	if err != nil || n <= 0 {
 		return
 	}
-	offsets := []int{n}
+	toggleReminder(st, n, false)
+}
+
+// toggleReminder flips one offset; onlyAdd is the typed-time path, where
+// writing a time that is already ticked must not untick it.
+func toggleReminder(st *draftState, n int, onlyAdd bool) {
+	offsets := []int{}
+	if st.ReminderOffsets != nil {
+		offsets = append(offsets, (*st.ReminderOffsets)...)
+	}
+	for i, m := range offsets {
+		if m == n {
+			if !onlyAdd {
+				offsets = append(offsets[:i], offsets[i+1:]...)
+			}
+			st.ReminderOffsets = &offsets
+			return
+		}
+	}
+	offsets = append(offsets, n)
+	sort.Ints(offsets)
 	st.ReminderOffsets = &offsets
+}
+
+func (h *Handler) showReminderPicker(chatID int64, messageID int, st *draftState) {
+	// Its own step, so a time typed onto the picker is read as one.
+	h.store.GetOrCreate(chatID).FlowStep = "pick:remind"
+	h.editOrSend(chatID, messageID,
+		h.t(chatID, "🔔 Когда напомнить? Можно отметить несколько.", "🔔 When should I remind you? Tick as many as you like."),
+		keyboards.ReminderPicker(h.lang(chatID), st.ReminderOffsets))
 }
 
 func (h *Handler) showCalendarPicker(chatID int64, messageID int) {
@@ -486,7 +739,17 @@ func (h *Handler) confirmDraft(chatID int64, messageID int) {
 		h.editOrSend(chatID, messageID, h.t(chatID, "Как часто повторять?", "How often should it repeat?"), keyboards.FreqPicker(h.lang(chatID)))
 	case askDate:
 		us.FlowStep = "edit:date"
-		h.editOrSend(chatID, messageID, h.t(chatID, "На какой день?", "Which day?"), keyboards.DraftDay(h.lang(chatID)))
+		h.editOrSend(chatID, messageID, h.t(chatID,
+			"На какой день? Кнопкой или напиши: «16.09», «среда», «с 14.10 по 29.10».",
+			"Which day? Use a button, or write «16.09», «среда», «с 14.10 по 29.10»."),
+			keyboards.DraftDay(h.lang(chatID)))
+	case askSpan:
+		us.FlowStep = "edit:date"
+		h.editOrSend(chatID, messageID, fmt.Sprintf(h.t(chatID,
+			"Конец раньше начала: %s – %s. Поменять местами или написать даты заново?",
+			"It ends before it starts: %s – %s. Swap them, or write the dates again?"),
+			st.D.Day.Format("02.01"), st.D.EndDay.Format("02.01")),
+			keyboards.SpanFix(h.lang(chatID), st.D.Day.Format("02.01"), st.D.EndDay.Format("02.01")))
 	case askTime:
 		us.FlowStep = "edit:time"
 		h.editOrSend(chatID, messageID, h.t(chatID, "Во сколько? Например «14:00» или «14:00-15:30».", "What time? «14:00» or «14:00-15:30»."), keyboards.DraftBack(h.lang(chatID)))
@@ -506,7 +769,7 @@ func (h *Handler) confirmDraft(chatID int64, messageID int) {
 // and that is said out loud rather than compensated for — a silent rollback
 // that can itself fail is worse than an honest sentence.
 func (h *Handler) createFromDraft(chatID int64, messageID int, st draftState) {
-	loc := h.location()
+	loc := h.location(chatID)
 	start, end := draftBounds(st)
 
 	if err := h.createOne(chatID, st); err != nil {
@@ -526,7 +789,13 @@ func (h *Handler) createFromDraft(chatID int64, messageID int, st draftState) {
 // unless an end was given.
 func draftBounds(st draftState) (time.Time, time.Time) {
 	if st.D.AllDay {
-		return st.D.Day, st.D.Day.AddDate(0, 0, 1)
+		// An all-day event ends at the midnight AFTER its last day — one day
+		// or a span, the same convention.
+		last := st.D.Day
+		if !st.D.EndDay.IsZero() && st.D.EndDay.After(last) {
+			last = st.D.EndDay
+		}
+		return st.D.Day, last.AddDate(0, 0, 1)
 	}
 	start := st.D.StartsAt()
 	if st.D.HasEnd {
@@ -566,8 +835,7 @@ func (h *Handler) createOne(chatID int64, st draftState) error {
 		TaskID:          taskID,
 		ReminderOffsets: st.ReminderOffsets,
 	}
-	if st.D.Repeat != "" {
-		rrule := st.D.Repeat
+	if rrule := st.D.RRule(); rrule != "" {
 		req.Rrule = &rrule
 	}
 	if st.D.Colour != "" {
@@ -588,4 +856,15 @@ func (h *Handler) createOne(chatID int64, st draftState) error {
 		return fmt.Errorf(h.t(chatID, "событие не создано: %w", "event not created: %w"), err)
 	}
 	return nil
+}
+
+// withoutField drops one field from the "read loosely" list.
+func withoutField(fields []parse.Field, drop parse.Field) []parse.Field {
+	out := fields[:0]
+	for _, f := range fields {
+		if f != drop {
+			out = append(out, f)
+		}
+	}
+	return out
 }

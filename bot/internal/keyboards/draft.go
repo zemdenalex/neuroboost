@@ -2,6 +2,7 @@ package keyboards
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -44,6 +45,7 @@ func draftFields(lang i18n.Lang) []struct{ Label, Data string } {
 		{i18n.T(lang, "Дата", "Date"), "dre_date"},
 		{i18n.T(lang, "Время", "Time"), "dre_time"},
 		{i18n.T(lang, "Повтор", "Repeat"), "dre_repeat"},
+		{i18n.T(lang, "Конец повтора", "Repeat ends"), "dre_rend"},
 		{i18n.T(lang, "Календарь", "Calendar"), "dre_cal"},
 		{i18n.T(lang, "Цвет", "Colour"), "dre_colour"},
 		{i18n.T(lang, "Теги", "Tags"), "dre_tags"},
@@ -85,7 +87,23 @@ func FreqPicker(lang i18n.Lang) tgbotapi.InlineKeyboardMarkup {
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "Каждый год", "Every year"), "dr_freq_YEARLY"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
+			// «таблетки раз в 3 дня» — Denis, 16.09: «надо чтобы свои варианты были».
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "✏️ Своя частота", "✏️ Custom"), "dr_freq_CUSTOM"),
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "Без повтора", "No repeat"), "dr_freq_NONE"),
+		),
+	)
+}
+
+// RepeatEndPicker ends a series: never, or a count or a date typed as text.
+// Not asked at creation — «lots of steps» — only offered under «Изменить».
+func RepeatEndPicker(lang i18n.Lang) tgbotapi.InlineKeyboardMarkup {
+	return tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "Никогда", "Never"), "dr_rend_never"),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "✏️ N раз или до даты", "✏️ N times or a date"), "dr_rend_text"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "⬅️ Назад", "⬅️ Back"), "dr_back"),
 		),
 	)
 }
@@ -142,6 +160,24 @@ func CalendarPicker(lang i18n.Lang, names, ids []string) tgbotapi.InlineKeyboard
 
 // DraftDay offers the days that cover most answers, with the text field still
 // open for anything else.
+// SpanFix is what a span typed back-to-front gets: swap the two dates, or
+// write them again. 🔴 Not swapped silently — which of the two is the typo is
+// the user's to say (Denis, 17.09).
+func SpanFix(lang i18n.Lang, from, to string) tgbotapi.InlineKeyboardMarkup {
+	return tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(
+				fmt.Sprintf(i18n.T(lang, "🔄 Поменять: %s – %s", "🔄 Swap: %s – %s"), to, from), "dr_swap"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "✏️ Написать даты", "✏️ Write the dates"), "dr_daytext"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "⬅️ Назад", "⬅️ Back"), "dr_back"),
+		),
+	)
+}
+
 func DraftDay(lang i18n.Lang) tgbotapi.InlineKeyboardMarkup {
 	return tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
@@ -150,6 +186,11 @@ func DraftDay(lang i18n.Lang) tgbotapi.InlineKeyboardMarkup {
 		),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "Послезавтра", "In two days"), "dr_day_2"),
+			// 🔴 A date the buttons do not cover — «14.10», «с 14.10 по 29.10»
+			// — is typed. The button is what says that is allowed.
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "✏️ Своя дата", "✏️ Another date"), "dr_daytext"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "⬅️ Назад", "⬅️ Back"), "dr_back"),
 		),
 	)
@@ -162,24 +203,84 @@ func DraftDay(lang i18n.Lang) tgbotapi.InlineKeyboardMarkup {
 // invisible unless both are on the keyboard: the first leaves the field absent
 // so the server applies the user's preset, the second writes an empty list and
 // means silence forever.
-func ReminderPicker(lang i18n.Lang) tgbotapi.InlineKeyboardMarkup {
-	return tgbotapi.NewInlineKeyboardMarkup(
+//
+// 🔴 Ticks, not one answer (Denis, 16.09: «должны быть множественным выбором
+// (кроме не напоминать — снимает все)… а также можно свое время»). A tap
+// toggles and the picker stays open; «Готово» returns to the card. A typed time
+// joins the offered ones as a button of its own, so it can be unticked too.
+func ReminderPicker(lang i18n.Lang, offsets *[]int) tgbotapi.InlineKeyboardMarkup {
+	chosen := map[int]bool{}
+	shown := []int{10, 30, 60, 1440}
+	if offsets != nil {
+		for _, m := range *offsets {
+			chosen[m] = true
+			if !containsOffset(shown, m) {
+				shown = append(shown, m)
+			}
+		}
+	}
+	sort.Ints(shown)
+
+	var rows [][]tgbotapi.InlineKeyboardButton
+	var row []tgbotapi.InlineKeyboardButton
+	for _, m := range shown {
+		label := offsetLabel(lang, m)
+		if chosen[m] {
+			label = "✅ " + label
+		}
+		row = append(row, tgbotapi.NewInlineKeyboardButtonData(label, "dr_rem_"+strconv.Itoa(m)))
+		if len(row) == 2 {
+			rows, row = append(rows, row), nil
+		}
+	}
+	if len(row) > 0 {
+		rows = append(rows, row)
+	}
+
+	mark := func(on bool, label string) string {
+		if on {
+			return "✅ " + label
+		}
+		return label
+	}
+	rows = append(rows,
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "За 10 минут", "10 minutes before"), "dr_rem_10"),
-			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "За 30 минут", "30 minutes before"), "dr_rem_30"),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "✏️ Своё время", "✏️ Own time"), "dr_rem_custom"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "За час", "An hour before"), "dr_rem_60"),
-			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "За день", "A day before"), "dr_rem_1440"),
+			tgbotapi.NewInlineKeyboardButtonData(mark(offsets == nil, i18n.T(lang, "По умолчанию", "My default")), "dr_rem_default"),
+			tgbotapi.NewInlineKeyboardButtonData(mark(offsets != nil && len(*offsets) == 0, i18n.T(lang, "Не напоминать", "No reminder")), "dr_rem_none"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "По умолчанию", "My default"), "dr_rem_default"),
-			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "Не напоминать", "No reminder"), "dr_rem_none"),
-		),
-		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "⬅️ Назад", "⬅️ Back"), "dr_back"),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "✔️ Готово", "✔️ Done"), "dr_rem_done"),
 		),
 	)
+	return tgbotapi.NewInlineKeyboardMarkup(rows...)
+}
+
+func containsOffset(xs []int, x int) bool {
+	for _, v := range xs {
+		if v == x {
+			return true
+		}
+	}
+	return false
+}
+
+// offsetLabel says an offset the way the picker always has: «За час».
+func offsetLabel(lang i18n.Lang, m int) string {
+	switch {
+	case m == 60:
+		return i18n.T(lang, "За час", "An hour before")
+	case m == 1440:
+		return i18n.T(lang, "За день", "A day before")
+	case m%1440 == 0:
+		return fmt.Sprintf(i18n.T(lang, "За %d дн.", "%d days before"), m/1440)
+	case m%60 == 0:
+		return fmt.Sprintf(i18n.T(lang, "За %d ч.", "%d hours before"), m/60)
+	default:
+		return fmt.Sprintf(i18n.T(lang, "За %d мин.", "%d minutes before"), m)
+	}
 }
 
 // DraftBack is what a text-input step shows: the user is expected to type, but
@@ -262,4 +363,68 @@ func DraftCardInList(lang i18n.Lang) tgbotapi.InlineKeyboardMarkup {
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🗑 Отменить всё", "🗑 Cancel all"), "dr_cancel"),
 		),
 	)
+}
+
+// TaskListItem is one task picked from the list: rewrite it, drop it, or go
+// back. dr_trew_/dr_tdel_ are distinct from every other dr_ prefix — no one of
+// them is a prefix of another.
+func TaskListItem(lang i18n.Lang, i int) tgbotapi.InlineKeyboardMarkup {
+	n := strconv.Itoa(i)
+	return tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "✏️ Переписать", "✏️ Rewrite"), "dr_trew_"+n),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🗑 Убрать из списка", "🗑 Remove from list"), "dr_tdel_"+n),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "⬅️ К списку", "⬅️ Back to list"), "dr_list"),
+		),
+	)
+}
+
+// ManyDates is what a line with two or more dates gets: one event across them
+// all, or one per date.
+//
+// 🔴 Asked, never guessed (Denis, 17.09: «если просто 2 даты написано, то он
+// должен спросить… и дать варианты»).
+func ManyDates(lang i18n.Lang, from, to string) tgbotapi.InlineKeyboardMarkup {
+	return tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(
+				fmt.Sprintf(i18n.T(lang, "📆 Одно событие: %s – %s", "📆 One event: %s – %s"), from, to), "dr_dspan"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "☑️ Выбрать даты", "☑️ Pick the dates"), "dr_dpick"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🗑 Отменить", "🗑 Cancel"), "dr_cancel"),
+		),
+	)
+}
+
+// DatePicker ticks the dates an event should be created on. Every date starts
+// ticked: the user wrote them all.
+func DatePicker(lang i18n.Lang, labels []string, chosen []bool) tgbotapi.InlineKeyboardMarkup {
+	var rows [][]tgbotapi.InlineKeyboardButton
+	var row []tgbotapi.InlineKeyboardButton
+	for i, label := range labels {
+		if i < len(chosen) && chosen[i] {
+			label = "✅ " + label
+		}
+		row = append(row, tgbotapi.NewInlineKeyboardButtonData(label, "dr_dtog_"+strconv.Itoa(i)))
+		if len(row) == 3 {
+			rows, row = append(rows, row), nil
+		}
+	}
+	if len(row) > 0 {
+		rows = append(rows, row)
+	}
+	rows = append(rows,
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "✅ Создать выбранные", "✅ Create the ticked ones"), "dr_dmake"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🗑 Отменить", "🗑 Cancel"), "dr_cancel"),
+		),
+	)
+	return tgbotapi.NewInlineKeyboardMarkup(rows...)
 }

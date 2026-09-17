@@ -42,6 +42,12 @@ func Entries(text string) []string {
 			parts = append(parts, s)
 		}
 	}
+	if len(parts) == 1 {
+		// No line breaks, no commas — but perhaps two days, each with its own
+		// title. The reference day only decides titles, not dates, so the
+		// wall clock is good enough here.
+		return splitByDays(parts[0], time.Now())
+	}
 	return parts
 }
 
@@ -71,7 +77,7 @@ func LooksLikeList(text string, now time.Time) bool {
 	if strings.Contains(text, ",") {
 		return !ParseLine(text, now).Draft.HasTime
 	}
-	return false
+	return len(splitByDays(text, now)) > 1
 }
 
 // ParseEventList reads a block into one draft per entry, with day headers
@@ -100,6 +106,17 @@ func ParseEventList(text string, now time.Time) []Parsed {
 
 	for _, e := range entries {
 		p := ParseLine(e, now)
+
+		// 🔴 Days in a block run forwards. «monday … tuesday … friday» written
+		// on a Wednesday is next week in order, and read line by line it put
+		// Friday the 18th before Monday the 21st (Mufid's block, 16.09). A bare
+		// weekday that would land before the day above it moves a week on.
+		// Explicit dates, «завтра» and «следующая» are left exactly as written.
+		if p.Draft.HasDay && p.Draft.BareWeekday && haveDay {
+			for p.Draft.Day.Before(day) {
+				p.Draft.Day = p.Draft.Day.AddDate(0, 0, 7)
+			}
+		}
 
 		if p.Draft.HasDay && !p.Draft.HasTime && !p.Draft.AllDay && p.Title == "" {
 			day, haveDay = p.Draft.Day, true
@@ -133,6 +150,19 @@ func ParseTaskList(text string, now time.Time) []TaskResult {
 	out := make([]TaskResult, 0, len(entries))
 	for _, e := range entries {
 		out = append(out, ParseTask(e, now))
+	}
+
+	// 🔴 ONE line, one day: «завтра помыться, поесть, поспать» is a sentence,
+	// and its day belongs to all three (Denis, 17.09: «день поставился только
+	// на первую задачу»). Across SEVERAL lines nothing is inherited — that
+	// stays as it was, because a list of things to do is not a schedule.
+	if !strings.Contains(text, "\n") && len(out) > 1 && out[0].DueDate != nil {
+		for i := range out[1:] {
+			if out[i+1].DueDate == nil {
+				due := *out[0].DueDate
+				out[i+1].DueDate = &due
+			}
+		}
 	}
 	return out
 }

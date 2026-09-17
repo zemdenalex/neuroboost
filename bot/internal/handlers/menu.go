@@ -17,7 +17,7 @@ import (
 // than to an early return.
 func (h *Handler) handleMenu(chatID int64, messageID int) {
 	us := h.store.GetOrCreate(chatID)
-	loc := h.location()
+	loc := h.location(chatID)
 	now := time.Now().In(loc)
 	from, to := dayBounds(now, loc)
 
@@ -34,7 +34,7 @@ func (h *Handler) handleMenu(chatID int64, messageID int) {
 		if len(events) > 0 {
 			sort.Slice(events, func(i, j int) bool { return events[i].StartsAt < events[j].StartsAt })
 			text += fmt.Sprintf(h.t(chatID, "Ближайшее: %s %s\n", "Next: %s %s\n"),
-				format.FormatTime(events[0].StartsAt, h.cfg.Timezone),
+				format.FormatTime(events[0].StartsAt, h.timezone(chatID)),
 				format.Escape(events[0].Title))
 		}
 	}

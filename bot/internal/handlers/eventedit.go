@@ -1,12 +1,14 @@
 package handlers
 
 import (
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/zemdenalex/neuroboost-bot/internal/api"
 	"github.com/zemdenalex/neuroboost-bot/internal/format"
 	"github.com/zemdenalex/neuroboost-bot/internal/keyboards"
+	"github.com/zemdenalex/neuroboost-bot/internal/parse"
 )
 
 // Editing an event from the bot.
@@ -22,6 +24,11 @@ import (
 // api/tasks.ts).
 
 // eventPickLabel is what one event looks like as a button.
+// allDayMark is what stands in place of a clock time on a button. Not a
+// translated word: a button label has ~30 characters and the date already
+// carries the meaning.
+const allDayMark = "•"
+
 func eventPickLabel(e api.Event, loc *time.Location) string {
 	title := strings.TrimSpace(e.Title)
 	if title == "" {
@@ -32,10 +39,24 @@ func eventPickLabel(e api.Event, loc *time.Location) string {
 	if len([]rune(title)) > 28 {
 		title = string([]rune(title)[:27]) + "…"
 	}
-	if t, err := time.Parse(time.RFC3339, e.StartsAt); err == nil {
-		return t.In(loc).Format("02.01 15:04") + " · " + title
+	start, err := time.Parse(time.RFC3339, e.StartsAt)
+	if err != nil {
+		return title
 	}
-	return title
+	// 🔴 An all-day event began at midnight, and «14.10 00:00» reads as a
+	// midnight appointment; a 16-day holiday read as a single day, which is
+	// what made Denis think it had become sixteen events (17.09).
+	if e.AllDay {
+		from := start.In(loc)
+		if end, err := time.Parse(time.RFC3339, e.EndsAt); err == nil {
+			last := end.In(loc).AddDate(0, 0, -1)
+			if last.After(from) {
+				return from.Format("02.01") + "–" + last.Format("02.01") + " · " + title
+			}
+		}
+		return from.Format("02.01") + " " + allDayMark + " · " + title
+	}
+	return start.In(loc).Format("02.01 15:04") + " · " + title
 }
 
 // draftFromEvent loads an existing event into the same shape the creation card
@@ -58,17 +79,31 @@ func draftFromEvent(e api.Event, loc *time.Location) draftState {
 
 	if e.AllDay {
 		st.D.AllDay = true
+		// ends_at is the midnight after the last day; more than one day
+		// between them is a span.
+		if end, err := time.Parse(time.RFC3339, e.EndsAt); err == nil {
+			last := end.In(loc).AddDate(0, 0, -1)
+			lastDay := time.Date(last.Year(), last.Month(), last.Day(), 0, 0, 0, 0, loc)
+			if lastDay.After(st.D.Day) {
+				st.D.EndDay = lastDay
+			}
+		}
 	} else {
 		st.D.Start = local.Sub(st.D.Day)
 		st.D.HasTime = true
 		if end, err := time.Parse(time.RFC3339, e.EndsAt); err == nil {
 			st.D.End = end.In(loc).Sub(st.D.Day)
 			st.D.HasEnd = true
+			if endLocal := end.In(loc); endLocal.YearDay() != local.YearDay() || endLocal.Year() != local.Year() {
+				if st.D.End >= 24*time.Hour {
+					st.D.EndDay = time.Date(endLocal.Year(), endLocal.Month(), endLocal.Day(), 0, 0, 0, 0, loc)
+				}
+			}
 		}
 	}
 
 	if e.Rrule != nil && *e.Rrule != "" {
-		st.D.Repeat = *e.Rrule
+		parse.SplitRRule(*e.Rrule, &st.D)
 	}
 	if e.Color != "" {
 		st.D.Colour = e.Color
@@ -81,14 +116,27 @@ func draftFromEvent(e api.Event, loc *time.Location) draftState {
 	return st
 }
 
+// pickerHorizon is how far «✏️ Изменить» looks — further than the agenda,
+// because a holiday two months out is exactly the event worth editing.
+const pickerHorizon = 90 * 24 * time.Hour
+
 // handleEventPicker turns the agenda into something tappable.
-func (h *Handler) handleEventPicker(chatID int64, messageID int) {
+func (h *Handler) handleEventPicker(chatID int64, messageID int, page int) {
 	us := h.store.GetOrCreate(chatID)
-	loc := h.location()
+	// Back at the list, whatever event was open is closed: a line typed now is
+	// a new quick add, not an edit of the last event looked at.
+	if us.CurrentFlow == "new_event" {
+		h.store.ClearFlow(chatID)
+	}
+	loc := h.location(chatID)
 	now := time.Now().In(loc)
 
+	// 🔴 From local MIDNIGHT, not from now: an all-day event began at 00:00 and
+	// would be behind us by breakfast. And further than the agenda's two weeks
+	// — «отпуск с 14.10» was simply out of range (Denis, 17.09).
+	from := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, loc)
 	events, err := h.api.GetEvents(us.AuthToken,
-		now.Format(time.RFC3339), now.Add(agendaHorizon).Format(time.RFC3339))
+		from.UTC().Format(time.RFC3339), from.Add(pickerHorizon).UTC().Format(time.RFC3339))
 	if err != nil {
 		h.editOrSend(chatID, messageID, h.t(chatID,
 			"⚠️ Не дозвонился до сервера. Попробуй через минуту.",
@@ -113,16 +161,7 @@ func (h *Handler) handleEventPicker(chatID int64, messageID int) {
 	}
 
 	text := h.t(chatID, "📅 <b>Какое событие открыть?</b>", "📅 <b>Which event?</b>")
-	if len(events) > keyboards.EventPickLimit {
-		// 🔴 Said out loud rather than silently truncated. A list that quietly
-		// stops at twelve teaches that the thirteenth event does not exist.
-		text += h.t(chatID,
-			"\n\n<i>Показаны первые 12 из ", "\n\n<i>Showing the first 12 of ") +
-			format.Escape(itoa(len(events))) +
-			h.t(chatID, " — открой день в календаре, чтобы дойти до остальных.</i>",
-				" — open a day in the calendar to reach the rest.</i>")
-	}
-	h.editOrSend(chatID, messageID, text, keyboards.EventPicker(h.lang(chatID), labels, ids, "agenda_open"))
+	h.editOrSend(chatID, messageID, text, keyboards.EventPicker(h.lang(chatID), labels, ids, "agenda_open", page))
 }
 
 // handleEventCard shows one event and what can be done to it.
@@ -138,11 +177,15 @@ func (h *Handler) handleEventCard(chatID int64, messageID int, eventID string) {
 		return
 	}
 
-	h.store.ClearFlow(chatID)
-	st := draftFromEvent(*ev, h.location())
+	// Opened straight into editing: the draft is loaded and the fields are the
+	// first screen (keyboards.EventEditor).
+	st := draftFromEvent(*ev, h.location(chatID))
 	st.CalendarName = h.calendarName(chatID, ev.CalendarID)
+	us.CurrentFlow = "new_event"
+	us.FlowStep = "card"
+	us.FlowData = map[string]any{"draft": &st, "series": isInstance}
 
-	text := renderDraft(h.lang(chatID), st, time.Now().In(h.location()))
+	text := renderDraft(h.lang(chatID), st, time.Now().In(h.location(chatID)))
 	if isInstance {
 		// 🔴 Said BEFORE anything changes. The card shows the series — its own
 		// first occurrence, not the one that was tapped — and a screen that
@@ -152,27 +195,7 @@ func (h *Handler) handleEventCard(chatID int64, messageID int, eventID string) {
 			"\n\n⚠ Это повторяющееся событие. Открыта вся серия, и изменения применятся ко всем повторам.",
 			"\n\n⚠ This event repeats. The whole series is open, and changes apply to every occurrence.")
 	}
-	h.editOrSend(chatID, messageID, text, keyboards.EventCard(h.lang(chatID), parentID))
-}
-
-// handleEventEdit opens the existing event in the creation card.
-func (h *Handler) handleEventEdit(chatID int64, messageID int, eventID string) {
-	us := h.store.GetOrCreate(chatID)
-	parentID, _, _ := splitInstanceID(eventID)
-	ev, err := h.api.GetEvent(us.AuthToken, parentID)
-	if err != nil || ev == nil || ev.ID == "" {
-		h.editOrSend(chatID, messageID, h.t(chatID,
-			"❌ Не удалось открыть событие.", "❌ Could not open the event."),
-			keyboards.AgendaActions(h.lang(chatID)))
-		return
-	}
-
-	st := draftFromEvent(*ev, h.location())
-	st.CalendarName = h.calendarName(chatID, ev.CalendarID)
-
-	us.CurrentFlow = "new_event"
-	us.FlowData = map[string]any{"draft": &st}
-	h.showCard(chatID, messageID)
+	h.editOrSend(chatID, messageID, text, keyboards.EventEditor(h.lang(chatID), parentID))
 }
 
 func (h *Handler) handleEventDeleteAsk(chatID int64, messageID int, eventID string) {
@@ -214,7 +237,7 @@ func (h *Handler) updateFromDraft(chatID int64, messageID int, st draftState) {
 	startsAt := start.UTC().Format(time.RFC3339)
 	endsAt := end.UTC().Format(time.RFC3339)
 	allDay := st.D.AllDay
-	rrule := st.D.Repeat
+	rrule := st.D.RRule()
 	colour := st.D.Colour
 
 	req := api.UpdateEventReq{
@@ -241,7 +264,7 @@ func (h *Handler) updateFromDraft(chatID int64, messageID int, st draftState) {
 		return
 	}
 
-	loc := h.location()
+	loc := h.location(chatID)
 	h.editOrSend(chatID, messageID,
 		h.t(chatID, "💾 <b>Сохранено</b>\n", "💾 <b>Saved</b>\n")+
 			format.Escape(st.Title)+"\n🕐 "+
@@ -263,13 +286,20 @@ func (h *Handler) handleEventCallback(chatID int64, messageID int, data string) 
 	}
 	switch kind {
 	case eventPick:
-		h.handleEventPicker(chatID, messageID)
+		h.handleEventPicker(chatID, messageID, 0)
+	case eventPage:
+		page, err := strconv.Atoi(id)
+		if err != nil {
+			page = 0
+		}
+		h.handleEventPicker(chatID, messageID, page)
 	case eventDelete:
 		h.handleEventDelete(chatID, messageID, id)
 	case eventDeleteAsk:
 		h.handleEventDeleteAsk(chatID, messageID, id)
 	case eventEdit:
-		h.handleEventEdit(chatID, messageID, id)
+		// «eve_» from a message sent before v0.4.11.2 — the same screen now.
+		h.handleEventCard(chatID, messageID, id)
 	case eventOpen:
 		h.handleEventCard(chatID, messageID, id)
 	}
@@ -279,6 +309,7 @@ func (h *Handler) handleEventCallback(chatID int64, messageID int, data string) 
 // What an event callback means.
 const (
 	eventPick      = "pick"
+	eventPage      = "page"
 	eventOpen      = "open"
 	eventEdit      = "edit"
 	eventDeleteAsk = "delete-ask"
@@ -304,6 +335,7 @@ func eventRoute(data string) (kind, id string, ok bool) {
 	}
 	for _, p := range []struct{ prefix, kind string }{
 		{"evdy_", eventDelete},
+		{"evp_", eventPage},
 		{"evd_", eventDeleteAsk},
 		{"eve_", eventEdit},
 		{"ev_", eventOpen},

@@ -57,7 +57,7 @@ func (h *Handler) handleNotificationAction(chatID int64, from *tgbotapi.User, ms
 	// accepted invitation stays accepted, so "Отклонить" underneath it is a
 	// control that no longer does what it says.
 	if msg != nil {
-		empty := tgbotapi.NewInlineKeyboardMarkup()
+		empty := keyboards.None()
 		edit := tgbotapi.NewEditMessageReplyMarkup(chatID, msg.MessageID, empty)
 		if _, err := h.bot.Request(edit); err != nil {
 			// Not worth telling the user: the action itself succeeded and the
@@ -74,6 +74,10 @@ type Handler struct {
 	api   *api.Client
 	store *state.Store
 	cfg   config.Config
+
+	// quickKind is the kind a qa_ button chose, consumed by the next parse.
+	// One update is handled at a time, so it needs no lock.
+	quickKind string
 }
 
 func New(bot *tgbotapi.BotAPI, apiClient *api.Client, store *state.Store, cfg config.Config) *Handler {
@@ -141,8 +145,18 @@ func (h *Handler) HandleMessage(msg *tgbotapi.Message) {
 	// for a different part of the product, and a half-built draft waiting
 	// silently to swallow the next message is worse than losing it.
 	if screen, ok := keyboards.MenuScreen(msg.Text); ok {
+		// 🔴 A menu press in the middle of onboarding is «skip», not a trap —
+		// the same rule as for every other flow, plus the flag, or the next
+		// press would start it all over again.
+		if us.CurrentFlow == onboardFlow {
+			h.finishOnboarding(chatID)
+		}
 		if us.CurrentFlow != "" {
 			h.store.ClearFlow(chatID)
+		}
+		if h.needsOnboarding(chatID) {
+			h.startOnboarding(chatID, 0, msg.From.LanguageCode)
+			return
 		}
 		h.openScreen(chatID, screen)
 		return
@@ -156,10 +170,20 @@ func (h *Handler) HandleMessage(msg *tgbotapi.Message) {
 	if msg.IsCommand() {
 		switch msg.Command() {
 		case "start", "help":
+			if h.needsOnboarding(chatID) {
+				h.startOnboarding(chatID, 0, msg.From.LanguageCode)
+				return
+			}
 			h.handleStart(chatID)
 		default:
 			h.sendHTMLWithKeyboard(chatID, h.t(chatID, "Неизвестная команда.", "Unknown command."), keyboards.HomeInline(h.lang(chatID)))
 		}
+		return
+	}
+
+	// Text from nowhere is a request to create something — quickadd.go.
+	if strings.TrimSpace(msg.Text) != "" {
+		h.handleQuickAdd(chatID, msg.Text)
 		return
 	}
 
@@ -246,6 +270,16 @@ func (h *Handler) HandleCallback(cb *tgbotapi.CallbackQuery) {
 	// the switch rather than inside it because the card has a dozen buttons
 	// with three prefixes, and a dozen more cases in a switch this long is how
 	// one of them ends up unreachable.
+	// Onboarding owns ob_.
+	if h.handleOnboardCallback(chatID, cb.Message.MessageID, data, cb.From) {
+		return
+	}
+
+	// Quick add's question owns qa_; it hands over to the card's flows.
+	if h.handleQuickCallback(chatID, cb.Message.MessageID, data) {
+		return
+	}
+
 	if h.handleDraftCallback(chatID, cb.Message.MessageID, data) {
 		return
 	}
@@ -317,7 +351,7 @@ func (h *Handler) HandleCallback(cb *tgbotapi.CallbackQuery) {
 	// "its own message". The day view edits in place too now, so grid and day
 	// share one message and the exception no longer had anything to protect.
 	case data == "cal_today":
-		h.handleCalendarDay(chatID, cb.Message.MessageID, time.Now().In(h.location()).Format("2006-01-02"))
+		h.handleCalendarDay(chatID, cb.Message.MessageID, time.Now().In(h.location(chatID)).Format("2006-01-02"))
 	case strings.HasPrefix(data, "cal_new_"):
 		h.startNewEventForDay(chatID, strings.TrimPrefix(data, "cal_new_"))
 	case strings.HasPrefix(data, "cal_prev_"), strings.HasPrefix(data, "cal_next_"):
@@ -336,6 +370,8 @@ func (h *Handler) HandleCallback(cb *tgbotapi.CallbackQuery) {
 		h.handleCalendar(chatID, cb.Message.MessageID, time.Now())
 	case data == "agenda_open":
 		h.handleAgenda(chatID, cb.Message.MessageID)
+	case strings.HasPrefix(data, "guide_full_"):
+		h.handleGuideFull(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "guide_full_"))
 	case data == "planning":
 		h.handlePlanning(chatID, cb.Message.MessageID)
 	case data == "settings_menu":
@@ -401,7 +437,11 @@ func (h *Handler) sendHTML(chatID int64, text string) {
 func (h *Handler) sendHTMLWithKeyboard(chatID int64, text string, kb tgbotapi.InlineKeyboardMarkup) {
 	msg := tgbotapi.NewMessage(chatID, text)
 	msg.ParseMode = "HTML"
-	msg.ReplyMarkup = kb
+	// No buttons means no markup at all on a new message — and never a nil
+	// keyboard, which Telegram refuses outright (keyboards.None).
+	if len(kb.InlineKeyboard) > 0 {
+		msg.ReplyMarkup = kb
+	}
 	h.send(chatID, msg)
 }
 
@@ -432,6 +472,9 @@ func shouldSendNew(messageID int, editErr error) bool {
 // editOrSend renders a screen onto the message it was triggered from, or posts
 // a new one when there is nothing to edit.
 func (h *Handler) editOrSend(chatID int64, messageID int, text string, kb tgbotapi.InlineKeyboardMarkup) {
+	if kb.InlineKeyboard == nil {
+		kb = keyboards.None()
+	}
 	if messageID != 0 {
 		edit := tgbotapi.NewEditMessageTextAndMarkup(chatID, messageID, text, kb)
 		edit.ParseMode = "HTML"

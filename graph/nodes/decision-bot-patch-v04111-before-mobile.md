@@ -6,7 +6,7 @@ status: verified
 verified_by: session-01VRP8SC
 verified_at: 2026-09-15
 tags: [neuroboost, bot, release, decision, planning]
-weight: { importance: 5, connectivity: 3, access: 1, last_accessed: 2026-09-15 }
+weight: { importance: 5, connectivity: 10, access: 2, last_accessed: 2026-09-16 }
 sources:
   - file: "docs/relizy/v0.4.11.md"
   - file: "docs/superpowers/specs/2026-09-11-calendar-event-window-design.md"
@@ -16,6 +16,7 @@ links:
   - relates-to: entity-bot-deploys-by-hand-not-by-ci
   - relates-to: learning-green-tests-are-not-a-deployed-bot
   - relates-to: decision-brainstorm-the-bot-before-building-more
+  - implemented-by: decision-bot-nl-creation-rules-15-09
 ---
 Его слова 15.09, дословно: *«давай я напишу что заметил в боте, я бы хотел его улучшить и
 поправить, включим это в 0.4.11.1, а потом уже перейдем к 12 где улучшим мобилку и тд»*.
@@ -42,3 +43,12 @@ v0.4.11.1.
 ⚠ **И ровно поэтому же он опасен:** «собрал и протестировал» для бота не означает
 «выкачено». Перед тем как назвать патч готовым — `ls` его `src/` на nl-2
 ([[learning-green-tests-are-not-a-deployed-bot]]).
+
+## ✅ Закрыто 16.09
+
+Патч выкачен на прод: **`v0.4.11.1`** (`e496053`). Список пришёл 15.09, проход 16.09 — 56
+из 59, три незакрытых починены в ту же ночь. Правила, которые он назвал, лежат в
+[[decision-bot-nl-creation-rules-15-09]], заметки — `docs/relizy/v0.4.11.1.md`.
+
+🔴 **Порядок из этого узла исполнен:** следующая работа — v0.4.12, спека окна событий.
+Перед ней Денис проходит полную проверку `docs/proverka-polnaya-2026-09-16.md`.

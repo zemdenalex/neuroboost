@@ -24,6 +24,15 @@ type fakeTelegram struct {
 	srv    *httptest.Server
 	mu     sync.Mutex
 	called []string
+	// texts holds the text and the reply markup of every sendMessage and
+	// editMessageText, in order — what the user would have read.
+	texts []sentText
+}
+
+type sentText struct {
+	Method string
+	Text   string
+	Markup string
 }
 
 func newFakeTelegram(t *testing.T) (*tgbotapi.BotAPI, *fakeTelegram) {
@@ -34,11 +43,32 @@ func newFakeTelegram(t *testing.T) (*tgbotapi.BotAPI, *fakeTelegram) {
 		parts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
 		method := parts[len(parts)-1]
 
+		_ = r.ParseForm()
 		f.mu.Lock()
 		f.called = append(f.called, method)
 		f.mu.Unlock()
 
 		w.Header().Set("Content-Type", "application/json")
+
+		// 🔴 Real Telegram rejects a keyboard serialised as null — «Bad
+		// Request: field "inline_keyboard" must be of type Array». This fake
+		// used to accept anything, so three dead buttons (Другое…, 📖,
+		// Переписать) passed their tests and failed on Denis's phone, 17.09.
+		// A fake that cannot say no is not a control.
+		if strings.Contains(r.Form.Get("reply_markup"), `"inline_keyboard":null`) {
+			w.WriteHeader(http.StatusBadRequest)
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"ok": false, "error_code": 400,
+				"description": `Bad Request: field "inline_keyboard" must be of type Array`,
+			})
+			return
+		}
+		// Recorded only once accepted: a message Telegram refused was never read.
+		if text := r.Form.Get("text"); text != "" {
+			f.mu.Lock()
+			f.texts = append(f.texts, sentText{Method: method, Text: text, Markup: r.Form.Get("reply_markup")})
+			f.mu.Unlock()
+		}
 		switch method {
 		case "getMe":
 			_ = json.NewEncoder(w).Encode(map[string]any{
@@ -56,6 +86,21 @@ func newFakeTelegram(t *testing.T) (*tgbotapi.BotAPI, *fakeTelegram) {
 		t.Fatalf("could not build a bot against the fake: %v", err)
 	}
 	return bot, f
+}
+
+func (f *fakeTelegram) sent() []sentText {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return append([]sentText(nil), f.texts...)
+}
+
+func (f *fakeTelegram) last(t *testing.T) sentText {
+	t.Helper()
+	all := f.sent()
+	if len(all) == 0 {
+		t.Fatalf("the bot sent nothing; calls = %v", f.calls())
+	}
+	return all[len(all)-1]
 }
 
 func (f *fakeTelegram) calls() []string {

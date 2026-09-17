@@ -68,7 +68,7 @@ func agendaText(lang i18n.Lang, events []api.Event, now time.Time, tz string) st
 
 func (h *Handler) handleAgenda(chatID int64, messageID int) {
 	us := h.store.GetOrCreate(chatID)
-	loc := h.location()
+	loc := h.location(chatID)
 	now := time.Now().In(loc)
 	from := now.UTC().Format(time.RFC3339)
 	to := now.Add(agendaHorizon).UTC().Format(time.RFC3339)
@@ -79,5 +79,5 @@ func (h *Handler) handleAgenda(chatID int64, messageID int) {
 			h.t(chatID, "⚠️ Не дозвонился до сервера. Попробуй через минуту.", "⚠️ Could not reach the server. Try again in a minute."), keyboards.HomeInline(h.lang(chatID)))
 		return
 	}
-	h.editOrSend(chatID, messageID, agendaText(h.lang(chatID), events, now, h.cfg.Timezone), keyboards.AgendaActions(h.lang(chatID)))
+	h.editOrSend(chatID, messageID, agendaText(h.lang(chatID), events, now, h.timezone(chatID)), keyboards.AgendaActions(h.lang(chatID)))
 }

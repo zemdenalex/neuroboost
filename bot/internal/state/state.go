@@ -22,6 +22,16 @@ type UserState struct {
 	// otherwise mean "re-read on every message".
 	Lang      string
 	LangKnown bool
+
+	// TZ is the user's IANA timezone, cached on the same terms as Lang.
+	TZ      string
+	TZKnown bool
+
+	// Onboarded caches bot.onboarded once it is known to be true. False means
+	// "not known yet", never "known false" — that one is always re-read, so a
+	// user who finishes onboarding on the web or another device is not asked
+	// again by a stale cache.
+	Onboarded bool
 }
 
 type Store struct {

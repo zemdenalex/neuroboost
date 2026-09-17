@@ -28,6 +28,12 @@ func (h *Handler) handleFlowInput(chatID int64, text string) {
 	}
 
 	switch us.CurrentFlow {
+	case onboardFlow:
+		h.handleOnboardText(chatID, text)
+	case quickFlow:
+		// A new line while the question is still open replaces the old one:
+		// the latest thing typed is what the user wants to create.
+		h.handleQuickAdd(chatID, text)
 	case "note":
 		h.handleNoteFlow(chatID, text)
 	case "new_task":
@@ -68,17 +74,40 @@ func (h *Handler) handleNewTaskFlow(chatID int64, text string) {
 		// 🔴 Ask before assuming. Denis, 15.09: «С задачами ты сделал тоже
 		// списки?» — no, and three lines silently became one task carrying a
 		// three-line title.
-		if parse.LooksLikeList(text, time.Now().In(h.location())) {
+		if parse.LooksLikeList(text, time.Now().In(h.location(chatID))) {
 			us.FlowData["raw"] = text
 			us.FlowStep = "list:confirm"
-			n := len(parse.Entries(text))
+			n := 0
+			for _, task := range parse.ParseTaskList(text, time.Now().In(h.location(chatID))) {
+				if strings.TrimSpace(task.Title) != "" {
+					n++
+				}
+			}
 			h.sendHTMLWithKeyboard(chatID,
 				fmt.Sprintf(h.t(chatID, "Это одна задача или список из %d?\n\n<i>Одной задачей название будет целиком, со всеми строками.</i>", "One task, or a list of %d?\n\n<i>As one task the title keeps every line.</i>"), n),
 				keyboards.ListConfirm(h.lang(chatID), n))
 			return
 		}
 		h.showTaskCard(chatID, text)
+	case "list:confirm":
+		// 🔴 Typing here used to answer «Что-то пошло не так» and throw the
+		// list away (Denis, 17.09: «А список вообще не понял»). A new line
+		// replaces the question.
+		us.FlowStep = "title"
+		h.handleNewTaskFlow(chatID, text)
 	default:
+		// «✏️ Переписать» on one entry of a task list.
+		if strings.HasPrefix(us.FlowStep, "list:rewrite:") {
+			h.rewriteTaskListEntry(chatID, text)
+			return
+		}
+		if us.FlowStep == "list" || strings.HasPrefix(us.FlowStep, "wizard:") {
+			// A screen that wants a button: the list survives.
+			h.sendHTMLWithKeyboard(chatID, h.t(chatID,
+				"Здесь нужна кнопка — список на месте.",
+				"This screen needs a button — the list is still here."), keyboards.BackToTasks(h.lang(chatID)))
+			return
+		}
 		h.store.ClearFlow(chatID)
 		h.sendHTMLWithKeyboard(chatID, h.t(chatID, "Что-то пошло не так.", "Something went wrong."), keyboards.HomeInline(h.lang(chatID)))
 	}

@@ -147,6 +147,11 @@ func applyTrigger(tr Trigger, word string, now time.Time, d *Draft) bool {
 
 	case FieldRepeat:
 		if d.Repeat == "" && !d.RepeatAsked {
+			// A word saved before v0.4.11.2 may still hold FREQ=YEARLY, which
+			// the API cannot parse.
+			if value == "FREQ=YEARLY" {
+				value = yearlyRule
+			}
 			d.Repeat = value
 		}
 		return value != ""

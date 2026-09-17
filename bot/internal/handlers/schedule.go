@@ -115,7 +115,7 @@ func (h *Handler) handleTaskScheduleDuration(chatID int64, messageID int, data s
 		return
 	}
 
-	loc := h.location()
+	loc := h.location(chatID)
 	start, resolved := scheduleStart(slot, time.Now(), loc)
 	if !resolved {
 		return
@@ -135,7 +135,7 @@ func (h *Handler) handleTaskSchedule(chatID int64, messageID int, data string) {
 		return
 	}
 
-	loc := h.location()
+	loc := h.location(chatID)
 	start, resolved := scheduleStart(slot, time.Now(), loc)
 	if !resolved {
 		return

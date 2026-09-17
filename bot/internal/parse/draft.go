@@ -13,6 +13,23 @@ type Draft struct {
 	Day    time.Time
 	HasDay bool
 
+	// EndDay is the last day of an event over several days — «с 14.09 по
+	// 29.09». Zero for a one-day event. For an all-day span it sets the end;
+	// for a timed span End already reaches past it (offset from Day) and
+	// EndDay is what the card prints.
+	EndDay time.Time
+
+	// MoreDays holds the SECOND and later explicit dates in a line —
+	// «созвон 14.10 16.10». What they mean is a question for the user: a span,
+	// or one event per date (Denis, 17.09). Empty for an ordinary line.
+	MoreDays []time.Time
+
+	// BareWeekday says the day came from a weekday word with no modifier —
+	// «пятница», not «следующая пятница», «17.09» or «завтра». Only such a day
+	// is a guess about WHICH week, and only it may be moved by a list whose
+	// headers run in order (ParseEventList).
+	BareWeekday bool
+
 	// Start and End are offsets from Day's midnight, not instants: the day and
 	// the time are chosen by different recognisers and may arrive in either
 	// order. HasEnd stays false when only a start was given, so the caller —
@@ -27,6 +44,12 @@ type Draft struct {
 	// "повтор" was written but no frequency was given, so the card must ask.
 	Repeat      string
 	RepeatAsked bool
+
+	// RepeatCount and RepeatUntil end a series: «10 раз», «до 01.12». They
+	// live apart from Repeat so that «повтор 10 раз» can keep its count while
+	// the frequency is still to be asked. RRule joins them. At most one is set.
+	RepeatCount int
+	RepeatUntil time.Time
 
 	AllDay bool
 

@@ -81,13 +81,13 @@ func cellLabel(c dayCell) string {
 // messageID > 0 means edit in place; 0 means send a new message. Paging that
 // appends a new grid every tap buries the chat within a minute.
 func (h *Handler) handleCalendar(chatID int64, messageID int, date time.Time) {
-	loc := h.location()
+	loc := h.location(chatID)
 	d := date.In(loc)
 	h.showMonth(chatID, messageID, d.Year(), d.Month())
 }
 
 func (h *Handler) showMonth(chatID int64, messageID, year int, month time.Month) {
-	loc := h.location()
+	loc := h.location(chatID)
 	now := time.Now().In(loc)
 
 	// The query spans the whole visible grid, not the calendar month: the first
@@ -152,7 +152,7 @@ func (h *Handler) handleCalendarNav(chatID int64, messageID int, data string) {
 	}
 	// AddDate on the first of the month, rather than arithmetic on the month
 	// number: it carries the year for free and cannot produce month 0 or 13.
-	shifted := time.Date(year, time.Month(month), 1, 0, 0, 0, 0, h.location()).AddDate(0, step, 0)
+	shifted := time.Date(year, time.Month(month), 1, 0, 0, 0, 0, h.location(chatID)).AddDate(0, step, 0)
 	h.showMonth(chatID, messageID, shifted.Year(), shifted.Month())
 }
 
@@ -175,7 +175,7 @@ func shiftDay(iso string, days int) (string, bool) {
 // day to day must not bury the chat under a new message per tap, same reason
 // as the month grid.
 func (h *Handler) handleCalendarDay(chatID int64, messageID int, date string) {
-	loc := h.location()
+	loc := h.location(chatID)
 	day, err := time.ParseInLocation("2006-01-02", date, loc)
 	if err != nil {
 		h.editOrSend(chatID, messageID, h.t(chatID, "Не понял дату.", "Didn't get the date."), keyboards.HomeInline(h.lang(chatID)))
@@ -212,7 +212,7 @@ func (h *Handler) handleCalendarDay(chatID int64, messageID int, date string) {
 		sort.Slice(events, func(i, j int) bool { return events[i].StartsAt < events[j].StartsAt })
 		for _, e := range events {
 			text += fmt.Sprintf("🕐 %s — %s\n",
-				format.FormatTime(e.StartsAt, h.cfg.Timezone), format.Escape(e.Title))
+				format.FormatTime(e.StartsAt, h.timezone(chatID)), format.Escape(e.Title))
 		}
 	}
 

@@ -99,6 +99,7 @@ func recogniseRelativeDay(toks []Token, now time.Time, d *Draft) bool {
 // for both. A token that cannot be a date — «09.30», there being no thirtieth
 // month — is left alone and the time recogniser takes it.
 func recogniseExplicitDate(toks []Token, now time.Time, d *Draft) bool {
+	found := false
 	for i, t := range toks {
 		if t.Field != FieldNone {
 			continue
@@ -124,15 +125,22 @@ func recogniseExplicitDate(toks []Token, now time.Time, d *Draft) bool {
 			candidate = candidate.AddDate(1, 0, 0)
 		}
 
+		if d.HasDay {
+			// A second date in the same line: kept, and the caller asks what
+			// the pair means rather than guessing.
+			d.MoreDays = append(d.MoreDays, candidate)
+			toks[i].Field = FieldDay
+			continue
+		}
 		d.Day = candidate
 		d.HasDay = true
 		if m[2] != "." {
 			d.MarkUncertain(FieldDay)
 		}
 		toks[i].Field = FieldDay
-		return true
+		found = true
 	}
-	return false
+	return found
 }
 
 // clockValue turns hours and optional minutes into an offset from midnight.
@@ -155,6 +163,41 @@ func clockValue(hh, mm string) (time.Duration, bool) {
 // way: a colon and two minutes.
 func strictClock(sep, mm string) bool { return sep == ":" && mm != "" }
 
+// compactClockRe is three or four digits with no separator.
+var compactClockRe = regexp.MustCompile(`^(\d{1,2})(\d{2})$`)
+
+// compactRangeRe is «1450-1800».
+var compactRangeRe = regexp.MustCompile(`^(\d{3,4})[-–—](\d{3,4})$`)
+
+// compactClock reads «1330», «900», «0100» as a clock time.
+//
+// 🔴 Three or four digits only: two digits are already a bare hour («12 обед»),
+// and five are not a time at all. The hour and the minutes must both be real,
+// so «2530» and «9999» fall through to the title — which is what makes
+// «отжаться 1330 раз» safe, together with the caller's "time expected here".
+func compactClock(norm string) (time.Duration, bool) {
+	m := compactClockRe.FindStringSubmatch(norm)
+	if m == nil || len(norm) < 3 {
+		return 0, false
+	}
+	return clockValue(m[1], m[2])
+}
+
+// lastWordOf reports whether token i is the last unclaimed token of the line.
+//
+// 🔴 Denis, 17.09: «стоматолог 1500» — people write the time at the end as
+// readily as at the start. Only a COMPACT clock (three or four digits) is read
+// there: a bare «12» at the end is far more often a count, and «отжаться 1330
+// раз» is safe because «раз» comes after it.
+func lastWordOf(toks []Token, i int) bool {
+	for j := i + 1; j < len(toks); j++ {
+		if toks[j].Field == FieldNone {
+			return false
+		}
+	}
+	return i > 0
+}
+
 // timeExpectedAt reports whether a lone number at index i can be a start time.
 //
 // 🔴 Only where a time is expected: at the beginning of what is left of the
@@ -162,6 +205,19 @@ func strictClock(sep, mm string) bool { return sep == ":" && mm != "" }
 // twelve repetitions, and reading that as noon would be worse than not reading
 // «12 обед» at all. Denis asked for the first; the second is the price of
 // asking, and this is where it is paid.
+// timePrepositions introduce a clock time: «в 15», «at 3».
+var timePrepositions = map[string]bool{"в": true, "во": true, "at": true}
+
+// timePrepositionBefore reports whether token i follows an unclaimed «в»/«at».
+//
+// 🔴 Denis, 17.09: «завтра в 15 стоматолог». A bare number after «в» is a time
+// wherever it stands — the preposition says so. It is still a LOOSE reading
+// and is marked: «встреча в 2 этапа» is the price, and ⚠ on the card is how it
+// gets paid.
+func timePrepositionBefore(toks []Token, i int) bool {
+	return i > 0 && toks[i-1].Field == FieldNone && timePrepositions[toks[i-1].Norm]
+}
+
 func timeExpectedAt(toks []Token, i int) bool {
 	for j := 0; j < i; j++ {
 		if toks[j].Field == FieldNone {
@@ -180,6 +236,18 @@ func recogniseTimeRange(toks []Token, d *Draft) bool {
 	for i, t := range toks {
 		if t.Field != FieldNone {
 			continue
+		}
+
+		// «1450-1800» — both halves written without a colon.
+		if m := compactRangeRe.FindStringSubmatch(t.Norm); m != nil {
+			start, okStart := compactClock(m[1])
+			end, okEnd := compactClock(m[2])
+			if okStart && okEnd {
+				setTime(d, start, end, true)
+				d.MarkUncertain(FieldTime)
+				toks[i].Field = FieldTime
+				return true
+			}
 		}
 
 		// «14:00-15:00», «10:40-12», «10-12».
@@ -205,7 +273,13 @@ func recogniseTimeRange(toks []Token, d *Draft) bool {
 
 		last := i + width - 1
 		claim := func(to int) {
-			for k := i; k <= to; k++ {
+			from := i
+			// «в 15:00», «at 3» — the preposition goes with the time, or it
+			// washes up in the title as «стоматолог в».
+			if timePrepositionBefore(toks, i) {
+				from = i - 1
+			}
+			for k := from; k <= to; k++ {
 				toks[k].Field = FieldTime
 			}
 		}
@@ -253,8 +327,15 @@ func readStart(toks []Token, i int) (dur time.Duration, sep, mm string, width in
 		return 0, "", "", 0, false
 	}
 
+	// «1330», «900», «0100» — a clock with the colon left out. Denis, 17.09.
+	// Only where a time is expected, and always LOOSE: «2026» is a year to
+	// everyone except this branch.
+	if v, ok := compactClock(t.Norm); ok && (timeExpectedAt(toks, i) || timePrepositionBefore(toks, i) || lastWordOf(toks, i)) {
+		return v, "", "", 1, true
+	}
+
 	// A lone number, and possibly a lone pair of minutes after it: «10 00».
-	if m := bareNumRe.FindStringSubmatch(t.Norm); m != nil && timeExpectedAt(toks, i) {
+	if m := bareNumRe.FindStringSubmatch(t.Norm); m != nil && (timeExpectedAt(toks, i) || timePrepositionBefore(toks, i)) {
 		if i+1 < len(toks) && toks[i+1].Field == FieldNone && bareMinRe.MatchString(toks[i+1].Norm) {
 			if v, good := clockValue(m[1], toks[i+1].Norm); good {
 				return v, " ", toks[i+1].Norm, 2, true
@@ -287,6 +368,9 @@ func readEnd(toks []Token, last int, dashTaken bool) (dur time.Duration, width i
 			if v, good := clockValue(m[1], ""); good {
 				return v, 1, true, true
 			}
+		}
+		if v, ok := compactClock(toks[next].Norm); ok {
+			return v, 1, true, true
 		}
 		return 0, 0, false, false
 	}

@@ -95,3 +95,18 @@ func TestUnknownPresetNameIsLeftAlone(t *testing.T) {
 		t.Errorf("Title = %q, want the line unchanged", got)
 	}
 }
+
+// The «✏️ Своё время» step reads a time and nothing else: text with more in it
+// is not a reminder, and guessing which part was meant is not an answer.
+func TestReminderOffsetTextReadsOnlyATime(t *testing.T) {
+	for text, want := range map[string]int{"2ч": 120, "за 2 часа": 120, "45 минут": 45, "за день": 1440, "in 1h": 60} {
+		if got, ok := ReminderOffsetText(text); !ok || got != want {
+			t.Errorf("ReminderOffsetText(%q) = %d, %v; want %d", text, got, ok, want)
+		}
+	}
+	for _, text := range []string{"позвонить маме", "за 2 часа до встречи", ""} {
+		if got, ok := ReminderOffsetText(text); ok {
+			t.Errorf("ReminderOffsetText(%q) read %d", text, got)
+		}
+	}
+}

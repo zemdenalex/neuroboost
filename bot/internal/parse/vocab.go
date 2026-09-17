@@ -26,9 +26,9 @@ var namedFrequency = map[string]string{
 	"weekly":      "FREQ=WEEKLY",
 	"ежемесячно":  "FREQ=MONTHLY",
 	"monthly":     "FREQ=MONTHLY",
-	"ежегодно":    "FREQ=YEARLY",
-	"yearly":      "FREQ=YEARLY",
-	"annually":    "FREQ=YEARLY",
+	"ежегодно":    yearlyRule,
+	"yearly":      yearlyRule,
+	"annually":    yearlyRule,
 }
 
 // everyWords open a two-word frequency: «каждый день», «каждую неделю»,
@@ -42,7 +42,7 @@ var everyPeriod = map[string]string{
 	"день": "FREQ=DAILY", "дня": "FREQ=DAILY", "day": "FREQ=DAILY",
 	"неделю": "FREQ=WEEKLY", "недели": "FREQ=WEEKLY", "week": "FREQ=WEEKLY",
 	"месяц": "FREQ=MONTHLY", "месяца": "FREQ=MONTHLY", "month": "FREQ=MONTHLY",
-	"год": "FREQ=YEARLY", "года": "FREQ=YEARLY", "year": "FREQ=YEARLY",
+	"год": yearlyRule, "года": yearlyRule, "year": yearlyRule,
 }
 
 var bydayCode = map[time.Weekday]string{
@@ -64,6 +64,15 @@ func recogniseRepeat(toks []Token, d *Draft) bool {
 			continue
 		}
 
+		// «раз в 3 дня», «каждые 2 недели», «every 2 weeks», «через день».
+		if rule, width, ok := periodAt(toks, i); ok {
+			d.Repeat = rule
+			for k := i; k < i+width; k++ {
+				toks[k].Field = FieldRepeat
+			}
+			return true
+		}
+
 		if freq, ok := namedFrequency[t.Norm]; ok {
 			d.Repeat = freq
 			toks[i].Field = FieldRepeat
@@ -77,8 +86,12 @@ func recogniseRepeat(toks []Token, d *Draft) bool {
 				toks[i].Field, toks[i+1].Field = FieldRepeat, FieldRepeat
 				return true
 			}
-			if wd, ok := weekdayWords[next.Norm]; ok {
-				d.Repeat = "FREQ=WEEKLY;BYDAY=" + bydayCode[wd]
+			if _, ok := weekdayWords[next.Norm]; ok {
+				// 🔴 Not BYDAY. The API rejects every RRULE key but FREQ,
+				// INTERVAL, COUNT and UNTIL, and an event it cannot parse is
+				// shown once and never repeats. Weekly from a Tuesday IS
+				// every Tuesday — the weekday recogniser picks that start.
+				d.Repeat = "FREQ=WEEKLY"
 				toks[i].Field = FieldRepeat // the weekday stays for the day recogniser
 				return true
 			}

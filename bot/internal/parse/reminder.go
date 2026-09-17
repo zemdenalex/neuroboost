@@ -44,6 +44,17 @@ func RecogniseReminderOffset(toks []Token, d *Draft) bool {
 		}
 
 		minutes, ok := offsetMinutes(toks[j].Norm)
+		// «за 2 часа» — the number and the unit typed as two words.
+		if !ok && j+1 < len(toks) && toks[j+1].Field == FieldNone {
+			if m, joined := offsetMinutes(toks[j].Norm + toks[j+1].Norm); joined {
+				minutes, ok = m, true
+				j++
+			}
+		}
+		// «за час», «за день» — the unit alone means one of it.
+		if !ok {
+			minutes, ok = offsetWords[toks[j].Norm]
+		}
 		if !ok {
 			continue
 		}
@@ -55,6 +66,12 @@ func RecogniseReminderOffset(toks []Token, d *Draft) bool {
 		return true
 	}
 	return false
+}
+
+// offsetWords are units written without a number: «напомни за час».
+var offsetWords = map[string]int{
+	"час": 60, "полчаса": 30, "день": 1440, "сутки": 1440, "неделю": 10080,
+	"hour": 60, "day": 1440, "week": 10080,
 }
 
 func offsetMinutes(norm string) (int, bool) {
@@ -108,4 +125,23 @@ func RecogniseReminderPreset(toks []Token, presets map[string][]int, d *Draft) b
 		return true
 	}
 	return false
+}
+
+// ReminderOffsetText reads a reminder typed on its own — the «✏️ Своё время»
+// step: «2ч», «45 минут», «за 2 часа», «за день», «in 1h».
+//
+// The same vocabulary as «напомнить за …» inside a line, so a time that works
+// in one place works in the other.
+func ReminderOffsetText(text string) (int, bool) {
+	toks := Tokenize("напомнить " + text)
+	var d Draft
+	if !RecogniseReminderOffset(toks, &d) || d.ReminderOffsets == nil || len(*d.ReminderOffsets) != 1 {
+		return 0, false
+	}
+	// Anything left over means the text was more than a reminder time, and a
+	// guess at which part was meant is not an answer.
+	if Title(toks) != "" {
+		return 0, false
+	}
+	return (*d.ReminderOffsets)[0], true
 }

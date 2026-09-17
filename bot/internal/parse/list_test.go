@@ -180,3 +180,36 @@ func TestTaskListReadsEstimatesAndPriorities(t *testing.T) {
 		t.Errorf("task 2 tags = %v", got[2].Tags)
 	}
 }
+
+// 🔴 Mufid's block, 16.09 (a Wednesday), verbatim from the prod chat. Each line
+// alone obeys Denis's rule — a bare weekday is the nearest one, today included
+// — but a block written top to bottom is a week in order, and the bot put
+// Friday the 18th BEFORE Monday the 21st.
+func TestWeekdayHeadersInABlockNeverGoBackwards(t *testing.T) {
+	wednesday := time.Date(2026, 9, 16, 10, 50, 0, 0, time.UTC)
+	block := "monday\n10 wake up\n11 breakfast\n12 work\n\ntuesday \n12:40-13:30 call\n\nfriday \n13:30 -15 exam"
+	got := ParseEventList(block, wednesday)
+
+	want := map[string]int{"wake up": 21, "breakfast": 21, "work": 21, "call": 22, "exam": 25}
+	if len(got) != len(want) {
+		t.Fatalf("got %d entries, want %d: %+v", len(got), len(want), got)
+	}
+	for _, p := range got {
+		if p.Draft.Day.Day() != want[p.Title] {
+			t.Errorf("%q landed on %s, want %d September", p.Title, p.Draft.Day.Format("2 Jan"), want[p.Title])
+		}
+	}
+}
+
+// The floor applies only to a BARE weekday. An explicit date, «завтра» and a
+// modifier say exactly which day was meant, and the block must not overrule it.
+func TestExplicitDaysInABlockAreNotPushedForward(t *testing.T) {
+	wednesday := time.Date(2026, 9, 16, 10, 50, 0, 0, time.UTC)
+	got := ParseEventList("пятница\n10:00 a\n17.09\n11:00 b\nзавтра\n12:00 c", wednesday)
+	want := map[string]int{"a": 18, "b": 17, "c": 17}
+	for _, p := range got {
+		if p.Draft.Day.Day() != want[p.Title] {
+			t.Errorf("%q landed on %s, want %d September", p.Title, p.Draft.Day.Format("2 Jan"), want[p.Title])
+		}
+	}
+}

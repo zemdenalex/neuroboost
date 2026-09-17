@@ -90,7 +90,7 @@ func (h *Handler) handleTaskAction(chatID int64, messageID int, taskID string) {
 		text += fmt.Sprintf("⏱ %s\n", format.Duration(estMin))
 	}
 	if dueDate != "" {
-		text += fmt.Sprintf("📅 Due: %s\n", format.FormatDate(dueDate, h.cfg.Timezone))
+		text += fmt.Sprintf("📅 Due: %s\n", format.FormatDate(dueDate, h.timezone(chatID)))
 	}
 
 	h.editOrSend(chatID, messageID, text, keyboards.TaskActions(h.lang(chatID), taskID))
@@ -154,7 +154,7 @@ func (h *Handler) handleTaskDueSet(chatID int64, messageID int, data string) {
 	}
 	offset, _ := strconv.Atoi(offsetStr)
 
-	due := time.Now().In(h.location()).AddDate(0, 0, offset)
+	due := time.Now().In(h.location(chatID)).AddDate(0, 0, offset)
 	us := h.store.GetOrCreate(chatID)
 	if err := h.api.UpdateTask(us.AuthToken, taskID, map[string]any{
 		"due_date": due.Format(time.RFC3339),
@@ -212,7 +212,7 @@ func (h *Handler) handleTaskTagsPrompt(chatID int64, messageID int, taskID strin
 	us.FlowData["taskID"] = taskID
 	h.editOrSend(chatID, messageID,
 		fmt.Sprintf(h.t(chatID, "🏷 <b>%s</b>\n\nТеги через запятую (или «cancel»):", "🏷 <b>%s</b>\n\nTags, comma separated (or «cancel»):"), format.Escape(title)),
-		tgbotapi.NewInlineKeyboardMarkup())
+		keyboards.None())
 }
 
 // handleEditTaskTags is the text-flow answer to handleTaskTagsPrompt, routed

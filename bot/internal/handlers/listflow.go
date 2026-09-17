@@ -30,7 +30,9 @@ func (h *Handler) askListOrSingle(chatID int64, text string) {
 	us := h.store.GetOrCreate(chatID)
 	us.FlowData["raw"] = text
 	us.FlowStep = "list:confirm"
-	n := len(parse.Entries(text))
+	// Counted as the list will be BUILT — day headers are not entries (Denis,
+	// 17.09: «список из 6» for three events made people stop).
+	n := len(parse.ParseEventList(text, time.Now().In(h.location(chatID))))
 	h.sendHTMLWithKeyboard(chatID,
 		fmt.Sprintf(h.t(chatID,
 			"Это одна запись или список из %d?\n\n<i>Одной записью название будет целиком, со всеми строками.</i>",
@@ -42,7 +44,7 @@ func (h *Handler) askListOrSingle(chatID int64, text string) {
 func (h *Handler) buildList(chatID int64) []*draftState {
 	us := h.store.GetOrCreate(chatID)
 	raw, _ := us.FlowData["raw"].(string)
-	now := time.Now().In(h.location())
+	now := time.Now().In(h.location(chatID))
 
 	parsed := parse.ParseEventList(raw, now)
 	list := make([]*draftState, 0, len(parsed))
@@ -75,7 +77,7 @@ func (h *Handler) showList(chatID int64, messageID int) {
 	us := h.store.GetOrCreate(chatID)
 	us.FlowStep = "list"
 	delete(us.FlowData, "draft")
-	h.editOrSend(chatID, messageID, renderList(h.lang(chatID), list, time.Now().In(h.location())), keyboards.ListCard(h.lang(chatID), len(list)))
+	h.editOrSend(chatID, messageID, renderList(h.lang(chatID), list, time.Now().In(h.location(chatID))), keyboards.ListCard(h.lang(chatID), len(list)))
 }
 
 // createList writes every entry, and says by name which ones did not make it.
