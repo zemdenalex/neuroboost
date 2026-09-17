@@ -284,11 +284,20 @@ func (h *Handler) handleNewEventFlow(chatID int64, text string) {
 // keepDraft answers text the current screen cannot read: the draft survives,
 // and the user is told what the screen wants.
 func (h *Handler) keepDraft(chatID int64) {
-	if _, ok := draftOf(h, chatID); !ok {
-		if _, inList := listOf(h, chatID); !inList {
-			h.lostDraft(chatID)
-			return
-		}
+	_, hasDraft := draftOf(h, chatID)
+	_, inList := listOf(h, chatID)
+	if !hasDraft && !inList {
+		h.lostDraft(chatID)
+		return
+	}
+	if !hasDraft {
+		// A list with no entry picked: «back to the card» would find no card
+		// and wipe the list, so the way back is to the list itself.
+		h.sendHTMLWithKeyboard(chatID, h.t(chatID,
+			"Здесь нужна кнопка — список на месте.",
+			"This screen needs a button — the list is still here."),
+			keyboards.BackToList(h.lang(chatID)))
+		return
 	}
 	h.sendHTMLWithKeyboard(chatID, h.t(chatID,
 		"Здесь нужна кнопка — черновик на месте. «🗑 Отменить», чтобы начать заново.",

@@ -69,3 +69,22 @@ func TestUnreadableTextKeepsTheDraft(t *testing.T) {
 		t.Errorf("text on the edit menu destroyed the draft")
 	}
 }
+
+// The button keepDraft offers must lead back to something. In an open list with
+// no single entry picked, «back to the card» would find no card and wipe the
+// list — so it leads back to the list.
+func TestTypingOnAListKeepsAWayBackToIt(t *testing.T) {
+	h, fake, chat := quickHandler(t)
+	h.startNewEventFlow(chat)
+	say(h, chat, "среда\n10:00 завтрак\n12:00 обед")
+	press(h, chat, "dr_many")
+	say(h, chat, "ээээ")
+
+	if markup := fake.last(t).Markup; !strings.Contains(markup, "dr_list") {
+		t.Fatalf("the hint offers no way back to the list: %s", markup)
+	}
+	press(h, chat, "dr_list")
+	if _, ok := listOf(h, chat); !ok {
+		t.Errorf("going back destroyed the list")
+	}
+}

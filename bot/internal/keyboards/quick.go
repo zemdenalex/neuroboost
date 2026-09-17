@@ -46,3 +46,13 @@ func GuideMore(lang i18n.Lang, kind string) tgbotapi.InlineKeyboardMarkup {
 		),
 	)
 }
+
+// BackToList is the way back to an open event list.
+func BackToList(lang i18n.Lang) tgbotapi.InlineKeyboardMarkup {
+	return tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "⬅️ К списку", "⬅️ Back to list"), "dr_list"),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🗑 Отменить", "🗑 Cancel"), "dr_cancel"),
+		),
+	)
+}
