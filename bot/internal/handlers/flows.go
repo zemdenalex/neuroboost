@@ -77,7 +77,12 @@ func (h *Handler) handleNewTaskFlow(chatID int64, text string) {
 		if parse.LooksLikeList(text, time.Now().In(h.location(chatID))) {
 			us.FlowData["raw"] = text
 			us.FlowStep = "list:confirm"
-			n := len(parse.Entries(text))
+			n := 0
+			for _, task := range parse.ParseTaskList(text, time.Now().In(h.location(chatID))) {
+				if strings.TrimSpace(task.Title) != "" {
+					n++
+				}
+			}
 			h.sendHTMLWithKeyboard(chatID,
 				fmt.Sprintf(h.t(chatID, "Это одна задача или список из %d?\n\n<i>Одной задачей название будет целиком, со всеми строками.</i>", "One task, or a list of %d?\n\n<i>As one task the title keeps every line.</i>"), n),
 				keyboards.ListConfirm(h.lang(chatID), n))

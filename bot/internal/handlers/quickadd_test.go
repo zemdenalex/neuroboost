@@ -81,17 +81,31 @@ func TestQuickAddTwoEventsAsksOneOrList(t *testing.T) {
 	}
 }
 
-// «задача» already answered the question — asking it again is a wasted step.
-func TestQuickAddTaskWordSkipsTheQuestion(t *testing.T) {
+// Denis, 17.09: «даже если мы пишем задача, надо чтобы был выбор сохранить как
+// событие или заметку». «задача» only reorders the question — Task first.
+func TestQuickAddTaskWordStillAsksTaskFirst(t *testing.T) {
 	h, fake, chat := quickHandler(t)
 	say(h, chat, "задача на завтра доделать сайт")
 
 	got := fake.last(t)
-	if strings.Contains(got.Markup, "qa_event") {
-		t.Fatalf("«задача» still asked what to create")
+	task, event := strings.Index(got.Markup, "qa_task"), strings.Index(got.Markup, "qa_event")
+	if task < 0 || event < 0 || task > event {
+		t.Fatalf("«задача» should still ask, with Task offered first: %s", got.Markup)
 	}
-	if !strings.Contains(got.Text, "доделать сайт") {
-		t.Errorf("no task card for «доделать сайт»: %q", got.Text)
+	press(h, chat, "qa_task")
+	if !strings.Contains(fake.last(t).Text, "доделать сайт") {
+		t.Errorf("no task card for «доделать сайт»: %q", fake.last(t).Text)
+	}
+}
+
+// Choosing «Событие» for a line that says «задача» makes an event, not a task.
+func TestQuickAddEventOverridesTheTaskWord(t *testing.T) {
+	h, _, chat := quickHandler(t)
+	say(h, chat, "задача завтра в 15 позвонить в банк")
+	press(h, chat, "qa_event")
+	st, ok := draftOf(h, chat)
+	if !ok || st.D.IsTask {
+		t.Errorf("«Событие» was chosen, the draft is a task: ok=%v", ok)
 	}
 }
 

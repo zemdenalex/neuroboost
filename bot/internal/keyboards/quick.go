@@ -10,12 +10,17 @@ import (
 //
 // Its prefix, qa_, belongs to quick add alone. It is asked before the card's
 // dr_ callbacks, and a shared prefix would route by declaration order.
-func QuickAddKind(lang i18n.Lang) tgbotapi.InlineKeyboardMarkup {
+//
+// taskFirst puts Task before Event when the line said «задача».
+func QuickAddKind(lang i18n.Lang, taskFirst bool) tgbotapi.InlineKeyboardMarkup {
+	event := tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "📅 Событие", "📅 Event"), "qa_event")
+	task := tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "📋 Задача", "📋 Task"), "qa_task")
+	first := tgbotapi.NewInlineKeyboardRow(event, task)
+	if taskFirst {
+		first = tgbotapi.NewInlineKeyboardRow(task, event)
+	}
 	return tgbotapi.NewInlineKeyboardMarkup(
-		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "📅 Событие", "📅 Event"), "qa_event"),
-			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "📋 Задача", "📋 Task"), "qa_task"),
-		),
+		first,
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "📝 Заметка", "📝 Note"), "qa_note"),
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "❌ Отмена", "❌ Cancel"), "qa_cancel"),

@@ -23,18 +23,6 @@ import (
 const quickFlow = "quick"
 
 func (h *Handler) handleQuickAdd(chatID int64, text string) {
-	// «задача» already answered the question. With a time it is a task bound
-	// to an event, which only the event card can build; without one it is a
-	// plain task with a due day.
-	if parse.IsTaskLine(text) {
-		if parse.ParseLine(text, time.Now().In(h.location(chatID))).Draft.HasTime {
-			h.quickAs(chatID, "event", text)
-		} else {
-			h.quickAs(chatID, "task", text)
-		}
-		return
-	}
-
 	us := h.store.GetOrCreate(chatID)
 	us.CurrentFlow = quickFlow
 	us.FlowStep = "kind"
@@ -44,7 +32,10 @@ func (h *Handler) handleQuickAdd(chatID int64, text string) {
 	// in a chat, the message being asked about may already be off screen.
 	h.sendHTMLWithKeyboard(chatID,
 		"<i>"+format.Escape(text)+"</i>\n\n"+h.t(chatID, "Что создать?", "What should I create?"),
-		keyboards.QuickAddKind(h.lang(chatID)))
+		// 🔴 «задача» does not skip the question (Denis, 17.09: «даже если мы
+		// пишем задача, надо чтобы был выбор сохранить как событие или
+		// заметку»). It only puts Task first.
+		keyboards.QuickAddKind(h.lang(chatID), parse.IsTaskLine(text)))
 }
 
 // handleQuickCallback answers the qa_ buttons. Returns false for anything else.
@@ -73,8 +64,23 @@ func (h *Handler) handleQuickCallback(chatID int64, messageID int, data string) 
 	switch data {
 	case "qa_event":
 		h.quickAs(chatID, "event", raw)
+		// Chosen as an event: «задача» in the line is a word, not an order.
+		if st, ok := draftOf(h, chatID); ok && st.D.IsTask {
+			st.D.IsTask = false
+			h.showCard(chatID, 0)
+		}
 	case "qa_task":
-		h.quickAs(chatID, "task", raw)
+		// A task with a clock time is a task bound to an event — only the
+		// event card builds both. Without a time it is a plain task.
+		if parse.ParseLine(raw, time.Now().In(h.location(chatID))).Draft.HasTime {
+			h.quickAs(chatID, "event", raw)
+			if st, ok := draftOf(h, chatID); ok && !st.D.IsTask {
+				st.D.IsTask = true
+				h.showCard(chatID, 0)
+			}
+		} else {
+			h.quickAs(chatID, "task", raw)
+		}
 	case "qa_note":
 		h.quickAs(chatID, "note", raw)
 	default:

@@ -30,7 +30,9 @@ func (h *Handler) askListOrSingle(chatID int64, text string) {
 	us := h.store.GetOrCreate(chatID)
 	us.FlowData["raw"] = text
 	us.FlowStep = "list:confirm"
-	n := len(parse.Entries(text))
+	// Counted as the list will be BUILT — day headers are not entries (Denis,
+	// 17.09: «список из 6» for three events made people stop).
+	n := len(parse.ParseEventList(text, time.Now().In(h.location(chatID))))
 	h.sendHTMLWithKeyboard(chatID,
 		fmt.Sprintf(h.t(chatID,
 			"Это одна запись или список из %d?\n\n<i>Одной записью название будет целиком, со всеми строками.</i>",

@@ -550,6 +550,8 @@ func (h *Handler) handleDraftCallback(chatID int64, messageID int, data string) 
 		now := time.Now().In(h.location(chatID))
 		st.D.Day = time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location()).AddDate(0, 0, n)
 		st.D.HasDay = true
+		// A day button picks ONE day: whatever span was there is gone.
+		st.D.EndDay = time.Time{}
 		h.showCard(chatID, messageID)
 
 	case data == "dr_rem_done":

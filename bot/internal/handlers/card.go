@@ -65,6 +65,10 @@ func nextQuestion(st draftState) string {
 		return askFreq
 	case !st.D.HasDay:
 		return askDate
+	case !st.D.EndDay.IsZero() && st.D.EndDay.Before(st.D.Day):
+		// 🔴 Denis, 17.09 (F5): ⚠ was shown and ✅ created it anyway. A span
+		// that ends before it starts is asked again, not saved.
+		return askDate
 	case !st.D.HasTime && !st.D.AllDay:
 		return askTime
 	default:
