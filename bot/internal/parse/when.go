@@ -155,6 +155,26 @@ func clockValue(hh, mm string) (time.Duration, bool) {
 // way: a colon and two minutes.
 func strictClock(sep, mm string) bool { return sep == ":" && mm != "" }
 
+// compactClockRe is three or four digits with no separator.
+var compactClockRe = regexp.MustCompile(`^(\d{1,2})(\d{2})$`)
+
+// compactRangeRe is «1450-1800».
+var compactRangeRe = regexp.MustCompile(`^(\d{3,4})[-–—](\d{3,4})$`)
+
+// compactClock reads «1330», «900», «0100» as a clock time.
+//
+// 🔴 Three or four digits only: two digits are already a bare hour («12 обед»),
+// and five are not a time at all. The hour and the minutes must both be real,
+// so «2530» and «9999» fall through to the title — which is what makes
+// «отжаться 1330 раз» safe, together with the caller's "time expected here".
+func compactClock(norm string) (time.Duration, bool) {
+	m := compactClockRe.FindStringSubmatch(norm)
+	if m == nil || len(norm) < 3 {
+		return 0, false
+	}
+	return clockValue(m[1], m[2])
+}
+
 // timeExpectedAt reports whether a lone number at index i can be a start time.
 //
 // 🔴 Only where a time is expected: at the beginning of what is left of the
@@ -193,6 +213,18 @@ func recogniseTimeRange(toks []Token, d *Draft) bool {
 	for i, t := range toks {
 		if t.Field != FieldNone {
 			continue
+		}
+
+		// «1450-1800» — both halves written without a colon.
+		if m := compactRangeRe.FindStringSubmatch(t.Norm); m != nil {
+			start, okStart := compactClock(m[1])
+			end, okEnd := compactClock(m[2])
+			if okStart && okEnd {
+				setTime(d, start, end, true)
+				d.MarkUncertain(FieldTime)
+				toks[i].Field = FieldTime
+				return true
+			}
 		}
 
 		// «14:00-15:00», «10:40-12», «10-12».
@@ -272,6 +304,13 @@ func readStart(toks []Token, i int) (dur time.Duration, sep, mm string, width in
 		return 0, "", "", 0, false
 	}
 
+	// «1330», «900», «0100» — a clock with the colon left out. Denis, 17.09.
+	// Only where a time is expected, and always LOOSE: «2026» is a year to
+	// everyone except this branch.
+	if v, ok := compactClock(t.Norm); ok && (timeExpectedAt(toks, i) || timePrepositionBefore(toks, i)) {
+		return v, "", "", 1, true
+	}
+
 	// A lone number, and possibly a lone pair of minutes after it: «10 00».
 	if m := bareNumRe.FindStringSubmatch(t.Norm); m != nil && (timeExpectedAt(toks, i) || timePrepositionBefore(toks, i)) {
 		if i+1 < len(toks) && toks[i+1].Field == FieldNone && bareMinRe.MatchString(toks[i+1].Norm) {
@@ -306,6 +345,9 @@ func readEnd(toks []Token, last int, dashTaken bool) (dur time.Duration, width i
 			if v, good := clockValue(m[1], ""); good {
 				return v, 1, true, true
 			}
+		}
+		if v, ok := compactClock(toks[next].Norm); ok {
+			return v, 1, true, true
 		}
 		return 0, 0, false, false
 	}

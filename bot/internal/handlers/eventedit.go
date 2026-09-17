@@ -97,6 +97,10 @@ func draftFromEvent(e api.Event, loc *time.Location) draftState {
 	return st
 }
 
+// pickerHorizon is how far «✏️ Изменить» looks — further than the agenda,
+// because a holiday two months out is exactly the event worth editing.
+const pickerHorizon = 90 * 24 * time.Hour
+
 // handleEventPicker turns the agenda into something tappable.
 func (h *Handler) handleEventPicker(chatID int64, messageID int, page int) {
 	us := h.store.GetOrCreate(chatID)
@@ -108,8 +112,12 @@ func (h *Handler) handleEventPicker(chatID int64, messageID int, page int) {
 	loc := h.location(chatID)
 	now := time.Now().In(loc)
 
+	// 🔴 From local MIDNIGHT, not from now: an all-day event began at 00:00 and
+	// would be behind us by breakfast. And further than the agenda's two weeks
+	// — «отпуск с 14.10» was simply out of range (Denis, 17.09).
+	from := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, loc)
 	events, err := h.api.GetEvents(us.AuthToken,
-		now.Format(time.RFC3339), now.Add(agendaHorizon).Format(time.RFC3339))
+		from.UTC().Format(time.RFC3339), from.Add(pickerHorizon).UTC().Format(time.RFC3339))
 	if err != nil {
 		h.editOrSend(chatID, messageID, h.t(chatID,
 			"⚠️ Не дозвонился до сервера. Попробуй через минуту.",

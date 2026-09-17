@@ -46,6 +46,7 @@ const (
 	askTitle   = "ask:title"
 	askFreq    = "ask:freq"
 	askDate    = "ask:date"
+	askSpan    = "ask:span"
 	askTime    = "ask:time"
 )
 
@@ -66,9 +67,9 @@ func nextQuestion(st draftState) string {
 	case !st.D.HasDay:
 		return askDate
 	case !st.D.EndDay.IsZero() && st.D.EndDay.Before(st.D.Day):
-		// 🔴 Denis, 17.09 (F5): ⚠ was shown and ✅ created it anyway. A span
-		// that ends before it starts is asked again, not saved.
-		return askDate
+		// 🔴 Denis, 17.09: ⚠ was shown and ✅ created it anyway; then the plain
+		// day question offered three buttons and no way to fix a SPAN.
+		return askSpan
 	case !st.D.HasTime && !st.D.AllDay:
 		return askTime
 	default:

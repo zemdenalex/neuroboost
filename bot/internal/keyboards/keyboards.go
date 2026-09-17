@@ -166,7 +166,7 @@ func SettingsMenu(lang i18n.Lang) tgbotapi.InlineKeyboardMarkup {
 		),
 		tgbotapi.NewInlineKeyboardRow(
 			// Onboarding again, on demand — language, clock, and how to write.
-			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "❓ Как пользоваться", "❓ How to use"), "ob_start"),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🔄 Пройти настройку заново", "🔄 Run setup again"), "ob_start"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "« Меню", "« Menu"), "main_menu"),

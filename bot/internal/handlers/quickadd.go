@@ -24,6 +24,20 @@ const quickFlow = "quick"
 
 func (h *Handler) handleQuickAdd(chatID int64, text string) {
 	us := h.store.GetOrCreate(chatID)
+
+	// 🔴 Denis, 17.09 (second pass): «надо чтобы слово задача сделала на одно
+	// действие меньше, то есть бот воспринял как задачу, но уточнил, а не
+	// заставлял выбирать задачу еще раз». The word answers the question; the
+	// card that follows still offers the other kinds.
+	if parse.IsTaskLine(text) {
+		us.FlowData = map[string]any{"raw": text}
+		if parse.ParseLine(text, time.Now().In(h.location(chatID))).Draft.HasTime {
+			h.quickAs(chatID, "event", text)
+		} else {
+			h.quickAs(chatID, "task", text)
+		}
+		return
+	}
 	us.CurrentFlow = quickFlow
 	us.FlowStep = "kind"
 	us.FlowData = map[string]any{"raw": text}
@@ -52,9 +66,10 @@ func (h *Handler) handleQuickCallback(chatID int64, messageID int, data string) 
 		return true
 	}
 
-	// A button under an old question, after the flow moved on: the text it
-	// referred to is gone, and guessing which line it meant would be worse.
-	if us.CurrentFlow != quickFlow || raw == "" {
+	// The line is what these buttons act on — it is remembered through every
+	// flow quick add hands over to, so «сделать событием» works from the task
+	// card too. Without it there is nothing to act on.
+	if raw == "" {
 		h.editOrSend(chatID, messageID,
 			h.t(chatID, "Не помню, о чём это было — напиши ещё раз.", "I no longer remember what this was about — write it again."),
 			keyboards.HomeInline(h.lang(chatID)))
@@ -63,21 +78,15 @@ func (h *Handler) handleQuickCallback(chatID int64, messageID int, data string) 
 
 	switch data {
 	case "qa_event":
-		h.quickAs(chatID, "event", raw)
 		// Chosen as an event: «задача» in the line is a word, not an order.
-		if st, ok := draftOf(h, chatID); ok && st.D.IsTask {
-			st.D.IsTask = false
-			h.showCard(chatID, 0)
-		}
+		h.quickKind = kindEvent
+		h.quickAs(chatID, "event", raw)
 	case "qa_task":
 		// A task with a clock time is a task bound to an event — only the
 		// event card builds both. Without a time it is a plain task.
 		if parse.ParseLine(raw, time.Now().In(h.location(chatID))).Draft.HasTime {
+			h.quickKind = kindTask
 			h.quickAs(chatID, "event", raw)
-			if st, ok := draftOf(h, chatID); ok && !st.D.IsTask {
-				st.D.IsTask = true
-				h.showCard(chatID, 0)
-			}
 		} else {
 			h.quickAs(chatID, "task", raw)
 		}
@@ -93,16 +102,45 @@ func (h *Handler) handleQuickCallback(chatID int64, messageID int, data string) 
 // it the line — skipping only the guide, which this user has no need to read.
 func (h *Handler) quickAs(chatID int64, kind, text string) {
 	us := h.store.GetOrCreate(chatID)
-	us.FlowData = map[string]any{}
+	raw, _ := us.FlowData["raw"].(string)
+	if raw == "" {
+		raw = text
+	}
+	// The line is kept so the card can offer the OTHER kinds without asking
+	// the user to type it again.
+	us.FlowData = map[string]any{"raw": raw}
 	switch kind {
 	case "event":
 		us.CurrentFlow, us.FlowStep = "new_event", "line"
+		us.FlowData["raw"] = raw
 		h.handleNewEventFlow(chatID, text)
 	case "task":
 		us.CurrentFlow, us.FlowStep = "new_task", "title"
+		us.FlowData["raw"] = raw
 		h.handleNewTaskFlow(chatID, text)
 	case "note":
 		us.CurrentFlow, us.FlowStep = "note", "text"
 		h.handleNoteFlow(chatID, text)
 	}
+}
+
+// The kind a qa_ button chose, applied to the draft before the card is drawn.
+//
+// 🔴 It used to be applied AFTER — draw the card, change the kind, draw again —
+// and Denis got two cards for one press (his log, 17.09 21:56).
+const (
+	kindUnset = ""
+	kindEvent = "event"
+	kindTask  = "task"
+)
+
+// applyQuickKind writes the chosen kind into a freshly parsed draft.
+func (h *Handler) applyQuickKind(st *draftState) {
+	switch h.quickKind {
+	case kindEvent:
+		st.D.IsTask = false
+	case kindTask:
+		st.D.IsTask = true
+	}
+	h.quickKind = kindUnset
 }

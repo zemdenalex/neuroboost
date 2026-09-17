@@ -74,6 +74,10 @@ type Handler struct {
 	api   *api.Client
 	store *state.Store
 	cfg   config.Config
+
+	// quickKind is the kind a qa_ button chose, consumed by the next parse.
+	// One update is handled at a time, so it needs no lock.
+	quickKind string
 }
 
 func New(bot *tgbotapi.BotAPI, apiClient *api.Client, store *state.Store, cfg config.Config) *Handler {

@@ -171,7 +171,7 @@ func wizardKeyboardFor(lang i18n.Lang, step string, flowData map[string]any, loc
 		}
 		return keyboards.WizardEstimate(lang, current)
 	}
-	return keyboards.TaskCard(lang)
+	return keyboards.TaskCard(lang, false)
 }
 
 // advanceWizard moves to the next unanswered step and renders it, or — once

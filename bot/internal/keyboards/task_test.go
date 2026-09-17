@@ -10,7 +10,7 @@ import (
 )
 
 func TestTaskCardSaveIsFirstAndAlwaysEnabled(t *testing.T) {
-	kb := TaskCard(i18n.RU)
+	kb := TaskCard(i18n.RU, false)
 	if len(kb.InlineKeyboard) == 0 || len(kb.InlineKeyboard[0]) == 0 {
 		t.Fatal("TaskCard has no rows")
 	}
@@ -21,7 +21,7 @@ func TestTaskCardSaveIsFirstAndAlwaysEnabled(t *testing.T) {
 }
 
 func TestTaskCardHasCancel(t *testing.T) {
-	kb := TaskCard(i18n.RU)
+	kb := TaskCard(i18n.RU, false)
 	found := false
 	for _, row := range kb.InlineKeyboard {
 		for _, btn := range row {

@@ -26,7 +26,9 @@ func TestBackwardsSpanIsAskedAgainOnConfirm(t *testing.T) {
 	say(h, chat, "отпуск с 29.10 по 14.10")
 	press(h, chat, "dr_ok")
 
-	if fake.called_("createEvent") || !strings.Contains(fake.last(t).Text, "день") {
+	// What it asks is pinned by TestBackwardsSpanOffersASwap; here: it asks
+	// rather than creates.
+	if fake.called_("createEvent") || !strings.Contains(fake.last(t).Text, "29.10") {
 		t.Errorf("a backwards span was not asked again: %q", fake.last(t).Text)
 	}
 	if h.store.GetOrCreate(chat).FlowStep != "edit:date" {

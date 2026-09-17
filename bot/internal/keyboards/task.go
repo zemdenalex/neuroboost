@@ -14,8 +14,12 @@ import (
 // 🔴 ✅ Создать is FIRST and always enabled. Denis, 18.08: "all of them
 // shouldn't be required to create the task". The wizard is an offer underneath
 // it, never a gate in front of it.
-func TaskCard(lang i18n.Lang) tgbotapi.InlineKeyboardMarkup {
-	return tgbotapi.NewInlineKeyboardMarkup(
+//
+// switchable adds «сделать событием / заметкой». It is on when the card came
+// from a line the user typed, so the kind can still be changed without typing
+// it again — Denis, 17.09: the word «задача» should cost one action, not two.
+func TaskCard(lang i18n.Lang, switchable bool) tgbotapi.InlineKeyboardMarkup {
+	rows := [][]tgbotapi.InlineKeyboardButton{
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "✅ Создать", "✅ Create"), "nt_save"),
 		),
@@ -23,10 +27,17 @@ func TaskCard(lang i18n.Lang) tgbotapi.InlineKeyboardMarkup {
 			tgbotapi.NewInlineKeyboardButtonData(
 				i18n.T(lang, "📝 Подробнее (по шагам)", "📝 More (step by step)"), "nt_wizard"),
 		),
-		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "❌ Отмена", "❌ Cancel"), "main_menu"),
-		),
-	)
+	}
+	if switchable {
+		rows = append(rows, tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "📅 Сделать событием", "📅 Make it an event"), "qa_event"),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "📝 Заметкой", "📝 Make it a note"), "qa_note"),
+		))
+	}
+	rows = append(rows, tgbotapi.NewInlineKeyboardRow(
+		tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "❌ Отмена", "❌ Cancel"), "main_menu"),
+	))
+	return tgbotapi.NewInlineKeyboardMarkup(rows...)
 }
 
 // WizardPriority, WizardDue and WizardEstimate are the three steps behind

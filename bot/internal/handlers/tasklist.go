@@ -28,34 +28,46 @@ func taskGuide(lang i18n.Lang) string {
 	return i18n.T(lang,
 		`➕ <b>Новая задача</b>
 
-Напиши название. Понимаю то же, что и в событиях:
+Напиши, что сделать. Например:
 
 <code>позвонить в банк завтра 30м !1 #дела</code>
-   → позвонить в банк · завтра · 30 мин · приоритет 1 · тег «дела»
+   → позвонить в банк · срок завтра · 30 мин · приоритет 1 · тег «дела»
 
-<b>Списком</b> — несколько строк сразу:
+<b>Слова-триггеры в задаче</b> — убираю их из названия:
 
-<code>1. Отжаться
-2. Подтянуться
-3. Присесть</code>
-   → спрошу, одна это задача или три
+<code>!1</code> … <code>!5</code> — приоритет: <code>!1</code> срочно, <code>!5</code> если получится
+<code>30м</code> · <code>2ч</code> — сколько займёт
+<code>завтра</code> · <code>16.09</code> — срок
+<code>#тег</code> — тег
+<code>задача</code> — слово-подсказка, что это задача, в названии не останется
 
-Приоритет: <code>!1</code> срочно … <code>!5</code> если получится · Оценка: <code>30м</code>, <code>2ч</code>`,
+<b>Списком</b> — несколько строк или через запятую:
+
+<code>завтра помыться, поесть, поспать</code>
+   → спрошу, одна это задача или три; день из строки достанется всем
+
+⚠ Время суток (<code>15:00</code>) делает из задачи ещё и событие — покажу карточку события.`,
 		`➕ <b>New task</b>
 
-Write the title. I understand the same words as for events:
+Write what needs doing. For example:
 
 <code>позвонить в банк завтра 30м !1 #дела</code>
-   → позвонить в банк · tomorrow · 30 min · priority 1 · tag «дела»
+   → позвонить в банк · due tomorrow · 30 min · priority 1 · tag «дела»
 
-<b>As a list</b> — several lines at once:
+<b>Trigger words in a task</b> — I take them out of the title:
 
-<code>1. Отжаться
-2. Подтянуться
-3. Присесть</code>
-   → I will ask whether that is one task or three
+<code>!1</code> … <code>!5</code> — priority: <code>!1</code> urgent, <code>!5</code> if possible
+<code>30м</code> · <code>2ч</code> — how long it takes
+<code>завтра</code> · <code>16.09</code> — the due date
+<code>#тег</code> — a tag
+<code>задача</code> — the word that says it is a task; it does not stay in the title
 
-Priority: <code>!1</code> urgent … <code>!5</code> if possible · Estimate: <code>30м</code>, <code>2ч</code>`)
+<b>As a list</b> — several lines, or commas:
+
+<code>завтра помыться, поесть, поспать</code>
+   → I will ask whether that is one task or three; the day goes to all of them
+
+⚠ A clock time (<code>15:00</code>) makes it an event as well — I will show the event card.`)
 }
 
 func (h *Handler) startNewTaskFlow(chatID int64) {
@@ -244,7 +256,10 @@ func (h *Handler) showTaskCard(chatID int64, text string) {
 		us.FlowData["tags"] = r.Tags
 	}
 	us.FlowStep = "card"
-	h.sendHTMLWithKeyboard(chatID, taskCardText(h.lang(chatID), r, h.timezone(chatID)), keyboards.TaskCard(h.lang(chatID)))
+	// The kind can still be changed when the card came from a typed line.
+	raw, fromLine := us.FlowData["raw"].(string)
+	h.sendHTMLWithKeyboard(chatID, taskCardText(h.lang(chatID), r, h.timezone(chatID)),
+		keyboards.TaskCard(h.lang(chatID), fromLine && raw != ""))
 }
 
 // createTaskList writes one task per entry and names what did not make it.

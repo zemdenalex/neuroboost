@@ -160,6 +160,24 @@ func CalendarPicker(lang i18n.Lang, names, ids []string) tgbotapi.InlineKeyboard
 
 // DraftDay offers the days that cover most answers, with the text field still
 // open for anything else.
+// SpanFix is what a span typed back-to-front gets: swap the two dates, or
+// write them again. 🔴 Not swapped silently — which of the two is the typo is
+// the user's to say (Denis, 17.09).
+func SpanFix(lang i18n.Lang, from, to string) tgbotapi.InlineKeyboardMarkup {
+	return tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(
+				fmt.Sprintf(i18n.T(lang, "🔄 Поменять: %s – %s", "🔄 Swap: %s – %s"), to, from), "dr_swap"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "✏️ Написать даты", "✏️ Write the dates"), "dr_daytext"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "⬅️ Назад", "⬅️ Back"), "dr_back"),
+		),
+	)
+}
+
 func DraftDay(lang i18n.Lang) tgbotapi.InlineKeyboardMarkup {
 	return tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
@@ -168,6 +186,11 @@ func DraftDay(lang i18n.Lang) tgbotapi.InlineKeyboardMarkup {
 		),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "Послезавтра", "In two days"), "dr_day_2"),
+			// 🔴 A date the buttons do not cover — «14.10», «с 14.10 по 29.10»
+			// — is typed. The button is what says that is allowed.
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "✏️ Своя дата", "✏️ Another date"), "dr_daytext"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "⬅️ Назад", "⬅️ Back"), "dr_back"),
 		),
 	)

@@ -151,5 +151,18 @@ func ParseTaskList(text string, now time.Time) []TaskResult {
 	for _, e := range entries {
 		out = append(out, ParseTask(e, now))
 	}
+
+	// 🔴 ONE line, one day: «завтра помыться, поесть, поспать» is a sentence,
+	// and its day belongs to all three (Denis, 17.09: «день поставился только
+	// на первую задачу»). Across SEVERAL lines nothing is inherited — that
+	// stays as it was, because a list of things to do is not a schedule.
+	if !strings.Contains(text, "\n") && len(out) > 1 && out[0].DueDate != nil {
+		for i := range out[1:] {
+			if out[i+1].DueDate == nil {
+				due := *out[0].DueDate
+				out[i+1].DueDate = &due
+			}
+		}
+	}
 	return out
 }

@@ -89,10 +89,23 @@ func (h *Handler) handleNewTaskFlow(chatID int64, text string) {
 			return
 		}
 		h.showTaskCard(chatID, text)
+	case "list:confirm":
+		// 🔴 Typing here used to answer «Что-то пошло не так» and throw the
+		// list away (Denis, 17.09: «А список вообще не понял»). A new line
+		// replaces the question.
+		us.FlowStep = "title"
+		h.handleNewTaskFlow(chatID, text)
 	default:
 		// «✏️ Переписать» on one entry of a task list.
 		if strings.HasPrefix(us.FlowStep, "list:rewrite:") {
 			h.rewriteTaskListEntry(chatID, text)
+			return
+		}
+		if us.FlowStep == "list" || strings.HasPrefix(us.FlowStep, "wizard:") {
+			// A screen that wants a button: the list survives.
+			h.sendHTMLWithKeyboard(chatID, h.t(chatID,
+				"Здесь нужна кнопка — список на месте.",
+				"This screen needs a button — the list is still here."), keyboards.BackToTasks(h.lang(chatID)))
 			return
 		}
 		h.store.ClearFlow(chatID)
