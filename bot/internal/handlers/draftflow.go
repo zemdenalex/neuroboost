@@ -235,6 +235,12 @@ func (h *Handler) handleNewEventFlow(chatID int64, text string) {
 			return
 		}
 		st.D.Day, st.D.HasDay = p.Draft.Day, true
+		// A span typed here replaces the old one; a single day ends it.
+		st.D.EndDay = p.Draft.EndDay
+		if !p.Draft.EndDay.IsZero() {
+			st.D.AllDay, st.D.HasTime, st.D.HasEnd = p.Draft.AllDay, p.Draft.HasTime, p.Draft.HasEnd
+			st.D.Start, st.D.End = p.Draft.Start, p.Draft.End
+		}
 		h.showCard(chatID, 0)
 
 	case "edit:time":
@@ -666,7 +672,13 @@ func (h *Handler) createFromDraft(chatID int64, messageID int, st draftState) {
 // unless an end was given.
 func draftBounds(st draftState) (time.Time, time.Time) {
 	if st.D.AllDay {
-		return st.D.Day, st.D.Day.AddDate(0, 0, 1)
+		// An all-day event ends at the midnight AFTER its last day — one day
+		// or a span, the same convention.
+		last := st.D.Day
+		if !st.D.EndDay.IsZero() && st.D.EndDay.After(last) {
+			last = st.D.EndDay
+		}
+		return st.D.Day, last.AddDate(0, 0, 1)
 	}
 	start := st.D.StartsAt()
 	if st.D.HasEnd {

@@ -13,6 +13,12 @@ type Draft struct {
 	Day    time.Time
 	HasDay bool
 
+	// EndDay is the last day of an event over several days — «с 14.09 по
+	// 29.09». Zero for a one-day event. For an all-day span it sets the end;
+	// for a timed span End already reaches past it (offset from Day) and
+	// EndDay is what the card prints.
+	EndDay time.Time
+
 	// BareWeekday says the day came from a weekday word with no modifier —
 	// «пятница», not «следующая пятница», «17.09» or «завтра». Only such a day
 	// is a guess about WHICH week, and only it may be moved by a list whose

@@ -59,12 +59,26 @@ func draftFromEvent(e api.Event, loc *time.Location) draftState {
 
 	if e.AllDay {
 		st.D.AllDay = true
+		// ends_at is the midnight after the last day; more than one day
+		// between them is a span.
+		if end, err := time.Parse(time.RFC3339, e.EndsAt); err == nil {
+			last := end.In(loc).AddDate(0, 0, -1)
+			lastDay := time.Date(last.Year(), last.Month(), last.Day(), 0, 0, 0, 0, loc)
+			if lastDay.After(st.D.Day) {
+				st.D.EndDay = lastDay
+			}
+		}
 	} else {
 		st.D.Start = local.Sub(st.D.Day)
 		st.D.HasTime = true
 		if end, err := time.Parse(time.RFC3339, e.EndsAt); err == nil {
 			st.D.End = end.In(loc).Sub(st.D.Day)
 			st.D.HasEnd = true
+			if endLocal := end.In(loc); endLocal.YearDay() != local.YearDay() || endLocal.Year() != local.Year() {
+				if st.D.End >= 24*time.Hour {
+					st.D.EndDay = time.Date(endLocal.Year(), endLocal.Month(), endLocal.Day(), 0, 0, 0, 0, loc)
+				}
+			}
 		}
 	}
 

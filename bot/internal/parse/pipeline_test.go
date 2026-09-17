@@ -86,7 +86,7 @@ func TestParseLineTable(t *testing.T) {
 // which and why.
 func TestRecogniserOrderIsFixed(t *testing.T) {
 	want := []string{
-		"repeat-end", "date", "relative-day", "repeat", "weekday",
+		"repeat-end", "date-span", "date", "relative-day", "repeat", "weekday",
 		"time-range", "time-word", "all-day", "kind", "colour", "reminder", "tags",
 	}
 	if len(recognisers) != len(want) {

@@ -205,7 +205,14 @@ func renderDraft(lang i18n.Lang, st draftState, now time.Time) string {
 	// answer "when is this" first, which is the question you are actually
 	// asking when you read back a timetable; the title is the part you already
 	// know, because you just typed it.
-	if st.D.HasDay {
+	if st.D.HasDay && !st.D.EndDay.IsZero() {
+		// «🗓 14.09 – 29.09 · 16 дней» — a span says both ends and its length.
+		days := int(st.D.EndDay.Sub(st.D.Day).Round(24*time.Hour)/(24*time.Hour)) + 1
+		fmt.Fprintf(&b, "🗓 %s – %s · %s%s\n",
+			st.D.Day.Format("02.01"), st.D.EndDay.Format("02.01"),
+			i18n.T(lang, fmt.Sprintf("%d %s", days, ruPlural(days, "день", "дня", "дней")), fmt.Sprintf("%d days", days)),
+			checkMark(lang, st.D.IsUncertain(parse.FieldDay)))
+	} else if st.D.HasDay {
 		fmt.Fprintf(&b, "🗓 %s, %d %s%s\n",
 			weekdayName(lang, st.D.Day.Weekday()), st.D.Day.Day(), monthGenitive(lang, st.D.Day.Month()),
 			checkMark(lang, st.D.IsUncertain(parse.FieldDay)))
