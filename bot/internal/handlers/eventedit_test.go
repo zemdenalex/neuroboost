@@ -196,7 +196,7 @@ func TestEventPickLabelShowsWhenAndWhat(t *testing.T) {
 // The words on the card are the only thing telling the user whether they are
 // about to add a second event or change the one they opened.
 func TestEditingCardSaysSaveAndNeverCreate(t *testing.T) {
-	kb := keyboards.DraftCardEditing(i18n.RU)
+	kb := keyboards.EventEditor(i18n.RU, "e1")
 	var labels, data []string
 	for _, row := range kb.InlineKeyboard {
 		for _, b := range row {
@@ -216,8 +216,9 @@ func TestEditingCardSaysSaveAndNeverCreate(t *testing.T) {
 	if strings.Contains(joined, "Создать") {
 		t.Errorf("the editing card offers «Создать» — it would read as making a second event: %v", labels)
 	}
-	// It still answers the same callbacks, or none of the edit machinery reaches it.
-	if !containsAll(data, "dr_ok", "dr_edit", "dr_cancel") {
+	// The fields are ON this screen since 17.09 (Denis: two extra confirmations
+	// removed), and leaving without saving is a button of its own.
+	if !containsAll(data, "dr_ok", "dre_title", "dre_date", "event_pick") {
 		t.Errorf("the editing card does not carry the card's own callbacks: %v", data)
 	}
 }

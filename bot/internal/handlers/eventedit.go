@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"strconv"
 	"strings"
 	"time"
 
@@ -97,8 +98,13 @@ func draftFromEvent(e api.Event, loc *time.Location) draftState {
 }
 
 // handleEventPicker turns the agenda into something tappable.
-func (h *Handler) handleEventPicker(chatID int64, messageID int) {
+func (h *Handler) handleEventPicker(chatID int64, messageID int, page int) {
 	us := h.store.GetOrCreate(chatID)
+	// Back at the list, whatever event was open is closed: a line typed now is
+	// a new quick add, not an edit of the last event looked at.
+	if us.CurrentFlow == "new_event" {
+		h.store.ClearFlow(chatID)
+	}
 	loc := h.location(chatID)
 	now := time.Now().In(loc)
 
@@ -128,16 +134,7 @@ func (h *Handler) handleEventPicker(chatID int64, messageID int) {
 	}
 
 	text := h.t(chatID, "📅 <b>Какое событие открыть?</b>", "📅 <b>Which event?</b>")
-	if len(events) > keyboards.EventPickLimit {
-		// 🔴 Said out loud rather than silently truncated. A list that quietly
-		// stops at twelve teaches that the thirteenth event does not exist.
-		text += h.t(chatID,
-			"\n\n<i>Показаны первые 12 из ", "\n\n<i>Showing the first 12 of ") +
-			format.Escape(itoa(len(events))) +
-			h.t(chatID, " — открой день в календаре, чтобы дойти до остальных.</i>",
-				" — open a day in the calendar to reach the rest.</i>")
-	}
-	h.editOrSend(chatID, messageID, text, keyboards.EventPicker(h.lang(chatID), labels, ids, "agenda_open"))
+	h.editOrSend(chatID, messageID, text, keyboards.EventPicker(h.lang(chatID), labels, ids, "agenda_open", page))
 }
 
 // handleEventCard shows one event and what can be done to it.
@@ -153,9 +150,13 @@ func (h *Handler) handleEventCard(chatID int64, messageID int, eventID string) {
 		return
 	}
 
-	h.store.ClearFlow(chatID)
+	// Opened straight into editing: the draft is loaded and the fields are the
+	// first screen (keyboards.EventEditor).
 	st := draftFromEvent(*ev, h.location(chatID))
 	st.CalendarName = h.calendarName(chatID, ev.CalendarID)
+	us.CurrentFlow = "new_event"
+	us.FlowStep = "card"
+	us.FlowData = map[string]any{"draft": &st, "series": isInstance}
 
 	text := renderDraft(h.lang(chatID), st, time.Now().In(h.location(chatID)))
 	if isInstance {
@@ -167,27 +168,7 @@ func (h *Handler) handleEventCard(chatID int64, messageID int, eventID string) {
 			"\n\n⚠ Это повторяющееся событие. Открыта вся серия, и изменения применятся ко всем повторам.",
 			"\n\n⚠ This event repeats. The whole series is open, and changes apply to every occurrence.")
 	}
-	h.editOrSend(chatID, messageID, text, keyboards.EventCard(h.lang(chatID), parentID))
-}
-
-// handleEventEdit opens the existing event in the creation card.
-func (h *Handler) handleEventEdit(chatID int64, messageID int, eventID string) {
-	us := h.store.GetOrCreate(chatID)
-	parentID, _, _ := splitInstanceID(eventID)
-	ev, err := h.api.GetEvent(us.AuthToken, parentID)
-	if err != nil || ev == nil || ev.ID == "" {
-		h.editOrSend(chatID, messageID, h.t(chatID,
-			"❌ Не удалось открыть событие.", "❌ Could not open the event."),
-			keyboards.AgendaActions(h.lang(chatID)))
-		return
-	}
-
-	st := draftFromEvent(*ev, h.location(chatID))
-	st.CalendarName = h.calendarName(chatID, ev.CalendarID)
-
-	us.CurrentFlow = "new_event"
-	us.FlowData = map[string]any{"draft": &st}
-	h.showCard(chatID, messageID)
+	h.editOrSend(chatID, messageID, text, keyboards.EventEditor(h.lang(chatID), parentID))
 }
 
 func (h *Handler) handleEventDeleteAsk(chatID int64, messageID int, eventID string) {
@@ -278,13 +259,20 @@ func (h *Handler) handleEventCallback(chatID int64, messageID int, data string) 
 	}
 	switch kind {
 	case eventPick:
-		h.handleEventPicker(chatID, messageID)
+		h.handleEventPicker(chatID, messageID, 0)
+	case eventPage:
+		page, err := strconv.Atoi(id)
+		if err != nil {
+			page = 0
+		}
+		h.handleEventPicker(chatID, messageID, page)
 	case eventDelete:
 		h.handleEventDelete(chatID, messageID, id)
 	case eventDeleteAsk:
 		h.handleEventDeleteAsk(chatID, messageID, id)
 	case eventEdit:
-		h.handleEventEdit(chatID, messageID, id)
+		// «eve_» from a message sent before v0.4.11.2 — the same screen now.
+		h.handleEventCard(chatID, messageID, id)
 	case eventOpen:
 		h.handleEventCard(chatID, messageID, id)
 	}
@@ -294,6 +282,7 @@ func (h *Handler) handleEventCallback(chatID int64, messageID int, data string) 
 // What an event callback means.
 const (
 	eventPick      = "pick"
+	eventPage      = "page"
 	eventOpen      = "open"
 	eventEdit      = "edit"
 	eventDeleteAsk = "delete-ask"
@@ -319,6 +308,7 @@ func eventRoute(data string) (kind, id string, ok bool) {
 	}
 	for _, p := range []struct{ prefix, kind string }{
 		{"evdy_", eventDelete},
+		{"evp_", eventPage},
 		{"evd_", eventDeleteAsk},
 		{"eve_", eventEdit},
 		{"ev_", eventOpen},

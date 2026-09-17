@@ -379,14 +379,24 @@ func (h *Handler) showCard(chatID int64, messageID int) {
 		// 🔴 «Сохранить», and no «Создать» anywhere on the screen. The words are
 		// the only thing telling the user whether they are about to add a second
 		// event or change the one they opened.
-		card = keyboards.DraftCardEditing(h.lang(chatID))
+		// Since 17.09 the fields themselves sit on this screen (EventEditor):
+		// an opened event is one tap from any change.
+		card = keyboards.EventEditor(h.lang(chatID), st.EventID)
 	} else if _, inList := listOf(h, chatID); inList {
 		// ✅ is deliberately absent inside a list: creating is the list's own
 		// button, and a per-entry ✅ would create one event and leave the rest
 		// silently uncreated.
 		card = keyboards.DraftCardInList(h.lang(chatID))
 	}
-	h.editOrSend(chatID, messageID, renderDraft(h.lang(chatID), *st, time.Now().In(h.location(chatID))), card)
+	text := renderDraft(h.lang(chatID), *st, time.Now().In(h.location(chatID)))
+	if series, _ := us.FlowData["series"].(bool); series && st.EventID != "" {
+		// Repeated on every redraw, not only on opening: the warning matters
+		// most right before «Сохранить».
+		text += h.t(chatID,
+			"\n\n⚠ Это повторяющееся событие. Изменения применятся ко всей серии.",
+			"\n\n⚠ This event repeats. Changes apply to the whole series.")
+	}
+	h.editOrSend(chatID, messageID, text, card)
 }
 
 func (h *Handler) lostDraft(chatID int64) {
