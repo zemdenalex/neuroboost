@@ -80,12 +80,35 @@ they are not translated with the interface.
 I will show what I understood and ask you to confirm — nothing is created before that.`)
 }
 
+// creationGuideShort is what opens by default since v0.4.11.2.
+//
+// 🔴 The full guide above is twenty lines, and the first outside users said
+// «lots of steps» and «слишком много всего». Two examples say what the bot is
+// for; the vocabulary is one tap away (📖), not deleted.
+func creationGuideShort(lang i18n.Lang) string {
+	return i18n.T(lang,
+		`📅 <b>Новое событие</b>
+
+Напиши одной строкой, например:
+<code>Ужин завтра 19:00</code>
+<code>зарядка каждый день 07:00</code>
+
+Можно несколько строк сразу — списком.`,
+		`📅 <b>New event</b>
+
+Write it in one line, for example:
+<code>Ужин завтра 19:00</code>
+<code>зарядка каждый день 07:00</code>
+
+Several lines at once work too — as a list.`)
+}
+
 func (h *Handler) startNewEventFlow(chatID int64) {
 	us := h.store.GetOrCreate(chatID)
 	us.CurrentFlow = "new_event"
 	us.FlowStep = "line"
 	us.FlowData = map[string]any{}
-	h.sendHTML(chatID, creationGuide(h.lang(chatID)))
+	h.sendHTMLWithKeyboard(chatID, creationGuideShort(h.lang(chatID)), keyboards.GuideMore(h.lang(chatID), "event"))
 }
 
 // startNewEventForDay begins the same flow with the day already chosen, so

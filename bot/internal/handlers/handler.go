@@ -366,6 +366,8 @@ func (h *Handler) HandleCallback(cb *tgbotapi.CallbackQuery) {
 		h.handleCalendar(chatID, cb.Message.MessageID, time.Now())
 	case data == "agenda_open":
 		h.handleAgenda(chatID, cb.Message.MessageID)
+	case strings.HasPrefix(data, "guide_full_"):
+		h.handleGuideFull(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "guide_full_"))
 	case data == "planning":
 		h.handlePlanning(chatID, cb.Message.MessageID)
 	case data == "settings_menu":

@@ -36,3 +36,13 @@ func OnboardNext(lang i18n.Lang) tgbotapi.InlineKeyboardMarkup {
 		),
 	)
 }
+
+// GuideMore opens the full vocabulary under a short guide. The prefix is the
+// guide's own: dr_ belongs to the confirmation card.
+func GuideMore(lang i18n.Lang, kind string) tgbotapi.InlineKeyboardMarkup {
+	return tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "📖 Все слова и примеры", "📖 All words and examples"), "guide_full_"+kind),
+		),
+	)
+}

@@ -99,12 +99,15 @@ func HomeInline(lang i18n.Lang) tgbotapi.InlineKeyboardMarkup {
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "📋 Задачи", "📋 Tasks"), "top_tasks"),
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "➕ Создать", "➕ Create"), "create_menu"),
 		),
+		// 🗂 Планирование is hidden until tasks can be placed into free slots
+		// (Denis, 17.09): the first outside user could not tell what it was for,
+		// and Denis's own answer was «not ready yet». The «planning» callback
+		// still answers, so a button on an old message keeps working.
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🎯 Сегодня", "🎯 Today"), "today_focus"),
-			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🗂 Планирование", "🗂 Planning"), "planning"),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "📊 Статистика", "📊 Stats"), "stats"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "📊 Статистика", "📊 Stats"), "stats"),
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "⚙️ Настройки", "⚙️ Settings"), "settings_menu"),
 		),
 	)

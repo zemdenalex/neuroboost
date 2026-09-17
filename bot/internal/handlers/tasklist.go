@@ -5,6 +5,8 @@ import (
 	"strings"
 	"time"
 
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+
 	"github.com/zemdenalex/neuroboost-bot/internal/api"
 	"github.com/zemdenalex/neuroboost-bot/internal/format"
 	"github.com/zemdenalex/neuroboost-bot/internal/i18n"
@@ -62,7 +64,35 @@ func (h *Handler) startNewTaskFlow(chatID int64) {
 	us.CurrentFlow = "new_task"
 	us.FlowStep = "title"
 	us.FlowData = map[string]any{}
-	h.sendHTML(chatID, taskGuide(h.lang(chatID)))
+	h.sendHTMLWithKeyboard(chatID, taskGuideShort(h.lang(chatID)), keyboards.GuideMore(h.lang(chatID), "task"))
+}
+
+// taskGuideShort is the default task guide — see creationGuideShort for why.
+func taskGuideShort(lang i18n.Lang) string {
+	return i18n.T(lang,
+		`➕ <b>Новая задача</b>
+
+Напиши, что сделать, например:
+<code>позвонить в банк завтра 30м !1</code>
+
+Можно несколько строк сразу — списком.`,
+		`➕ <b>New task</b>
+
+Write what needs doing, for example:
+<code>позвонить в банк завтра 30м !1</code>
+
+Several lines at once work too — as a list.`)
+}
+
+// handleGuideFull swaps a short guide for the full one, in place. The flow is
+// not touched: the user is still in the middle of writing.
+func (h *Handler) handleGuideFull(chatID int64, messageID int, kind string) {
+	lang := h.lang(chatID)
+	text := creationGuide(lang)
+	if kind == "task" {
+		text = taskGuide(lang)
+	}
+	h.editOrSend(chatID, messageID, text, tgbotapi.NewInlineKeyboardMarkup())
 }
 
 // handleTaskListCallback answers the one/many question for tasks.
