@@ -42,5 +42,10 @@
   "task": {
     "edit": "Редактировать задачу"
   },
-  "nav.agenda": "Что дальше"
+  "nav.agenda": "Что дальше",
+  "agenda.today": "Сегодня",
+  "agenda.allDay": "весь день",
+  "agenda.untitled": "(без названия)",
+  "agenda.loading": "Загружаю…",
+  "agenda.empty": "На ближайшие {{days}} дней ничего не запланировано."
 }

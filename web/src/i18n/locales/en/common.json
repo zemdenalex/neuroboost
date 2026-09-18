@@ -42,5 +42,10 @@
   "task": {
     "edit": "Edit task"
   },
-  "nav.agenda": "Agenda"
+  "nav.agenda": "Agenda",
+  "agenda.today": "Today",
+  "agenda.allDay": "all day",
+  "agenda.untitled": "(untitled)",
+  "agenda.loading": "Loading…",
+  "agenda.empty": "Nothing scheduled for the next {{days}} days."
 }

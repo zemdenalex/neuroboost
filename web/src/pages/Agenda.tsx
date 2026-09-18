@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { CalendarDays, CheckCircle2, Circle, Clock } from 'lucide-react'
 
 import { getEvents, getTasks } from '../api'
-import { buildAgenda, type AgendaDay, type AgendaItem } from '../lib/calendar/agenda'
+import { buildAgenda, localDayKey, type AgendaDay, type AgendaItem } from '../lib/calendar/agenda'
 import { useAuthContext } from '../contexts/AuthContext'
 import type { NbEvent, Task } from '../types'
 
@@ -22,6 +23,7 @@ import type { NbEvent, Task } from '../types'
 const WINDOW_DAYS = 14
 
 export default function Agenda() {
+  const { t, i18n } = useTranslation('common')
   const { user } = useAuthContext()
   // The same fallback the calendar page uses, so the two never disagree
   // about which day an evening event belongs to.
@@ -66,6 +68,11 @@ export default function Agenda() {
     }
   }, [from])
 
+  // 🔴 «Сегодня» rather than the weekday name for the first day. The agenda is
+  // read to find out what is next, and «пятница» makes you work out whether
+  // that is now — one extra step on every read.
+  const todayKey = useMemo(() => localDayKey(new Date(), timezone), [timezone])
+
   const agenda = useMemo(
     () => buildAgenda(events, tasks, timezone, from, WINDOW_DAYS),
     [events, tasks, timezone, from],
@@ -75,10 +82,10 @@ export default function Agenda() {
     <div className="p-3 max-w-2xl mx-auto" data-testid="agenda">
       <h1 className="text-lg font-semibold text-zinc-100 mb-3 flex items-center gap-2">
         <CalendarDays size={18} className="text-blue-400" />
-        Что дальше
+        {t('nav.agenda')}
       </h1>
 
-      {loading && <p className="text-zinc-400 text-sm">Загружаю…</p>}
+      {loading && <p className="text-zinc-400 text-sm">{t('agenda.loading')}</p>}
 
       {error && (
         <p className="text-red-400 text-sm" data-testid="agenda-error">
@@ -88,26 +95,47 @@ export default function Agenda() {
 
       {!loading && !error && agenda.length === 0 && (
         <p className="text-zinc-400 text-sm" data-testid="agenda-empty">
-          На ближайшие {WINDOW_DAYS} дней ничего не запланировано.
+          {t('agenda.empty', { days: WINDOW_DAYS })}
         </p>
       )}
 
       <div className="flex flex-col gap-4">
         {agenda.map((day) => (
-          <AgendaDaySection key={day.key} day={day} timezone={timezone} />
+          <AgendaDaySection
+            key={day.key}
+            day={day}
+            timezone={timezone}
+            locale={i18n.language}
+            todayKey={todayKey}
+          />
         ))}
       </div>
     </div>
   )
 }
 
-function AgendaDaySection({ day, timezone }: { day: AgendaDay; timezone: string }) {
-  const heading = new Intl.DateTimeFormat('ru-RU', {
+function AgendaDaySection({
+  day,
+  timezone,
+  locale,
+  todayKey,
+}: {
+  day: AgendaDay
+  timezone: string
+  locale: string
+  todayKey: string
+}) {
+  const { t } = useTranslation('common')
+  // The locale comes from the interface language, not from a hardcoded 'ru-RU':
+  // an English user reading «пятница» is the same defect as the notification
+  // buttons that stayed Russian.
+  const formatted = new Intl.DateTimeFormat(locale, {
     timeZone: timezone,
     weekday: 'long',
     day: 'numeric',
     month: 'long',
   }).format(day.day)
+  const heading = day.key === todayKey ? `${t('agenda.today')} · ${formatted}` : formatted
 
   return (
     <section data-testid="agenda-day" data-day={day.key}>
@@ -122,9 +150,10 @@ function AgendaDaySection({ day, timezone }: { day: AgendaDay; timezone: string 
 }
 
 function AgendaRow({ item, timezone }: { item: AgendaItem; timezone: string }) {
+  const { t, i18n } = useTranslation('common')
   const time = item.allDay
     ? null
-    : new Intl.DateTimeFormat('ru-RU', {
+    : new Intl.DateTimeFormat(i18n.language, {
         timeZone: timezone,
         hour: '2-digit',
         minute: '2-digit',
@@ -156,11 +185,11 @@ function AgendaRow({ item, timezone }: { item: AgendaItem; timezone: string }) {
           item.done ? 'text-zinc-500 line-through' : 'text-zinc-100'
         }`}
       >
-        {item.title || '(без названия)'}
+        {item.title || t('agenda.untitled')}
       </span>
 
       <span className="flex-shrink-0 text-xs text-zinc-400 tabular-nums">
-        {time ?? 'весь день'}
+        {time ?? t('agenda.allDay')}
       </span>
     </li>
   )
