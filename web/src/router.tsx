@@ -26,6 +26,7 @@ const Kanban = lazy(() => import('./pages/Tools/Kanban'))
 const Eisenhower = lazy(() => import('./pages/Tools/Eisenhower'))
 const TimeBlocking = lazy(() => import('./pages/Tools/TimeBlocking'))
 const AcceptInvite = lazy(() => import('./pages/Invite'))
+const LoginLink = lazy(() => import('./pages/Login/LoginLink'))
 
 // Suspense fallback
 function PageLoader() {
@@ -108,6 +109,19 @@ export const router = createBrowserRouter([
         </Suspense>
         <FeedbackButton />
       </PublicRoute>
+    ),
+  },
+
+  // Signing in from the link the bot sent. Deliberately NOT wrapped in
+  // PublicRoute: that redirects an already-signed-in visitor away, and someone
+  // holding a fresh link is usually signing in as a DIFFERENT account — which
+  // is exactly what the link is for.
+  {
+    path: '/login/link',
+    element: (
+      <Suspense fallback={<PageLoader />}>
+        <LoginLink />
+      </Suspense>
     ),
   },
 

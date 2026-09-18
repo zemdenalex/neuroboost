@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuthContext } from '../../contexts/AuthContext'
+import { AccountLinking } from './AccountLinking'
 import { dateLocale } from '../../utils/date'
 import { resolveDisplayName } from '../../lib/profile/resolveDisplayName'
 import {
@@ -183,6 +184,12 @@ export default function Profile() {
             </div>
           </div>
         </div>
+
+        {/* Linking this account to the other half of itself — the code from
+            the bot, or an email for an account that arrived from Telegram.
+            Placed above the stats because it is an action, and the stats are a
+            report. */}
+        <AccountLinking />
 
         {/* Stats Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

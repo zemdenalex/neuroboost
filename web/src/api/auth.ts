@@ -117,3 +117,33 @@ export async function getMe(): Promise<User> {
 export async function updateMe(data: UpdateUserRequest): Promise<User> {
   return api.patch<User>('/auth/me', data)
 }
+
+/**
+ * Account linking, v0.4.11.5.
+ *
+ * Denis, 17.09: the Telegram login widget is bound to the production domain, so
+ * on dev there is no way to sign in as a Telegram user at all. These two calls
+ * are the way round it — and they are useful in production for the same reason
+ * a person with two accounts wants them to be one.
+ */
+
+/** Redeems the one-shot link the bot sent. The token IS the credential. */
+export async function redeemLoginLink(token: string): Promise<AuthResponse> {
+  return api.post<AuthResponse>('/auth/login-link/redeem', { token })
+}
+
+/**
+ * Sends the six digits from the bot.
+ *
+ * 🔴 Returns a PENDING request, not a finished link: nothing is merged until
+ * the person confirms in the bot. A UI that says «привязано» here would be
+ * announcing something that has not happened.
+ */
+export async function submitLinkCode(code: string): Promise<{ request_id: string; status: string }> {
+  return api.post<{ request_id: string; status: string }>('/auth/link-code/redeem', { code })
+}
+
+/** Gives a Telegram-only account an email and a password. */
+export async function setCredentials(email: string, password: string): Promise<void> {
+  await api.post('/auth/credentials', { email, password })
+}
