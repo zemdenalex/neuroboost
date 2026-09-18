@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Calendar, CheckSquare, PlusCircle, Settings, MoreHorizontal } from 'lucide-react'
+import { Calendar, CheckSquare, ListOrdered, PlusCircle, Settings, MoreHorizontal } from 'lucide-react'
 import { QuickAddDialog } from './QuickAddDialog'
 import { MoreMenu } from './MoreMenu'
 
@@ -16,6 +16,10 @@ export function BottomTabBar() {
 
   const tabs = [
     { path: '/calendar', label: t('nav.calendar'), icon: Calendar },
+    // «Что дальше» sits next to the calendar rather than under «ещё»: it is
+    // the answer to the question a phone is usually taken out to ask, and a
+    // view nobody can find is a view nobody has.
+    { path: '/agenda', label: t('nav.agenda'), icon: ListOrdered },
     { path: '/tasks', label: t('nav.tasks'), icon: CheckSquare },
   ]
 

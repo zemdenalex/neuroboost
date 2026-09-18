@@ -41,5 +41,6 @@
   "task.scheduled": "scheduled",
   "task": {
     "edit": "Edit task"
-  }
+  },
+  "nav.agenda": "Agenda"
 }

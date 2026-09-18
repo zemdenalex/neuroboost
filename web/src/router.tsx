@@ -13,6 +13,7 @@ import { PomodoroToasts } from './components/Pomodoro/PomodoroToasts'
 const Home = lazy(() => import('./pages/Home'))
 const Login = lazy(() => import('./pages/Login'))
 const Calendar = lazy(() => import('./pages/Calendar'))
+const Agenda = lazy(() => import('./pages/Agenda'))
 const Tasks = lazy(() => import('./pages/Tasks'))
 const Planning = lazy(() => import('./pages/Planning'))
 const Reflections = lazy(() => import('./pages/Reflections'))
@@ -149,6 +150,17 @@ export const router = createBrowserRouter([
           {
             path: '/calendar',
             element: <Calendar />,
+          },
+          {
+            // «Что дальше» — the list view. Its own route rather than a mode
+            // inside the calendar page: that page is 700 lines of grid, drag
+            // and editor state, and a list has nothing to do with any of it.
+            path: '/agenda',
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <Agenda />
+              </Suspense>
+            ),
           },
           {
             path: '/tasks',
