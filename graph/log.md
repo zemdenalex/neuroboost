@@ -1047,3 +1047,35 @@ v0.4.11.1. Релиз снова **целиком ботовый**: `api-go` и 
 `supabase:supabase-postgres-best-practices` для слияния аккаунтов. Отдельный разговор про
 CI/CD: `concurrency` в `ci.yml` (два push'а подряд ломают e2e друг другу) и
 [[peer-project-lessons-for-ci-and-testing]].
+
+## [2026-09-18] recall | learning-a-fake-that-accepts-anything-is-not-a-control, learning-my-own-query-lied-twice-in-one-night, decision-bot-fixes-from-four-passes-17-09, learning-stale-comment-outlived-its-constraint, learning-two-pushes-within-five-minutes-break-each-others-e2e
+
+### Ночь 18.09 — работа без Дениса
+
+Полный отчёт: `docs/nochnoy-log-2026-09-18.md`. Первоисточник задания —
+`ref/feedback/bot-proverka-v04113-otvet-denisa-2026-09-18.md`.
+
+**Два дефекта, которых никто не искал:**
+- 🔴 **snooze отвечал 500 всем с миграции 000015** (ON CONFLICT без `calendar_id`). Прод несёт
+  тот же дефект, просто кнопку там не нажимали. Починено в `develop`, поедет с v0.4.11.4.
+- 🔴 вторая напечатанная задача отвечала «Что-то пошло не так», и «Отмена» не гасила флоу.
+
+**Веб-баг Дениса** («события выходят за поля») — измерен, а не угадан: блоки 60–86px, контент
+245px. Две гипотезы отброшены до правки. Починено обрезкой на элементе с высотой + заголовок в
+одну строку. Спека переписана: `scrollHeight` не годится как контроль при `overflow:hidden`.
+
+**Мобильная:** сделан `/agenda` — «Что дальше», вариант B из разбора 19.08. Единственный вид,
+которого нет ни в вебе, ни в боте.
+
+**Эффективность:** измерено — пользователей в скане 4, план запроса 0.097 ms; **ничего не
+оптимизировал**, кроме кэша списка календарей в боте (4 запроса → 1).
+
+**Читать первыми в следующей сессии:**
+`learning-a-migration-can-break-a-query-that-never-changed` ·
+`learning-clipping-belongs-on-the-box-that-has-the-height` ·
+`learning-my-first-cache-test-passed-with-the-cache-off` ·
+`decision-bot-vocabulary-and-symbols-18-09`
+
+**Открыто на Денисе:** мерж в `main` (починка snooze ждёт релиза) · v0.4.11.4 по плану
+`docs/superpowers/plans/2026-09-18-api-v04114.md` · пункт 12 плана (редактирование одного
+вхождения) ни в одну задачу не попал — решить, 11.4 или 11.5.

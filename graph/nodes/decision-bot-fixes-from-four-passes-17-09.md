@@ -6,7 +6,7 @@ status: verified
 verified_by: session-01VRP8SC
 verified_at: 2026-09-18
 tags: [neuroboost, bot, decision, ux]
-weight: { importance: 5, connectivity: 4, access: 1, last_accessed: 2026-09-18 }
+weight: { importance: 5, connectivity: 6, access: 2, last_accessed: 2026-09-18 }
 sources:
   - file: "ref/feedback/bot-proverka-v04112-otvet-denisa-2026-09-17.md"
   - file: "ref/feedback/bot-povtor-otvet-denisa-2026-09-17.md"
@@ -14,6 +14,7 @@ sources:
   - file: "ref/feedback/bot-prohod4-otvet-denisa-2026-09-17.md"
 stakes: high
 links:
+  - superseded-by: decision-bot-vocabulary-and-symbols-18-09
   - implements: decision-bot-nl-creation-rules-15-09
   - relates-to: learning-a-fake-that-accepts-anything-is-not-a-control
   - relates-to: decision-onboarding-is-the-first-minute-17-09
