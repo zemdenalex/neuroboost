@@ -1,6 +1,7 @@
 package notifier
 
 import (
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/zemdenalex/neuroboost-bot/internal/i18n"
 
 	"strings"
@@ -67,15 +68,15 @@ func TestKeyboardPerSourceKind(t *testing.T) {
 	// button.
 	// Four since 18.09: done/ack, ten minutes, an hour, and «Своё» — Denis
 	// asked «и где свой вариант?» after finding only the two fixed lengths.
-	if kb := Keyboard("TASK", sampleID); kb == nil || len(kb.InlineKeyboard[0]) != 4 {
+	if kb := Keyboard("TASK", sampleID, "ru"); kb == nil || len(kb.InlineKeyboard[0]) != 4 {
 		t.Error("a task reminder should offer done, both snoozes and a custom one")
 	}
-	if kb := Keyboard("EVENT", sampleID); kb == nil || len(kb.InlineKeyboard[0]) != 4 {
+	if kb := Keyboard("EVENT", sampleID, "ru"); kb == nil || len(kb.InlineKeyboard[0]) != 4 {
 		t.Error("an event reminder should offer ack, both snoozes and a custom one")
 	}
 	// A digest summarises several items, so there is no single thing to
 	// complete or postpone.
-	if kb := Keyboard("DIGEST", sampleID); kb != nil {
+	if kb := Keyboard("DIGEST", sampleID, "ru"); kb != nil {
 		t.Error("a digest should carry no buttons")
 	}
 }
@@ -83,11 +84,11 @@ func TestKeyboardPerSourceKind(t *testing.T) {
 func TestKeyboardIsCaseInsensitiveOnSourceKind(t *testing.T) {
 	// source_kind arrives from the API as a string; a casing change there must
 	// not silently turn a task's buttons into an event's.
-	lower := Keyboard("task", sampleID)
+	lower := Keyboard("task", sampleID, "ru")
 	if lower == nil {
 		t.Fatal("lowercase task produced no keyboard")
 	}
-	if lower.InlineKeyboard[0][0].Text != Keyboard("TASK", sampleID).InlineKeyboard[0][0].Text {
+	if lower.InlineKeyboard[0][0].Text != Keyboard("TASK", sampleID, "ru").InlineKeyboard[0][0].Text {
 		t.Error("casing changed which buttons a task gets")
 	}
 }
@@ -110,7 +111,7 @@ func TestParseMinutesFallsBackToTheDefault(t *testing.T) {
 // and an invitation is a question, not a reminder. A third button offering
 // neither answer would make the message read as a chore to postpone.
 func TestKeyboardForInvite(t *testing.T) {
-	kb := Keyboard("INVITE", "11111111-2222-3333-4444-555555555555")
+	kb := Keyboard("INVITE", "11111111-2222-3333-4444-555555555555", "ru")
 	if kb == nil {
 		t.Fatal("an invitation must carry buttons — answering it in the chat is the point")
 	}
@@ -147,14 +148,14 @@ func TestKeyboardForInvite(t *testing.T) {
 // because every action code happens to be one byte — and the INVITE keyboard
 // has no snooze button at all.
 func TestKeyboardFitsChecksEveryButton(t *testing.T) {
-	ok := Keyboard("INVITE", "11111111-2222-3333-4444-555555555555")
+	ok := Keyboard("INVITE", "11111111-2222-3333-4444-555555555555", "ru")
 	if !KeyboardFits(ok) {
 		t.Error("a normal UUID must fit inside the callback limit")
 	}
 
 	// The negative control: something long enough to be refused. Without it,
 	// a KeyboardFits that always returned true would pass the line above.
-	tooLong := Keyboard("INVITE", strings.Repeat("x", CallbackDataLimit+10))
+	tooLong := Keyboard("INVITE", strings.Repeat("x", CallbackDataLimit+10), "ru")
 	if KeyboardFits(tooLong) {
 		t.Error("an oversized payload must be refused — Telegram rejects the whole message")
 	}
@@ -178,7 +179,7 @@ func TestKeyboardFitsChecksEveryButton(t *testing.T) {
 func TestEveryButtonHasAReply(t *testing.T) {
 	seen := 0
 	for _, kind := range KnownSourceKinds {
-		kb := Keyboard(kind, sampleID)
+		kb := Keyboard(kind, sampleID, "ru")
 		if kb == nil {
 			continue // a digest has no buttons, deliberately
 		}
@@ -210,7 +211,7 @@ func TestEveryButtonHasAReply(t *testing.T) {
 // время, например на 10 минут или на час».
 func TestReminderOffersTenMinutesAndAnHour(t *testing.T) {
 	for _, kind := range []string{"TASK", "EVENT"} {
-		kb := Keyboard(kind, "11111111-2222-3333-4444-555555555555")
+		kb := Keyboard(kind, "11111111-2222-3333-4444-555555555555", "ru")
 		if kb == nil {
 			t.Fatalf("%s: no keyboard at all", kind)
 		}
@@ -250,4 +251,86 @@ func TestTheOldSnoozeCodeStillWorks(t *testing.T) {
 	if !ok || cb.Action != ActionSnooze || cb.Minutes != 10 {
 		t.Errorf("an already-delivered snooze button stopped working: %+v ok=%v", cb, ok)
 	}
+}
+
+// 🔴 The buttons under a notification speak the recipient's language.
+//
+// This was the last user-facing thing in the bot that did not. The comment above
+// Keyboard used to explain why it structurally could not — the notifier runs on
+// the service token and knows the recipient only as a Telegram id — and it named
+// its own fix: have the API send the language with the notification. That is
+// what happens now, so the excuse is gone and this test holds the result.
+func TestNotificationButtonsSpeakTheRecipientsLanguage(t *testing.T) {
+	for _, kind := range []string{"TASK", "EVENT", "INVITE"} {
+		ru := Keyboard(kind, sampleID, "ru")
+		en := Keyboard(kind, sampleID, "en")
+		if ru == nil || en == nil {
+			t.Fatalf("%s: no keyboard", kind)
+		}
+
+		ruText := buttonText(ru)
+		enText := buttonText(en)
+
+		if strings.Join(ruText, "|") == strings.Join(enText, "|") {
+			t.Errorf("%s: both languages render the same labels — lang is ignored: %v", kind, ruText)
+		}
+		for _, label := range enText {
+			if containsCyrillic(label) {
+				t.Errorf("%s: an English reader sees %q", kind, label)
+			}
+		}
+		for _, label := range ruText {
+			if !containsCyrillic(label) {
+				// An emoji-only label would be fine, but every label here has a
+				// word in it; a Latin word means a missed translation.
+				if hasLatinLetters(label) {
+					t.Errorf("%s: a Russian reader sees %q", kind, label)
+				}
+			}
+		}
+	}
+}
+
+// An unknown or empty language falls back to Russian rather than to nothing:
+// most users are Russian, and a blank button is worse than the wrong language.
+func TestUnknownLanguageFallsBackRatherThanBlank(t *testing.T) {
+	for _, lang := range []string{"", "de", "RU", "en-GB"} {
+		kb := Keyboard("TASK", sampleID, lang)
+		if kb == nil {
+			t.Fatalf("lang %q produced no keyboard", lang)
+		}
+		for _, label := range buttonText(kb) {
+			if strings.TrimSpace(label) == "" {
+				t.Errorf("lang %q produced a blank button", lang)
+			}
+		}
+	}
+}
+
+func buttonText(kb *tgbotapi.InlineKeyboardMarkup) []string {
+	var out []string
+	for _, row := range kb.InlineKeyboard {
+		for _, b := range row {
+			out = append(out, b.Text)
+		}
+	}
+	return out
+}
+
+func containsCyrillic(s string) bool {
+	for _, r := range s {
+		if r >= 'А' && r <= 'я' {
+			return true
+		}
+	}
+	return false
+}
+
+func hasLatinLetters(s string) bool {
+	for _, r := range s {
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') {
+			return true
+		}
+	}
+	return false
 }

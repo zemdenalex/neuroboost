@@ -67,7 +67,7 @@ func deliverBatch(bot *tgbotapi.BotAPI, client *api.Client, serviceToken string)
 		// byte, so it gave the right answer — by coincidence, not by
 		// construction, and the INVITE keyboard added on 17.08 does not carry a
 		// snooze button at all. Ask the buttons themselves.
-		if kb := Keyboard(n.SourceKind, n.ID); kb != nil && KeyboardFits(kb) {
+		if kb := Keyboard(n.SourceKind, n.ID, n.Lang); kb != nil && KeyboardFits(kb) {
 			msg.ReplyMarkup = *kb
 		}
 		_, sendErr := bot.Send(msg)

@@ -111,29 +111,34 @@ func ParseCallback(data string) (Callback, bool) {
 //
 // A digest gets none: it is a summary of several things, so "done" and "later"
 // have no single subject to act on.
-// 🔴 Keyboard is the one user-facing thing in this bot that stays Russian-only,
-// and the reason is structural rather than an oversight.
+// Keyboard builds the buttons for one notification, in the recipient's language.
 //
-// It is built by the NOTIFIER, which runs on the service token and knows the
-// recipient only as a Telegram id — no session, no settings, and deliberately
-// no access to the store (see state.go: the store is safe precisely because the
-// notifier never receives it). Reading a language here would mean an API call
-// per notification, on the path that must stay cheap because it runs every
-// minute for every user.
+// ⚠ This comment used to say the opposite: that the buttons were Russian-only
+// and structurally had to be. The reasoning was sound — the NOTIFIER runs on the
+// service token and knows the recipient only as a Telegram id, with no session,
+// no settings and deliberately no access to the store, so reading a language
+// here would mean an API call per notification on a path that runs every minute
+// for every user.
 //
-// The honest fix is for the API to send the language alongside the pending
-// notification. Until then this is a known gap, named here rather than left to
-// be discovered.
-func Keyboard(sourceKind, reminderID string) *tgbotapi.InlineKeyboardMarkup {
+// It named its own fix: «the honest fix is for the API to send the language
+// alongside the pending notification». That is what happens now — the API
+// already has the row and answers with it (reminders/service.go), and `lang`
+// arrives in the payload. The gap it described is closed; the reasoning is kept
+// because it is why the answer is shaped this way.
+func Keyboard(sourceKind, reminderID, lang string) *tgbotapi.InlineKeyboardMarkup {
+	l := i18n.RU
+	if lang == "en" {
+		l = i18n.EN
+	}
 	var row []tgbotapi.InlineKeyboardButton
 
 	switch strings.ToUpper(sourceKind) {
 	case "TASK":
 		row = []tgbotapi.InlineKeyboardButton{
-			tgbotapi.NewInlineKeyboardButtonData("✅ Готово", EncodeCallback(codeDone, reminderID)),
-			tgbotapi.NewInlineKeyboardButtonData("⏰ 10 мин", EncodeCallback(codeSnooze, reminderID)),
-			tgbotapi.NewInlineKeyboardButtonData("⏰ Час", EncodeCallback(codeSnoozeHour, reminderID)),
-			tgbotapi.NewInlineKeyboardButtonData("⏰ Своё", EncodeCallback(codeSnoozeAsk, reminderID)),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(l, "✅ Готово", "✅ Done"), EncodeCallback(codeDone, reminderID)),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(l, "⏰ 10 мин", "⏰ 10 min"), EncodeCallback(codeSnooze, reminderID)),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(l, "⏰ Час", "⏰ An hour"), EncodeCallback(codeSnoozeHour, reminderID)),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(l, "⏰ Своё", "⏰ Custom"), EncodeCallback(codeSnoozeAsk, reminderID)),
 		}
 	case "INVITE":
 		// 🔴 No snooze. Snoozing re-sends the same notification later, and an
@@ -141,8 +146,8 @@ func Keyboard(sourceKind, reminderID string) *tgbotapi.InlineKeyboardMarkup {
 		// button offering neither would make the message look like a chore to
 		// postpone rather than a question to answer.
 		row = []tgbotapi.InlineKeyboardButton{
-			tgbotapi.NewInlineKeyboardButtonData("✅ Принять", EncodeCallback(codeAccept, reminderID)),
-			tgbotapi.NewInlineKeyboardButtonData("✖ Отклонить", EncodeCallback(codeDecline, reminderID)),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(l, "✅ Принять", "✅ Accept"), EncodeCallback(codeAccept, reminderID)),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(l, "✖ Отклонить", "✖ Decline"), EncodeCallback(codeDecline, reminderID)),
 		}
 
 	case "DIGEST":
@@ -151,10 +156,10 @@ func Keyboard(sourceKind, reminderID string) *tgbotapi.InlineKeyboardMarkup {
 		// Events, and anything new that has not been given its own buttons: an
 		// acknowledgement and a postponement are meaningful for any single item.
 		row = []tgbotapi.InlineKeyboardButton{
-			tgbotapi.NewInlineKeyboardButtonData("👌 Понятно", EncodeCallback(codeAck, reminderID)),
-			tgbotapi.NewInlineKeyboardButtonData("⏰ 10 мин", EncodeCallback(codeSnooze, reminderID)),
-			tgbotapi.NewInlineKeyboardButtonData("⏰ Час", EncodeCallback(codeSnoozeHour, reminderID)),
-			tgbotapi.NewInlineKeyboardButtonData("⏰ Своё", EncodeCallback(codeSnoozeAsk, reminderID)),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(l, "👌 Понятно", "👌 Got it"), EncodeCallback(codeAck, reminderID)),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(l, "⏰ 10 мин", "⏰ 10 min"), EncodeCallback(codeSnooze, reminderID)),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(l, "⏰ Час", "⏰ An hour"), EncodeCallback(codeSnoozeHour, reminderID)),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(l, "⏰ Своё", "⏰ Custom"), EncodeCallback(codeSnoozeAsk, reminderID)),
 		}
 	}
 

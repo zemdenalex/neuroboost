@@ -109,6 +109,16 @@ type PendingNotification struct {
 	Text       string `json:"text"`
 	SourceKind string `json:"source_kind"`
 	SourceID   string `json:"source_id"`
+	// Lang is the language the RECIPIENT reads, so the bot can label the
+	// buttons under this message.
+	//
+	// 🔴 It travels here because the notifier cannot ask. It runs on the
+	// service token and knows the recipient only as a Telegram id — no session,
+	// no settings — and reading the language per notification would add an HTTP
+	// round trip to a path that runs every minute for every user. The bot named
+	// this gap in a comment on 17.08 and it stayed open until 18.09; the API
+	// already has the row, so the API answers it.
+	Lang string `json:"lang"`
 }
 
 const (
@@ -183,7 +193,10 @@ func PendingHandler(w http.ResponseWriter, r *http.Request) {
 		          -- calendar_id last: an INVITE row has neither event nor task,
 		          -- and the bot needs SOMETHING to name the subject of the
 		          -- buttons it renders.
-		          COALESCE(r.event_id::text, r.task_id::text, r.calendar_id::text, '')`,
+		          COALESCE(r.event_id::text, r.task_id::text, r.calendar_id::text, ''),
+		          -- The bot's own language setting first, the account locale
+		          -- second — the message is read in Telegram. See DigestLang.
+		          COALESCE(NULLIF(u.settings->'bot'->>'lang', ''), u.locale, 'ru')`,
 		pendingBatchLimit)
 	if err != nil {
 		if svcLog != nil {
@@ -197,7 +210,7 @@ func PendingHandler(w http.ResponseWriter, r *http.Request) {
 	out := []PendingNotification{}
 	for rows.Next() {
 		var n PendingNotification
-		if err := rows.Scan(&n.ID, &n.TgID, &n.Text, &n.SourceKind, &n.SourceID); err != nil {
+		if err := rows.Scan(&n.ID, &n.TgID, &n.Text, &n.SourceKind, &n.SourceID, &n.Lang); err != nil {
 			util.RespondError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to read reminders")
 			return
 		}

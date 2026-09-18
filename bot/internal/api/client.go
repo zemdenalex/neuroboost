@@ -382,6 +382,10 @@ type PendingNotification struct {
 	Text       string `json:"text"`
 	SourceKind string `json:"source_kind"`
 	SourceID   string `json:"source_id"`
+	// Lang is the recipient's language, sent by the API because the notifier
+	// cannot ask: it runs on the service token and knows this person only as a
+	// Telegram id.
+	Lang string `json:"lang"`
 }
 
 // PendingNotifications claims the due notifications.
