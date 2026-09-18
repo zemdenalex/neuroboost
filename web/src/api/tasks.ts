@@ -36,6 +36,16 @@ export interface Task {
   created_at: string
   updated_at: string
   /**
+   * Repeat rule, absent for a one-off task.
+   *
+   * 🔴 When set, `status` describes the SERIES; today's answer is
+   * `occurrence_state`. See answeredToday in types/index.ts.
+   */
+  rrule?: string
+  repeat_anchor?: string
+  /** Today's answer: '', 'done' or 'skipped'. */
+  occurrence_state?: string
+  /**
    * Minutes before due_date to remind, e.g. [10, 60]. The API has returned this
    * since migration 000010; the type omitted it, so the task editor could not
    * read back what quick-add had set and a task's reminders could never be

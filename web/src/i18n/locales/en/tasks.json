@@ -74,5 +74,6 @@
     "tomorrow": "Move to tomorrow",
     "clear": "Clear",
     "select": "Select {{title}}"
-  }
+  },
+  "stat.answeredToday": "Done today:"
 }

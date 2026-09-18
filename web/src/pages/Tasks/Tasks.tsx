@@ -40,6 +40,7 @@ import {
   PRIORITY_COLORS,
   CONTEXT_ICONS,
 } from '../../api/tasks'
+import { answeredToday } from '../../types'
 import { defaultScheduleSlot } from '../../lib/schedule/defaultScheduleSlot'
 import { toDateTimeLocalValue, fromDateTimeLocalValue } from '../../lib/datetime/dateTimeLocal'
 import { ReminderOffsets } from '../../components/ReminderOffsets/ReminderOffsets'
@@ -153,10 +154,29 @@ export default function Tasks() {
   const filteredTasks = useMemo(() => {
     return tasks.filter(task => {
       if (filterStatus !== 'ALL' && task.status !== filterStatus) return false
+      // 🔴 A repeating task answered today is not outstanding.
+      //
+      // Denis, 18.09: «if completed for the day it should stop being in the
+      // task list, but appear somewhere gray, and on the next day it pops up
+      // again». Its `status` stays TODO for the whole series, so without this
+      // «выпить таблетки» sits in the list all day after being ticked.
+      //
+      // Hidden only under the TODO view: asking for ALL, or for DONE, means
+      // asking to see everything, and a filter that hides things from its own
+      // "show everything" is a filter nobody can trust.
+      if (filterStatus === 'TODO' && answeredToday(task)) return false
       if (search && !task.title.toLowerCase().includes(search.toLowerCase())) return false
       return true
     })
   }, [tasks, filterStatus, search])
+
+  // How many repeating tasks today has already answered — the count is the
+  // point: it is the reward for the morning, and deleting them silently would
+  // hide that they exist at all.
+  const answeredCount = useMemo(
+    () => tasks.filter(answeredToday).length,
+    [tasks],
+  )
 
   const tasksByPriority = useMemo(() => {
     const groups = new Map<number, Task[]>()
@@ -414,6 +434,15 @@ export default function Tasks() {
             {stats.overdue > 0 && (
               <span className="text-zinc-400">
                 {t('stat.overdue')} <strong className="text-red-400">{stats.overdue}</strong>
+              </span>
+            )}
+            {/* 🔴 Said out loud, not hidden. Repeating tasks answered today are
+                filtered out of the TODO list, and a count that vanished with
+                them would make the morning's work disappear — which is the
+                opposite of the point. Denis asked for «✅ сегодня: N». */}
+            {answeredCount > 0 && (
+              <span className="text-zinc-400" data-testid="answered-today">
+                {t('stat.answeredToday')} <strong className="text-green-400">{answeredCount}</strong>
               </span>
             )}
           </div>

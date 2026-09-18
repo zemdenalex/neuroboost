@@ -19,6 +19,41 @@ export interface Task {
   createdAt: string;
   updatedAt: string;
   completedAt?: string;
+
+  /**
+   * Repeat rule, absent for a one-off task.
+   *
+   * 🔴 When it is set, `status` describes the SERIES — TODO means "still
+   * running", DONE means "switched off" — and what happened TODAY is
+   * `occurrenceState`. Reading `status` alone shows a repeating task as
+   * outstanding all day after it was ticked off.
+   */
+  rrule?: string;
+  /** First day of the series. */
+  repeatAnchor?: string;
+  /** Today's answer: '', 'done' or 'skipped'. */
+  occurrenceState?: string;
+}
+
+/**
+ * Whether a repeating task's TODAY has already been answered — done, or
+ * deliberately skipped. Both mean "not outstanding right now".
+ *
+ * 🔴 The `rrule` check is load-bearing: a one-off task is never "answered
+ * today" whatever stray state arrives, and without it an ordinary task with a
+ * stale field would vanish from the list.
+ *
+ * 🔴 Typed structurally, not as `Task`, because this product has TWO task types
+ * — `types.Task` (camelCase, calendar) and `api/tasks.Task` (snake_case, the
+ * Tasks page) — and the question is identical for both. Demanding one of them
+ * would mean writing this twice, and the second copy is where they drift.
+ */
+export function answeredToday(task: {
+  rrule?: string;
+  occurrenceState?: string;
+  occurrence_state?: string;
+}): boolean {
+  return Boolean(task.rrule) && Boolean(task.occurrenceState ?? task.occurrence_state);
 }
 
 // Reflection types (embedded in events)

@@ -22,6 +22,9 @@ export interface RawTask {
   completed_at?: string
   created_at: string
   updated_at: string
+  rrule?: string
+  repeat_anchor?: string
+  occurrence_state?: string
 }
 
 /**
@@ -47,6 +50,11 @@ export function toTask(raw: RawTask): Task {
     energy: raw.energy,
     parentId: raw.parent_id,
     completedAt: raw.completed_at,
+    // 🔴 Carried through, or the whole point is lost: a repeating task whose
+    // today is done still reads as TODO, and the list would keep offering it.
+    rrule: raw.rrule,
+    repeatAnchor: raw.repeat_anchor,
+    occurrenceState: raw.occurrence_state,
     createdAt: raw.created_at,
     updatedAt: raw.updated_at,
   }

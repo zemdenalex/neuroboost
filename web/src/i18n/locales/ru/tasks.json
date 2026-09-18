@@ -75,5 +75,6 @@
     "tomorrow": "На завтра",
     "clear": "Снять",
     "select": "Выбрать {{title}}"
-  }
+  },
+  "stat.answeredToday": "Сегодня сделано:"
 }
