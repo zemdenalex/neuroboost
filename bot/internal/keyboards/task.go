@@ -35,7 +35,7 @@ func TaskCard(lang i18n.Lang, switchable bool) tgbotapi.InlineKeyboardMarkup {
 		))
 	}
 	rows = append(rows, tgbotapi.NewInlineKeyboardRow(
-		tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "❌ Отмена", "❌ Cancel"), "main_menu"),
+		tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🗑 Удалить черновик", "🗑 Delete draft"), "main_menu"),
 	))
 	return tgbotapi.NewInlineKeyboardMarkup(rows...)
 }

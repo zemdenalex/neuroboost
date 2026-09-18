@@ -67,7 +67,7 @@ func TaskDue(lang i18n.Lang, taskID string) tgbotapi.InlineKeyboardMarkup {
 	return tgbotapi.NewInlineKeyboardMarkup(
 		dueRow(lang, "task_due_set_"+taskID+"_", ""),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "« Отмена", "« Cancel"), "task_action_"+taskID),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "❌ Отмена", "❌ Cancel"), "task_action_"+taskID),
 		),
 	)
 }
@@ -76,7 +76,7 @@ func TaskEstimate(lang i18n.Lang, taskID string) tgbotapi.InlineKeyboardMarkup {
 	return tgbotapi.NewInlineKeyboardMarkup(
 		estimateRow(lang, "task_est_set_"+taskID+"_", ""),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "« Отмена", "« Cancel"), "task_action_"+taskID),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "❌ Отмена", "❌ Cancel"), "task_action_"+taskID),
 		),
 	)
 }
@@ -107,7 +107,7 @@ func TaskScheduleWhen(lang i18n.Lang, taskID string) tgbotapi.InlineKeyboardMark
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "Завтра утром", "Tomorrow morning"), "task_when_"+taskID+"_tmr"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "« Отмена", "« Cancel"), "task_action_"+taskID),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "❌ Отмена", "❌ Cancel"), "task_action_"+taskID),
 		),
 	)
 }

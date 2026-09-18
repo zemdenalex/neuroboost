@@ -112,7 +112,10 @@ func TestCardPutsDateThenTimeThenTitle(t *testing.T) {
 	card := renderDraft(i18n.RU, draftFrom("оркестр среда 14:00-15:00"), tuesday15())
 
 	day := strings.Index(card, "🗓")
-	clock := strings.Index(card, "🕐")
+	// ⚠ Not a fixed 🕐 any more: since 18.09 the clock face matches the hour,
+	// so the probe has to ask for the face this time renders as. The
+	// requirement — date, then time, then title — is untouched.
+	clock := strings.Index(card, clockFace(14*time.Hour))
 	title := strings.Index(card, "оркестр")
 
 	if day < 0 || clock < 0 || title < 0 {

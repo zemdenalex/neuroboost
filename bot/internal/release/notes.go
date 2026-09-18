@@ -11,15 +11,21 @@ package release
 // Note is one release, in both languages.
 type Note struct {
 	Version string
-	RU      string
-	EN      string
+	// Released is when this version reached the bot people actually use, in the
+	// bot's own words. Denis, 18.09: «можно кроме версии, еще и дату и время
+	// релиза писать» — a version number alone does not answer "is this the one
+	// I already saw".
+	Released string
+	RU       string
+	EN       string
 }
 
 // notes is newest first. Three entries is enough: «что нового» answers "since I
 // last looked", not "since the beginning".
 var notes = []Note{
 	{
-		Version: "v0.4.11.3",
+		Version:  "v0.4.11.3",
+		Released: "18.09.2026 03:00",
 		RU: "• Карточка называет все поля — повтор, календарь, теги, цвет — и пишет «нет» там, где пусто\n" +
 			"• Календари прямо в боте: создать, переименовать, цвет, участники, выйти\n" +
 			"• Пригласить можно ссылкой — она работает и для тех, у кого нет email\n" +
@@ -32,7 +38,8 @@ var notes = []Note{
 			"• Report a bug and suggest a feature",
 	},
 	{
-		Version: "v0.4.11.2",
+		Version:  "v0.4.11.2",
+		Released: "17.09.2026 23:40",
 		RU: "• Первая настройка: язык и часовой пояс за три шага\n" +
 			"• Можно просто написать боту — он поймёт, что создать\n" +
 			"• Свой период повтора, события на несколько дней, напоминания галочками",
@@ -41,7 +48,8 @@ var notes = []Note{
 			"• Custom repeat intervals, multi-day events, reminders as checkboxes",
 	},
 	{
-		Version: "v0.4.11.1",
+		Version:  "v0.4.11.1",
+		Released: "16.09.2026 21:10",
 		RU: "• Событие строкой обычным языком и карточка подтверждения\n" +
 			"• Списки дел одним сообщением\n" +
 			"• Язык интерфейса: русский и английский",

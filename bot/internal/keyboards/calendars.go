@@ -54,14 +54,21 @@ func CalendarCard(lang i18n.Lang, id, role string, personal bool) tgbotapi.Inlin
 
 	if owner {
 		rows = append(rows, tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "✏️ Имя", "✏️ Name"), calName+id),
+			// «Имя» belongs to people. Denis, 18.09: «должно быть не просто
+			// кнопка имя, а изменить название или название, имя это всё-таки у
+			// одушевлённых».
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "✏️ Название", "✏️ Title"), calName+id),
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🎨 Цвет", "🎨 Colour"), calColour+id)))
 	}
 
 	second := []tgbotapi.InlineKeyboardButton{
 		tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "👥 Участники", "👥 Members"), calMem+id),
 	}
-	if owner {
+	// 🔴 No invitation to the personal calendar, ever. Denis, 18.09: «в личный
+	// календарь нельзя приглашать сто процентов, надо вообще такое запретить».
+	// It is the one calendar that is definitionally one person's: sharing it
+	// would hand over everything not filed anywhere else.
+	if owner && !personal {
 		second = append(second,
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🔗 Пригласить", "🔗 Invite"), calInvite+id))
 	}
@@ -98,13 +105,6 @@ func CalendarInvite(lang i18n.Lang, id string) tgbotapi.InlineKeyboardMarkup {
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "⬅️ Назад", "⬅️ Back"), calOpen+id)))
 }
 
-// calendarPalette is the colour choice offered for a calendar.
-//
-// Hex, not palette names: /api/calendars validates against a strict
-// `^#[0-9a-fA-F]{6}$` (api-go calendars/handlers.go:26), while the draft card's
-// colours are names the event API resolves itself. Two different vocabularies
-// for two different endpoints — reusing draftColours here would send «blue» to
-// a regexp that wants «#3b82f6».
 // calendarPalette is the colour choice offered for a calendar.
 //
 // Hex, not palette names: /api/calendars validates against a strict
@@ -169,7 +169,7 @@ func CalendarConfirm(lang i18n.Lang, id, name, action string) tgbotapi.InlineKey
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(label, "cl_"+action+"ok_"+id)),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "⬅️ Отмена", "⬅️ Cancel"), calOpen+id)))
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "❌ Отмена", "❌ Cancel"), calOpen+id)))
 }
 
 // FeedbackKinds is the two things a person might want to say.

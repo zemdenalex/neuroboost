@@ -57,7 +57,7 @@ func BackToList(lang i18n.Lang) tgbotapi.InlineKeyboardMarkup {
 	return tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "⬅️ К списку", "⬅️ Back to list"), "dr_list"),
-			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🗑 Отменить", "🗑 Cancel"), "dr_cancel"),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🗑 Удалить черновик", "🗑 Delete draft"), "dr_cancel"),
 		),
 	)
 }

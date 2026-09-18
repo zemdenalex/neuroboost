@@ -234,10 +234,10 @@ func renderDraft(lang i18n.Lang, st draftState, now time.Time) string {
 	case st.D.AllDay:
 		b.WriteString(i18n.T(lang, "🕐 весь день\n", "🕐 all day\n"))
 	case st.D.HasTime && st.D.HasEnd:
-		fmt.Fprintf(&b, "🕐 %s–%s%s\n", offsetHHMM(st.D.Start), offsetHHMM(st.D.End),
+		fmt.Fprintf(&b, "%s %s–%s%s\n", clockFace(st.D.Start), offsetHHMM(st.D.Start), offsetHHMM(st.D.End),
 			checkMark(lang, st.D.IsUncertain(parse.FieldTime)))
 	case st.D.HasTime:
-		fmt.Fprintf(&b, "🕐 %s%s\n", offsetHHMM(st.D.Start),
+		fmt.Fprintf(&b, "%s %s%s\n", clockFace(st.D.Start), offsetHHMM(st.D.Start),
 			checkMark(lang, st.D.IsUncertain(parse.FieldTime)))
 	default:
 		b.WriteString(i18n.T(lang, "⚠ время не указано — спрошу\n", "⚠ no time — I will ask\n"))
@@ -317,6 +317,32 @@ func renderDraft(lang i18n.Lang, st draftState, now time.Time) string {
 		orNone(lang, format.Escape(shorten(st.Description, descriptionOnCard)))))
 
 	return strings.TrimRight(b.String(), "\n")
+}
+
+// clockFace is the clock emoji whose hands read approximately this time.
+//
+// Denis, 18.09: «для времени использовать соответствующее часу эмодзи часов».
+// Unicode has twenty-four of them — twelve o'clocks and twelve half-hours — and
+// they are the only emoji in the card that carry information rather than
+// decorate it: the shape alone says morning or evening before a single digit is
+// read.
+//
+// ⚠ A face repeats every twelve hours, so it narrows the time rather than
+// stating it. The digits beside it remain the answer.
+func clockFace(d time.Duration) string {
+	whole := []string{"🕛", "🕐", "🕑", "🕒", "🕓", "🕔", "🕕", "🕖", "🕗", "🕘", "🕙", "🕚"}
+	half := []string{"🕧", "🕜", "🕝", "🕞", "🕟", "🕠", "🕡", "🕢", "🕣", "🕤", "🕥", "🕦"}
+
+	d %= 24 * time.Hour
+	h := int(d/time.Hour) % 12
+	m := int(d % time.Hour / time.Minute)
+	if m >= 15 && m < 45 {
+		return half[h]
+	}
+	if m >= 45 {
+		return whole[(h+1)%12]
+	}
+	return whole[h]
 }
 
 // fieldLine prints one characteristic of a card, ALWAYS.

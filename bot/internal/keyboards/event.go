@@ -122,7 +122,7 @@ func EventDeleteConfirm(lang i18n.Lang, id string) tgbotapi.InlineKeyboardMarkup
 	return tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🗑 Да, удалить", "🗑 Yes, delete"), "evdy_"+id),
-			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "⬅️ Отмена", "⬅️ Cancel"), "ev_"+id),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "❌ Отмена", "❌ Cancel"), "ev_"+id),
 		),
 	)
 }

@@ -3,6 +3,7 @@ package handlers
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/zemdenalex/neuroboost-bot/internal/i18n"
 )
@@ -162,5 +163,31 @@ func TestTaskCardNamesEveryField(t *testing.T) {
 	// saying «нет» to everything.
 	if !strings.Contains(got.Text, "19.09") {
 		t.Errorf("срок из строки потерялся:\n%s", got.Text)
+	}
+}
+
+// Denis, 18.09: «для времени использовать соответствующее часу эмодзи часов».
+func TestTheClockFaceMatchesTheHour(t *testing.T) {
+	for _, c := range []struct {
+		when time.Duration
+		want string
+	}{
+		{15 * time.Hour, "🕒"},
+		{15*time.Hour + 30*time.Minute, "🕞"},
+		{9 * time.Hour, "🕘"},
+		{0, "🕛"},
+		{12 * time.Hour, "🕛"},
+		{23*time.Hour + 50*time.Minute, "🕛"}, // rounds up into the next hour
+	} {
+		if got := clockFace(c.when); got != c.want {
+			t.Errorf("clockFace(%s) = %s, want %s", c.when, got, c.want)
+		}
+	}
+}
+
+func TestTheCardUsesTheMatchingClock(t *testing.T) {
+	card := renderDraft(i18n.RU, draftFrom("стоматолог завтра 15:00"), tuesday15())
+	if !strings.Contains(card, "🕒 15:00") {
+		t.Errorf("карточка не использует часы, соответствующие времени:\n%s", card)
 	}
 }

@@ -251,3 +251,35 @@ func command(h *Handler, chat int64, text string) {
 		}},
 	})
 }
+
+// 🔴 Denis, 18.09: «в личный календарь нельзя приглашать сто процентов, надо
+// вообще такое запретить». The personal calendar holds everything not filed
+// anywhere else; an invite button on it is a button that gives away the lot.
+func TestPersonalCalendarCannotBeSharedAtAll(t *testing.T) {
+	h, fake, chat := calendarHandler(t)
+	press(h, chat, "cl_cal-personal")
+
+	if got := fake.last(t); strings.Contains(got.Markup, "cl_inv_") {
+		t.Errorf("личный календарь предлагает пригласить: %s", got.Markup)
+	}
+	// The positive control: a shared calendar the caller owns still offers it,
+	// or this test would pass on a bot that cannot invite at all.
+	press(h, chat, "cl_cal-work")
+	if got := fake.last(t); !strings.Contains(got.Markup, "cl_inv_") {
+		t.Errorf("общий календарь перестал предлагать приглашение: %s", got.Markup)
+	}
+}
+
+// The word on the button: a calendar has a title, not a name.
+func TestCalendarRenameButtonSaysTitle(t *testing.T) {
+	h, fake, chat := calendarHandler(t)
+	press(h, chat, "cl_cal-work")
+
+	got := fake.last(t)
+	if strings.Contains(got.Markup, "Имя") {
+		t.Errorf("кнопка всё ещё называется «Имя»: %s", got.Markup)
+	}
+	if !strings.Contains(got.Markup, "Название") {
+		t.Errorf("нет кнопки «Название»: %s", got.Markup)
+	}
+}

@@ -26,7 +26,7 @@ func DraftCard(lang i18n.Lang) tgbotapi.InlineKeyboardMarkup {
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "✏️ Изменить", "✏️ Edit"), "dr_edit"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🗑 Отменить", "🗑 Cancel"), "dr_cancel"),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🗑 Удалить черновик", "🗑 Delete draft"), "dr_cancel"),
 		),
 	)
 }
@@ -291,7 +291,7 @@ func DraftBack(lang i18n.Lang) tgbotapi.InlineKeyboardMarkup {
 	return tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "⬅️ Назад", "⬅️ Back"), "dr_back"),
-			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🗑 Отменить", "🗑 Cancel"), "dr_cancel"),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🗑 Удалить черновик", "🗑 Delete draft"), "dr_cancel"),
 		),
 	)
 }
@@ -311,7 +311,7 @@ func ListConfirm(lang i18n.Lang, n int) tgbotapi.InlineKeyboardMarkup {
 				fmt.Sprintf(i18n.T(lang, "Список из %d", "A list of %d"), n), "dr_many"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🗑 Отменить", "🗑 Cancel"), "dr_cancel"),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🗑 Удалить черновик", "🗑 Delete draft"), "dr_cancel"),
 		),
 	)
 }
@@ -327,7 +327,7 @@ func ListCard(lang i18n.Lang, n int) tgbotapi.InlineKeyboardMarkup {
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "✏️ Изменить", "✏️ Edit"), "dr_pick"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🗑 Отменить", "🗑 Cancel"), "dr_cancel"),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🗑 Удалить черновик", "🗑 Delete draft"), "dr_cancel"),
 		),
 	)
 }
@@ -361,7 +361,7 @@ func DraftCardInList(lang i18n.Lang) tgbotapi.InlineKeyboardMarkup {
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "⬅️ К списку", "⬅️ Back to list"), "dr_list"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🗑 Отменить всё", "🗑 Cancel all"), "dr_cancel"),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🗑 Удалить всё", "🗑 Delete all"), "dr_cancel"),
 		),
 	)
 }
@@ -397,7 +397,7 @@ func ManyDates(lang i18n.Lang, from, to string) tgbotapi.InlineKeyboardMarkup {
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "☑️ Выбрать даты", "☑️ Pick the dates"), "dr_dpick"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🗑 Отменить", "🗑 Cancel"), "dr_cancel"),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🗑 Удалить черновик", "🗑 Delete draft"), "dr_cancel"),
 		),
 	)
 }
@@ -424,7 +424,7 @@ func DatePicker(lang i18n.Lang, labels []string, chosen []bool) tgbotapi.InlineK
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "✅ Создать выбранные", "✅ Create the ticked ones"), "dr_dmake"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🗑 Отменить", "🗑 Cancel"), "dr_cancel"),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🗑 Удалить черновик", "🗑 Delete draft"), "dr_cancel"),
 		),
 	)
 	return tgbotapi.NewInlineKeyboardMarkup(rows...)
