@@ -284,6 +284,31 @@ func (h *Handler) RedeemLinkCode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// The question goes to Telegram through the one channel the bot already
+	// polls — the same row type calendar invitations use since 000015. A second
+	// pipe would be a second place for «оно не пришло» to hide.
+	//
+	// 🔴 The counts are in the message because the choice is unanswerable
+	// without them: «какой аккаунт оставить» means nothing until you know which
+	// one holds your 124 events.
+	if _, err := tx.Exec(ctx, `
+		INSERT INTO reminder (user_id, source_kind, merge_request_id, remind_at, status, channel, message)
+		SELECT tg.id, 'LINK', $3, NOW(), 'PENDING', 'TELEGRAM',
+		       '🔗 Объединить аккаунты?' || chr(10) || chr(10) ||
+		       'Сайт — ' || COALESCE(site.email, 'без email') || ': ' ||
+		           (SELECT count(*) FROM event WHERE user_id = site.id) || ' событий, ' ||
+		           (SELECT count(*) FROM task  WHERE user_id = site.id) || ' задач' || chr(10) ||
+		       'Telegram — ' || COALESCE('@' || tg.tg_username, 'без имени') || ': ' ||
+		           (SELECT count(*) FROM event WHERE user_id = tg.id) || ' событий, ' ||
+		           (SELECT count(*) FROM task  WHERE user_id = tg.id) || ' задач' || chr(10) || chr(10) ||
+		       'Какой аккаунт оставить? Данные второго перейдут в него.'
+		  FROM "user" site, "user" tg
+		 WHERE site.id = $1 AND tg.id = $2 AND tg.tg_id IS NOT NULL`,
+		siteUserID, tgUserID, requestID); err != nil {
+		util.RespondError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to ask in the bot")
+		return
+	}
+
 	if err := tx.Commit(ctx); err != nil {
 		util.RespondError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to link")
 		return

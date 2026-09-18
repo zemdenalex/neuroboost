@@ -20,6 +20,15 @@ const (
 	// by opening the web is a notification that creates a chore.
 	ActionAccept  = "accept"
 	ActionDecline = "decline"
+	// Answering «объединить аккаунты?» from the chat (v0.4.11.5). Denis asked
+	// for the bot to ask «if you're the one who's connecting the profile», and
+	// these are the three answers to that question.
+	ActionKeepSite = "keep_site"
+	ActionKeepTg   = "keep_tg"
+	// The two answers to the follow-up question about personal calendars, asked
+	// only when both accounts have one.
+	ActionCalMerge = "cal_merge"
+	ActionCalBoth  = "cal_both"
 )
 
 const (
@@ -58,7 +67,8 @@ func ValidateAction(req ActionRequest) (ActionRequest, error) {
 		return req, ErrInvalidAction
 	}
 	switch req.Action {
-	case ActionAck, ActionDone, ActionAccept, ActionDecline:
+	case ActionAck, ActionDone, ActionAccept, ActionDecline,
+		ActionKeepSite, ActionKeepTg, ActionCalMerge, ActionCalBoth:
 		req.Minutes = 0
 	case ActionSnooze:
 		if req.Minutes <= 0 {
@@ -95,15 +105,16 @@ func ActionHandler(w http.ResponseWriter, r *http.Request) {
 	var eventID, taskID, calendarID *string
 	var occurrenceStart *string
 	var message string
+	var mergeRequestID *string
 	err = db.Pool.QueryRow(ctx, `
 		SELECT r.user_id::text, r.source_kind,
 		       r.event_id::text, r.task_id::text, r.calendar_id::text,
-		       r.occurrence_start::text, COALESCE(r.message, '')
+		       r.occurrence_start::text, COALESCE(r.message, ''), r.merge_request_id::text
 		FROM reminder r
 		JOIN "user" u ON u.id = r.user_id
 		WHERE r.id = $1 AND u.tg_id = $2`,
 		req.ReminderID, req.TgID).
-		Scan(&userID, &sourceKind, &eventID, &taskID, &calendarID, &occurrenceStart, &message)
+		Scan(&userID, &sourceKind, &eventID, &taskID, &calendarID, &occurrenceStart, &message, &mergeRequestID)
 	if err != nil {
 		// Not found and not-yours are deliberately the same answer: telling the
 		// caller which one it was would confirm that a reminder id exists.
@@ -130,6 +141,13 @@ func ActionHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	switch req.Action {
+	case ActionKeepSite, ActionKeepTg, ActionCalMerge, ActionCalBoth:
+		if mergeRequestID == nil {
+			util.RespondError(w, http.StatusBadRequest, "NOT_A_MERGE", "This notification is not a merge request")
+			return
+		}
+		handleMergeAnswer(w, r, *mergeRequestID, userID, req.Action)
+
 	case ActionAck:
 		// The row stays SENT; answered_at above is what stops it coming back.
 		util.RespondJSON(w, http.StatusOK, map[string]any{"ok": true, "action": ActionAck})
@@ -177,6 +195,19 @@ func ActionHandler(w http.ResponseWriter, r *http.Request) {
 		})
 
 	case ActionAccept, ActionDecline:
+		// «❌ Это не я» on a merge request arrives as a decline, because the
+		// notifier's decline code is what that button carries. Closed rather
+		// than left to expire: a pending request blocks the next one through the
+		// partial unique index, so somebody who pressed it by mistake could not
+		// try again for ten minutes.
+		if mergeRequestID != nil {
+			if err := rejectMerge(ctx, *mergeRequestID); err != nil {
+				util.RespondError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to record the answer")
+				return
+			}
+			util.RespondJSON(w, http.StatusOK, map[string]any{"ok": true, "action": req.Action, "rejected": true})
+			return
+		}
 		// Answering an invitation from the chat. The reminder row was already
 		// matched against tg_id above, so the calendar here is one this person
 		// was genuinely invited to — but RespondToInvitation checks
