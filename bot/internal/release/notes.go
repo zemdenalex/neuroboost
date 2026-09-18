@@ -20,12 +20,35 @@ type Note struct {
 	EN       string
 }
 
-// notes is newest first. Three entries is enough: «что нового» answers "since I
-// last looked", not "since the beginning".
+// notes is newest first. A handful of entries is enough: «что нового» answers
+// "since I last looked", not "since the beginning".
+//
+// ⚠ Each entry says WHERE it actually is. A version listed here that has not
+// reached production reads as «you have this» to somebody who does not — which
+// is precisely the confusion of 18.09, when a night of work sat on dev and the
+// report said «выкачено».
 var notes = []Note{
 	{
+		Version:  "v0.4.11.4",
+		Released: "18.09.2026 · на dev, в проде ещё нет",
+		RU: "• 📊 Статистика заработала — раньше там было «скоро»\n" +
+			"• Повторяющиеся задачи: отметил на сегодня — уходит из списка, завтра возвращается\n" +
+			"• Отложить серию на день или неделю, ритм не сдвигается\n" +
+			"• Задачу можно превратить в событие или связать с ним\n" +
+			"• Напоминание может повторяться, пока не ответишь\n" +
+			"• Дайджест и кнопки под уведомлением — на твоём языке\n" +
+			"• 🔴 Починено: «отложить» отвечало ошибкой всем и всегда",
+		EN: "• 📊 Stats actually works — it used to say «coming soon»\n" +
+			"• Repeating tasks: tick today and it leaves the list, returning tomorrow\n" +
+			"• Postpone a series by a day or a week; the rhythm does not shift\n" +
+			"• Turn a task into an event, or link the two\n" +
+			"• A reminder can repeat until you answer it\n" +
+			"• The digest and the notification buttons speak your language\n" +
+			"• 🔴 Fixed: «snooze» failed for everyone, every time",
+	},
+	{
 		Version:  "v0.4.11.3",
-		Released: "18.09.2026 03:00",
+		Released: "18.09.2026 03:00 · на dev",
 		RU: "• Карточка называет все поля — повтор, календарь, теги, цвет — и пишет «нет» там, где пусто\n" +
 			"• Календари прямо в боте: создать, переименовать, цвет, участники, выйти\n" +
 			"• Пригласить можно ссылкой — она работает и для тех, у кого нет email\n" +

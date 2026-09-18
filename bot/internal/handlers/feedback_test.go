@@ -14,6 +14,7 @@ import (
 	"github.com/zemdenalex/neuroboost-bot/internal/config"
 	"github.com/zemdenalex/neuroboost-bot/internal/i18n"
 	"github.com/zemdenalex/neuroboost-bot/internal/keyboards"
+	"github.com/zemdenalex/neuroboost-bot/internal/release"
 	"github.com/zemdenalex/neuroboost-bot/internal/state"
 )
 
@@ -124,7 +125,10 @@ func TestWhatsNewShowsTheCurrentVersion(t *testing.T) {
 	press(h, chat, "whatsnew")
 
 	got := fake.last(t)
-	if !strings.Contains(got.Text, "v0.4.11.3") {
+	// ⚠ Asks the notes what the newest version IS rather than naming one.
+	// Pinned to "v0.4.11.3" this went red the moment 11.4 was added — a test
+	// that has to be edited on every release teaches people to edit tests.
+	if !strings.Contains(got.Text, release.Latest().Version) {
 		t.Errorf("«что нового» не показывает текущую версию: %q", got.Text)
 	}
 	if !strings.Contains(got.Markup, "whatsnew_all") {
