@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 	"time"
+	"unicode/utf8"
 )
 
 // msk() is the Europe/Moscow helper already defined in quiet_test.go.
@@ -208,5 +209,44 @@ func TestDigestLangPrefersTheBotSetting(t *testing.T) {
 		if got := DigestLang([]byte(c.settings), c.locale); got != c.want {
 			t.Errorf("%s: DigestLang(%s, %q) = %q, want %q", c.name, c.settings, c.locale, got, c.want)
 		}
+	}
+}
+
+// 🔴 Telegram's cap is on the MESSAGE, and Russian doubles the bytes without
+// changing the rune count. If the limit were counted in bytes, a Russian digest
+// would be rejected at roughly half the content an English one carries — and a
+// rejected digest is a silent morning with nothing to see.
+func TestRussianDigestStaysWithinTheLimit(t *testing.T) {
+	day := time.Date(2026, time.September, 18, 0, 0, 0, 0, time.UTC)
+	var events []DigestEvent
+	for i := 0; i < 300; i++ {
+		events = append(events, DigestEvent{
+			Title:    "совещание по планированию спринта с участием всей команды",
+			StartsAt: day.Add(time.Duration(i) * time.Minute),
+			EndsAt:   day.Add(time.Duration(i+30) * time.Minute),
+		})
+	}
+
+	msg := DigestText(day, time.UTC, events, nil, "ru")
+	runes := utf8.RuneCountInString(msg)
+	bytes := len(msg)
+	t.Logf("runes=%d bytes=%d", runes, bytes)
+
+	if runes > telegramMessageLimit {
+		t.Errorf("Russian digest is %d runes, over Telegram's %d", runes, telegramMessageLimit)
+	}
+	// 🔴 The control, and it has to be TIGHT.
+	//
+	// With plenty of content the digest should fill most of the budget. A loose
+	// floor cannot tell "correct" from "counted in bytes": counting the Cyrillic
+	// lines as bytes stops at 2389 runes instead of 4068 — a reader loses 40% of
+	// their morning and nothing says so. The first version of this check used
+	// limit/2 and passed on exactly that defect.
+	if runes < telegramMessageLimit*3/4 {
+		t.Errorf("digest is only %d runes of a %d budget; the lines are probably counted in bytes, not runes",
+			runes, telegramMessageLimit)
+	}
+	if bytes <= runes {
+		t.Errorf("bytes=%d runes=%d — the text is not actually Cyrillic, so this test checks nothing", bytes, runes)
 	}
 }

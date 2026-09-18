@@ -81,3 +81,70 @@ func TestEveryTaskReaderKnowsAboutRecurrence(t *testing.T) {
 			found, len(readers))
 	}
 }
+
+// «Today» belongs to whoever is ASKING, not to whoever wrote the task.
+//
+// 🔴 A task lives in a calendar, and a shared calendar holds tasks written by
+// other people. Resolving the day from `t.user_id` asks the AUTHOR what day it
+// is — so a reader in Moscow looking at a series written by someone in Tokyo
+// would be told whether the TOKYO day was done.
+//
+// Nobody is affected today: production has 0 shared calendars. But sharing is a
+// shipped feature being tested right now, so this is a defect waiting for its
+// first user, and it needs a shared calendar plus two timezones to reproduce at
+// runtime — which is exactly the kind of thing no one reproduces by accident.
+// Hence a source scan.
+//
+// ⚠ It is the same shape as the nag bug fixed the same morning: a time that is
+// perfectly valid, just not the reader's.
+func TestTodayIsResolvedInTheViewersZone(t *testing.T) {
+	readers := []string{"handlers.go", "../planning/handlers.go"}
+
+	found := 0
+	for _, rel := range readers {
+		body, err := os.ReadFile(filepath.Clean(rel))
+		if err != nil {
+			t.Fatalf("read %s: %v", rel, err)
+		}
+		src := string(body)
+		for i, line := range strings.Split(src, "\n") {
+			if !strings.Contains(line, "AT TIME ZONE") {
+				continue
+			}
+			found++
+			// The zone must come from a parameter (the viewer), never from the
+			// row's own author column.
+			//
+			// ⚠ The window has to reach the whole statement. The first version
+			// looked 300 bytes ahead and the explanatory comment above the
+			// lookup pushed it out of range — so the sabotage passed and the
+			// guard proved nothing. 1500 covers the longest of these queries.
+			start := indexOfLine(src, i)
+			window := src[start:]
+			if len(window) > 1500 {
+				window = window[:1500]
+			}
+			if strings.Contains(window, "id = t.user_id") {
+				t.Errorf("%s:%d resolves the day from the task's AUTHOR (t.user_id), not the viewer", rel, i+1)
+			}
+		}
+	}
+
+	// The floor: no occurrence joins found means the queries moved and this
+	// guard is looking at nothing.
+	if found == 0 {
+		t.Fatal("no AT TIME ZONE found in any reader; this test proved nothing")
+	}
+}
+
+func indexOfLine(src string, line int) int {
+	idx := 0
+	for i := 0; i < line; i++ {
+		n := strings.IndexByte(src[idx:], '\n')
+		if n < 0 {
+			return idx
+		}
+		idx += n + 1
+	}
+	return idx
+}

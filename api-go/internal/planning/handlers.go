@@ -146,12 +146,19 @@ func listUnscheduledTasks(ctx context.Context, userID string) ([]PlanningTask, e
 		LEFT JOIN task_occurrence o
 		       ON o.task_id = t.id
 		      AND o.occurrence = (NOW() AT TIME ZONE COALESCE(
-		            (SELECT timezone FROM "user" WHERE id = t.user_id), 'Europe/Moscow'))::date
+		      -- 🔴 The VIEWER's zone ($2), not the author's.
+		      --
+		      -- A shared calendar holds tasks written by other people, so
+		      -- t.user_id is whoever created the series — not whoever is asking
+		      -- what day it is. Reading their zone would tell a Moscow reader
+		      -- whether the Tokyo day was done. Same class as the nag bug fixed
+		      -- the same morning: a time that is valid, just not the reader's.
+		            (SELECT timezone FROM "user" WHERE id = $2), 'Europe/Moscow'))::date
 		WHERE t.calendar_id = ANY($1)
 		  AND t.status NOT IN ('DONE', 'SCHEDULED', 'CANCELLED')
 		  AND o.state IS NULL
 		ORDER BY t.priority ASC, t.due_date ASC NULLS LAST, t.created_at DESC
-	`, calIDs)
+	`, calIDs, userID)
 	if err != nil {
 		return nil, err
 	}

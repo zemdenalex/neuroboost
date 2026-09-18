@@ -398,13 +398,20 @@ func listTasks(ctx context.Context, userID, status, category, taskContext string
 		LEFT JOIN task_occurrence o
 		       ON o.task_id = t.id
 		      AND o.occurrence = (NOW() AT TIME ZONE COALESCE(
-		            (SELECT timezone FROM "user" WHERE id = t.user_id), 'Europe/Moscow'))::date
+		      -- 🔴 The VIEWER's zone ($2), not the author's.
+		      --
+		      -- A shared calendar holds tasks written by other people, so
+		      -- t.user_id is whoever created the series — not whoever is asking
+		      -- what day it is. Reading their zone would tell a Moscow reader
+		      -- whether the Tokyo day was done. Same class as the nag bug fixed
+		      -- the same morning: a time that is valid, just not the reader's.
+		            (SELECT timezone FROM "user" WHERE id = $2), 'Europe/Moscow'))::date
 		WHERE t.calendar_id = ANY($1)
 	`
 	// An empty list is a legitimate "nothing visible", not an error:
 	// ANY('{}') returns zero rows.
-	args := []interface{}{calIDs}
-	argNum := 2
+	args := []interface{}{calIDs, userID}
+	argNum := 3
 
 	if status != "" {
 		query += fmt.Sprintf(" AND t.status = $%d", argNum)
@@ -536,9 +543,16 @@ func getTask(ctx context.Context, userID, taskID string) (*Task, error) {
 		LEFT JOIN task_occurrence o
 		       ON o.task_id = t.id
 		      AND o.occurrence = (NOW() AT TIME ZONE COALESCE(
-		            (SELECT timezone FROM "user" WHERE id = t.user_id), 'Europe/Moscow'))::date
+		      -- 🔴 The VIEWER's zone ($3), not the author's.
+		      --
+		      -- A shared calendar holds tasks written by other people, so
+		      -- t.user_id is whoever created the series — not whoever is asking
+		      -- what day it is. Reading their zone would tell a Moscow reader
+		      -- whether the Tokyo day was done. Same class as the nag bug fixed
+		      -- the same morning: a time that is valid, just not the reader's.
+		            (SELECT timezone FROM "user" WHERE id = $3), 'Europe/Moscow'))::date
 		WHERE t.id = $1 AND t.calendar_id = ANY($2)
-	`, taskID, calIDs).Scan(
+	`, taskID, calIDs, userID).Scan(
 		&t.ID, &t.CalendarID, &t.UserID, &t.Title, &t.Description, &t.Status, &t.Category,
 		&t.Priority, &t.EstimatedMinutes, &t.DueDate, &tags, &contexts,
 		&t.Energy, &t.ParentID, &t.CompletedAt, &t.CreatedAt, &t.UpdatedAt, &t.ActualMinutes,
