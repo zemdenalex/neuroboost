@@ -90,7 +90,7 @@ func (h *Handler) applySnooze(chatID int64, reminderID string, minutes int) {
 	if h.cfg.ServiceToken == "" {
 		return
 	}
-	if err := h.api.NotificationAction(h.cfg.ServiceToken, chatID, reminderID, notifier.ActionSnooze, minutes); err != nil {
+	if _, err := h.api.NotificationAction(h.cfg.ServiceToken, chatID, reminderID, notifier.ActionSnooze, minutes); err != nil {
 		h.sendHTMLWithKeyboard(chatID, i18n.T(lang,
 			"⚠️ Не получилось отложить — попробуй ещё раз.",
 			"⚠️ Could not postpone it — try again."), keyboards.None())

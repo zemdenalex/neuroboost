@@ -41,9 +41,10 @@ func (h *Handler) handleNotificationAction(chatID int64, from *tgbotapi.User, ms
 		return
 	}
 
-	if err := h.api.NotificationAction(
+	outcome, err := h.api.NotificationAction(
 		h.cfg.ServiceToken, from.ID, action.ReminderID, action.Action, action.Minutes,
-	); err != nil {
+	)
+	if err != nil {
 		log.Printf("notification action %s for %s failed: %v", action.Action, action.ReminderID, err)
 		h.sendText(chatID, h.t(chatID, "⚠️ Не получилось — попробуй ещё раз.", "⚠️ That didn't work — try again."))
 		return
@@ -57,6 +58,20 @@ func (h *Handler) handleNotificationAction(chatID int64, from *tgbotapi.User, ms
 	// is now held against the set of buttons by TestEveryButtonHasAReply.
 	if reply := notifier.ActionReply(h.lang(chatID), action.Action, action.Minutes); reply != "" {
 		h.sendText(chatID, reply)
+	}
+
+	// 🔴 A press can lead to another question. Answering «какой аккаунт
+	// оставить» when both sides own a personal calendar is only half the
+	// decision, and stripping the buttons here would end the conversation in
+	// the middle of it.
+	if outcome.Ask == "calendar" {
+		h.askAboutPersonalCalendars(chatID, msg, action.ReminderID)
+		return
+	}
+	if outcome.Merged {
+		h.sendText(chatID, h.t(chatID,
+			"🔗 Аккаунты объединены. Теперь вход и через email, и через Telegram.",
+			"🔗 Accounts merged. You can now sign in with either email or Telegram."))
 	}
 
 	// Take the buttons off the message that was just answered. Leaving them
@@ -322,6 +337,9 @@ func (h *Handler) HandleCallback(cb *tgbotapi.CallbackQuery) {
 	}
 
 	// Feedback and release notes own fb/fb_* and whatsnew*.
+	if h.handleLinkingCallback(chatID, cb.Message.MessageID, data) {
+		return
+	}
 	if h.handleFeedbackCallback(chatID, cb.Message.MessageID, data) {
 		return
 	}

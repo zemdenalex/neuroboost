@@ -448,20 +448,74 @@ func (c *Client) AckNotification(serviceToken, id string, delivered bool, sendEr
 // The service token authenticates the bot; tg_id tells the API which person
 // pressed it, and the API checks that the reminder belongs to them. No user JWT
 // is involved — the presser exists to the bot only as a Telegram id.
-func (c *Client) NotificationAction(serviceToken string, tgID int64, reminderID, action string, minutes int) error {
+func (c *Client) NotificationAction(serviceToken string, tgID int64, reminderID, action string, minutes int) (ActionOutcome, error) {
+	var out ActionOutcome
 	payload := map[string]any{"tg_id": tgID, "reminder_id": reminderID, "action": action}
 	if minutes > 0 {
 		payload["minutes"] = minutes
 	}
 	body, err := json.Marshal(payload)
 	if err != nil {
-		return err
+		return out, err
 	}
 	req, err := http.NewRequest("POST", c.base+"/api/svc/notifications/action", bytes.NewReader(body))
 	if err != nil {
-		return err
+		return out, err
 	}
 	req.Header.Set("X-Service-Token", serviceToken)
 	req.Header.Set("Content-Type", "application/json")
-	return c.do(req, nil)
+	var wrapper struct {
+		Data ActionOutcome `json:"data"`
+	}
+	if err := c.do(req, &wrapper); err != nil {
+		return out, err
+	}
+	return wrapper.Data, nil
+}
+
+// ActionOutcome is what the API says happened.
+//
+// ⚠ It used to say nothing — the call returned only an error, and the chat
+// reported success by assumption. That was harmless while every button meant
+// one thing; it stopped being harmless when a press could lead to a SECOND
+// question (the personal calendars) which the bot would then never ask.
+type ActionOutcome struct {
+	// Ask names a follow-up question the bot must put to the person. Empty
+	// means the action is finished.
+	Ask string `json:"ask"`
+	// Merged is true when two accounts have just become one.
+	Merged bool `json:"merged"`
+	// Already is true when the answer arrived after the question was settled.
+	Already bool `json:"already"`
+}
+
+// CreateLoginLink asks for a one-shot link onto the website.
+//
+// 🔴 Runs on the USER's session, not the service token: the link signs somebody
+// in, so the request must come from that somebody.
+func (c *Client) CreateLoginLink(token string) (string, int, error) {
+	var resp struct {
+		Data struct {
+			Token     string `json:"token"`
+			ExpiresIn int    `json:"expires_in"`
+		} `json:"data"`
+	}
+	if err := c.post("/api/auth/login-link", token, map[string]any{}, &resp); err != nil {
+		return "", 0, err
+	}
+	return resp.Data.Token, resp.Data.ExpiresIn, nil
+}
+
+// CreateLinkCode asks for the six digits to type on the website.
+func (c *Client) CreateLinkCode(token string) (string, int, error) {
+	var resp struct {
+		Data struct {
+			Code      string `json:"code"`
+			ExpiresIn int    `json:"expires_in"`
+		} `json:"data"`
+	}
+	if err := c.post("/api/auth/link-code", token, map[string]any{}, &resp); err != nil {
+		return "", 0, err
+	}
+	return resp.Data.Code, resp.Data.ExpiresIn, nil
 }

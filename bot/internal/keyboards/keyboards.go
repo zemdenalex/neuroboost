@@ -172,6 +172,9 @@ func SettingsMenu(lang i18n.Lang) tgbotapi.InlineKeyboardMarkup {
 		),
 		tgbotapi.NewInlineKeyboardRow(
 			// Denis, 17.09: the same two the web has had since v0.4.9.
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🔗 Аккаунт на сайте", "🔗 Website account"), "lnk"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "💬 Обратная связь", "💬 Feedback"), "fb"),
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🆕 Что нового", "🆕 What's new"), "whatsnew"),
 		),
@@ -293,6 +296,26 @@ func DayActions(lang i18n.Lang, date, prev, next string, year, month int) tgbota
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "« К месяцу", "« To month"),
 				"cal_back_"+strconv.Itoa(year)+"_"+strconv.Itoa(month)),
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🏠 Меню", "🏠 Menu"), "main_menu"),
+		),
+	)
+}
+
+// Linking offers both directions between this chat and the website.
+//
+// Two buttons rather than one, because they answer two different questions:
+// «у меня нет аккаунта на сайте» and «у меня уже есть, свяжите их». A single
+// button would have to guess which, and guessing wrong sends somebody down a
+// path that ends in «этот email занят».
+func Linking(lang i18n.Lang) tgbotapi.InlineKeyboardMarkup {
+	return tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🌐 Войти на сайт", "🌐 Sign in to the website"), "lnk_web"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🔢 Привязать сайт", "🔢 Link the website"), "lnk_code"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "« Настройки", "« Settings"), "settings"),
 		),
 	)
 }

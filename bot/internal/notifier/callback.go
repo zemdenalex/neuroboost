@@ -40,6 +40,14 @@ const (
 	// the rest: 64 bytes total and 36 of them are a UUID.
 	codeAccept  = "y"
 	codeDecline = "n"
+
+	// Answering «объединить аккаунты?» (v0.4.11.5). Four one-byte codes, for
+	// the same reason as every other code here: callback_data is capped at 64
+	// bytes and a UUID already spends 36 of them.
+	codeKeepSite = "1"
+	codeKeepTg   = "2"
+	codeCalMerge = "m"
+	codeCalBoth  = "b"
 )
 
 // Action names as the API expects them. Kept separate from the wire codes so
@@ -53,6 +61,13 @@ const (
 	ActionDone      = "done"
 	ActionAccept    = "accept"
 	ActionDecline   = "decline"
+	// The merge answers must match internal/reminders/action.go exactly: the
+	// string travels over HTTP and a typo here is a 400 the person reads as
+	// "the button is broken".
+	ActionKeepSite = "keep_site"
+	ActionKeepTg   = "keep_tg"
+	ActionCalMerge = "cal_merge"
+	ActionCalBoth  = "cal_both"
 )
 
 // SnoozeMinutes is what the short "later" button asks for, and SnoozeHour the
@@ -103,6 +118,14 @@ func ParseCallback(data string) (Callback, bool) {
 		return Callback{Action: ActionAccept, ReminderID: id}, true
 	case codeDecline:
 		return Callback{Action: ActionDecline, ReminderID: id}, true
+	case codeKeepSite:
+		return Callback{Action: ActionKeepSite, ReminderID: id}, true
+	case codeKeepTg:
+		return Callback{Action: ActionKeepTg, ReminderID: id}, true
+	case codeCalMerge:
+		return Callback{Action: ActionCalMerge, ReminderID: id}, true
+	case codeCalBoth:
+		return Callback{Action: ActionCalBoth, ReminderID: id}, true
 	}
 	return Callback{}, false
 }
@@ -149,6 +172,26 @@ func Keyboard(sourceKind, reminderID, lang string) *tgbotapi.InlineKeyboardMarku
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(l, "✅ Принять", "✅ Accept"), EncodeCallback(codeAccept, reminderID)),
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(l, "✖ Отклонить", "✖ Decline"), EncodeCallback(codeDecline, reminderID)),
 		}
+
+	case "LINK":
+		// 🔴 Three answers and no snooze, for the same reason as INVITE — and
+		// one more: the request expires in ten minutes, so «позже» would be a
+		// button that quietly does nothing.
+		//
+		// Two rows, because «❌ Это не я» must not sit beside the two answers
+		// that both say yes. Denis's rule from the four passes on 17.09 is that
+		// every correction goes toward fewer steps, but a destructive answer
+		// next to an affirmative one is not fewer steps, it is a misclick.
+		kb := tgbotapi.NewInlineKeyboardMarkup(
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData(i18n.T(l, "Оставить аккаунт сайта", "Keep the site account"), EncodeCallback(codeKeepSite, reminderID)),
+				tgbotapi.NewInlineKeyboardButtonData(i18n.T(l, "Оставить Telegram", "Keep Telegram"), EncodeCallback(codeKeepTg, reminderID)),
+			),
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData(i18n.T(l, "❌ Это не я", "❌ This is not me"), EncodeCallback(codeDecline, reminderID)),
+			),
+		)
+		return &kb
 
 	case "DIGEST":
 		return nil
@@ -247,6 +290,16 @@ func ActionReply(lang i18n.Lang, action string, minutes int) string {
 		return i18n.T(lang, "✅ Календарь добавлен — он появится в списке.", "✅ Calendar added — it will show up in the list.")
 	case ActionDecline:
 		return i18n.T(lang, "Приглашение отклонено.", "Invitation declined.")
+	case ActionKeepSite, ActionKeepTg:
+		// 🔴 Neutral on purpose, and not empty. What happens next depends on the
+		// API's answer — a second question about calendars, or a finished merge
+		// — so naming either here would be a claim made before the fact. But
+		// TestEveryButtonHasAReply is right that silence reads as failure, so
+		// this says the one thing that is true in both branches, and the handler
+		// says the outcome once it knows it.
+		return i18n.T(lang, "Принял.", "Got it.")
+	case ActionCalMerge, ActionCalBoth:
+		return ""
 	}
 	return ""
 }
@@ -254,7 +307,7 @@ func ActionReply(lang i18n.Lang, action string, minutes int) string {
 // KnownSourceKinds is every source_kind the API can send. Kept here so the test
 // that checks "every button has a reply" iterates the real set rather than a
 // list written beside it, which would agree with itself by construction.
-var KnownSourceKinds = []string{"EVENT", "TASK", "DIGEST", "INVITE"}
+var KnownSourceKinds = []string{"EVENT", "TASK", "DIGEST", "INVITE", "LINK"}
 
 // humanMinutes says an interval the way a person would.
 //
