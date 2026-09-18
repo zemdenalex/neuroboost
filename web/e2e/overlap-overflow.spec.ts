@@ -96,13 +96,30 @@ test.describe('overlapping events stay inside their day column', () => {
           JSON.stringify(spillingWide.map((b) => `${b.clientWidth}<${b.scrollWidth}`)),
       ).toHaveLength(0)
 
-      // 🔴 The one Denis actually saw: eight narrow columns wrap a title to one
-      // character per line, and the tower runs down over the hours below.
-      const spillingTall = g.blocks.filter((b) => b.scrollHeight > b.clientHeight + 1)
+      // 🔴 The one Denis actually saw: eight narrow columns wrapped a title to
+      // one character per line and the tower ran down over the hours below.
+      //
+      // ⚠ NOT asserted with scrollHeight. `overflow: hidden` clips what is
+      // PAINTED and leaves scrollHeight reporting the full content height, so a
+      // scrollHeight assertion stays red after the bug is fixed and red after it
+      // regresses — it cannot tell the two apart. What the user sees is what is
+      // painted, so the test asks what is painted: sample a point just below
+      // each block and check the block is not what answers there.
+      const painted = await authedPage.evaluate(() => {
+        const blocks = Array.from(
+          document.querySelectorAll<HTMLElement>('[data-testid="event-block"]'),
+        ).filter((b) => (b.textContent ?? '').includes('перекрытие'))
+        return blocks.map((b) => {
+          const r = b.getBoundingClientRect()
+          const below = document.elementFromPoint(r.left + r.width / 2, r.bottom + 12)
+          return { title: (b.textContent ?? '').slice(0, 14), leaks: b.contains(below) }
+        })
+      })
+      const leaking = painted.filter((p) => p.leaks)
       expect(
-        spillingTall,
-        `${spillingTall.length} of ${g.count} blocks have content taller than themselves: ` +
-          JSON.stringify(spillingTall.map((b) => `${b.clientHeight}<${b.scrollHeight}`)),
+        leaking,
+        `${leaking.length} of ${painted.length} blocks still paint 12px below themselves: ` +
+          JSON.stringify(leaking.map((p) => p.title)),
       ).toHaveLength(0)
     } finally {
       for (const id of created) {

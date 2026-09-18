@@ -138,7 +138,16 @@ export const EventBlock = memo(function EventBlock({
           {isMultiDaySegment && !isFirstSegment && (
             <span className="text-purple-300 flex-shrink-0">←</span>
           )}
-          <span className="min-w-0 break-words">{event.title || '(untitled)'}</span>
+          {/* 🔴 One line, cut with an ellipsis — not wrapped.
+              `break-words` was fine at full width and absurd at a lane width:
+              eight overlapping events give each ~24px, and a wrapped title
+              becomes one character per line — a twelve-line tower inside a
+              two-hour block. Measured on staging 18.09: content 245px tall in
+              blocks 60–86px tall.
+              Clipping alone (above) stops it escaping; truncating is what makes
+              the remaining sliver readable, and it is what every calendar does
+              for the same reason. */}
+          <span className="min-w-0 truncate">{event.title || '(untitled)'}</span>
           {event.isShared && (
             <Users
               size={12}
