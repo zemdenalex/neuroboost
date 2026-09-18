@@ -26,6 +26,9 @@ type scanUser struct {
 	id       string
 	timezone string
 	settings []byte
+	// locale is the account language, used as a fallback when the bot has no
+	// language of its own. See DigestLang for why the bot's wins.
+	locale string
 }
 
 // Scan finds everything due in [from, to) and writes PENDING journal rows.
@@ -35,7 +38,8 @@ func Scan(ctx context.Context, from, to time.Time, log *slog.Logger) (int, error
 	// Users without tg_id are skipped here rather than downstream, so we never
 	// accumulate rows nobody can deliver.
 	rows, err := db.Pool.Query(ctx, `
-		SELECT id, COALESCE(timezone, 'Europe/Moscow'), COALESCE(settings, '{}')
+		SELECT id, COALESCE(timezone, 'Europe/Moscow'), COALESCE(settings, '{}'),
+		       COALESCE(locale, 'ru')
 		FROM "user"
 		WHERE tg_id IS NOT NULL`)
 	if err != nil {
@@ -44,7 +48,7 @@ func Scan(ctx context.Context, from, to time.Time, log *slog.Logger) (int, error
 	var users []scanUser
 	for rows.Next() {
 		var u scanUser
-		if err := rows.Scan(&u.id, &u.timezone, &u.settings); err != nil {
+		if err := rows.Scan(&u.id, &u.timezone, &u.settings, &u.locale); err != nil {
 			rows.Close()
 			return 0, err
 		}
@@ -95,7 +99,7 @@ func Scan(ctx context.Context, from, to time.Time, log *slog.Logger) (int, error
 
 		if st.DigestEnabled {
 			if day, fireAt, ok := DigestDue(from, to, st.DigestAt, loc); ok {
-				n, err := insertDigest(ctx, u.id, calIDs, day, fireAt, loc)
+				n, err := insertDigest(ctx, u.id, calIDs, day, fireAt, loc, DigestLang(u.settings, u.locale))
 				if err != nil {
 					log.Error("digest insert failed",
 						slog.String("user_id", u.id), slog.String("error", err.Error()))
@@ -321,8 +325,8 @@ const digestMinutesBefore = -2
 // digest went out up to a minute early.
 // userID stays the delivery target of the reminder row; calIDs only scopes what
 // the digest is allowed to read.
-func insertDigest(ctx context.Context, userID string, calIDs []string, localDay, fireAt time.Time, loc *time.Location) (int, error) {
-	message := DigestText(localDay, loc, digestEvents(ctx, calIDs, localDay), digestTasks(ctx, calIDs, localDay))
+func insertDigest(ctx context.Context, userID string, calIDs []string, localDay, fireAt time.Time, loc *time.Location, lang string) (int, error) {
+	message := DigestText(localDay, loc, digestEvents(ctx, calIDs, localDay), digestTasks(ctx, calIDs, localDay), lang)
 
 	tag, err := db.Pool.Exec(ctx, `
 		INSERT INTO reminder (user_id, source_kind, occurrence_start, minutes_before,
