@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 )
 
 // 🔴 A nag must MOVE a reminder, never insert one.
@@ -111,4 +112,57 @@ func min(a, b int) int {
 		return a
 	}
 	return b
+}
+
+// 🔴 The end of the day belongs to the OWNER, not to UTC.
+//
+// This is the defect the first version shipped with: occurrence_start comes back
+// from postgres in UTC, so building 23:59:59 from it produced the end of the UTC
+// day. For a Moscow reader that is 02:59 the next morning — exactly the wake-up
+// the guard exists to prevent — and for anyone west of UTC it cuts their evening
+// short instead.
+func TestNagStopsAtTheEndOfTheOWNERSDay(t *testing.T) {
+	// An event at 20:00 Moscow == 17:00 UTC.
+	occurrence := time.Date(2026, time.September, 18, 17, 0, 0, 0, time.UTC)
+
+	// 22:30 Moscow — still the same evening, so nagging is fine.
+	sameEvening := time.Date(2026, time.September, 18, 19, 30, 0, 0, time.UTC)
+	if !WithinSameLocalDay(&occurrence, sameEvening, "Europe/Moscow") {
+		t.Error("22:30 Moscow was refused, but it is the same evening")
+	}
+
+	// 01:30 Moscow the next day == 22:30 UTC the SAME day. Under the UTC bug
+	// this passed, because it is still before 23:59:59 UTC.
+	nextMorning := time.Date(2026, time.September, 18, 22, 30, 0, 0, time.UTC)
+	if WithinSameLocalDay(&occurrence, nextMorning, "Europe/Moscow") {
+		t.Error("01:30 the following morning in Moscow was allowed — that is the 2am wake-up")
+	}
+
+	// The mirror case, west of UTC: 21:00 New York on the 18th is 01:00 UTC on
+	// the 19th. Under the UTC bug this was refused and the evening was cut off.
+	nyOccurrence := time.Date(2026, time.September, 18, 23, 0, 0, 0, time.UTC) // 19:00 NY
+	nyEvening := time.Date(2026, time.September, 19, 1, 0, 0, 0, time.UTC)     // 21:00 NY
+	if !WithinSameLocalDay(&nyOccurrence, nyEvening, "America/New_York") {
+		t.Error("21:00 New York was refused, but it is the same evening there")
+	}
+}
+
+// A row about no particular day has no day to overrun. The nag count still
+// bounds it.
+func TestNagAllowsRowsWithNoOccurrence(t *testing.T) {
+	far := time.Date(2030, time.January, 1, 0, 0, 0, 0, time.UTC)
+	if !WithinSameLocalDay(nil, far, "Europe/Moscow") {
+		t.Error("a row with no occurrence was refused")
+	}
+}
+
+// An unknown zone falls back to UTC rather than to the server's local time.
+func TestNagFallsBackToUTCForAnUnknownZone(t *testing.T) {
+	occurrence := time.Date(2026, time.September, 18, 12, 0, 0, 0, time.UTC)
+	if !WithinSameLocalDay(&occurrence, occurrence.Add(time.Hour), "Mars/Olympus") {
+		t.Error("an unknown zone refused a same-day nag")
+	}
+	if WithinSameLocalDay(&occurrence, occurrence.Add(24*time.Hour), "Mars/Olympus") {
+		t.Error("an unknown zone allowed a nag a day later")
+	}
 }

@@ -142,23 +142,16 @@ func Convert(ctx context.Context, userID, taskID string, req ConvertRequest) (*C
 
 	// Reminders follow the thing they are about.
 	//
-	// 🔴 The dedupe index keys on COALESCE(event_id, task_id) (000015:34), so
-	// moving a reminder changes its key. If the event already has a reminder at
-	// the same offset the UPDATE collides — and the right answer is to drop the
-	// duplicate, not to fail the whole conversion over a reminder the user would
-	// have received anyway.
-	if _, err := tx.Exec(ctx, `
-		DELETE FROM reminder r
-		WHERE r.task_id = $1
-		  AND EXISTS (
-		        SELECT 1 FROM reminder e
-		        WHERE e.event_id = $2
-		          AND e.user_id = r.user_id
-		          AND e.minutes_before IS NOT DISTINCT FROM r.minutes_before
-		          AND e.occurrence_start IS NOT DISTINCT FROM r.occurrence_start)`,
-		taskID, ev.ID); err != nil {
-		return nil, err
-	}
+	// ⚠ There was a DELETE above this on 18.09, guarding against a collision
+	// with reminders the event already had. It was DEAD CODE and it is gone:
+	// the event is INSERTed three statements earlier, inside this very
+	// transaction, so nothing can reference it yet. The guard could not fire,
+	// and it carried a confident comment explaining why it was necessary —
+	// which is the shape that makes dead code survive review.
+	//
+	// The collision it feared cannot happen either way. The dedupe index
+	// (000015:34) already guarantees the task's own reminders are unique per
+	// (offset, occurrence); rewriting them all to one event id preserves that.
 	if _, err := tx.Exec(ctx, `
 		UPDATE reminder
 		   SET event_id = $2, task_id = NULL, source_kind = 'EVENT'
