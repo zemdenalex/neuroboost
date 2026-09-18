@@ -85,6 +85,24 @@ type Task struct {
 	DueDate          string   `json:"due_date"`
 	CompletedAt      string   `json:"completed_at"`
 	Tags             []string `json:"tags"`
+
+	// Rrule is set when the task repeats.
+	//
+	// 🔴 For a repeating task `Status` describes the SERIES — TODO means "still
+	// running" — and what happened TODAY is OccurrenceState. Reading Status
+	// alone shows «выпить таблетки» as outstanding all day after it was ticked.
+	Rrule string `json:"rrule,omitempty"`
+	// OccurrenceState is today's answer: "", "done" or "skipped".
+	OccurrenceState string `json:"occurrence_state,omitempty"`
+}
+
+// Repeats reports whether this task is a series.
+func (t Task) Repeats() bool { return t.Rrule != "" }
+
+// AnsweredToday reports whether today's occurrence has been dealt with — done
+// or deliberately skipped. Both mean "not outstanding right now".
+func (t Task) AnsweredToday() bool {
+	return t.Repeats() && t.OccurrenceState != ""
 }
 
 // CreateTaskReq mirrors api-go's CreateTaskRequest for the fields the bot uses.

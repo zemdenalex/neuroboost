@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/zemdenalex/neuroboost-bot/internal/api"
 	"github.com/zemdenalex/neuroboost-bot/internal/i18n"
 )
 
@@ -189,5 +190,31 @@ func TestTheCardUsesTheMatchingClock(t *testing.T) {
 	card := renderDraft(i18n.RU, draftFrom("стоматолог завтра 15:00"), tuesday15())
 	if !strings.Contains(card, "🕒 15:00") {
 		t.Errorf("карточка не использует часы, соответствующие времени:\n%s", card)
+	}
+}
+
+// 🔴 Denis, 18.09: «if completed for the day it should stop being in the task
+// list, but appear somewhere gray, and on the next day it pops up again».
+//
+// A repeating task answered today is not outstanding. Leaving it in the list
+// would make the list lie; deleting it outright would hide that it exists.
+func TestAnsweredTodayIsNotOutstanding(t *testing.T) {
+	for _, c := range []struct {
+		name string
+		task api.Task
+		want bool
+	}{
+		{"repeating and done today", api.Task{Rrule: "FREQ=DAILY", OccurrenceState: "done"}, true},
+		{"repeating and skipped today", api.Task{Rrule: "FREQ=DAILY", OccurrenceState: "skipped"}, true},
+		{"repeating and untouched", api.Task{Rrule: "FREQ=DAILY"}, false},
+		// 🔴 The control that matters: a ONE-OFF task is never "answered
+		// today", whatever stray state arrives. Its status is the truth, and
+		// treating it as a series would make ordinary tasks vanish.
+		{"one-off with a stray state", api.Task{OccurrenceState: "done"}, false},
+		{"plain one-off", api.Task{}, false},
+	} {
+		if got := c.task.AnsweredToday(); got != c.want {
+			t.Errorf("%s: AnsweredToday() = %v, want %v", c.name, got, c.want)
+		}
 	}
 }

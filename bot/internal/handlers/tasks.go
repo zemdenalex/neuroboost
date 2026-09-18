@@ -9,6 +9,7 @@ import (
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 
+	"github.com/zemdenalex/neuroboost-bot/internal/api"
 	"github.com/zemdenalex/neuroboost-bot/internal/format"
 	"github.com/zemdenalex/neuroboost-bot/internal/keyboards"
 )
@@ -28,6 +29,31 @@ func (h *Handler) handleTasks(chatID int64, messageID int) {
 	}
 
 	sort.Slice(tasks, func(i, j int) bool { return tasks[i].Priority < tasks[j].Priority })
+
+	// 🔴 Denis, 18.09: «if completed for the day it should stop being in the
+	// task list, but appear somewhere gray, and on the next day it pops up
+	// again». A repeating task answered today is not outstanding — but deleting
+	// it from the screen would hide the fact that it exists at all, and the
+	// count is the point: «✅ сегодня: 3» is the reward for the morning.
+	open := make([]api.Task, 0, len(tasks))
+	answered := 0
+	for _, t := range tasks {
+		if t.AnsweredToday() {
+			answered++
+			continue
+		}
+		open = append(open, t)
+	}
+	tasks = open
+
+	if len(tasks) == 0 && answered > 0 {
+		h.editOrSend(chatID, messageID,
+			fmt.Sprintf(h.t(chatID,
+				"📋 <b>На сегодня всё</b>\n\n✅ сегодня: %d",
+				"📋 <b>Nothing left today</b>\n\n✅ done today: %d"), answered),
+			keyboards.TaskListEmpty(h.lang(chatID)))
+		return
+	}
 
 	text := fmt.Sprintf(h.t(chatID, "📋 <b>Задачи (%d)</b>\n\n", "📋 <b>Tasks (%d)</b>\n\n"), len(tasks))
 
