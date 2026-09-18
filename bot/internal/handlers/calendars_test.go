@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+
 	"github.com/zemdenalex/neuroboost-bot/internal/api"
 	"github.com/zemdenalex/neuroboost-bot/internal/config"
 	"github.com/zemdenalex/neuroboost-bot/internal/state"
@@ -195,4 +197,57 @@ func TestCalendarScreenDoesNotSwallowTheMonthGrid(t *testing.T) {
 			t.Errorf("the calendars screen did not claim its own callback %q", data)
 		}
 	}
+}
+
+// 🔴 A new person following an invite link must be asked about the invitation
+// FIRST. Dropping them into onboarding loses it entirely — and the invitation
+// is the whole reason they opened the bot. Onboarding runs after the answer.
+func TestInviteLinkAsksBeforeOnboarding(t *testing.T) {
+	h, fake, chat := calendarHandler(t)
+	us := h.store.GetOrCreate(chat)
+	us.Lang, us.LangKnown = "", false // brand new person
+
+	command(h, chat, "/start inv_Zm9vYmFyYmF6")
+
+	got := fake.last(t)
+	if !strings.Contains(got.Markup, "cl_acc_") {
+		t.Errorf("новому человеку не предложили принять приглашение: %q / %s", got.Text, got.Markup)
+	}
+	if strings.Contains(got.Text, "язык") || strings.Contains(got.Markup, "ob_lang") {
+		t.Errorf("онбординг проглотил приглашение: %q / %s", got.Text, got.Markup)
+	}
+}
+
+// The invite message the owner forwards must name THIS bot, so a dev link can
+// never open the production bot — where the calendar does not exist.
+func TestInviteLinkIsOneForwardableMessage(t *testing.T) {
+	h, fake, chat := calendarHandler(t)
+	press(h, chat, "cl_link_cal-work")
+
+	got := fake.last(t)
+	if !strings.Contains(got.Text, "t.me/") || !strings.Contains(got.Text, "start=inv_") {
+		t.Fatalf("сообщение не содержит ссылки на бота: %q", got.Text)
+	}
+	if !strings.Contains(got.Text, "Работа") {
+		t.Errorf("пересылаемое сообщение не называет календарь: %q", got.Text)
+	}
+}
+
+// command sends a real Telegram command.
+//
+// 🔴 Not say(): tgbotapi.Message.IsCommand() reads the message ENTITIES, not
+// the text, so a "/start …" typed into say() arrives as ordinary text and is
+// routed to quick add. A test that used say() would exercise a path Telegram
+// never produces — and pass while the real button did nothing.
+func command(h *Handler, chat int64, text string) {
+	h.HandleMessage(&tgbotapi.Message{
+		Text: text,
+		Chat: &tgbotapi.Chat{ID: chat},
+		From: &tgbotapi.User{ID: chat, FirstName: "Nastya"},
+		Entities: []tgbotapi.MessageEntity{{
+			Type:   "bot_command",
+			Offset: 0,
+			Length: len("/start"),
+		}},
+	})
 }

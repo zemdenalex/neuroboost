@@ -14,10 +14,13 @@ type Config struct {
 	// BotUsername is this bot's @name, used to build invite links
 	// (https://t.me/<username>?start=inv_<token>).
 	//
-	// 🔴 Read from the environment, never hardcoded: dev and prod are two
-	// different bots on the same host (@NeuroBoost_dev_bot and
-	// @NeuroBoost_assistant_bot), and a baked-in name would send every dev
-	// invitation to the production bot — where the calendar does not exist.
+	// 🔴 Normally EMPTY and unused: the bot learns its own name from getMe at
+	// startup (bot.Self.UserName), which cannot disagree with the token it is
+	// running on. This field is only an override for a test or an odd proxy
+	// setup. Hardcoding a name would be the real hazard — dev and prod are two
+	// different bots (@NeuroBoost_dev_bot, @NeuroBoost_assistant_bot), and a
+	// baked-in one would send every dev invitation to the production bot, where
+	// the calendar does not exist.
 	BotUsername string
 }
 
@@ -29,6 +32,7 @@ func Load() Config {
 		Timezone:      os.Getenv("TIMEZONE"),
 		ProxyURL:      os.Getenv("TELEGRAM_PROXY"),
 		ServiceToken:  os.Getenv("SERVICE_TOKEN"),
+		BotUsername:   os.Getenv("BOT_USERNAME"),
 	}
 	if c.APIBase == "" {
 		c.APIBase = "http://localhost:8080"

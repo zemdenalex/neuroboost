@@ -170,6 +170,14 @@ func (h *Handler) HandleMessage(msg *tgbotapi.Message) {
 	if msg.IsCommand() {
 		switch msg.Command() {
 		case "start", "help":
+			// 🔴 An invite link before onboarding, always. The invitation is
+			// why this person opened the bot at all; a language question in
+			// front of it loses the token — /start carries it exactly once —
+			// and reads as the bot ignoring the link they were sent.
+			if payload := strings.TrimSpace(msg.CommandArguments()); strings.HasPrefix(payload, "inv_") {
+				h.askInviteLink(chatID, strings.TrimPrefix(payload, "inv_"))
+				return
+			}
 			if h.needsOnboarding(chatID) {
 				h.startOnboarding(chatID, 0, msg.From.LanguageCode)
 				return

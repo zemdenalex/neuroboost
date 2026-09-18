@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+
 	"github.com/zemdenalex/neuroboost-bot/internal/api"
 	"github.com/zemdenalex/neuroboost-bot/internal/format"
 	"github.com/zemdenalex/neuroboost-bot/internal/i18n"
@@ -41,6 +43,11 @@ func (h *Handler) handleCalendarsCallback(chatID int64, messageID int, data stri
 		id := strings.TrimPrefix(data, "cl_col_")
 		h.editOrSend(chatID, messageID, h.t(chatID, "Какой цвет?", "Which colour?"),
 			keyboards.CalendarColours(h.lang(chatID), id))
+	case strings.HasPrefix(data, "cl_acc_"):
+		h.acceptInviteLink(chatID, messageID, strings.TrimPrefix(data, "cl_acc_"))
+	case data == "cl_dec":
+		h.editOrSend(chatID, messageID, h.t(chatID,
+			"Хорошо, не добавляю.", "All right, not adding you."), keyboards.None())
 	case strings.HasPrefix(data, "cl_setcol_"):
 		h.setCalendarColour(chatID, messageID, strings.TrimPrefix(data, "cl_setcol_"))
 	case strings.HasPrefix(data, "cl_mem_"):
@@ -185,7 +192,7 @@ func (h *Handler) sendInviteLink(chatID int64, id string) {
 	h.sendHTMLWithKeyboard(chatID, fmt.Sprintf(i18n.T(lang,
 		"Перешли это сообщение тому, кого зовёшь:\n\nЗову тебя в календарь «%s» в NeuroBoost.\nОткрой: https://t.me/%s?start=inv_%s",
 		"Forward this message to whoever you are inviting:\n\nJoin my calendar «%s» in NeuroBoost.\nOpen: https://t.me/%s?start=inv_%s"),
-		format.Escape(c.Name), h.cfg.BotUsername, token),
+		format.Escape(c.Name), h.botUsername(), token),
 		keyboards.CalendarCard(lang, id, c.Role, c.IsPersonal()))
 }
 
@@ -356,4 +363,56 @@ func (h *Handler) myUserID(chatID int64) string {
 	}
 	us.FlowData["user_id"] = id
 	return id
+}
+
+// botUsername is the @name this bot answers to.
+//
+// 🔴 Asked of Telegram, not of the configuration. getMe runs at startup and
+// reports the name belonging to the token actually in use, so a dev bot cannot
+// hand out a link that opens the production bot — which is the failure a
+// hardcoded or mistyped name would produce, silently, in the one message whose
+// whole job is to be forwarded to someone else.
+func (h *Handler) botUsername() string {
+	if h.bot != nil && h.bot.Self.UserName != "" {
+		return h.bot.Self.UserName
+	}
+	return h.cfg.BotUsername
+}
+
+// askInviteLink asks before joining, and asks before onboarding.
+//
+// The token travels in callback_data rather than in the chat state: /start
+// delivers it once, and a state that a later message could clear would lose it
+// between the question and the answer. A 256-bit token is 43 base64url
+// characters, so «cl_acc_» plus the token is 50 bytes — inside Telegram's
+// 64-byte cap with room to spare.
+func (h *Handler) askInviteLink(chatID int64, token string) {
+	lang := h.lang(chatID)
+	h.sendHTMLWithKeyboard(chatID, i18n.T(lang,
+		"Тебя зовут в общий календарь в NeuroBoost. Принять?",
+		"You are invited to a shared calendar in NeuroBoost. Accept?"),
+		tgbotapi.NewInlineKeyboardMarkup(tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "✅ Принять", "✅ Accept"), "cl_acc_"+token),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "✖ Нет", "✖ No"), "cl_dec"))))
+}
+
+// acceptInviteLink redeems the token, then hands a brand-new person to
+// onboarding — in that order, so nothing is lost either way.
+func (h *Handler) acceptInviteLink(chatID int64, messageID int, token string) {
+	lang := h.lang(chatID)
+	c, err := h.api.AcceptInviteLink(h.store.GetOrCreate(chatID).AuthToken, token)
+	if err != nil {
+		h.editOrSend(chatID, messageID, i18n.T(lang,
+			"Ссылка не сработала — возможно, её уже использовали. Попроси новую.",
+			"That link did not work — it may already have been used. Ask for a new one."),
+			keyboards.None())
+		return
+	}
+	h.editOrSend(chatID, messageID, fmt.Sprintf(i18n.T(lang,
+		"Готово — ты в календаре «%s».", "Done — you are in «%s»."),
+		format.Escape(c.Name)), keyboards.None())
+
+	if h.needsOnboarding(chatID) {
+		h.startOnboarding(chatID, 0, "")
+	}
 }
