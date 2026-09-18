@@ -47,6 +47,25 @@ type Task struct {
 	CompletedAt     *time.Time `json:"completed_at,omitempty"`
 	CreatedAt       time.Time  `json:"created_at"`
 	UpdatedAt       time.Time  `json:"updated_at"`
+
+	// Rrule is the repeat rule, empty for a one-off task.
+	//
+	// 🔴 When it is set, Status describes the SERIES — TODO means "still
+	// running", DONE means "switched off" — and what happened TODAY is
+	// OccurrenceState. A client that reads Status alone will show a repeating
+	// task as outstanding all day after it was ticked.
+	Rrule *string `json:"rrule,omitempty"`
+	// RepeatAnchor is the first day of the series.
+	RepeatAnchor *time.Time `json:"repeat_anchor,omitempty"`
+	// NagMinutes repeats an unanswered reminder every N minutes; nil = once.
+	NagMinutes *int `json:"nag_minutes,omitempty"`
+	// EventID is the event this task was turned into or linked with.
+	EventID *string `json:"event_id,omitempty"`
+
+	// OccurrenceState is what happened to the day being asked about: "", "done"
+	// or "skipped". Only meaningful when Rrule is set, and only filled by
+	// readers that asked about a specific day.
+	OccurrenceState string `json:"occurrence_state,omitempty"`
 }
 
 // CreateTaskRequest represents the request to create a task

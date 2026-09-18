@@ -380,13 +380,25 @@ func listTasks(ctx context.Context, userID, status, category, taskContext string
 		return nil, err
 	}
 
+	// 🔴 The occurrence of TODAY, in the caller's own zone, joined here rather
+	// than fetched per task afterwards — that would be one query per row.
+	//
+	// `status` on a repeating task describes the SERIES; whether today is done
+	// lives in task_occurrence. A list that read status alone would show
+	// «выпить таблетки» as outstanding all day after it was ticked.
 	query := `
-		SELECT id, calendar_id::text, user_id, title, description, status, category, priority,
-		       estimated_minutes, due_date, COALESCE(tags, '{}'), COALESCE(contexts, '{}'),
-		       energy, parent_id, completed_at, created_at, updated_at, actual_minutes,
-		          COALESCE(reminder_offsets, '{}')
-		FROM task
-		WHERE calendar_id = ANY($1)
+		SELECT t.id, t.calendar_id::text, t.user_id, t.title, t.description, t.status, t.category,
+		       t.priority, t.estimated_minutes, t.due_date, COALESCE(t.tags, '{}'),
+		       COALESCE(t.contexts, '{}'), t.energy, t.parent_id, t.completed_at, t.created_at,
+		       t.updated_at, t.actual_minutes, COALESCE(t.reminder_offsets, '{}'),
+		       t.rrule, t.repeat_anchor, t.nag_minutes, t.event_id::text,
+		       COALESCE(o.state, '')
+		FROM task t
+		LEFT JOIN task_occurrence o
+		       ON o.task_id = t.id
+		      AND o.occurrence = (NOW() AT TIME ZONE COALESCE(
+		            (SELECT timezone FROM "user" WHERE id = t.user_id), 'Europe/Moscow'))::date
+		WHERE t.calendar_id = ANY($1)
 	`
 	// An empty list is a legitimate "nothing visible", not an error:
 	// ANY('{}') returns zero rows.
@@ -394,24 +406,24 @@ func listTasks(ctx context.Context, userID, status, category, taskContext string
 	argNum := 2
 
 	if status != "" {
-		query += fmt.Sprintf(" AND status = $%d", argNum)
+		query += fmt.Sprintf(" AND t.status = $%d", argNum)
 		args = append(args, status)
 		argNum++
 	}
 
 	if category != "" {
-		query += fmt.Sprintf(" AND category = $%d", argNum)
+		query += fmt.Sprintf(" AND t.category = $%d", argNum)
 		args = append(args, category)
 		argNum++
 	}
 
 	if taskContext != "" {
-		query += fmt.Sprintf(" AND $%d = ANY(contexts)", argNum)
+		query += fmt.Sprintf(" AND $%d = ANY(t.contexts)", argNum)
 		args = append(args, taskContext)
 		argNum++
 	}
 
-	query += " ORDER BY priority ASC, due_date ASC NULLS LAST, created_at DESC"
+	query += " ORDER BY t.priority ASC, t.due_date ASC NULLS LAST, t.created_at DESC"
 
 	rows, err := db.Pool.Query(ctx, query, args...)
 	if err != nil {
@@ -428,6 +440,7 @@ func listTasks(ctx context.Context, userID, status, category, taskContext string
 			&t.Priority, &t.EstimatedMinutes, &t.DueDate, &tags, &contexts,
 			&t.Energy, &t.ParentID, &t.CompletedAt, &t.CreatedAt, &t.UpdatedAt, &t.ActualMinutes,
 			&t.ReminderOffsets,
+			&t.Rrule, &t.RepeatAnchor, &t.NagMinutes, &t.EventID, &t.OccurrenceState,
 		)
 		if err != nil {
 			return nil, err
@@ -508,18 +521,27 @@ func getTask(ctx context.Context, userID, taskID string) (*Task, error) {
 	var t Task
 	var tags, contexts []string
 
+	// Today's occurrence, in the caller's own zone — the same join the list
+	// does, for the same reason: `status` is about the series.
 	err = db.Pool.QueryRow(ctx, `
-		SELECT id, calendar_id::text, user_id, title, description, status, category, priority,
-		       estimated_minutes, due_date, COALESCE(tags, '{}'), COALESCE(contexts, '{}'),
-		       energy, parent_id, completed_at, created_at, updated_at, actual_minutes,
-		          COALESCE(reminder_offsets, '{}')
-		FROM task
-		WHERE id = $1 AND calendar_id = ANY($2)
+		SELECT t.id, t.calendar_id::text, t.user_id, t.title, t.description, t.status, t.category,
+		       t.priority, t.estimated_minutes, t.due_date, COALESCE(t.tags, '{}'),
+		       COALESCE(t.contexts, '{}'), t.energy, t.parent_id, t.completed_at, t.created_at,
+		       t.updated_at, t.actual_minutes, COALESCE(t.reminder_offsets, '{}'),
+		       t.rrule, t.repeat_anchor, t.nag_minutes, t.event_id::text,
+		       COALESCE(o.state, '')
+		FROM task t
+		LEFT JOIN task_occurrence o
+		       ON o.task_id = t.id
+		      AND o.occurrence = (NOW() AT TIME ZONE COALESCE(
+		            (SELECT timezone FROM "user" WHERE id = t.user_id), 'Europe/Moscow'))::date
+		WHERE t.id = $1 AND t.calendar_id = ANY($2)
 	`, taskID, calIDs).Scan(
 		&t.ID, &t.CalendarID, &t.UserID, &t.Title, &t.Description, &t.Status, &t.Category,
 		&t.Priority, &t.EstimatedMinutes, &t.DueDate, &tags, &contexts,
 		&t.Energy, &t.ParentID, &t.CompletedAt, &t.CreatedAt, &t.UpdatedAt, &t.ActualMinutes,
 		&t.ReminderOffsets,
+		&t.Rrule, &t.RepeatAnchor, &t.NagMinutes, &t.EventID, &t.OccurrenceState,
 	)
 
 	if err != nil {
@@ -661,6 +683,8 @@ func deleteTask(ctx context.Context, userID, taskID string) error {
 	}
 
 	result, err := db.Pool.Exec(ctx, `
+		-- recurrence-agnostic: deleting the series deletes its days too, by
+		-- task_occurrence.task_id ON DELETE CASCADE. Nothing to consult.
 		DELETE FROM task WHERE id = $1 AND calendar_id = ANY($2)
 	`, taskID, calIDs)
 
@@ -700,6 +724,8 @@ func scheduleTask(ctx context.Context, userID, taskID string, startsAt, endsAt t
 	// calendar must schedule its event into that same calendar.
 	var calID string
 	if err := db.Pool.QueryRow(ctx,
+		// recurrence-agnostic: asks which calendar a task lives in, to check
+		// permission. The answer is the same on every day of a series.
 		`SELECT calendar_id::text FROM task WHERE id = $1`, taskID,
 	).Scan(&calID); err != nil {
 		return nil, err

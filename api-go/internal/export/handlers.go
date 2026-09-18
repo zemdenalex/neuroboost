@@ -24,7 +24,22 @@ type ExportPayload struct {
 	ExportedAt time.Time  `json:"exported_at"`
 	Events     []EventRow `json:"events"`
 	Tasks      []TaskRow  `json:"tasks"`
-	Settings   any        `json:"settings"`
+	// TaskOccurrences is what was done on each day of each repeating task.
+	//
+	// 🔴 Its own list rather than a field on TaskRow: an export is row-per-thing,
+	// and joining would make a task appear once per day it ran. It is also the
+	// only place this history exists — nothing else in the product records that
+	// the pills were taken on the 14th.
+	TaskOccurrences []TaskOccurrenceRow `json:"task_occurrences"`
+	Settings        any                 `json:"settings"`
+}
+
+// TaskOccurrenceRow is one answered day of a repeating task.
+type TaskOccurrenceRow struct {
+	TaskID     string    `json:"task_id"`
+	Occurrence time.Time `json:"occurrence"`
+	State      string    `json:"state"`
+	ActedAt    time.Time `json:"acted_at"`
 }
 
 // EventRow holds the columns exported from the event table
@@ -66,6 +81,13 @@ type TaskRow struct {
 	CompletedAt      *time.Time `json:"completed_at,omitempty"`
 	CreatedAt        time.Time  `json:"created_at"`
 	UpdatedAt        time.Time  `json:"updated_at"`
+
+	// 🔴 An export without these turns every repeating task into a one-off on
+	// restore — quietly, and only noticed when the pills stop arriving.
+	Rrule        *string    `json:"rrule,omitempty"`
+	RepeatAnchor *time.Time `json:"repeat_anchor,omitempty"`
+	NagMinutes   *int       `json:"nag_minutes,omitempty"`
+	EventID      *string    `json:"event_id,omitempty"`
 }
 
 // ImportRequest is the body accepted by ImportHandler — same shape as ExportPayload
@@ -109,12 +131,22 @@ func ExportHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	occurrences, err := queryTaskOccurrences(r.Context(), userID)
+	if err != nil {
+		// Refused rather than exported empty: an export that silently omits the
+		// history of every repeating task looks complete and is not.
+		util.RespondError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to fetch task occurrences")
+		return
+	}
+
 	payload := ExportPayload{
-		Version:    "0.4.8",
-		ExportedAt: time.Now().UTC(),
-		Events:     events,
-		Tasks:      tasks,
-		Settings:   nil,
+		// 0.4.11.4 adds task_occurrences and the repeat columns on tasks.
+		Version:         "0.4.11.4",
+		ExportedAt:      time.Now().UTC(),
+		Events:          events,
+		Tasks:           tasks,
+		TaskOccurrences: occurrences,
+		Settings:        nil,
 	}
 
 	util.RespondJSON(w, http.StatusOK, payload)

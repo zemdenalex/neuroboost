@@ -134,14 +134,23 @@ func listUnscheduledTasks(ctx context.Context, userID string) ([]PlanningTask, e
 
 	// An empty list is a legitimate "nothing visible", not an error:
 	// ANY('{}') returns zero rows.
+	// 🔴 A repeating task whose TODAY is already done is not unfinished work.
+	// `status` stays TODO for the whole series, so without this join the planner
+	// would keep offering «выпить таблетки» to be scheduled again, every time,
+	// after it had been ticked.
 	rows, err := db.Pool.Query(ctx, `
-		SELECT id, title, priority, estimated_minutes,
-		       CASE WHEN due_date IS NOT NULL THEN to_char(due_date, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') END,
-		       category
-		FROM task
-		WHERE calendar_id = ANY($1)
-		  AND status NOT IN ('DONE', 'SCHEDULED', 'CANCELLED')
-		ORDER BY priority ASC, due_date ASC NULLS LAST, created_at DESC
+		SELECT t.id, t.title, t.priority, t.estimated_minutes,
+		       CASE WHEN t.due_date IS NOT NULL THEN to_char(t.due_date, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') END,
+		       t.category
+		FROM task t
+		LEFT JOIN task_occurrence o
+		       ON o.task_id = t.id
+		      AND o.occurrence = (NOW() AT TIME ZONE COALESCE(
+		            (SELECT timezone FROM "user" WHERE id = t.user_id), 'Europe/Moscow'))::date
+		WHERE t.calendar_id = ANY($1)
+		  AND t.status NOT IN ('DONE', 'SCHEDULED', 'CANCELLED')
+		  AND o.state IS NULL
+		ORDER BY t.priority ASC, t.due_date ASC NULLS LAST, t.created_at DESC
 	`, calIDs)
 	if err != nil {
 		return nil, err

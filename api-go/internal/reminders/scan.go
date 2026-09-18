@@ -2,12 +2,16 @@ package reminders
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"time"
+
+	"github.com/jackc/pgx/v5"
 
 	"neuroboost/api-go/internal/calendars"
 	"neuroboost/api-go/internal/database"
 	"neuroboost/api-go/internal/events"
+	"neuroboost/api-go/internal/recurrence"
 	"neuroboost/api-go/internal/usersettings"
 )
 
@@ -204,14 +208,27 @@ func fetchSkippedOccurrences(ctx context.Context, calIDs []string, eventID strin
 func scanTasks(ctx context.Context, u scanUser, calIDs []string, st usersettings.Reminders, loc *time.Location, from, to time.Time) (int, error) {
 	horizon := to.Add(maxOffsetMinutes * time.Minute)
 
+	// 🔴 Two kinds of task now, and the second has no single due date.
+	//
+	// A one-off is due once, as before. A repeating task is due on every day its
+	// rule names — so it cannot be selected by a BETWEEN on due_date, and the
+	// rule is expanded in Go rather than in SQL. Writing a second implementation
+	// of the grammar in SQL would be a second opinion about what a repeat means,
+	// and the two would eventually disagree.
+	//
+	// `status NOT IN ('DONE','CANCELLED')` still applies and still means the
+	// SERIES: a switched-off series reminds nobody. Whether TODAY is already
+	// done is task_occurrence, joined per candidate day below.
 	rows, err := db.Pool.Query(ctx, `
-		SELECT id, title, due_date, COALESCE(reminder_offsets, '{}')
+		SELECT id, title, due_date, COALESCE(reminder_offsets, '{}'), rrule, repeat_anchor
 		FROM task
 		WHERE calendar_id = ANY($1)
-		  AND due_date IS NOT NULL
 		  AND cardinality(reminder_offsets) > 0
 		  AND status NOT IN ('DONE', 'CANCELLED')
-		  AND due_date BETWEEN $2 AND $3`,
+		  AND (
+		        (rrule IS NULL AND due_date IS NOT NULL AND due_date BETWEEN $2 AND $3)
+		     OR (rrule IS NOT NULL AND repeat_anchor IS NOT NULL)
+		      )`,
 		calIDs, from, horizon)
 	if err != nil {
 		return 0, err
@@ -220,13 +237,15 @@ func scanTasks(ctx context.Context, u scanUser, calIDs []string, st usersettings
 	type candidate struct {
 		id      string
 		title   string
-		due     time.Time
+		due     *time.Time
 		offsets []int
+		rrule   *string
+		anchor  *time.Time
 	}
 	var candidates []candidate
 	for rows.Next() {
 		var c candidate
-		if err := rows.Scan(&c.id, &c.title, &c.due, &c.offsets); err != nil {
+		if err := rows.Scan(&c.id, &c.title, &c.due, &c.offsets, &c.rrule, &c.anchor); err != nil {
 			rows.Close()
 			return 0, err
 		}
@@ -239,8 +258,14 @@ func scanTasks(ctx context.Context, u scanUser, calIDs []string, st usersettings
 
 	inserted := 0
 	for _, c := range candidates {
-		// A task has exactly one "occurrence": its due date.
-		for _, d := range DueReminders([]time.Time{c.due}, c.offsets, from, to) {
+		// A one-off task has exactly one occurrence: its due date. A repeating
+		// one has every day its rule names inside the window — minus the days
+		// already answered for.
+		due, err := taskOccurrences(ctx, c.id, c.due, c.rrule, c.anchor, loc, from, horizon)
+		if err != nil {
+			return inserted, err
+		}
+		for _, d := range DueReminders(due, c.offsets, from, to) {
 			remindAt := d.RemindAt
 			if st.QuietHoursRespected {
 				shifted, ok := ShiftForQuietHours(remindAt, d.MinutesBefore, st.QuietHoursStart, st.QuietHoursEnd, loc)
@@ -288,7 +313,7 @@ const digestMinutesBefore = -2
 // unique index means "one digest per user per local day".
 //
 // 🔴 The message is composed here, and it must never be empty: this row used to
-// be written with '' and Telegram answers an empty send with
+// be written with ” and Telegram answers an empty send with
 // "Bad Request: message text is empty" — so every digest failed, every morning,
 // leaving only a FAILED row nobody read. Composing at insert time is also the
 // right moment: the scan writes this row when the digest is due, so the day's
@@ -368,6 +393,8 @@ func digestEvents(ctx context.Context, calIDs []string, localDay time.Time) []Di
 // digestTasks lists what is due that local day and still open.
 func digestTasks(ctx context.Context, calIDs []string, localDay time.Time) []DigestTask {
 	rows, err := db.Pool.Query(ctx, `
+		-- recurrence-agnostic: a title by id, used to render a message. It does
+		-- not change from one occurrence to the next.
 		SELECT title FROM task
 		WHERE calendar_id = ANY($1)
 		  AND due_date IS NOT NULL
@@ -388,4 +415,81 @@ func digestTasks(ctx context.Context, calIDs []string, localDay time.Time) []Dig
 		}
 	}
 	return out
+}
+
+// taskOccurrences lists the moments a task is due inside the window.
+//
+// For a one-off that is its due_date, unchanged. For a repeating task it is
+// every day the rule names, at the anchor's time of day, skipping days the user
+// has already answered for — reminding about pills that were ticked an hour ago
+// is how a reminder becomes something to mute.
+//
+// 🔴 Days are computed in the USER's zone. The server runs in UTC, so a series
+// anchored at 09:00 Moscow would otherwise drift by three hours and, for the
+// days either side of midnight, by a whole day.
+func taskOccurrences(
+	ctx context.Context,
+	taskID string,
+	due *time.Time,
+	rrule *string,
+	anchor *time.Time,
+	loc *time.Location,
+	from, to time.Time,
+) ([]time.Time, error) {
+	if rrule == nil || *rrule == "" || anchor == nil {
+		if due == nil {
+			return nil, nil
+		}
+		return []time.Time{*due}, nil
+	}
+
+	rule, err := recurrence.Parse(*rrule)
+	if err != nil {
+		// A stored rule this API cannot parse is a series nobody can act on.
+		// Silence is the honest answer — inventing a single occurrence would be
+		// the old defect, where an unparseable rule became a one-off.
+		return nil, nil
+	}
+
+	a := anchor.In(loc)
+	// The time of day the series happens at, taken from the anchor.
+	hour, minute := a.Hour(), a.Minute()
+
+	var out []time.Time
+	day := from.In(loc)
+	day = time.Date(day.Year(), day.Month(), day.Day(), 0, 0, 0, 0, loc)
+	end := to.In(loc)
+
+	for !day.After(end) {
+		if recurrence.Occurs(rule, a, day) {
+			state, err := occurrenceState(ctx, taskID, day)
+			if err != nil {
+				return nil, err
+			}
+			if state == "" {
+				out = append(out, time.Date(day.Year(), day.Month(), day.Day(), hour, minute, 0, 0, loc))
+			}
+		}
+		day = day.AddDate(0, 0, 1)
+	}
+	return out, nil
+}
+
+// occurrenceState reads what was already done with one day.
+//
+// Local to this package rather than imported from `tasks`: `tasks` will import
+// `events` for task↔event conversion, and `reminders` already imports `events` —
+// so reaching into `tasks` from here is the import cycle waiting to happen.
+func occurrenceState(ctx context.Context, taskID string, day time.Time) (string, error) {
+	var state string
+	err := db.Pool.QueryRow(ctx,
+		`SELECT state FROM task_occurrence WHERE task_id = $1 AND occurrence = $2`,
+		taskID, day.Format("2006-01-02")).Scan(&state)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return "", nil
+	}
+	if err != nil {
+		return "", err
+	}
+	return state, nil
 }

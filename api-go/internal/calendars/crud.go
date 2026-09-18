@@ -208,6 +208,9 @@ func Delete(ctx context.Context, userID, calendarID string) error {
 	var ne NotEmptyError
 	if err := db.Pool.QueryRow(ctx,
 		`SELECT (SELECT count(*) FROM event WHERE calendar_id = $1),
+		        -- recurrence-agnostic: counts ROWS to decide whether a calendar is
+		        -- empty enough to delete. A series is one row either way, and its
+		        -- days are not things a calendar holds.
 		        (SELECT count(*) FROM task  WHERE calendar_id = $1)`,
 		calendarID).Scan(&ne.Events, &ne.Tasks); err != nil {
 		return err
@@ -226,6 +229,7 @@ func Delete(ctx context.Context, userID, calendarID string) error {
 		var fresh NotEmptyError
 		if err2 := db.Pool.QueryRow(ctx,
 			`SELECT (SELECT count(*) FROM event WHERE calendar_id = $1),
+			        -- recurrence-agnostic: see above — row counts, not occurrences.
 			        (SELECT count(*) FROM task  WHERE calendar_id = $1)`,
 			calendarID).Scan(&fresh.Events, &fresh.Tasks); err2 != nil {
 			return err2
