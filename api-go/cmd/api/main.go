@@ -161,6 +161,8 @@ func main() {
 		// дней». POST rather than PATCH on the task, because it changes the day,
 		// not the task — task.status still describes the whole series.
 		r.Post("/api/tasks/{id}/occurrences", t.MarkOccurrenceHandler)
+		// Turn a task into an event, or add one and keep both linked.
+		r.Post("/api/tasks/{id}/convert", t.ConvertHandler)
 
 		// needs, opportunities and patterns lived here as ten routes that answered
 		// 501 to an authenticated caller — a promise in a public API that nobody
