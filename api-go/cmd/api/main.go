@@ -98,6 +98,10 @@ func main() {
 		pr.Post("/api/auth/register", authHandler.Register)
 		pr.Post("/api/auth/login", authHandler.Login)
 		pr.Post("/api/auth/logout", authHandler.Logout)
+		// The one-shot login link IS the credential, so redeeming it cannot
+		// require a session — that is the whole point of handing it to somebody
+		// who has no way to sign in yet.
+		pr.Post("/api/auth/login-link/redeem", authHandler.RedeemLoginLink)
 
 		// Feedback - create is public (with optional auth)
 		pr.Post("/api/feedback", feedbackHandler.Create)
@@ -126,6 +130,13 @@ func main() {
 		// Auth - get and update current user
 		r.Get("/api/auth/me", authHandler.Me)
 		r.Patch("/api/auth/me", authHandler.UpdateMe)
+
+		// Account linking (v0.4.11.5). Issuing needs the session that owns the
+		// account; redeeming a code needs the OTHER account's session, which is
+		// why the pair proves two people are one.
+		r.Post("/api/auth/login-link", authHandler.CreateLoginLink)
+		r.Post("/api/auth/link-code", authHandler.CreateLinkCode)
+		r.Post("/api/auth/link-code/redeem", authHandler.RedeemLinkCode)
 
 		// Feedback - list, update, and import require auth (admin check inside handlers)
 		r.Get("/api/feedback", feedbackHandler.List)
