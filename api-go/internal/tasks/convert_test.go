@@ -60,18 +60,14 @@ func TestConvertChecksTheModeFirst(t *testing.T) {
 	}
 }
 
-// requireWritable is the guard that stops a conversion dropping an event into
-// somebody else's calendar. Its refusal must be indistinguishable from "no such
-// calendar" — saying "exists, but not yours" is itself information.
-func TestRequireWritableRefusesForeignCalendars(t *testing.T) {
-	writable := []string{"cal-a", "cal-b"}
-
-	if err := requireWritable(writable, "cal-b"); err != nil {
-		t.Errorf("a writable calendar was refused: %v", err)
-	}
-	for _, foreign := range []string{"cal-c", "", "CAL-A"} {
-		if err := requireWritable(writable, foreign); err == nil {
-			t.Errorf("calendar %q was accepted and should not be", foreign)
-		}
-	}
-}
+// ⚠ The hand-rolled requireWritable this file used to test is gone.
+//
+// calendars/writescoping_test.go caught Convert on its first run: an INSERT must
+// check its destination with the SINGULAR resolver (WritableIDFor), which asks
+// "may I write in this calendar", not with the plural list, which only scopes a
+// WHERE. That is the precise hole scheduleTask fell through in August, and my
+// version was the same shape.
+//
+// So the check now lives in the store, where it is tested once, and the guard
+// enforces that every INSERT uses it. There is nothing left here to unit-test
+// that would not be testing the store twice.

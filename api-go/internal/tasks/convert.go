@@ -111,12 +111,21 @@ func Convert(ctx context.Context, userID, taskID string, req ConvertRequest) (*C
 		return nil, err
 	}
 
-	// A destination other than the task's own calendar must still be writable.
+	// 🔴 The DESTINATION is checked with the singular resolver, which answers
+	// "may I write in THIS calendar" — not with the plural list, which only
+	// scopes a WHERE.
+	//
+	// The distinction is not pedantry: it is the exact hole scheduleTask fell
+	// through, and calendars/writescoping_test.go caught this function the first
+	// time it ran. My first version checked the destination against the plural
+	// list by hand, which works today and is the shape that stopped working the
+	// moment somebody trusted it.
 	if req.CalendarID != nil && *req.CalendarID != "" {
-		if err := requireWritable(calIDs, *req.CalendarID); err != nil {
-			return nil, err
+		dest, derr := calendars.WritableIDFor(ctx, userID, *req.CalendarID)
+		if derr != nil {
+			return nil, derr
 		}
-		calID = *req.CalendarID
+		calID = dest
 	}
 
 	var ev ConvertedEvent
@@ -172,18 +181,6 @@ func Convert(ctx context.Context, userID, taskID string, req ConvertRequest) (*C
 		return nil, err
 	}
 	return &ev, nil
-}
-
-// requireWritable checks a destination calendar is one the caller may write to.
-func requireWritable(writable []string, want string) error {
-	for _, id := range writable {
-		if id == want {
-			return nil
-		}
-	}
-	// The same answer as "no such calendar": telling a stranger that a calendar
-	// exists but is not theirs is itself information.
-	return calendars.ErrCalendarNotFound
 }
 
 // ConvertedFrom reports the event a task was linked to, if any.
