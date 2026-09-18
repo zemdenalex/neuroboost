@@ -6,6 +6,23 @@ on:
   pull_request:
     branches: [main, develop]
 
+# 🔴 One run per branch at a time.
+#
+# Without this, two pushes minutes apart raced: the e2e job of the first run
+# tested staging while deploy-dev of the second run was restarting the API under
+# it, and every login came back 502. It happened twice on 17.09 with identical
+# numbers (cd2d2b8 and c37fea8), and both times the same code was green on the
+# next run — which is the worst shape a failure can take, because it teaches
+# everyone to shrug at red.
+#
+# cancel-in-progress, not queue: the older run is testing a commit that is no
+# longer the head of the branch, so its verdict is about code nobody will ship.
+# A cancelled run says "superseded"; a queued one would say "failed" ten minutes
+# later for a reason unrelated to the change.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   GO_VERSION: '1.22'
   NODE_VERSION: '22'
