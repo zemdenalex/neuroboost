@@ -11,7 +11,10 @@ import (
 	"fmt"
 	"math/big"
 	"net/http"
+	"strings"
 	"time"
+
+	"golang.org/x/crypto/bcrypt"
 
 	"neuroboost/api-go/internal/middleware"
 	"neuroboost/api-go/internal/util"
@@ -301,4 +304,83 @@ func (h *Handler) burnAttempt(ctx context.Context) {
 	_, _ = h.db.Pool.Exec(ctx,
 		`UPDATE auth_link_token SET attempts = attempts + 1
 		  WHERE kind = $1 AND redeemed_at IS NULL AND expires_at > NOW()`, linkCodeKind)
+}
+
+// SetCredentials gives an account that arrived from Telegram a way to sign in
+// without it.
+//
+// POST /api/auth/credentials — authenticated.
+//
+// 🔴 Only for an account that has no email yet. Changing an existing email is a
+// different operation with different consequences (it moves where password
+// resets go), and the spec puts it out of scope on purpose — so this refuses
+// rather than quietly doing it.
+func (h *Handler) SetCredentials(w http.ResponseWriter, r *http.Request) {
+	userID := middleware.UserIDFromContext(r.Context())
+	if userID == "" {
+		util.RespondError(w, http.StatusUnauthorized, "NOT_AUTHENTICATED", "Not authenticated")
+		return
+	}
+	var req struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		util.RespondError(w, http.StatusBadRequest, "INVALID_REQUEST", "Invalid request body")
+		return
+	}
+	req.Email = strings.ToLower(strings.TrimSpace(req.Email))
+	// Same two rules as Register, deliberately identical: an account that can be
+	// created one way and not the other is a rule nobody can state.
+	if req.Email == "" || !strings.Contains(req.Email, "@") {
+		util.RespondError(w, http.StatusBadRequest, "INVALID_EMAIL", "Valid email is required")
+		return
+	}
+	if len(req.Password) < 8 {
+		util.RespondError(w, http.StatusBadRequest, "WEAK_PASSWORD", "Password must be at least 8 characters")
+		return
+	}
+
+	ctx := r.Context()
+	var existingEmail *string
+	if err := h.db.Pool.QueryRow(ctx, `SELECT email FROM "user" WHERE id = $1`, userID).
+		Scan(&existingEmail); err != nil {
+		util.RespondError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to read account")
+		return
+	}
+	if existingEmail != nil && *existingEmail != "" {
+		util.RespondError(w, http.StatusConflict, "EMAIL_SET",
+			"У этого аккаунта уже есть email")
+		return
+	}
+
+	hashed, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	if err != nil {
+		util.RespondError(w, http.StatusInternalServerError, "HASH_ERROR", "Failed to process password")
+		return
+	}
+
+	// 🔴 The UNIQUE index decides, not a prior SELECT: between a check and a
+	// write another request can take the address. The 409 below is the spec's
+	// path 2 — «у этого email есть аккаунт, войди в него и привяжи Telegram
+	// кодом» — and it is reached by the database refusing, not by guessing.
+	tag, err := h.db.Pool.Exec(ctx,
+		`UPDATE "user" SET email = $1, password_hash = $2, updated_at = NOW()
+		  WHERE id = $3 AND email IS NULL`, req.Email, string(hashed), userID)
+	if err != nil {
+		util.RespondError(w, http.StatusConflict, "EMAIL_EXISTS",
+			"У этого email уже есть аккаунт — войди в него и привяжи Telegram кодом")
+		return
+	}
+	if tag.RowsAffected() == 0 {
+		util.RespondError(w, http.StatusConflict, "EMAIL_SET", "У этого аккаунта уже есть email")
+		return
+	}
+
+	user, err := h.findUserByID(ctx, userID)
+	if err != nil || user == nil {
+		util.RespondError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to read account")
+		return
+	}
+	util.RespondJSON(w, http.StatusOK, user)
 }

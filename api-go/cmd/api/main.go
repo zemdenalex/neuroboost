@@ -137,6 +137,7 @@ func main() {
 		r.Post("/api/auth/login-link", authHandler.CreateLoginLink)
 		r.Post("/api/auth/link-code", authHandler.CreateLinkCode)
 		r.Post("/api/auth/link-code/redeem", authHandler.RedeemLinkCode)
+		r.Post("/api/auth/credentials", authHandler.SetCredentials)
 
 		// Feedback - list, update, and import require auth (admin check inside handlers)
 		r.Get("/api/feedback", feedbackHandler.List)

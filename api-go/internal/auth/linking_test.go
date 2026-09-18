@@ -264,3 +264,57 @@ func TestTokensAreNotPredictable(t *testing.T) {
 	}
 	_ = time.Now
 }
+
+// A Telegram-only account can take an email; an account that already has one
+// cannot silently change it.
+func TestCredentialsOnlyFillAnEmptyAccount(t *testing.T) {
+	d := linkingDB(t)
+	ctx := context.Background()
+	user := linkUser(t, d)
+
+	tag, err := d.Pool.Exec(ctx,
+		`UPDATE "user" SET email = $1, password_hash = 'x' WHERE id = $2 AND email IS NULL`,
+		"creds-first@example.test", user)
+	if err != nil {
+		t.Fatalf("first write: %v", err)
+	}
+	if tag.RowsAffected() != 1 {
+		t.Fatalf("the first write did not land")
+	}
+
+	// 🔴 The guard is the WHERE clause, not a prior check: this is the same
+	// statement the handler runs, and it must now affect nothing.
+	tag, err = d.Pool.Exec(ctx,
+		`UPDATE "user" SET email = $1, password_hash = 'y' WHERE id = $2 AND email IS NULL`,
+		"creds-second@example.test", user)
+	if err != nil {
+		t.Fatalf("second write: %v", err)
+	}
+	if tag.RowsAffected() != 0 {
+		t.Error("an account that already had an email had it replaced")
+	}
+
+	var got string
+	if err := d.Pool.QueryRow(ctx, `SELECT email FROM "user" WHERE id = $1`, user).Scan(&got); err != nil {
+		t.Fatalf("read back: %v", err)
+	}
+	if got != "creds-first@example.test" {
+		t.Errorf("email = %q", got)
+	}
+}
+
+// Two accounts cannot hold one email, and the database is what says so.
+func TestEmailUniquenessIsEnforcedByTheDatabase(t *testing.T) {
+	d := linkingDB(t)
+	ctx := context.Background()
+	a := linkUser(t, d)
+	b := linkUser(t, d)
+	const shared = "collision@example.test"
+
+	if _, err := d.Pool.Exec(ctx, `UPDATE "user" SET email = $1 WHERE id = $2`, shared, a); err != nil {
+		t.Fatalf("first account: %v", err)
+	}
+	if _, err := d.Pool.Exec(ctx, `UPDATE "user" SET email = $1 WHERE id = $2`, shared, b); err == nil {
+		t.Error("two accounts now share one email — the 409 path is unreachable")
+	}
+}
