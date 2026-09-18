@@ -59,7 +59,11 @@ type Task struct {
 	RepeatAnchor *time.Time `json:"repeat_anchor,omitempty"`
 	// NagMinutes repeats an unanswered reminder every N minutes; nil = once.
 	NagMinutes *int `json:"nag_minutes,omitempty"`
-	// EventID is the event this task was turned into or linked with.
+
+	// 🔴 There is no EventID here on purpose. The link between a task and an
+	// event is `event.task_id`, and has been since the baseline — a second
+	// column pointing the other way would be a second answer to one question.
+	// EventID below is filled from that side.
 	EventID *string `json:"event_id,omitempty"`
 
 	// OccurrenceState is what happened to the day being asked about: "", "done"

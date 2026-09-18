@@ -40,10 +40,18 @@ func TestRecurringTaskShape(t *testing.T) {
 		if len(present) == 0 {
 			t.Fatal("no columns found for `task` — this test proved nothing")
 		}
-		for _, c := range []string{"rrule", "repeat_anchor", "nag_minutes", "event_id"} {
+		for _, c := range []string{"rrule", "repeat_anchor", "nag_minutes"} {
 			if !present[c] {
 				t.Errorf("task.%s is missing — recurring tasks cannot work", c)
 			}
+		}
+		// 🔴 And the reverse: task.event_id must NOT come back. The link is
+		// event.task_id and has been since the baseline; 000017 added a second
+		// column for the same relationship by mistake and 000018 removed it.
+		// Two columns for one link drift apart — one gets set, the other does
+		// not, and two readers answer the same question differently.
+		if present["event_id"] {
+			t.Error("task.event_id is back; the link belongs on event.task_id (see 000018)")
 		}
 	})
 

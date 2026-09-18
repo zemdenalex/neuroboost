@@ -65,7 +65,8 @@ func queryTasks(ctx context.Context, userID string) ([]TaskRow, error) {
 		SELECT id, user_id, title, description, status, category, priority,
 		       estimated_minutes, actual_minutes, due_date, COALESCE(tags, '{}'), COALESCE(contexts, '{}'),
 		       energy, parent_id, completed_at, created_at, updated_at,
-		       rrule, repeat_anchor, nag_minutes, event_id::text
+		       rrule, repeat_anchor, nag_minutes,
+		       (SELECT e.id::text FROM event e WHERE e.task_id = task.id LIMIT 1)
 		FROM task
 		WHERE calendar_id = ANY($1)
 		ORDER BY created_at ASC
