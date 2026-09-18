@@ -40,6 +40,14 @@ func runScan(ctx context.Context, now time.Time, log *slog.Logger) {
 	if n > 0 {
 		log.Info("reminders scheduled", slog.Int("count", n))
 	}
+
+	// Re-arm anything delivered and not answered, for sources that ask to be
+	// nagged. Inside the same recover as the scan and after it, deliberately:
+	// scheduling what is due matters more than repeating what already went out,
+	// so a failure here must not cost the scan.
+	if _, err := NagUnanswered(ctx, now, log); err != nil {
+		log.Error("re-arming unanswered reminders failed", slog.String("error", err.Error()))
+	}
 }
 
 // StartWorker runs the reminder scan once a minute until ctx is cancelled.

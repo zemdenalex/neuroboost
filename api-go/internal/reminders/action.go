@@ -111,10 +111,27 @@ func ActionHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// 🔴 Every answer leaves a mark, whatever it was.
+	//
+	// This used to be true of none of them: ActionAck returned 200 and changed
+	// nothing, on the reasoning that the row was already SENT and there was
+	// nothing left to record. That held while a reminder arrived once — and
+	// stopped holding the moment nag_minutes existed, because «долбёжка» has to
+	// stop when the person answers, and «answered» was written down nowhere.
+	//
+	// Done before the switch so no branch can forget it, and failure is logged
+	// rather than returned: the action itself succeeded, and refusing it now
+	// would make the button look broken over bookkeeping.
+	if _, err := db.Pool.Exec(ctx,
+		`UPDATE reminder SET answered_at = NOW() WHERE id = $1 AND answered_at IS NULL`,
+		req.ReminderID); err != nil && svcLog != nil {
+		svcLog.Error("marking a reminder answered failed",
+			slog.String("reminder_id", req.ReminderID), slog.String("error", err.Error()))
+	}
+
 	switch req.Action {
 	case ActionAck:
-		// Nothing to change — the row is already SENT. The button exists so the
-		// message can be dismissed, and answering ok lets the bot edit it.
+		// The row stays SENT; answered_at above is what stops it coming back.
 		util.RespondJSON(w, http.StatusOK, map[string]any{"ok": true, "action": ActionAck})
 
 	case ActionSnooze:
