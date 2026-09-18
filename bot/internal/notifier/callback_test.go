@@ -62,11 +62,14 @@ func TestParseCallbackIgnoresEverythingElse(t *testing.T) {
 }
 
 func TestKeyboardPerSourceKind(t *testing.T) {
-	if kb := Keyboard("TASK", sampleID); kb == nil || len(kb.InlineKeyboard[0]) != 2 {
-		t.Error("a task reminder should offer done and snooze")
+	// Three since 18.09: done/ack plus both snooze lengths. Denis asked to be
+	// able to postpone by ten minutes OR an hour, so «later» stopped being one
+	// button.
+	if kb := Keyboard("TASK", sampleID); kb == nil || len(kb.InlineKeyboard[0]) != 3 {
+		t.Error("a task reminder should offer done and both snoozes")
 	}
-	if kb := Keyboard("EVENT", sampleID); kb == nil || len(kb.InlineKeyboard[0]) != 2 {
-		t.Error("an event reminder should offer ack and snooze")
+	if kb := Keyboard("EVENT", sampleID); kb == nil || len(kb.InlineKeyboard[0]) != 3 {
+		t.Error("an event reminder should offer ack and both snoozes")
 	}
 	// A digest summarises several items, so there is no single thing to
 	// complete or postpone.
@@ -198,5 +201,51 @@ func TestEveryButtonHasAReply(t *testing.T) {
 	// asserts nothing and passes. That is the shape of the original defect.
 	if seen < 6 {
 		t.Fatalf("only %d buttons examined — the sweep is no longer covering the keyboards", seen)
+	}
+}
+
+// 🔴 Denis, 18.09: «когда всплывает с утра можно отложить на определённое
+// время, например на 10 минут или на час».
+func TestReminderOffersTenMinutesAndAnHour(t *testing.T) {
+	for _, kind := range []string{"TASK", "EVENT"} {
+		kb := Keyboard(kind, "11111111-2222-3333-4444-555555555555")
+		if kb == nil {
+			t.Fatalf("%s: no keyboard at all", kind)
+		}
+		var minutes []int
+		var count int
+		for _, row := range kb.InlineKeyboard {
+			for _, b := range row {
+				count++
+				if b.CallbackData == nil {
+					t.Fatalf("%s: a button carries no callback_data — Telegram rejects the keyboard", kind)
+				}
+				if cb, ok := ParseCallback(*b.CallbackData); ok && cb.Action == ActionSnooze {
+					minutes = append(minutes, cb.Minutes)
+				}
+			}
+		}
+		if count < 3 {
+			t.Errorf("%s: only %d buttons, expected done/ack plus two snoozes", kind, count)
+		}
+		if len(minutes) != 2 || minutes[0] != 10 || minutes[1] != 60 {
+			t.Errorf("%s: snooze offers %v minutes, want [10 60]", kind, minutes)
+		}
+		// 🔴 The cap is per MESSAGE: Telegram refuses the whole thing when one
+		// button is over 64 bytes, so an oversized snooze button is a
+		// notification that never arrives at all.
+		if !KeyboardFits(kb) {
+			t.Errorf("%s: a button is over the 64-byte callback_data cap", kind)
+		}
+	}
+}
+
+// 🔴 The old one-letter snooze code must keep working. Notifications already
+// delivered are sitting on people's phones with «nb:s:<id>» under them, and a
+// button that stops answering is indistinguishable from a broken bot.
+func TestTheOldSnoozeCodeStillWorks(t *testing.T) {
+	cb, ok := ParseCallback("nb:s:11111111-2222-3333-4444-555555555555")
+	if !ok || cb.Action != ActionSnooze || cb.Minutes != 10 {
+		t.Errorf("an already-delivered snooze button stopped working: %+v ok=%v", cb, ok)
 	}
 }

@@ -21,6 +21,18 @@ const (
 	codeAck    = "a"
 	codeSnooze = "s"
 	codeDone   = "d"
+	// Two snooze lengths, two codes.
+	//
+	// 🔴 The minutes live in the CODE, not in the payload. callback_data is
+	// capped at 64 bytes and a reminder id already spends 36 of them; a payload
+	// that grows with every new snooze option is a payload that will one day be
+	// truncated — and a truncated button makes Telegram refuse the whole
+	// message, so the notification never arrives.
+	//
+	// codeSnooze ("s") stays as the ten-minute meaning: notifications already
+	// delivered carry it under buttons on people's phones, and a button that
+	// silently stops answering is indistinguishable from a dead bot.
+	codeSnoozeHour = "h"
 	// Answering a calendar invitation. One letter each, for the same reason as
 	// the rest: 64 bytes total and 36 of them are a UUID.
 	codeAccept  = "y"
@@ -37,8 +49,13 @@ const (
 	ActionDecline = "decline"
 )
 
-// SnoozeMinutes is what the "later" button asks for.
-const SnoozeMinutes = 10
+// SnoozeMinutes is what the short "later" button asks for, and SnoozeHour the
+// long one. Both are within the API's cap of a day
+// (reminders/action.go:32).
+const (
+	SnoozeMinutes = 10
+	SnoozeHour    = 60
+)
 
 // Callback is a decoded notification button press.
 type Callback struct {
@@ -70,6 +87,8 @@ func ParseCallback(data string) (Callback, bool) {
 		return Callback{Action: ActionAck, ReminderID: id}, true
 	case codeSnooze:
 		return Callback{Action: ActionSnooze, ReminderID: id, Minutes: SnoozeMinutes}, true
+	case codeSnoozeHour:
+		return Callback{Action: ActionSnooze, ReminderID: id, Minutes: SnoozeHour}, true
 	case codeDone:
 		return Callback{Action: ActionDone, ReminderID: id}, true
 	case codeAccept:
@@ -104,7 +123,8 @@ func Keyboard(sourceKind, reminderID string) *tgbotapi.InlineKeyboardMarkup {
 	case "TASK":
 		row = []tgbotapi.InlineKeyboardButton{
 			tgbotapi.NewInlineKeyboardButtonData("✅ Готово", EncodeCallback(codeDone, reminderID)),
-			tgbotapi.NewInlineKeyboardButtonData("⏰ +10 мин", EncodeCallback(codeSnooze, reminderID)),
+			tgbotapi.NewInlineKeyboardButtonData("⏰ 10 мин", EncodeCallback(codeSnooze, reminderID)),
+			tgbotapi.NewInlineKeyboardButtonData("⏰ Час", EncodeCallback(codeSnoozeHour, reminderID)),
 		}
 	case "INVITE":
 		// 🔴 No snooze. Snoozing re-sends the same notification later, and an
@@ -123,7 +143,8 @@ func Keyboard(sourceKind, reminderID string) *tgbotapi.InlineKeyboardMarkup {
 		// acknowledgement and a postponement are meaningful for any single item.
 		row = []tgbotapi.InlineKeyboardButton{
 			tgbotapi.NewInlineKeyboardButtonData("👌 Понятно", EncodeCallback(codeAck, reminderID)),
-			tgbotapi.NewInlineKeyboardButtonData("⏰ +10 мин", EncodeCallback(codeSnooze, reminderID)),
+			tgbotapi.NewInlineKeyboardButtonData("⏰ 10 мин", EncodeCallback(codeSnooze, reminderID)),
+			tgbotapi.NewInlineKeyboardButtonData("⏰ Час", EncodeCallback(codeSnoozeHour, reminderID)),
 		}
 	}
 
