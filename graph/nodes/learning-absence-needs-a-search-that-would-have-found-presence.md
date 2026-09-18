@@ -6,12 +6,13 @@ status: verified
 verified_by: session-01VRP8SC
 verified_at: 2026-09-18
 tags: [neuroboost, method, search, api, migration]
-weight: { importance: 5, connectivity: 5, access: 1, last_accessed: 2026-09-18 }
+weight: { importance: 5, connectivity: 6, access: 2, last_accessed: 2026-09-18 }
 sources:
   - file: "api-go/migrations/000018_drop_redundant_task_event_id.up.sql"
   - file: "docs/superpowers/specs/2026-09-18-api-v04114-recurring-tasks-design.md"
 stakes: high
 links:
+  - relates-to: learning-an-empty-result-is-not-an-answer
   - relates-to: learning-my-own-query-lied-twice-in-one-night
   - relates-to: learning-a-migration-can-break-a-query-that-never-changed
   - relates-to: learning-a-button-is-not-a-feature
