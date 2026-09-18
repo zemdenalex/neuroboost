@@ -49,7 +49,31 @@ export const EventBlock = memo(function EventBlock({
 
   return (
     <div
-      className={`absolute rounded border font-mono
+      // A stable hook for the specs. Until 18.09 the only way to find a block
+      // from a test was a chain of Tailwind classes, which is a selector that
+      // breaks on a restyle and takes the test's meaning with it.
+      data-testid="event-block"
+      data-event-id={event.id}
+      // 🔴 overflow-hidden belongs HERE, on the element that carries the
+      // height, not only on the padded div inside it.
+      //
+      // Denis, 18.09: «выход за поля в вебе в событиях, чем больше событий тем
+      // больше они за поля выходят». Measured on staging with eight overlapping
+      // events: the blocks ended at 11:00 and their titles ran down past 15:00,
+      // straight across the hours below.
+      //
+      // The inner div did have overflow-hidden — and it clipped nothing,
+      // because clipping applies to a box's CHILDREN, and that box was free to
+      // grow past its parent. The parent is the one with `height: event.height`,
+      // so the parent is where the scissors go.
+      //
+      // Why more events made it worse: the lane layout gives each of N
+      // overlapping events 1/N of the width, so eight of them are ~24px wide.
+      // At that width a title wraps to one CHARACTER per line, and a
+      // twelve-character title becomes a twelve-line tower — while the block
+      // stays two hours tall. The overflow scaled with the count because the
+      // wrapping did.
+      className={`absolute rounded border font-mono overflow-hidden
         ${selected ? 'cursor-grab' : 'cursor-pointer'}
         ${selected
           ? 'border-blue-400 ring-2 ring-blue-400/50 bg-blue-600/90 text-white shadow-lg shadow-blue-500/20'
