@@ -314,6 +314,11 @@ func (h *Handler) HandleCallback(cb *tgbotapi.CallbackQuery) {
 		return
 	}
 
+	// Feedback and release notes own fb/fb_* and whatsnew*.
+	if h.handleFeedbackCallback(chatID, cb.Message.MessageID, data) {
+		return
+	}
+
 	switch {
 	case data == "main_menu":
 		h.handleMenu(chatID, cb.Message.MessageID)

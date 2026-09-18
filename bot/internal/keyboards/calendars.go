@@ -171,3 +171,22 @@ func CalendarConfirm(lang i18n.Lang, id, name, action string) tgbotapi.InlineKey
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "⬅️ Отмена", "⬅️ Cancel"), calOpen+id)))
 }
+
+// FeedbackKinds is the two things a person might want to say.
+func FeedbackKinds(lang i18n.Lang) tgbotapi.InlineKeyboardMarkup {
+	return tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🐞 Ошибка", "🐞 Bug"), "fb_bug"),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "💡 Идея", "💡 Idea"), "fb_idea")),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "« Меню", "« Menu"), "main_menu")))
+}
+
+// WhatsNew shows the newest release and offers the older ones.
+func WhatsNew(lang i18n.Lang) tgbotapi.InlineKeyboardMarkup {
+	return tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "📜 Прошлые версии", "📜 Older versions"), "whatsnew_all")),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "« Меню", "« Menu"), "main_menu")))
+}

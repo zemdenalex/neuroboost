@@ -171,6 +171,11 @@ func SettingsMenu(lang i18n.Lang) tgbotapi.InlineKeyboardMarkup {
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "📁 Календари", "📁 Calendars"), "cls"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
+			// Denis, 17.09: the same two the web has had since v0.4.9.
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "💬 Обратная связь", "💬 Feedback"), "fb"),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🆕 Что нового", "🆕 What's new"), "whatsnew"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
 			// Onboarding again, on demand — language, clock, and how to write.
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🔄 Пройти настройку заново", "🔄 Run setup again"), "ob_start"),
 		),

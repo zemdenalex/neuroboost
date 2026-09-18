@@ -34,6 +34,11 @@ func (h *Handler) handleFlowInput(chatID int64, text string) {
 		return
 	}
 
+	if strings.HasPrefix(us.CurrentFlow, feedbackFlowPrefix) {
+		h.handleFeedbackText(chatID, us.CurrentFlow, text)
+		return
+	}
+
 	switch us.CurrentFlow {
 	case onboardFlow:
 		h.handleOnboardText(chatID, text)
