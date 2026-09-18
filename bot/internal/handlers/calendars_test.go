@@ -294,10 +294,10 @@ func TestCalendarRenameButtonSaysTitle(t *testing.T) {
 func TestWalkingTheCalendarScreensCostsOneListRequest(t *testing.T) {
 	h, _, chat, calls := countingCalendarHandler(t)
 
-	press(h, chat, "cls")           // the list
-	press(h, chat, "cl_cal-work")   // its card
+	press(h, chat, "cls")             // the list
+	press(h, chat, "cl_cal-work")     // its card
 	press(h, chat, "cl_mem_cal-work") // members, which redraws the card underneath
-	press(h, chat, "cls")           // back to the list
+	press(h, chat, "cls")             // back to the list
 
 	if n := calls(); n != 1 {
 		t.Errorf("четыре экрана стоили %d запросов списка календарей, ожидался 1", n)

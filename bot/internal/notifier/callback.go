@@ -45,14 +45,14 @@ const (
 // Action names as the API expects them. Kept separate from the wire codes so
 // shortening the wire format can never silently rename an API action.
 const (
-	ActionAck     = "ack"
-	ActionSnooze  = "snooze"
+	ActionAck    = "ack"
+	ActionSnooze = "snooze"
 	// ActionSnoozeAsk never reaches the API: it is handled entirely in the
 	// bot, which then sends a normal snooze with the minutes it was told.
 	ActionSnoozeAsk = "snooze_ask"
-	ActionDone    = "done"
-	ActionAccept  = "accept"
-	ActionDecline = "decline"
+	ActionDone      = "done"
+	ActionAccept    = "accept"
+	ActionDecline   = "decline"
 )
 
 // SnoozeMinutes is what the short "later" button asks for, and SnoozeHour the
