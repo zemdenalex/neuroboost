@@ -101,6 +101,16 @@ func (h *Handler) handleNewTaskFlow(chatID int64, text string) {
 			return
 		}
 		h.showTaskCard(chatID, text)
+	case "card":
+		// 🔴 Denis, 18.09: «если начать создавать например задачу, и написать
+		// другую то он пишет что-то пошло не так». A line typed while a card is
+		// on screen is a NEW thing, not a malformed answer — the card asked no
+		// question. Same rule as list:confirm below and as the event card: the
+		// latest line replaces what is shown.
+		us.FlowStep = "title"
+		us.FlowData["raw"] = text
+		h.handleNewTaskFlow(chatID, text)
+
 	case "list:confirm":
 		// 🔴 Typing here used to answer «Что-то пошло не так» and throw the
 		// list away (Denis, 17.09: «А список вообще не понял»). A new line

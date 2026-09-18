@@ -321,6 +321,16 @@ func (h *Handler) HandleCallback(cb *tgbotapi.CallbackQuery) {
 
 	switch {
 	case data == "main_menu":
+		// 🔴 Going home ENDS whatever was being written. Denis, 18.09: «это
+		// работает даже если на этапе создания нажать отмена, он вернется в
+		// меню, но следующая задача все равно не создастся» — the menu was
+		// drawn while the flow kept running, so the next line was read as an
+		// answer to a question no longer on screen, and answered «Что-то пошло
+		// не так».
+		//
+		// «❌ Отмена» on the task card sends exactly this callback, which is
+		// why cancelling has to mean cancelling here rather than in each card.
+		h.store.ClearFlow(chatID)
 		h.handleMenu(chatID, cb.Message.MessageID)
 	case data == "stats":
 		h.handleStats(chatID, cb.Message.MessageID)

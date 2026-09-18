@@ -127,16 +127,26 @@ func ActionHandler(w http.ResponseWriter, r *http.Request) {
 		// DO UPDATE and not DO NOTHING. The conflict target repeats the index's
 		// COALESCE expression exactly — a plain column list does not match an
 		// expression index.
+		//
+		// 🔴 And it must repeat the WHOLE index, calendar_id included. It did
+		// not between 000015 and 18.09: that migration added calendar_id to
+		// idx_reminder_dedupe, this target kept five columns, and PostgreSQL
+		// answered 42P10 — «no unique or exclusion constraint matching the ON
+		// CONFLICT specification» — to every single press. The comment directly
+		// above went on claiming the target matched, which is how it survived a
+		// code review and a release: a comment outlives the thing it describes.
+		// TestSnoozeConflictTargetMatchesTheDedupeIndex now compares the two
+		// texts instead of trusting either.
 		if _, err := db.Pool.Exec(ctx, `
-			INSERT INTO reminder (user_id, source_kind, event_id, task_id, occurrence_start,
+			INSERT INTO reminder (user_id, source_kind, event_id, task_id, calendar_id, occurrence_start,
 			                      minutes_before, remind_at, status, channel, message)
-			VALUES ($1, $2, $3, $4, $5, -1, NOW() + make_interval(mins => $6), 'PENDING', 'TELEGRAM', $7)
-			ON CONFLICT (user_id, source_kind, COALESCE(event_id, task_id), occurrence_start, minutes_before)
+			VALUES ($1, $2, $3, $4, $5, $6, -1, NOW() + make_interval(mins => $7), 'PENDING', 'TELEGRAM', $8)
+			ON CONFLICT (user_id, source_kind, COALESCE(event_id, task_id), calendar_id, occurrence_start, minutes_before)
 			DO UPDATE SET remind_at = EXCLUDED.remind_at, status = 'PENDING', sent_at = NULL`,
 			// SnoozedText, not `message`: the copied text still claims the
 			// original interval ("Через 15 минут"), which snoozing has just
 			// made false. Only the context line is replaced; the title stays.
-			userID, sourceKind, eventID, taskID, occurrenceStart, req.Minutes,
+			userID, sourceKind, eventID, taskID, calendarID, occurrenceStart, req.Minutes,
 			SnoozedText(message, req.Minutes)); err != nil {
 			if svcLog != nil {
 				svcLog.Error("snooze failed",
