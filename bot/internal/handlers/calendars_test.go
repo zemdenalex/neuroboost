@@ -283,3 +283,74 @@ func TestCalendarRenameButtonSaysTitle(t *testing.T) {
 		t.Errorf("нет кнопки «Название»: %s", got.Markup)
 	}
 }
+
+// 🔴 Walking the screens costs ONE list request, not one per screen.
+//
+// ⚠ The first version of this test pressed a single button and asserted «not
+// more than one request» — and it passed with the cache switched off, because
+// one press was always one request. A test that cannot fail measures nothing,
+// so it was rewritten to the thing that actually cost: moving between the
+// list, a card, its members and back read the same list four times.
+func TestWalkingTheCalendarScreensCostsOneListRequest(t *testing.T) {
+	h, _, chat, calls := countingCalendarHandler(t)
+
+	press(h, chat, "cls")           // the list
+	press(h, chat, "cl_cal-work")   // its card
+	press(h, chat, "cl_mem_cal-work") // members, which redraws the card underneath
+	press(h, chat, "cls")           // back to the list
+
+	if n := calls(); n != 1 {
+		t.Errorf("четыре экрана стоили %d запросов списка календарей, ожидался 1", n)
+	}
+}
+
+// 🔴 And a cache that outlives the change it does not know about is worse than
+// no cache: the rename would look like it failed.
+func TestAWriteDropsTheCachedList(t *testing.T) {
+	h, _, chat, calls := countingCalendarHandler(t)
+
+	press(h, chat, "cl_cal-work")
+	before := calls()
+
+	press(h, chat, "cl_name_cal-work")
+	say(h, chat, "Проект")
+
+	if after := calls(); after <= before {
+		t.Errorf("после переименования список не перечитан: было %d запросов, стало %d", before, after)
+	}
+}
+
+// countingCalendarHandler is calendarHandler plus a counter of how many times
+// the API's calendar list was actually fetched.
+func countingCalendarHandler(t *testing.T) (*Handler, *fakeTelegram, int64, func() int) {
+	t.Helper()
+	var listCalls int
+	cals := []any{
+		map[string]any{"id": "cal-personal", "name": "Личный", "color": nil, "kind": "personal", "role": "owner", "status": "active"},
+		map[string]any{"id": "cal-work", "name": "Работа", "color": "#7c3aed", "kind": "shared", "role": "owner", "status": "active"},
+	}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.URL.Path == "/api/calendars" && r.Method == http.MethodGet:
+			listCalls++
+			_ = json.NewEncoder(w).Encode(map[string]any{"data": cals})
+		case strings.HasSuffix(r.URL.Path, "/members"):
+			_ = json.NewEncoder(w).Encode(map[string]any{"data": []any{}})
+		case r.URL.Path == "/api/auth/me":
+			_ = json.NewEncoder(w).Encode(map[string]any{"data": map[string]any{
+				"id": "u1", "timezone": "Europe/Moscow",
+				"settings": map[string]any{"bot": map[string]any{"onboarded": true, "lang": "ru"}}}})
+		default:
+			_ = json.NewEncoder(w).Encode(map[string]any{"data": map[string]any{}})
+		}
+	}))
+	t.Cleanup(srv.Close)
+
+	bot, fake := newFakeTelegram(t)
+	h := New(bot, api.NewClient(srv.URL), state.NewStore(), config.Config{BotUsername: "NeuroBoost_dev_bot"})
+	const chat = int64(7150)
+	h.store.SetAuth(chat, "jwt", time.Now().Add(time.Hour).Unix())
+	us := h.store.GetOrCreate(chat)
+	us.Lang, us.LangKnown = "ru", true
+	return h, fake, chat, func() int { return listCalls }
+}

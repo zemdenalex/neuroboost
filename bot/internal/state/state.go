@@ -1,6 +1,11 @@
 package state
 
-import "sync"
+import (
+	"sync"
+	"time"
+
+	"github.com/zemdenalex/neuroboost-bot/internal/api"
+)
 
 type UserState struct {
 	ChatID    int64
@@ -35,6 +40,12 @@ type UserState struct {
 	// unhelpful, it teaches that the field does not work.
 	PersonalCalendar      string
 	PersonalCalendarKnown bool
+
+	// Calendars is the last list read from the API, with the moment it was
+	// read. Reused for a few seconds so one button press costs one request
+	// instead of three (see calendarListTTL).
+	Calendars   []api.CalendarDetail
+	CalendarsAt time.Time
 
 	// Onboarded caches bot.onboarded once it is known to be true. False means
 	// "not known yet", never "known false" — that one is always re-read, so a

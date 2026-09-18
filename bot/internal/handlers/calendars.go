@@ -3,6 +3,7 @@ package handlers
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 
@@ -215,6 +216,7 @@ func (h *Handler) confirmCalendar(chatID int64, messageID int, id, action string
 func (h *Handler) leaveCalendar(chatID int64, messageID int, id string) {
 	lang := h.lang(chatID)
 	us := h.store.GetOrCreate(chatID)
+	h.invalidateCalendars(chatID)
 	if err := h.api.LeaveCalendar(us.AuthToken, id, h.myUserID(chatID)); err != nil {
 		h.editOrSend(chatID, messageID, i18n.T(lang,
 			"Не смог выйти из календаря.", "Could not leave the calendar."),
@@ -232,6 +234,7 @@ func (h *Handler) leaveCalendar(chatID int64, messageID int, id string) {
 // calendar is still in the list.
 func (h *Handler) deleteCalendar(chatID int64, messageID int, id string) {
 	lang := h.lang(chatID)
+	h.invalidateCalendars(chatID)
 	if err := h.api.DeleteCalendar(h.store.GetOrCreate(chatID).AuthToken, id); err != nil {
 		h.editOrSend(chatID, messageID, i18n.T(lang,
 			"Не смог удалить: в календаре ещё есть события или задачи. Перенеси их и попробуй снова.",
@@ -267,6 +270,9 @@ func (h *Handler) handleCalendarText(chatID int64, flow, text string) {
 	kind, id, _ := strings.Cut(rest, ":")
 	text = strings.TrimSpace(text)
 	h.store.ClearFlow(chatID)
+
+	// Any write below changes what the list says, so the cached list goes first.
+	h.invalidateCalendars(chatID)
 
 	switch kind {
 	case "name":
@@ -308,6 +314,7 @@ func (h *Handler) setCalendarColour(chatID int64, messageID int, payload string)
 		return
 	}
 	colour := "#" + hex
+	h.invalidateCalendars(chatID)
 	if err := h.api.UpdateCalendar(h.store.GetOrCreate(chatID).AuthToken, id, nil, &colour); err != nil {
 		h.editOrSend(chatID, messageID, h.t(chatID,
 			"Не смог поменять цвет.", "Could not change the colour."),
@@ -317,9 +324,41 @@ func (h *Handler) setCalendarColour(chatID int64, messageID int, payload string)
 	h.showCalendarCard(chatID, messageID, id)
 }
 
-// calendarList reads the calendars for this chat.
+// calendarListTTL is how long a fetched list is reused.
+//
+// 🔴 Short on purpose. The screens here call findCalendar two or three times
+// per press — the card wants the name, the keyboard wants the role, the members
+// screen wants both — and without this every one of those was its own HTTPS
+// round trip to the API. Pressing a calendar cost three.
+//
+// Ten seconds is long enough to cover one press and everything it redraws, and
+// short enough that a rename made on the web shows up on the next screen rather
+// than after a restart. It is a cache for one interaction, not for a session.
+const calendarListTTL = 10 * time.Second
+
+// calendarList reads the calendars for this chat, reusing a very recent read.
 func (h *Handler) calendarList(chatID int64) ([]api.CalendarDetail, error) {
-	return h.api.CalendarsFull(h.store.GetOrCreate(chatID).AuthToken)
+	us := h.store.GetOrCreate(chatID)
+	if us.CalendarsAt.After(time.Now().Add(-calendarListTTL)) && us.Calendars != nil {
+		return us.Calendars, nil
+	}
+	cals, err := h.api.CalendarsFull(us.AuthToken)
+	if err != nil {
+		return nil, err
+	}
+	us.Calendars, us.CalendarsAt = cals, time.Now()
+	return cals, nil
+}
+
+// invalidateCalendars drops the cache after a write.
+//
+// 🔴 Called by every mutation here. A cache that outlives the change it does
+// not know about is worse than no cache: the user renames a calendar, the
+// screen redraws from ten-second-old data, and the rename looks like it failed.
+func (h *Handler) invalidateCalendars(chatID int64) {
+	us := h.store.GetOrCreate(chatID)
+	us.Calendars, us.CalendarsAt = nil, time.Time{}
+	us.PersonalCalendar, us.PersonalCalendarKnown = "", false
 }
 
 func (h *Handler) findCalendar(chatID int64, id string) (api.CalendarDetail, bool) {
@@ -400,6 +439,7 @@ func (h *Handler) askInviteLink(chatID int64, token string) {
 // onboarding — in that order, so nothing is lost either way.
 func (h *Handler) acceptInviteLink(chatID int64, messageID int, token string) {
 	lang := h.lang(chatID)
+	h.invalidateCalendars(chatID)
 	c, err := h.api.AcceptInviteLink(h.store.GetOrCreate(chatID).AuthToken, token)
 	if err != nil {
 		h.editOrSend(chatID, messageID, i18n.T(lang,
