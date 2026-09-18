@@ -29,6 +29,18 @@ type Note struct {
 // report said «выкачено».
 var notes = []Note{
 	{
+		Version:  "v0.4.11.5",
+		Released: "18.09.2026 · написана, на стенде ещё нет",
+		RU: "• 🔗 Аккаунт на сайте прямо из бота: ссылка для входа или код для привязки\n" +
+			"• Два аккаунта — на сайте и в Telegram — можно объединить в один\n" +
+			"• Бот спросит, ты ли это, и какой аккаунт оставить\n" +
+			"• Если личный календарь есть у обоих — спросит и про него",
+		EN: "• 🔗 Your website account from inside the bot: a sign-in link or a linking code\n" +
+			"• Two accounts — website and Telegram — can become one\n" +
+			"• The bot asks whether it is you, and which account stays\n" +
+			"• If both have a personal calendar, it asks about that too",
+	},
+	{
 		Version:  "v0.4.11.4",
 		Released: "18.09.2026 · на dev, в проде ещё нет",
 		RU: "• 📊 Статистика заработала — раньше там было «скоро»\n" +
