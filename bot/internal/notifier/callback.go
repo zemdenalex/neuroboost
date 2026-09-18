@@ -33,6 +33,9 @@ const (
 	// delivered carry it under buttons on people's phones, and a button that
 	// silently stops answering is indistinguishable from a dead bot.
 	codeSnoozeHour = "h"
+	// «Своё» does not postpone by itself — it opens the question. The bot
+	// answers it in the chat, because a free interval cannot be a button.
+	codeSnoozeAsk = "k"
 	// Answering a calendar invitation. One letter each, for the same reason as
 	// the rest: 64 bytes total and 36 of them are a UUID.
 	codeAccept  = "y"
@@ -44,6 +47,9 @@ const (
 const (
 	ActionAck     = "ack"
 	ActionSnooze  = "snooze"
+	// ActionSnoozeAsk never reaches the API: it is handled entirely in the
+	// bot, which then sends a normal snooze with the minutes it was told.
+	ActionSnoozeAsk = "snooze_ask"
 	ActionDone    = "done"
 	ActionAccept  = "accept"
 	ActionDecline = "decline"
@@ -89,6 +95,8 @@ func ParseCallback(data string) (Callback, bool) {
 		return Callback{Action: ActionSnooze, ReminderID: id, Minutes: SnoozeMinutes}, true
 	case codeSnoozeHour:
 		return Callback{Action: ActionSnooze, ReminderID: id, Minutes: SnoozeHour}, true
+	case codeSnoozeAsk:
+		return Callback{Action: ActionSnoozeAsk, ReminderID: id}, true
 	case codeDone:
 		return Callback{Action: ActionDone, ReminderID: id}, true
 	case codeAccept:
@@ -125,6 +133,7 @@ func Keyboard(sourceKind, reminderID string) *tgbotapi.InlineKeyboardMarkup {
 			tgbotapi.NewInlineKeyboardButtonData("✅ Готово", EncodeCallback(codeDone, reminderID)),
 			tgbotapi.NewInlineKeyboardButtonData("⏰ 10 мин", EncodeCallback(codeSnooze, reminderID)),
 			tgbotapi.NewInlineKeyboardButtonData("⏰ Час", EncodeCallback(codeSnoozeHour, reminderID)),
+			tgbotapi.NewInlineKeyboardButtonData("⏰ Своё", EncodeCallback(codeSnoozeAsk, reminderID)),
 		}
 	case "INVITE":
 		// 🔴 No snooze. Snoozing re-sends the same notification later, and an
@@ -145,6 +154,7 @@ func Keyboard(sourceKind, reminderID string) *tgbotapi.InlineKeyboardMarkup {
 			tgbotapi.NewInlineKeyboardButtonData("👌 Понятно", EncodeCallback(codeAck, reminderID)),
 			tgbotapi.NewInlineKeyboardButtonData("⏰ 10 мин", EncodeCallback(codeSnooze, reminderID)),
 			tgbotapi.NewInlineKeyboardButtonData("⏰ Час", EncodeCallback(codeSnoozeHour, reminderID)),
+			tgbotapi.NewInlineKeyboardButtonData("⏰ Своё", EncodeCallback(codeSnoozeAsk, reminderID)),
 		}
 	}
 
@@ -211,10 +221,19 @@ func ParseMinutes(raw string) int {
 // A pure function, so ActionsAllHaveReplies can hold it against the buttons the
 // keyboards actually emit. A switch buried in a handler that needs a live bot
 // could not be tested, which is why the gap shipped.
-func ActionReply(lang i18n.Lang, action string) string {
+func ActionReply(lang i18n.Lang, action string, minutes int) string {
 	switch action {
 	case ActionSnooze:
-		return i18n.T(lang, "⏰ Напомню через 10 минут.", "⏰ I will remind you in 10 minutes.")
+		// 🔴 The interval comes from the press, not from a constant. This line
+		// said «через 10 минут» for every snooze — including the hour
+		// button added the same day — which is a confident sentence about
+		// something that did not happen.
+		return i18n.T(lang,
+			"⏰ Напомню через "+HumanMinutes(lang, minutes)+".",
+			"⏰ I will remind you in "+HumanMinutes(lang, minutes)+".")
+	case ActionSnoozeAsk:
+		// Answered by the chat, which asks the question; nothing to report yet.
+		return ""
 	case ActionDone:
 		return i18n.T(lang, "✅ Готово.", "✅ Done.")
 	case ActionAck:
@@ -231,3 +250,40 @@ func ActionReply(lang i18n.Lang, action string) string {
 // that checks "every button has a reply" iterates the real set rather than a
 // list written beside it, which would agree with itself by construction.
 var KnownSourceKinds = []string{"EVENT", "TASK", "DIGEST", "INVITE"}
+
+// humanMinutes says an interval the way a person would.
+//
+// ⚠ Russian needs the plural form and English does not, so each language gets
+// its own sentence rather than a shared template with a number poked into it.
+func HumanMinutes(lang i18n.Lang, m int) string {
+	switch {
+	case m >= 1440 && m%1440 == 0:
+		d := m / 1440
+		return i18n.T(lang,
+			itoa(d)+" "+ruPlural(d, "день", "дня", "дней"),
+			itoa(d)+" days")
+	case m >= 60 && m%60 == 0:
+		h := m / 60
+		return i18n.T(lang,
+			itoa(h)+" "+ruPlural(h, "час", "часа", "часов"),
+			itoa(h)+" hours")
+	default:
+		return i18n.T(lang,
+			itoa(m)+" "+ruPlural(m, "минуту", "минуты", "минут"),
+			itoa(m)+" minutes")
+	}
+}
+
+func itoa(n int) string { return strconv.Itoa(n) }
+
+// ruPlural picks the Russian form for a count: 1 минута, 3 минуты, 5 минут.
+func ruPlural(n int, one, few, many string) string {
+	switch {
+	case n%10 == 1 && n%100 != 11:
+		return one
+	case n%10 >= 2 && n%10 <= 4 && (n%100 < 12 || n%100 > 14):
+		return few
+	default:
+		return many
+	}
+}

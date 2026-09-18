@@ -27,6 +27,13 @@ func (h *Handler) handleNotificationAction(chatID int64, from *tgbotapi.User, ms
 		h.sendText(chatID, h.t(chatID, "⚠️ Не понимаю, от кого это сообщение.", "⚠️ I can't tell who sent this."))
 		return
 	}
+	// «⏰ Своё» is a question, not a postponement: it never reaches the API.
+	// Denis, 18.09, looking at two fixed buttons: «и где свой вариант?»
+	if action.Action == notifier.ActionSnoozeAsk {
+		h.askSnoozeInterval(chatID, action.ReminderID)
+		return
+	}
+
 	if h.cfg.ServiceToken == "" {
 		// Nothing to fail loudly about in the chat: the buttons only exist
 		// because the notifier sent the message, which needs the same token.
@@ -48,7 +55,7 @@ func (h *Handler) handleNotificationAction(chatID int64, from *tgbotapi.User, ms
 	// them. The API answered 200 to every press and the chat said nothing, so
 	// the feature looked broken and got pressed seven times. The set of replies
 	// is now held against the set of buttons by TestEveryButtonHasAReply.
-	if reply := notifier.ActionReply(h.lang(chatID), action.Action); reply != "" {
+	if reply := notifier.ActionReply(h.lang(chatID), action.Action, action.Minutes); reply != "" {
 		h.sendText(chatID, reply)
 	}
 
@@ -316,6 +323,11 @@ func (h *Handler) HandleCallback(cb *tgbotapi.CallbackQuery) {
 
 	// Feedback and release notes own fb/fb_* and whatsnew*.
 	if h.handleFeedbackCallback(chatID, cb.Message.MessageID, data) {
+		return
+	}
+
+	// «Своё» on a reminder owns snz_*.
+	if h.handleSnoozeCallback(chatID, cb.Message.MessageID, data) {
 		return
 	}
 

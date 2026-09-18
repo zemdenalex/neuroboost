@@ -65,11 +65,13 @@ func TestKeyboardPerSourceKind(t *testing.T) {
 	// Three since 18.09: done/ack plus both snooze lengths. Denis asked to be
 	// able to postpone by ten minutes OR an hour, so «later» stopped being one
 	// button.
-	if kb := Keyboard("TASK", sampleID); kb == nil || len(kb.InlineKeyboard[0]) != 3 {
-		t.Error("a task reminder should offer done and both snoozes")
+	// Four since 18.09: done/ack, ten minutes, an hour, and «Своё» — Denis
+	// asked «и где свой вариант?» after finding only the two fixed lengths.
+	if kb := Keyboard("TASK", sampleID); kb == nil || len(kb.InlineKeyboard[0]) != 4 {
+		t.Error("a task reminder should offer done, both snoozes and a custom one")
 	}
-	if kb := Keyboard("EVENT", sampleID); kb == nil || len(kb.InlineKeyboard[0]) != 3 {
-		t.Error("an event reminder should offer ack and both snoozes")
+	if kb := Keyboard("EVENT", sampleID); kb == nil || len(kb.InlineKeyboard[0]) != 4 {
+		t.Error("an event reminder should offer ack, both snoozes and a custom one")
 	}
 	// A digest summarises several items, so there is no single thing to
 	// complete or postpone.
@@ -189,7 +191,7 @@ func TestEveryButtonHasAReply(t *testing.T) {
 				if !ok {
 					t.Fatalf("%s: button data does not parse: %q", kind, *b.CallbackData)
 				}
-				if ActionReply(i18n.RU, cb.Action) == "" {
+				if ActionReply(i18n.RU, cb.Action, cb.Minutes) == "" && cb.Action != ActionSnoozeAsk {
 					t.Errorf("%s: pressing %q says nothing back — a silent success reads as a failure",
 						kind, cb.Action)
 				}
