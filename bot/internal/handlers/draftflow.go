@@ -261,6 +261,18 @@ func (h *Handler) handleNewEventFlow(chatID int64, text string) {
 		toggleReminder(st, n, true)
 		h.showReminderPicker(chatID, 0, st)
 
+	case "edit:note":
+		st, ok := draftOf(h, chatID)
+		if !ok {
+			h.lostDraft(chatID)
+			return
+		}
+		// Stored whole. Only the CARD shortens — truncating on the way in would
+		// throw away what the person wrote, which no display decision is
+		// allowed to do.
+		st.Description = strings.TrimSpace(text)
+		h.showCard(chatID, 0)
+
 	case "edit:tags":
 		st, ok := draftOf(h, chatID)
 		if !ok {
@@ -521,6 +533,11 @@ func (h *Handler) handleDraftCallback(chatID int64, messageID int, data string) 
 		us.FlowStep = "edit:title"
 		h.editOrSend(chatID, messageID,
 			h.t(chatID, "Напиши название. Здесь оно берётся <b>как есть</b> — ключевые слова не действуют.", "Write the title. Here it is taken <b>as is</b> — keywords do nothing."), keyboards.DraftBack(h.lang(chatID)))
+
+	case data == "dre_note":
+		us.FlowStep = "edit:note"
+		h.editOrSend(chatID, messageID,
+			h.t(chatID, "Напиши заметку — она сохранится к событию целиком, на карточке видно начало.", "Write the note — it is saved in full; the card shows the beginning."), keyboards.DraftBack(h.lang(chatID)))
 
 	case data == "dre_tags":
 		us.FlowStep = "edit:tags"
@@ -833,6 +850,7 @@ func (h *Handler) createOne(chatID int64, st draftState) error {
 		AllDay:          st.D.AllDay,
 		Tags:            st.D.Tags,
 		TaskID:          taskID,
+		Description:     optional(st.Description),
 		ReminderOffsets: st.ReminderOffsets,
 	}
 	if rrule := st.D.RRule(); rrule != "" {
@@ -867,4 +885,17 @@ func withoutField(fields []parse.Field, drop parse.Field) []parse.Field {
 		}
 	}
 	return out
+}
+
+// optional turns an empty string into an absent JSON field.
+//
+// 🔴 Not a plain string: the API's Description is *string, and «» sent as a
+// present-but-empty value would CLEAR a note on every edit that did not touch
+// it — the same shape as the settings blob that erases what it does not know
+// (gotcha 21).
+func optional(s string) *string {
+	if strings.TrimSpace(s) == "" {
+		return nil
+	}
+	return &s
 }

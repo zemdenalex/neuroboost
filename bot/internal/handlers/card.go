@@ -25,7 +25,12 @@ type draftState struct {
 	// on purpose: two editors would be two places to forget a field.
 	EventID string
 
-	Title        string
+	Title string
+
+	// Description is the event's note. Optional and free text: nothing parses
+	// it, the way nothing parses a tag typed on the tags step.
+	Description string
+
 	D            parse.Draft
 	CalendarID   string
 	CalendarName string
@@ -307,6 +312,8 @@ func renderDraft(lang i18n.Lang, st draftState, now time.Time) string {
 		orNone(lang, format.Escape(strings.Join(st.D.Tags, ", ")))))
 	b.WriteString(fieldLine("🎨", i18n.T(lang, "Цвет:", "Colour:"),
 		orNone(lang, format.Escape(colourName(lang, st.D.Colour)))))
+	b.WriteString(fieldLine("📝", i18n.T(lang, "Заметка:", "Note:"),
+		orNone(lang, format.Escape(shorten(st.Description, descriptionOnCard)))))
 
 	return strings.TrimRight(b.String(), "\n")
 }
@@ -334,6 +341,26 @@ func orNone(lang i18n.Lang, value string) string {
 		return noneWord(lang)
 	}
 	return value
+}
+
+// descriptionOnCard is how much of a note the card shows.
+//
+// 🔴 The card is a summary, not the document. A description pasted out of a
+// letter would push the buttons off a phone screen — and a confirmation card
+// whose confirm button is below the fold has stopped being one.
+const descriptionOnCard = 60
+
+// shorten cuts at a rune boundary and says so with «…».
+//
+// The ellipsis is not decoration: without it a truncated note is
+// indistinguishable from a complete one, and someone would edit the wrong half
+// believing they had seen all of it.
+func shorten(s string, limit int) string {
+	r := []rune(strings.TrimSpace(s))
+	if len(r) <= limit {
+		return string(r)
+	}
+	return strings.TrimRight(string(r[:limit]), " ") + "…"
 }
 
 // checkMark flags a value the parser read from a loose format.

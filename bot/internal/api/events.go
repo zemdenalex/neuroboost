@@ -13,13 +13,14 @@ package api
 // string would send "" for every field the user did not touch and blank the
 // event — which is how a partial update quietly becomes a destructive one.
 type UpdateEventReq struct {
-	Title      *string `json:"title,omitempty"`
-	StartsAt   *string `json:"starts_at,omitempty"`
-	EndsAt     *string `json:"ends_at,omitempty"`
-	AllDay     *bool   `json:"all_day,omitempty"`
-	Rrule      *string `json:"rrule,omitempty"`
-	Colour     *string `json:"color,omitempty"`
-	CalendarID *string `json:"calendar_id,omitempty"`
+	Title       *string `json:"title,omitempty"`
+	Description *string `json:"description,omitempty"`
+	StartsAt    *string `json:"starts_at,omitempty"`
+	EndsAt      *string `json:"ends_at,omitempty"`
+	AllDay      *bool   `json:"all_day,omitempty"`
+	Rrule       *string `json:"rrule,omitempty"`
+	Colour      *string `json:"color,omitempty"`
+	CalendarID  *string `json:"calendar_id,omitempty"`
 
 	Tags            []string `json:"tags,omitempty"`
 	ReminderOffsets *[]int   `json:"reminder_offsets,omitempty"`

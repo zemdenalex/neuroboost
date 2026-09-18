@@ -53,14 +53,15 @@ type Event struct {
 // exact defect this product hit on 12.08. Those are different events, and a
 // plain []int cannot tell them apart.
 type CreateEventReq struct {
-	Title      string  `json:"title"`
-	StartsAt   string  `json:"starts_at"`
-	EndsAt     string  `json:"ends_at"`
-	AllDay     bool    `json:"all_day,omitempty"`
-	Rrule      *string `json:"rrule,omitempty"`
-	Colour     *string `json:"color,omitempty"`
-	CalendarID *string `json:"calendar_id,omitempty"`
-	TaskID     *string `json:"task_id,omitempty"`
+	Title       string  `json:"title"`
+	Description *string `json:"description,omitempty"`
+	StartsAt    string  `json:"starts_at"`
+	EndsAt      string  `json:"ends_at"`
+	AllDay      bool    `json:"all_day,omitempty"`
+	Rrule       *string `json:"rrule,omitempty"`
+	Colour      *string `json:"color,omitempty"`
+	CalendarID  *string `json:"calendar_id,omitempty"`
+	TaskID      *string `json:"task_id,omitempty"`
 
 	Tags            []string `json:"tags,omitempty"`
 	ReminderOffsets *[]int   `json:"reminder_offsets,omitempty"`

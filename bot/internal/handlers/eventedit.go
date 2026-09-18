@@ -67,7 +67,10 @@ func eventPickLabel(e api.Event, loc *time.Location) string {
 // print them in. Doing it in UTC would shift every event by the offset the
 // moment it was opened, which reads as the bot corrupting data.
 func draftFromEvent(e api.Event, loc *time.Location) draftState {
-	st := draftState{Title: e.Title, EventID: e.ID, CalendarID: e.CalendarID}
+	// 🔴 Description is loaded, not left blank. The edit screen writes back the
+	// draft it was given, so a field the draft forgets is a field the next save
+	// erases — silently, on an event the user only meant to move.
+	st := draftState{Title: e.Title, Description: e.Description, EventID: e.ID, CalendarID: e.CalendarID}
 
 	start, err := time.Parse(time.RFC3339, e.StartsAt)
 	if err != nil {
@@ -249,6 +252,7 @@ func (h *Handler) updateFromDraft(chatID int64, messageID int, st draftState) {
 		Colour:          &colour,
 		Tags:            st.D.Tags,
 		ReminderOffsets: st.ReminderOffsets,
+		Description:     optional(st.Description),
 	}
 	if st.CalendarID != "" {
 		id := st.CalendarID

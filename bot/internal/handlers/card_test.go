@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/zemdenalex/neuroboost-bot/internal/api"
 	"github.com/zemdenalex/neuroboost-bot/internal/i18n"
 	"github.com/zemdenalex/neuroboost-bot/internal/parse"
 )
@@ -214,5 +215,65 @@ func TestCardNamesEveryFieldInEnglishToo(t *testing.T) {
 	}
 	if !strings.Contains(card, "none") {
 		t.Errorf("empty fields did not say «none»:\n%s", card)
+	}
+}
+
+// 🔴 Denis, 18.09: «by note you meant description, and if we have no
+// description line we should have — and if description is filled and it's long
+// it should be shortened».
+//
+// The card is a summary, not the document. A description pasted from a letter
+// would push the buttons off a phone screen, which is how a confirmation card
+// stops being confirmable.
+func TestCardNamesTheDescriptionAndShortensALongOne(t *testing.T) {
+	st := draftFrom("стоматолог завтра 15:00")
+	card := renderDraft(i18n.RU, st, tuesday15())
+	if !strings.Contains(card, "Заметка:") || !strings.Contains(card, "Заметка: нет") {
+		t.Errorf("пустая заметка не названа словом «нет»:\n%s", card)
+	}
+
+	st.Description = "Взять полис и паспорт, приехать за пятнадцать минут, спросить про рассрочку и записаться на следующий приём сразу на выходе"
+	card = renderDraft(i18n.RU, st, tuesday15())
+	line := lineWith(card, "Заметка:")
+	if !strings.Contains(line, "Взять полис") {
+		t.Errorf("заметка не показана вовсе:\n%s", card)
+	}
+	if len([]rune(line)) > 90 {
+		t.Errorf("длинная заметка не укорочена — %d символов в строке:\n%s", len([]rune(line)), line)
+	}
+	if !strings.Contains(line, "…") {
+		t.Errorf("укорочённая заметка не помечена многоточием, и её не отличить от полной:\n%s", line)
+	}
+
+	short := "взять полис"
+	st.Description = short
+	line = lineWith(renderDraft(i18n.RU, st, tuesday15()), "Заметка:")
+	if strings.Contains(line, "…") {
+		t.Errorf("короткая заметка обрезана без нужды: %q", line)
+	}
+}
+
+func lineWith(card, needle string) string {
+	for _, l := range strings.Split(card, "\n") {
+		if strings.Contains(l, needle) {
+			return l
+		}
+	}
+	return ""
+}
+
+// 🔴 The note must actually reach the API. The card showing it proves only that
+// the card shows it — the failure this guards against is a field that is typed,
+// displayed, confirmed, and then quietly dropped at creation.
+func TestNoteReachesTheAPIWhole(t *testing.T) {
+	long := "Взять полис и паспорт, приехать за пятнадцать минут, спросить про рассрочку"
+	req := api.CreateEventReq{Description: optional(long)}
+	if req.Description == nil || *req.Description != long {
+		t.Fatalf("описание не доехало целиком: %v", req.Description)
+	}
+	// An empty note must be ABSENT, not an empty string: the API's field is a
+	// pointer, and a present empty value clears whatever was there.
+	if optional("   ") != nil {
+		t.Error("пустая заметка отправляется как пустая строка и сотрёт существующую")
 	}
 }
