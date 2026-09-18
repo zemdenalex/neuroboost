@@ -24,12 +24,12 @@ import (
 
 // StatsWeek is everything the screen shows, as plain numbers.
 type StatsWeek struct {
-	Events      int
-	Hours       float64
-	AllDay      int
-	Repeating   int
-	TasksDone   int
-	TasksOpen   int
+	Events       int
+	Hours        float64
+	AllDay       int
+	Repeating    int
+	TasksDone    int
+	TasksOpen    int
 	TasksOverdue int
 	// PerDay holds seven counts, Monday first — the ISO week this product uses
 	// everywhere else.
@@ -190,10 +190,8 @@ func renderStats(lang i18n.Lang, s StatsWeek, weekStart time.Time) string {
 
 	// A bar per day, so the shape of the week is visible without reading.
 	b.WriteString("\n")
-	names := [7]string{"пн", "вт", "ср", "чт", "пт", "сб", "вс"}
-	namesEN := [7]string{"Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"}
 	for i := 0; i < 7; i++ {
-		name := i18n.T(lang, names[i], namesEN[i])
+		name := weekdayShort(lang, i)
 		bar := strings.Repeat("▪", min(s.PerDay[i], 10))
 		if s.PerDay[i] == 0 {
 			bar = "·"
@@ -204,7 +202,7 @@ func renderStats(lang i18n.Lang, s StatsWeek, weekStart time.Time) string {
 	if s.Busiest >= 0 {
 		b.WriteString("\n")
 		fmt.Fprintf(&b, i18n.T(lang, "Плотнее всего — %s.", "Busiest day — %s."),
-			i18n.T(lang, names[s.Busiest], namesEN[s.Busiest]))
+			weekdayShort(lang, s.Busiest))
 	}
 
 	return b.String()
@@ -215,4 +213,29 @@ func min(a, b int) int {
 		return a
 	}
 	return b
+}
+
+// weekdayShort names a day of the ISO week, Monday first.
+//
+// ⚠ Built through i18n.T per day rather than as two package-level arrays: the
+// scan that keeps untranslated text out of the bot reads call sites, and a table
+// of bare literals is invisible to it — it would ship Russian to an English
+// reader and nothing would complain.
+func weekdayShort(lang i18n.Lang, i int) string {
+	switch i {
+	case 0:
+		return i18n.T(lang, "пн", "Mo")
+	case 1:
+		return i18n.T(lang, "вт", "Tu")
+	case 2:
+		return i18n.T(lang, "ср", "We")
+	case 3:
+		return i18n.T(lang, "чт", "Th")
+	case 4:
+		return i18n.T(lang, "пт", "Fr")
+	case 5:
+		return i18n.T(lang, "сб", "Sa")
+	default:
+		return i18n.T(lang, "вс", "Su")
+	}
 }
