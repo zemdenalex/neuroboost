@@ -68,14 +68,6 @@ func (h *Handler) handleToday(chatID int64, messageID int) {
 	h.editOrSend(chatID, messageID, text, keyboards.BackToMenu(h.lang(chatID)))
 }
 
-func (h *Handler) handleStats(chatID int64, messageID int) {
-	h.editOrSend(chatID, messageID,
-		h.t(chatID,
-			"📊 <b>Статистика</b>\n\nСкоро — здесь будут тренды по твоей неделе.",
-			"📊 <b>Stats</b>\n\nComing soon — your weekly trends will live here."),
-		keyboards.BackToMenu(h.lang(chatID)))
-}
-
 // dayBounds is the half-open UTC range covering one local calendar day.
 //
 // Extracted so the conversion can be asserted: the whole defect was invisible
