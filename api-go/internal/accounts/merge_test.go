@@ -255,7 +255,23 @@ func TestAFailedMergeLeavesBothAccountsUntouched(t *testing.T) {
 		t.Fatalf("create probe table: %v", err)
 	}
 	defer func() {
-		if _, err := d.Pool.Exec(context.Background(), `DROP TABLE merge_rollback_probe`); err != nil {
+		// 🔴 Reset the pool before the DROP. This test leaves a rolled-back
+		// transaction behind by design, and pgxpool keeps that connection alive
+		// and idle — still holding the locks the aborted transaction took on
+		// "user". DROP TABLE needs a lock on "user" too (to remove the foreign
+		// key), so the two wait on each other and Postgres reports a deadlock.
+		//
+		// It passed locally and failed in CI, which is the shape of every
+		// timing-dependent test: the local pool happened to hand the DROP the
+		// same connection. Closing the pool's connections first removes the
+		// other party from the cycle rather than hoping for the same luck.
+		d.Pool.Reset()
+		// A bounded wait, so a genuine lock elsewhere fails the test with a
+		// timeout instead of hanging the whole CI job.
+		dropCtx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+		defer cancel()
+		if _, err := d.Pool.Exec(dropCtx,
+			`SET LOCAL lock_timeout = '10s'; DROP TABLE merge_rollback_probe`); err != nil {
 			t.Errorf("probe table left behind — it will fail the FK test: %v", err)
 		}
 	}()
