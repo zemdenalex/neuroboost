@@ -210,7 +210,14 @@ var ownerWriteRe = regexp.MustCompile(`(?is)UPDATE\s+calendar_member\s+SET\s+rol
 // If a second legitimate writer ever appears, do not delete this test: add the
 // file to the allowlist and say why in the commit.
 func TestOwnershipIsWrittenInOneFunctionOnly(t *testing.T) {
-	const allowedFile = "crud.go"
+	// ⚠ A second writer was admitted on 18.09: accounts/merge.go, for the
+	// account merge. It writes calendar.owner_id when a personal calendar
+	// changes hands, and the matching calendar_member row moves in the same
+	// transaction a few statements later. That ordering is the invariant, and
+	// because ordering is exactly what a static check cannot see, it is held
+	// instead by a DB test — accounts.TestOwnerAndMembershipStayInStep, which
+	// goes red if the two ever stop agreeing.
+	allowedFiles := map[string]bool{"crud.go": true, "merge.go": true}
 
 	var scanned int
 	var offenders []string
@@ -229,7 +236,7 @@ func TestOwnershipIsWrittenInOneFunctionOnly(t *testing.T) {
 			if !ownerWriteRe.MatchString(block) {
 				continue
 			}
-			if filepath.Base(path) == allowedFile {
+			if allowedFiles[filepath.Base(path)] {
 				continue
 			}
 			offenders = append(offenders, path)
@@ -245,7 +252,7 @@ func TestOwnershipIsWrittenInOneFunctionOnly(t *testing.T) {
 	}
 
 	if len(offenders) > 0 {
-		t.Errorf("ownership is written outside %s, so the role and the owner_id cache can drift apart:\n  %s",
-			allowedFile, strings.Join(offenders, "\n  "))
+		t.Errorf("ownership is written outside crud.go/merge.go, so the role and the owner_id cache can drift apart:\n  %s",
+			strings.Join(offenders, "\n  "))
 	}
 }
