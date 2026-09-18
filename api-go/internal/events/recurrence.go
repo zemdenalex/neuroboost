@@ -2,79 +2,34 @@ package events
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
+
+	"neuroboost/api-go/internal/recurrence"
 )
 
-// RecurrenceRule represents a parsed RRULE for event recurrence
-type RecurrenceRule struct {
-	Freq     string     // DAILY, WEEKLY, MONTHLY
-	Interval int        // default 1
-	Count    *int       // optional max occurrences
-	Until    *time.Time // optional end date
-}
+// RecurrenceRule is the parsed RRULE.
+//
+// ⚠ An alias, not a copy. The parser moved to internal/recurrence on 18.09 so
+// that tasks could use the same grammar without `tasks` importing `events` —
+// which would become an import cycle the moment task↔event conversion needs
+// both directions. The alias keeps every existing caller in this package
+// compiling and reading the same way.
+type RecurrenceRule = recurrence.Rule
 
-// parseRRule parses an RRULE string like "FREQ=DAILY;COUNT=10" or "FREQ=WEEKLY;UNTIL=2026-06-01;INTERVAL=2"
-func parseRRule(rrule string) (*RecurrenceRule, error) {
-	rule := &RecurrenceRule{Interval: 1}
+// parseRRule is the shared parser, kept under its old name so this package's
+// call sites and tests are unchanged.
+var parseRRule = recurrence.Parse
 
-	parts := strings.Split(rrule, ";")
-	for _, part := range parts {
-		part = strings.TrimSpace(part)
-		if part == "" {
-			continue
-		}
-
-		kv := strings.SplitN(part, "=", 2)
-		if len(kv) != 2 {
-			return nil, fmt.Errorf("malformed RRULE part: %s", part)
-		}
-
-		key := strings.ToUpper(strings.TrimSpace(kv[0]))
-		val := strings.TrimSpace(kv[1])
-
-		switch key {
-		case "FREQ":
-			freq := strings.ToUpper(val)
-			if freq != "DAILY" && freq != "WEEKLY" && freq != "MONTHLY" {
-				return nil, fmt.Errorf("unsupported FREQ: %s", val)
-			}
-			rule.Freq = freq
-
-		case "INTERVAL":
-			n, err := strconv.Atoi(val)
-			if err != nil || n < 1 {
-				return nil, fmt.Errorf("invalid INTERVAL: %s", val)
-			}
-			rule.Interval = n
-
-		case "COUNT":
-			n, err := strconv.Atoi(val)
-			if err != nil || n < 1 {
-				return nil, fmt.Errorf("invalid COUNT: %s", val)
-			}
-			rule.Count = &n
-
-		case "UNTIL":
-			t, err := time.Parse("2006-01-02", val)
-			if err != nil {
-				return nil, fmt.Errorf("invalid UNTIL date: %s", val)
-			}
-			rule.Until = &t
-
-		default:
-			return nil, fmt.Errorf("unknown RRULE key: %s", key)
-		}
-	}
-
-	if rule.Freq == "" {
-		return nil, fmt.Errorf("RRULE missing required FREQ")
-	}
-
-	return rule, nil
-}
+// ErrInvalidRrule is returned when a write carries a repeat rule this API
+// cannot parse.
+//
+// Its own sentinel so the handler can answer 400 rather than 500: an
+// unsupported rule is the caller's mistake and is fixable by writing one we
+// support, while a flat 500 reads as "the app is broken".
+var ErrInvalidRrule = errors.New("unsupported repeat rule")
 
 // expandRecurrence generates event instances from a recurring event within the given time range.
 // The parent event itself is NOT included — only expanded occurrences.

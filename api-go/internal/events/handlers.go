@@ -116,6 +116,23 @@ func CreateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// 🔴 An RRULE this API cannot parse is refused at the door, by name.
+	//
+	// Until 18.09 it was accepted and stored, and then the READ path
+	// (handlers.go:71) quietly fell back to "include the parent event as-is" —
+	// so «каждый год» produced an event that showed up once and never repeated,
+	// with no error anywhere and nothing to notice. The client believed it had
+	// created a series.
+	//
+	// Refusing on write is the only place this can be fixed for good: a rule
+	// already in the database is a series somebody is waiting for.
+	if req.Rrule != nil && *req.Rrule != "" {
+		if _, err := parseRRule(*req.Rrule); err != nil {
+			util.RespondError(w, http.StatusBadRequest, "INVALID_RRULE", "Unsupported repeat rule: "+err.Error())
+			return
+		}
+	}
+
 	startsAt, err := time.Parse(time.RFC3339, req.StartsAt)
 	if err != nil {
 		util.RespondError(w, http.StatusBadRequest, "INVALID_START", "Invalid start date format")
@@ -350,6 +367,8 @@ func UpdateHandler(w http.ResponseWriter, r *http.Request) {
 			util.RespondError(w, http.StatusNotFound, "CALENDAR_NOT_FOUND", "Calendar not found")
 		case errors.Is(err, calendars.ErrNotCalendarOwner):
 			util.RespondError(w, http.StatusForbidden, "CALENDAR_READ_ONLY", "You can read this calendar but not move events into it")
+		case errors.Is(err, ErrInvalidRrule):
+			util.RespondError(w, http.StatusBadRequest, "INVALID_RRULE", err.Error())
 		default:
 			util.RespondError(w, http.StatusInternalServerError, "UPDATE_ERROR", "Failed to update event")
 		}
@@ -827,6 +846,14 @@ func updateEvent(ctx context.Context, userID, eventID string, req UpdateEventReq
 		argNum++
 	}
 	if req.Rrule != nil {
+		// The same gate as CreateHandler. An edit is just as capable of storing
+		// a rule that will silently never fire — and «I only changed the
+		// repeat» is exactly when nobody re-checks whether it repeated.
+		if *req.Rrule != "" {
+			if _, err := parseRRule(*req.Rrule); err != nil {
+				return nil, fmt.Errorf("%w: %s", ErrInvalidRrule, err.Error())
+			}
+		}
 		updates = append(updates, fmt.Sprintf("rrule = $%d", argNum))
 		args = append(args, *req.Rrule)
 		argNum++
