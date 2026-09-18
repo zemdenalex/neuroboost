@@ -14,35 +14,90 @@ import (
 	"github.com/zemdenalex/neuroboost-bot/internal/parse"
 )
 
-// taskCardText renders what was understood — and nothing else.
+// taskCardText renders the task card.
 //
-// A card that shows "Срок: —" for a task with no due date trains the reader to
-// skip the line. Absent fields are absent.
+// ⚠ The comment that used to stand here said the opposite: «absent fields are
+// absent», on the argument that «Срок: —» trains the reader to skip the line.
+// Denis overturned it on 18.09 — a field that only appears once filled cannot
+// teach that it exists, and not knowing which fields exist was the actual
+// complaint. The comment is replaced rather than deleted so the reversal is
+// visible: both positions are reasonable, and this one was chosen by the
+// person using the product.
 func taskCardText(lang i18n.Lang, r parse.TaskResult, tz string) string {
+	return taskCardTextFull(lang, r, tz, "", "")
+}
+
+// taskCardTextFull writes the task card, naming EVERY characteristic.
+//
+// 🔴 Denis, 18.09, answering «карточка задачи тоже называет все поля» with a
+// flat «Нет». The event card had just been taught this and the task card was a
+// separate renderer one file away, still printing only what was filled — which
+// is how the same defect ships twice in one release.
+//
+// Repeat is deliberately absent: tasks have no recurrence in the database at
+// all (v0.4.11.4 adds it). Naming a field that cannot exist yet would be the
+// opposite failure — promising a control that is not there.
+func taskCardTextFull(lang i18n.Lang, r parse.TaskResult, tz, calendar, description string) string {
 	title := r.Title
 	if title == "" {
 		title = i18n.T(lang, "(без названия)", "(untitled)")
 	}
-	text := i18n.T(lang, "➕ <b>Новая задача</b>\n", "➕ <b>New task</b>\n")
-	if r.Priority != nil {
-		text += format.PriorityEmoji(*r.Priority) + " "
-	}
-	text += fmt.Sprintf("<b>%s</b>\n", format.Escape(title))
 
-	var meta []string
+	var b strings.Builder
+	b.WriteString(i18n.T(lang, "➕ <b>Новая задача</b>\n", "➕ <b>New task</b>\n"))
+	fmt.Fprintf(&b, "💬 <b>%s</b>\n", format.Escape(title))
+
+	due := ""
 	if r.DueDate != nil {
-		meta = append(meta, "📅 "+r.DueDate.Format("02.01"))
+		due = r.DueDate.Format("02.01")
 	}
+	b.WriteString(fieldLine("📅", i18n.T(lang, "Срок:", "Due:"), orNone(lang, due)))
+
+	priority := ""
+	if r.Priority != nil {
+		priority = format.PriorityEmoji(*r.Priority) + " " + priorityName(lang, *r.Priority)
+	}
+	b.WriteString(fieldLine("🎯", i18n.T(lang, "Приоритет:", "Priority:"), orNone(lang, priority)))
+
+	estimate := ""
 	if r.EstimatedMinutes != nil {
-		meta = append(meta, "⏱ "+format.Duration(*r.EstimatedMinutes))
+		estimate = format.Duration(*r.EstimatedMinutes)
 	}
-	if len(r.Tags) > 0 {
-		meta = append(meta, "🏷 "+format.Escape(strings.Join(r.Tags, ", ")))
+	b.WriteString(fieldLine("⏱", i18n.T(lang, "Оценка:", "Estimate:"), orNone(lang, estimate)))
+
+	b.WriteString(fieldLine("🏷", i18n.T(lang, "Теги:", "Tags:"),
+		orNone(lang, format.Escape(strings.Join(r.Tags, ", ")))))
+	b.WriteString(fieldLine("📁", i18n.T(lang, "Календарь:", "Calendar:"),
+		orNone(lang, format.Escape(calendar))))
+	// Tasks take the account's reminder preset the same way events do, so the
+	// honest word is «как обычно», not «нет».
+	b.WriteString(fieldLine("🔔", i18n.T(lang, "Напоминания:", "Reminders:"),
+		i18n.T(lang, "как обычно", "as usual")))
+	b.WriteString(fieldLine("📄", i18n.T(lang, "Описание:", "Description:"),
+		orNone(lang, format.Escape(shorten(description, descriptionOnCard)))))
+
+	return b.String()
+}
+
+// priorityName says the priority in words. 🔴 The scale is inverted —
+// 1 = Emergency, 5 = If Possible, 0 = Buffer (gotcha 4) — so a bare number on a
+// card is read backwards by everyone who has not memorised that.
+func priorityName(lang i18n.Lang, p int) string {
+	switch p {
+	case 0:
+		return i18n.T(lang, "буфер", "buffer")
+	case 1:
+		return i18n.T(lang, "срочно", "emergency")
+	case 2:
+		return i18n.T(lang, "высокий", "high")
+	case 3:
+		return i18n.T(lang, "обычный", "normal")
+	case 4:
+		return i18n.T(lang, "низкий", "low")
+	case 5:
+		return i18n.T(lang, "если получится", "if possible")
 	}
-	if len(meta) > 0 {
-		text += strings.Join(meta, " · ") + "\n"
-	}
-	return text
+	return ""
 }
 
 // wizardOrder is the sequence of optional fields, coarsest first: a priority is

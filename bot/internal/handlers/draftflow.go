@@ -433,7 +433,12 @@ func (h *Handler) showCard(chatID int64, messageID int) {
 		// silently uncreated.
 		card = keyboards.DraftCardInList(h.lang(chatID))
 	}
-	text := renderDraft(h.lang(chatID), *st, time.Now().In(h.location(chatID)))
+	// The card names the calendar the event will actually land in. An unchosen
+	// calendar is not «нет» — it is the personal one, and saying otherwise
+	// teaches that the field is broken (Denis, 18.09).
+	shown := *st
+	shown.CalendarName = h.calendarNameFor(chatID, st.CalendarName)
+	text := renderDraft(h.lang(chatID), shown, time.Now().In(h.location(chatID)))
 	if series, _ := us.FlowData["series"].(bool); series && st.EventID != "" {
 		// Repeated on every redraw, not only on opening: the warning matters
 		// most right before «Сохранить».
@@ -537,7 +542,7 @@ func (h *Handler) handleDraftCallback(chatID int64, messageID int, data string) 
 	case data == "dre_note":
 		us.FlowStep = "edit:note"
 		h.editOrSend(chatID, messageID,
-			h.t(chatID, "Напиши заметку — она сохранится к событию целиком, на карточке видно начало.", "Write the note — it is saved in full; the card shows the beginning."), keyboards.DraftBack(h.lang(chatID)))
+			h.t(chatID, "Напиши описание — сохранится целиком, на карточке видно начало.", "Write the description — it is saved in full; the card shows the beginning."), keyboards.DraftBack(h.lang(chatID)))
 
 	case data == "dre_tags":
 		us.FlowStep = "edit:tags"

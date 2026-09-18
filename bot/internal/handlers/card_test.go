@@ -97,7 +97,10 @@ func TestCardPrintsAMidnightCrossing(t *testing.T) {
 
 func TestCardMarksATask(t *testing.T) {
 	card := renderDraft(i18n.RU, draftFrom("отжаться задача завтра 10:00"), tuesday15())
-	if !strings.Contains(card, "✅ <b>отжаться</b>") {
+	// ⚠ До 18.09 здесь было "✅ <b>отжаться</b>": иконка названия несла вид.
+	// Денис попросил у названия свою иконку, и вид теперь сказан словами
+	// отдельной строкой. Требование то же: задача должна быть видна как задача.
+	if !strings.Contains(card, "и задача") {
 		t.Errorf("a task is not marked as one:\n%s", card)
 	}
 }
@@ -174,7 +177,7 @@ func TestCardNamesEveryFieldEvenWhenEmpty(t *testing.T) {
 	st.CalendarName = "Личный"
 	card := renderDraft(i18n.RU, st, tuesday15())
 
-	for _, label := range []string{"Повтор:", "Календарь:", "Напомнить:", "Теги:", "Цвет:"} {
+	for _, label := range []string{"Повтор:", "Календарь:", "Напоминания:", "Теги:", "Цвет:"} {
 		if !strings.Contains(card, label) {
 			t.Errorf("карточка не называет %q — человек не узнает, что поле есть:\n%s", label, card)
 		}
@@ -208,7 +211,7 @@ func TestCardNamesEveryFieldInEnglishToo(t *testing.T) {
 	st := draftFrom("стоматолог завтра 15:00")
 	card := renderDraft(i18n.EN, st, tuesday15())
 
-	for _, label := range []string{"Repeat:", "Calendar:", "Remind:", "Tags:", "Colour:"} {
+	for _, label := range []string{"Repeat:", "Calendar:", "Reminders:", "Tags:", "Colour:"} {
 		if !strings.Contains(card, label) {
 			t.Errorf("the English card does not name %q:\n%s", label, card)
 		}
@@ -228,13 +231,13 @@ func TestCardNamesEveryFieldInEnglishToo(t *testing.T) {
 func TestCardNamesTheDescriptionAndShortensALongOne(t *testing.T) {
 	st := draftFrom("стоматолог завтра 15:00")
 	card := renderDraft(i18n.RU, st, tuesday15())
-	if !strings.Contains(card, "Заметка:") || !strings.Contains(card, "Заметка: нет") {
+	if !strings.Contains(card, "Описание:") || !strings.Contains(card, "Описание: нет") {
 		t.Errorf("пустая заметка не названа словом «нет»:\n%s", card)
 	}
 
 	st.Description = "Взять полис и паспорт, приехать за пятнадцать минут, спросить про рассрочку и записаться на следующий приём сразу на выходе"
 	card = renderDraft(i18n.RU, st, tuesday15())
-	line := lineWith(card, "Заметка:")
+	line := lineWith(card, "Описание:")
 	if !strings.Contains(line, "Взять полис") {
 		t.Errorf("заметка не показана вовсе:\n%s", card)
 	}
@@ -247,7 +250,7 @@ func TestCardNamesTheDescriptionAndShortensALongOne(t *testing.T) {
 
 	short := "взять полис"
 	st.Description = short
-	line = lineWith(renderDraft(i18n.RU, st, tuesday15()), "Заметка:")
+	line = lineWith(renderDraft(i18n.RU, st, tuesday15()), "Описание:")
 	if strings.Contains(line, "…") {
 		t.Errorf("короткая заметка обрезана без нужды: %q", line)
 	}

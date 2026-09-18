@@ -12,13 +12,29 @@ import (
 	"github.com/zemdenalex/neuroboost-bot/internal/parse"
 )
 
-func TestTaskCardShowsOnlyWhatWasParsed(t *testing.T) {
+// ⚠ REVERSED on 18.09, and kept rather than deleted so the reversal stays
+// legible to whoever reads this file next.
+//
+// This test used to assert that a card with no due date shows no 📅 line at all
+// — "absent fields are absent". Denis overturned it: a field that appears only
+// once filled cannot teach that it exists, and not knowing which fields existed
+// was his actual complaint about the bot.
+//
+// What survives is the half that was always right: the card may NAME an empty
+// field, but it must never INVENT a value for one.
+func TestTaskCardNamesEmptyFieldsWithoutInventingValues(t *testing.T) {
 	r := parse.ParseTask("позвонить в банк", time.Date(2026, 8, 18, 10, 0, 0, 0, time.UTC))
 	got := taskCardText(i18n.RU, r, "UTC")
 	if !strings.Contains(got, "позвонить в банк") {
 		t.Errorf("the title is missing:\n%s", got)
 	}
-	if strings.Contains(got, "📅") || strings.Contains(got, "⏱") {
+	for _, label := range []string{"Срок:", "Оценка:"} {
+		if !strings.Contains(got, label) {
+			t.Errorf("the card does not name %q:\n%s", label, got)
+		}
+	}
+	// 🔴 The control: naming an empty field is required, filling it in is a lie.
+	if !strings.Contains(got, "Срок: нет") || !strings.Contains(got, "Оценка: нет") {
 		t.Errorf("the card invented a due date or an estimate:\n%s", got)
 	}
 }

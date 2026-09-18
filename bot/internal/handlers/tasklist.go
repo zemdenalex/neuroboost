@@ -258,7 +258,10 @@ func (h *Handler) showTaskCard(chatID int64, text string) {
 	us.FlowStep = "card"
 	// The kind can still be changed when the card came from a typed line.
 	raw, fromLine := us.FlowData["raw"].(string)
-	h.sendHTMLWithKeyboard(chatID, taskCardText(h.lang(chatID), r, h.timezone(chatID)),
+	description, _ := us.FlowData["description"].(string)
+	h.sendHTMLWithKeyboard(chatID,
+		taskCardTextFull(h.lang(chatID), r, h.timezone(chatID),
+			h.calendarNameFor(chatID, ""), description),
 		keyboards.TaskCard(h.lang(chatID), fromLine && raw != ""))
 }
 

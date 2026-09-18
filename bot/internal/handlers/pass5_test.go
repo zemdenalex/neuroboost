@@ -3,6 +3,8 @@ package handlers
 import (
 	"strings"
 	"testing"
+
+	"github.com/zemdenalex/neuroboost-bot/internal/i18n"
 )
 
 // Проход Дениса по v0.4.11.3, 18.09 03:33.
@@ -60,5 +62,105 @@ func TestCancelReallyClearsTheFlow(t *testing.T) {
 	say(h, chat, "задача на завтра выкинуть мусор")
 	if got := fake.last(t); strings.Contains(got.Text, "Что-то пошло не так") {
 		t.Errorf("после отмены следующая задача ответила ошибкой: %q", got.Text)
+	}
+}
+
+// 🔴 Denis, 18.09: «на русском про заметку я имел в виду тоже поменять на
+// описание, потому что заметка это другая сущность». A note is a thing
+// NeuroBoost is meant to have (Obsidian, .md); calling a description a note
+// promises that thing and delivers a text field.
+func TestTheDescriptionIsCalledADescription(t *testing.T) {
+	st := draftFrom("стоматолог завтра 15:00")
+	card := renderDraft(i18n.RU, st, tuesday15())
+	if strings.Contains(card, "Заметка") {
+		t.Errorf("карточка всё ещё называет описание заметкой:\n%s", card)
+	}
+	if !strings.Contains(card, "Описание:") {
+		t.Errorf("карточка не называет описание:\n%s", card)
+	}
+	en := renderDraft(i18n.EN, st, tuesday15())
+	if strings.Contains(en, "Note:") || !strings.Contains(en, "Description:") {
+		t.Errorf("english card still says Note:\n%s", en)
+	}
+}
+
+// «Напомнить» is an imperative aimed at the bot; the field is a property of the
+// event. Denis, 18.09: «надо поменять на нейтральное напоминания или
+// уведомления, и не напоминать поменять на без напоминаний».
+func TestReminderFieldIsNeutrallyNamed(t *testing.T) {
+	st := draftFrom("стоматолог завтра 15:00")
+	none := []int{}
+	st.ReminderOffsets = &none
+	card := renderDraft(i18n.RU, st, tuesday15())
+	if strings.Contains(card, "Напомнить:") {
+		t.Errorf("поле всё ещё называется «Напомнить»:\n%s", card)
+	}
+	if !strings.Contains(card, "Напоминания:") {
+		t.Errorf("нет поля «Напоминания»:\n%s", card)
+	}
+	if strings.Contains(card, "не напоминать") || !strings.Contains(card, "без напоминаний") {
+		t.Errorf("пустые напоминания названы глаголом, а не состоянием:\n%s", card)
+	}
+}
+
+// 🔴 «надо сделать лимит символов в целом в заметке (но обязательно если есть
+// возможность чтобы оно не обрывалось на середине слова)». The first version
+// counted runes of the whole string but four short lines came to 55 and were
+// printed in full, taking four lines of a card.
+func TestLongDescriptionIsCutAtAWordAndOnOneLine(t *testing.T) {
+	st := draftFrom("доделать сайт завтра 15:00")
+	st.Description = "фывралоыфдв\nывоафдловад\nыфвоалдовыдла\nыфволафдо\nещё строка\nи ещё одна"
+	card := renderDraft(i18n.RU, st, tuesday15())
+
+	line := lineWith(card, "Описание:")
+	if line == "" {
+		t.Fatalf("описания нет вовсе:\n%s", card)
+	}
+	if strings.Count(card, "\n") > 12 {
+		t.Errorf("описание разложило карточку на %d строк:\n%s", strings.Count(card, "\n"), card)
+	}
+	if !strings.Contains(line, "…") {
+		t.Errorf("длинное описание не укорочено: %q", line)
+	}
+	// Not cut in the middle of a word: what precedes the ellipsis is a whole word.
+	cut := strings.TrimSuffix(strings.TrimSpace(line), "…")
+	if strings.HasSuffix(cut, "ыфвоалдо") {
+		t.Errorf("описание обрезано посреди слова: %q", line)
+	}
+}
+
+// 🔴 Denis, 18.09: «календарь как и напомнить у стандартного события в личном
+// календаре» — a new event goes to the personal calendar, so the card saying
+// «Календарь: нет» is simply wrong, and it is wrong in the direction that
+// teaches people the field does not work.
+func TestCardNamesThePersonalCalendarByDefault(t *testing.T) {
+	st := draftFrom("стоматолог завтра 15:00")
+	st.CalendarName = "Личный"
+	card := renderDraft(i18n.RU, st, tuesday15())
+	if strings.Contains(card, "Календарь: нет") {
+		t.Errorf("карточка говорит «Календарь: нет», хотя календарь известен:\n%s", card)
+	}
+}
+
+// 🔴 Denis, 18.09, on «Карточка задачи тоже называет все поля»: «Нет». The task
+// card was a separate renderer that printed only what was filled — the exact
+// defect the event card had just been cured of, living one file away.
+func TestTaskCardNamesEveryField(t *testing.T) {
+	h, fake, chat := quickHandler(t)
+	say(h, chat, "задача на завтра доделать сайт")
+
+	got := fake.last(t)
+	for _, label := range []string{"Срок:", "Приоритет:", "Оценка:", "Теги:", "Календарь:", "Напоминания:", "Описание:"} {
+		if !strings.Contains(got.Text, label) {
+			t.Errorf("карточка задачи не называет %q:\n%s", label, got.Text)
+		}
+	}
+	if !strings.Contains(got.Text, "нет") {
+		t.Errorf("пустые поля не сказали «нет»:\n%s", got.Text)
+	}
+	// The value that WAS given must still be printed, or the card passes by
+	// saying «нет» to everything.
+	if !strings.Contains(got.Text, "19.09") {
+		t.Errorf("срок из строки потерялся:\n%s", got.Text)
 	}
 }

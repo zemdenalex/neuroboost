@@ -243,10 +243,11 @@ func renderDraft(lang i18n.Lang, st draftState, now time.Time) string {
 		b.WriteString(i18n.T(lang, "⚠ время не указано — спрошу\n", "⚠ no time — I will ask\n"))
 	}
 
-	icon := "📅"
-	if st.D.IsTask {
-		icon = "✅"
-	}
+	// 💬 for the name of the thing. Denis, 18.09: «надо поменять иконки, у
+	// названия например 💬». The KIND (event or task) is said by the header
+	// line and by the «✅ и задача» line below, so the title no longer has to
+	// carry two meanings in one glyph.
+	icon := "💬"
 	title := st.Title
 	if strings.TrimSpace(title) == "" {
 		title = i18n.T(lang, "без названия", "untitled")
@@ -293,18 +294,18 @@ func renderDraft(lang i18n.Lang, st draftState, now time.Time) string {
 	// merge two different futures into one word.
 	switch {
 	case st.ReminderOffsets == nil:
-		b.WriteString(fieldLine("🔔", i18n.T(lang, "Напомнить:", "Remind:"),
+		b.WriteString(fieldLine("🔔", i18n.T(lang, "Напоминания:", "Reminders:"),
 			i18n.T(lang, "как обычно", "as usual")))
 	case len(*st.ReminderOffsets) == 0:
-		b.WriteString(fieldLine("🔕", i18n.T(lang, "Напомнить:", "Remind:"),
-			i18n.T(lang, "не напоминать", "never")))
+		b.WriteString(fieldLine("🔕", i18n.T(lang, "Напоминания:", "Reminders:"),
+			i18n.T(lang, "без напоминаний", "none")))
 	default:
 		parts := make([]string, 0, len(*st.ReminderOffsets))
 		for _, m := range *st.ReminderOffsets {
 			parts = append(parts, humanOffset(lang, m))
 		}
 		joined := strings.Join(parts, ", ")
-		b.WriteString(fieldLine("🔔", i18n.T(lang, "Напомнить:", "Remind:"),
+		b.WriteString(fieldLine("🔔", i18n.T(lang, "Напоминания:", "Reminders:"),
 			i18n.T(lang, "за "+joined, joined+" before")))
 	}
 
@@ -312,7 +313,7 @@ func renderDraft(lang i18n.Lang, st draftState, now time.Time) string {
 		orNone(lang, format.Escape(strings.Join(st.D.Tags, ", ")))))
 	b.WriteString(fieldLine("🎨", i18n.T(lang, "Цвет:", "Colour:"),
 		orNone(lang, format.Escape(colourName(lang, st.D.Colour)))))
-	b.WriteString(fieldLine("📝", i18n.T(lang, "Заметка:", "Note:"),
+	b.WriteString(fieldLine("📄", i18n.T(lang, "Описание:", "Description:"),
 		orNone(lang, format.Escape(shorten(st.Description, descriptionOnCard)))))
 
 	return strings.TrimRight(b.String(), "\n")
@@ -350,17 +351,33 @@ func orNone(lang i18n.Lang, value string) string {
 // whose confirm button is below the fold has stopped being one.
 const descriptionOnCard = 60
 
-// shorten cuts at a rune boundary and says so with «…».
+// shorten flattens a description to ONE line, cuts it at a word boundary, and
+// says it cut with «…».
 //
-// The ellipsis is not decoration: without it a truncated note is
-// indistinguishable from a complete one, and someone would edit the wrong half
-// believing they had seen all of it.
+// 🔴 Three separate requirements, each learned the hard way on 18.09:
+//
+//   - one line — the first version counted runes of the whole string, so four
+//     short lines came to 55 characters and were printed in full, turning a
+//     nine-line card into a thirteen-line one;
+//   - a word boundary — «обязательно если есть возможность чтобы оно не
+//     обрывалось на середине слова»;
+//   - the ellipsis — without it a cut description is indistinguishable from a
+//     complete one, and someone edits the half they were shown believing it is
+//     all of it.
 func shorten(s string, limit int) string {
-	r := []rune(strings.TrimSpace(s))
+	flat := strings.Join(strings.Fields(s), " ")
+	r := []rune(flat)
 	if len(r) <= limit {
-		return string(r)
+		return flat
 	}
-	return strings.TrimRight(string(r[:limit]), " ") + "…"
+	cut := string(r[:limit])
+	// Back up to the last space, unless that would leave almost nothing — a
+	// single very long word has no boundary to find, and half of it is more
+	// useful than none of it.
+	if i := strings.LastIndex(cut, " "); i > limit/2 {
+		cut = cut[:i]
+	}
+	return strings.TrimRight(cut, " ,;:—-") + "…"
 }
 
 // checkMark flags a value the parser read from a loose format.

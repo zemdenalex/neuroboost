@@ -27,6 +27,15 @@ type UserState struct {
 	TZ      string
 	TZKnown bool
 
+	// PersonalCalendar is the name of the calendar a new item lands in when
+	// none was named, cached on the same terms as Lang and TZ.
+	//
+	// 🔴 Cached because every card prints it. Denis, 18.09: a card saying
+	// «Календарь: нет» for an event that will land in «Личный» is not merely
+	// unhelpful, it teaches that the field does not work.
+	PersonalCalendar      string
+	PersonalCalendarKnown bool
+
 	// Onboarded caches bot.onboarded once it is known to be true. False means
 	// "not known yet", never "known false" — that one is always re-read, so a
 	// user who finishes onboarding on the web or another device is not asked

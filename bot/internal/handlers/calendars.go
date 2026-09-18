@@ -416,3 +416,36 @@ func (h *Handler) acceptInviteLink(chatID int64, messageID int, token string) {
 		h.startOnboarding(chatID, 0, "")
 	}
 }
+
+// personalCalendarName is the calendar a new item lands in when none was named.
+//
+// Read once per chat and cached: every card prints it, and an HTTP round trip
+// per keypress is what the Lang and TZ caches already exist to avoid. A failure
+// to read is cached as «unknown» for this message only, so a blip does not
+// pin the wrong answer for the session.
+func (h *Handler) personalCalendarName(chatID int64) string {
+	us := h.store.GetOrCreate(chatID)
+	if us.PersonalCalendarKnown {
+		return us.PersonalCalendar
+	}
+	cals, err := h.api.CalendarsFull(us.AuthToken)
+	if err != nil {
+		return ""
+	}
+	for _, c := range cals {
+		if c.IsPersonal() {
+			us.PersonalCalendar, us.PersonalCalendarKnown = c.Name, true
+			return c.Name
+		}
+	}
+	return ""
+}
+
+// calendarNameFor names the calendar an item is going to, falling back to the
+// personal one when nothing was chosen — because that is where it will land.
+func (h *Handler) calendarNameFor(chatID int64, chosen string) string {
+	if chosen != "" {
+		return chosen
+	}
+	return h.personalCalendarName(chatID)
+}
