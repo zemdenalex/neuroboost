@@ -2,11 +2,8 @@ package reminders
 
 import (
 	"context"
-	"errors"
 	"log/slog"
 	"time"
-
-	"github.com/jackc/pgx/v5"
 
 	"neuroboost/api-go/internal/calendars"
 	"neuroboost/api-go/internal/database"
@@ -455,41 +452,56 @@ func taskOccurrences(
 	// The time of day the series happens at, taken from the anchor.
 	hour, minute := a.Hour(), a.Minute()
 
+	// 🔴 One query for the whole window, not one per day.
+	//
+	// This runs inside the scan, which runs every minute for every user. The
+	// horizon is up to maxOffsetMinutes — thirty days — so asking per day would
+	// be thirty round trips per repeating task per minute, growing with both the
+	// user count and the horizon. The window is small; the query is one.
+	answered, err := answeredDays(ctx, taskID, from, to)
+	if err != nil {
+		return nil, err
+	}
+
 	var out []time.Time
 	day := from.In(loc)
 	day = time.Date(day.Year(), day.Month(), day.Day(), 0, 0, 0, 0, loc)
 	end := to.In(loc)
 
 	for !day.After(end) {
-		if recurrence.Occurs(rule, a, day) {
-			state, err := occurrenceState(ctx, taskID, day)
-			if err != nil {
-				return nil, err
-			}
-			if state == "" {
-				out = append(out, time.Date(day.Year(), day.Month(), day.Day(), hour, minute, 0, 0, loc))
-			}
+		if recurrence.Occurs(rule, a, day) && !answered[day.Format("2006-01-02")] {
+			out = append(out, time.Date(day.Year(), day.Month(), day.Day(), hour, minute, 0, 0, loc))
 		}
 		day = day.AddDate(0, 0, 1)
 	}
 	return out, nil
 }
 
-// occurrenceState reads what was already done with one day.
+// answeredDays is the set of days already marked done or skipped, for one task,
+// inside one window.
 //
 // Local to this package rather than imported from `tasks`: `tasks` will import
 // `events` for task↔event conversion, and `reminders` already imports `events` —
-// so reaching into `tasks` from here is the import cycle waiting to happen.
-func occurrenceState(ctx context.Context, taskID string, day time.Time) (string, error) {
-	var state string
-	err := db.Pool.QueryRow(ctx,
-		`SELECT state FROM task_occurrence WHERE task_id = $1 AND occurrence = $2`,
-		taskID, day.Format("2006-01-02")).Scan(&state)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return "", nil
-	}
+// so reaching into `tasks` from here is the import cycle waiting to happen. The
+// duplication is four lines of SQL and it buys an acyclic import graph.
+func answeredDays(ctx context.Context, taskID string, from, to time.Time) (map[string]bool, error) {
+	rows, err := db.Pool.Query(ctx, `
+		SELECT occurrence
+		FROM task_occurrence
+		WHERE task_id = $1 AND occurrence BETWEEN $2 AND $3`,
+		taskID, from.Format("2006-01-02"), to.Format("2006-01-02"))
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return state, nil
+	defer rows.Close()
+
+	answered := map[string]bool{}
+	for rows.Next() {
+		var d time.Time
+		if err := rows.Scan(&d); err != nil {
+			return nil, err
+		}
+		answered[d.Format("2006-01-02")] = true
+	}
+	return answered, rows.Err()
 }
