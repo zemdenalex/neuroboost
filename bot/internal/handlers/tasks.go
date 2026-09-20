@@ -95,6 +95,7 @@ func (h *Handler) handleTaskAction(chatID int64, messageID int, taskID string) {
 	var title string
 	var priority, estMin int
 	var dueDate string
+	var repeats bool
 	for _, t := range tasks {
 		if t.ID == taskID {
 			found = true
@@ -102,6 +103,7 @@ func (h *Handler) handleTaskAction(chatID int64, messageID int, taskID string) {
 			priority = t.Priority
 			estMin = t.EstimatedMinutes
 			dueDate = t.DueDate
+			repeats = t.Repeats()
 			break
 		}
 	}
@@ -119,17 +121,83 @@ func (h *Handler) handleTaskAction(chatID int64, messageID int, taskID string) {
 		text += fmt.Sprintf("📅 Due: %s\n", format.FormatDate(dueDate, h.timezone(chatID)))
 	}
 
-	h.editOrSend(chatID, messageID, text, keyboards.TaskActions(h.lang(chatID), taskID))
+	if repeats {
+		text += h.t(chatID, "🔁 Повторяется\n", "🔁 Repeats\n")
+	}
+
+	h.editOrSend(chatID, messageID, text, keyboards.TaskActions(h.lang(chatID), taskID, repeats))
 }
 
+// handleTaskDone ticks a task off — for today if it is a series, for good if it
+// is not.
+//
+// 🔴 The branch is the whole point. For a repeating task task.status describes
+// the SERIES, so status=DONE means «больше никогда» — and until 20.09 that is
+// exactly what «✅ Готово» sent. The first tick of «пить таблетки» would have
+// ended it permanently. The endpoint that closes a single day had existed since
+// 18.09 with no caller at all.
 func (h *Handler) handleTaskDone(chatID int64, messageID int, taskID string) {
 	us := h.store.GetOrCreate(chatID)
-	err := h.api.UpdateTask(us.AuthToken, taskID, map[string]any{"status": "DONE"})
+
+	var err error
+	var msg string
+	if h.taskRepeats(chatID, taskID) {
+		err = h.api.MarkOccurrence(us.AuthToken, taskID, "done", 0)
+		msg = h.t(chatID, "✅ Сделано на сегодня. Завтра напомню снова.", "✅ Done for today. It comes back tomorrow.")
+	} else {
+		err = h.api.UpdateTask(us.AuthToken, taskID, map[string]any{"status": "DONE"})
+		msg = h.t(chatID, "✅ Задача выполнена.", "✅ Task done.")
+	}
 	if err != nil {
 		h.sendText(chatID, h.t(chatID, "❌ Не получилось: ", "❌ That didn't work: ")+err.Error())
 		return
 	}
-	h.sendText(chatID, h.t(chatID, "✅ Задача выполнена.", "✅ Task done."))
+	h.sendText(chatID, msg)
+	h.handleTasks(chatID, messageID)
+}
+
+// taskRepeats answers whether a task is a series.
+//
+// ⚠ Asked of the server rather than remembered from the card: the card may be
+// minutes old, and a stale «Готово» must not end a series that was made
+// repeating in the web meanwhile. A failed lookup answers false — the button
+// then does what it has always done rather than silently changing meaning.
+func (h *Handler) taskRepeats(chatID int64, taskID string) bool {
+	us := h.store.GetOrCreate(chatID)
+	tasks, err := h.api.GetTasks(us.AuthToken, "")
+	if err != nil {
+		return false
+	}
+	for _, t := range tasks {
+		if t.ID == taskID {
+			return t.Repeats()
+		}
+	}
+	return false
+}
+
+// handleTaskPostpone offers the intervals Denis listed on 18.09.
+func (h *Handler) handleTaskPostpone(chatID int64, messageID int, taskID string) {
+	h.editOrSend(chatID, messageID, h.t(chatID,
+		"⏰ <b>Отложить</b>\n\nНа сколько? Ритм не сдвинется — просто пропущу эти дни.",
+		"⏰ <b>Postpone</b>\n\nFor how long? The rhythm stays; these days are just skipped."),
+		keyboards.TaskPostpone(h.lang(chatID), taskID))
+}
+
+// handleTaskPostponeDays sends the interval as DAYS.
+//
+// 🔴 Never as a new rule. Denis chose it on 18.09: «Пропустить закрытые дни,
+// ритм не трогать» — rewriting the rrule is precisely the «ритм сдвинулся» he
+// ruled out, and it is the easy mistake here because it looks equivalent.
+func (h *Handler) handleTaskPostponeDays(chatID int64, messageID int, taskID string, days int) {
+	us := h.store.GetOrCreate(chatID)
+	if err := h.api.MarkOccurrence(us.AuthToken, taskID, "", days); err != nil {
+		h.sendText(chatID, h.t(chatID, "❌ Не получилось: ", "❌ That didn't work: ")+err.Error())
+		return
+	}
+	h.sendText(chatID, fmt.Sprintf(h.t(chatID,
+		"⏰ Отложил на %d дн. Ритм не тронут.",
+		"⏰ Postponed by %d day(s). The rhythm is untouched."), days))
 	h.handleTasks(chatID, messageID)
 }
 

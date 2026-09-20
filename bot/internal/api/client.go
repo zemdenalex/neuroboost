@@ -527,3 +527,25 @@ func (c *Client) CreateLinkCode(token string) (string, int, error) {
 	}
 	return resp.Data.Code, resp.Data.ExpiresIn, nil
 }
+
+// MarkOccurrence answers for ONE day of a repeating task: «сделал»,
+// «пропустить», or «отложить на N дней».
+//
+// 🔴 Not UpdateTask with status=DONE. For a series, task.status describes the
+// whole thing — DONE means «больше не повторять» — while a tick means «сделал
+// сегодня». The endpoint has existed since 18.09 and had no caller until 20.09,
+// so «✅ Готово» on «пить таблетки» ended the series for good the first time it
+// was pressed.
+//
+// state and postponeDays are mutually exclusive; the API refuses both rather
+// than guessing, because they mean opposite things.
+func (c *Client) MarkOccurrence(token, taskID, state string, postponeDays int) error {
+	body := map[string]any{}
+	if state != "" {
+		body["state"] = state
+	}
+	if postponeDays > 0 {
+		body["postpone_days"] = postponeDays
+	}
+	return c.post("/api/tasks/"+taskID+"/occurrences", token, body, nil)
+}

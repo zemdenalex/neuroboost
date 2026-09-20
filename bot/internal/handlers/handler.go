@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"log"
+	"strconv"
 	"strings"
 	"time"
 
@@ -389,6 +390,17 @@ func (h *Handler) HandleCallback(cb *tgbotapi.CallbackQuery) {
 		h.handleTaskScheduleDuration(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "task_when_"))
 	case strings.HasPrefix(data, "task_plan_"):
 		h.handleTaskSchedule(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "task_plan_"))
+	case strings.HasPrefix(data, "task_ppd_"):
+		// task_ppd_<id>_<days> — the id is a UUID and carries no underscore, so
+		// the last one separates the two.
+		rest := strings.TrimPrefix(data, "task_ppd_")
+		if i := strings.LastIndex(rest, "_"); i > 0 {
+			if days, err := strconv.Atoi(rest[i+1:]); err == nil {
+				h.handleTaskPostponeDays(chatID, cb.Message.MessageID, rest[:i], days)
+			}
+		}
+	case strings.HasPrefix(data, "task_pp_"):
+		h.handleTaskPostpone(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "task_pp_"))
 	case strings.HasPrefix(data, "task_done_"):
 		h.handleTaskDone(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "task_done_"))
 	case strings.HasPrefix(data, "task_delete_"):

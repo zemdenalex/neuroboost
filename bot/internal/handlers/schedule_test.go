@@ -132,7 +132,7 @@ func TestParsePlanCallback(t *testing.T) {
 func scheduleKeyboards() map[string]tgbotapi.InlineKeyboardMarkup {
 	const uuid = "8f14e45f-ceea-467a-9575-0f0e2d4a2f1b"
 	return map[string]tgbotapi.InlineKeyboardMarkup{
-		"TaskActions":          keyboards.TaskActions(i18n.RU, uuid),
+		"TaskActions":          keyboards.TaskActions(i18n.RU, uuid, true),
 		"TaskScheduleWhen":     keyboards.TaskScheduleWhen(i18n.RU, uuid),
 		"TaskScheduleDuration": keyboards.TaskScheduleDuration(i18n.RU, uuid, "eve"),
 		"TaskDue":              keyboards.TaskDue(i18n.RU, uuid),
@@ -184,6 +184,12 @@ func TestEveryScheduleButtonHasAPrefixTheRouterKnows(t *testing.T) {
 		"task_sched_", "task_when_", "task_plan_",
 		"task_action_", "task_done_", "task_delete_", "top_tasks",
 		"task_due_set_", "task_due_", "task_est_set_", "task_est_", "task_tag_",
+		// A repeating task's own two: the postpone screen and one interval on it.
+		// ⚠ task_ppd_ must be listed — and routed — BEFORE task_pp_, or the
+		// shorter prefix swallows it and «отложить на неделю» opens the menu
+		// again instead of postponing. Same collision that renamed cal_ to cl_
+		// on 18.09.
+		"task_ppd_", "task_pp_",
 	}
 	for name, kb := range scheduleKeyboards() {
 		eachButton(kb, func(data string) {

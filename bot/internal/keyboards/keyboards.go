@@ -23,7 +23,10 @@ import (
 //
 // ⚠ Translating the LABELS changes none of that arithmetic: the budget is on
 // callback_data, which is never translated.
-func TaskActions(lang i18n.Lang, taskID string) tgbotapi.InlineKeyboardMarkup {
+// repeats adds the two controls that only a series has. A one-off task must
+// not be offered «Отложить серию»: there is no series, and the button would
+// answer with an error instead of doing nothing.
+func TaskActions(lang i18n.Lang, taskID string, repeats bool) tgbotapi.InlineKeyboardMarkup {
 	return tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "⏰ Запланировать", "⏰ Schedule"), "task_sched_"+taskID),
@@ -33,10 +36,7 @@ func TaskActions(lang i18n.Lang, taskID string) tgbotapi.InlineKeyboardMarkup {
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "⏱ Оценка", "⏱ Estimate"), "task_est_"+taskID),
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🏷 Теги", "🏷 Tags"), "task_tag_"+taskID),
 		),
-		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "✅ Готово", "✅ Done"), "task_done_"+taskID),
-			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🗑 Удалить", "🗑 Delete"), "task_delete_"+taskID),
-		),
+		doneRow(lang, taskID, repeats),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "« Назад", "« Back"), "top_tasks"),
 		),
@@ -316,6 +316,53 @@ func Linking(lang i18n.Lang) tgbotapi.InlineKeyboardMarkup {
 		),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "« Настройки", "« Settings"), "settings"),
+		),
+	)
+}
+
+// doneRow is «Готово»/«Удалить», plus «Отложить» when the task is a series.
+//
+// ⚠ For a series «✅ Готово» reads «сделал на сегодня» — the label says so,
+// because the same word meaning two different things is how somebody ends a
+// daily habit by pressing the button that was supposed to tick it off.
+func doneRow(lang i18n.Lang, taskID string, repeats bool) []tgbotapi.InlineKeyboardButton {
+	done := i18n.T(lang, "✅ Готово", "✅ Done")
+	row := []tgbotapi.InlineKeyboardButton{}
+	if repeats {
+		done = i18n.T(lang, "✅ На сегодня", "✅ Done today")
+	}
+	row = append(row, tgbotapi.NewInlineKeyboardButtonData(done, "task_done_"+taskID))
+	if repeats {
+		row = append(row, tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "⏰ Отложить", "⏰ Postpone"), "task_pp_"+taskID))
+	}
+	row = append(row, tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🗑 Удалить", "🗑 Delete"), "task_delete_"+taskID))
+	return tgbotapi.NewInlineKeyboardRow(row...)
+}
+
+// TaskPostpone offers the intervals Denis listed on 18.09: «день/2/3/неделя/
+// месяц/свой срок».
+//
+// 🔴 Days, never a new rule. Postponing skips the closed days and leaves the
+// rhythm alone — his words: «Пропустить закрытые дни, ритм не трогать». A
+// «свой срок» button is deliberately absent for now: it would open a question
+// this screen cannot yet answer, and a control that does nothing is worse than
+// one that is missing.
+func TaskPostpone(lang i18n.Lang, taskID string) tgbotapi.InlineKeyboardMarkup {
+	btn := func(text string, days int) tgbotapi.InlineKeyboardButton {
+		return tgbotapi.NewInlineKeyboardButtonData(text, fmt.Sprintf("task_ppd_%s_%d", taskID, days))
+	}
+	return tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			btn(i18n.T(lang, "День", "A day"), 1),
+			btn(i18n.T(lang, "2 дня", "2 days"), 2),
+			btn(i18n.T(lang, "3 дня", "3 days"), 3),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			btn(i18n.T(lang, "Неделю", "A week"), 7),
+			btn(i18n.T(lang, "Месяц", "A month"), 30),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "« Назад", "« Back"), "task_action_"+taskID),
 		),
 	)
 }
