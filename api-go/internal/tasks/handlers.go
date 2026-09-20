@@ -94,6 +94,13 @@ func CreateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// A bad repeat is the caller's mistake: 400 with the reason, never the flat
+	// 500 that would read as «приложение сломалось».
+	if err := validateRepeat(req.Rrule, req.NagMinutes); err != nil {
+		util.RespondError(w, http.StatusBadRequest, "INVALID_REPEAT", err.Error())
+		return
+	}
+
 	task, err := insertTask(r.Context(), userID, req, dueDate)
 	if err != nil {
 		status, code, msg := calendarWriteError(err, "CREATE_ERROR", "Failed to create task")
@@ -146,7 +153,17 @@ func insertTask(ctx context.Context, userID string, req CreateTaskRequest, dueDa
 		contexts = []string{}
 	}
 
-	return createTask(ctx, userID, req, status, priority, dueDate, tags, contexts)
+	if err := validateRepeat(req.Rrule, req.NagMinutes); err != nil {
+		return nil, err
+	}
+	t, err := createTask(ctx, userID, req, status, priority, dueDate, tags, contexts)
+	if err != nil {
+		return nil, err
+	}
+	if err := applyRepeatOnCreate(ctx, userID, t, req, dueDate); err != nil {
+		return nil, err
+	}
+	return t, nil
 }
 
 // BatchCreateHandler creates many tasks in one request.
@@ -269,6 +286,13 @@ func UpdateHandler(w http.ResponseWriter, r *http.Request) {
 
 	if code, msg := validateTaskMutation(req.Status, req.Priority, req.Category); code != "" {
 		util.RespondError(w, http.StatusBadRequest, code, msg)
+		return
+	}
+
+	// A bad repeat is the caller's mistake: 400 with the reason, never the flat
+	// 500 that would read as «приложение сломалось».
+	if err := validateRepeat(req.Rrule, req.NagMinutes); err != nil {
+		util.RespondError(w, http.StatusBadRequest, "INVALID_REPEAT", err.Error())
 		return
 	}
 
@@ -652,6 +676,14 @@ func updateTask(ctx context.Context, userID, taskID string, req UpdateTaskReques
 		argNum++
 	}
 
+	if err := validateRepeat(req.Rrule, req.NagMinutes); err != nil {
+		return nil, err
+	}
+	repeatSets, repeatArgs, nextArg := repeatUpdates(ctx, userID, taskID, req, argNum)
+	updates = append(updates, repeatSets...)
+	args = append(args, repeatArgs...)
+	argNum = nextArg
+
 	if len(updates) == 0 {
 		return getTask(ctx, userID, taskID)
 	}
@@ -689,6 +721,12 @@ func updateTask(ctx context.Context, userID, taskID string, req UpdateTaskReques
 
 	t.Tags = tags
 	t.Contexts = contexts
+	// The RETURNING list above is shared with createTask and does not carry the
+	// repeat. Read here so a client that just changed «повтор» sees it in the
+	// answer instead of having to ask again.
+	_ = db.Pool.QueryRow(ctx, `
+		-- recurrence-agnostic: reads the rule itself, not a day's state.
+		SELECT rrule, nag_minutes FROM task WHERE id = $1`, t.ID).Scan(&t.Rrule, &t.NagMinutes)
 	return &t, nil
 }
 

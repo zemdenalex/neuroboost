@@ -134,3 +134,59 @@ func TestNilRuleOccursNever(t *testing.T) {
 		t.Error("a nil rule reported a next occurrence")
 	}
 }
+
+// 🔴 A day is a date, not an instant.
+//
+// The anchor comes out of a DATE column as midnight UTC. «Сегодня» comes from
+// LocalDay() as midnight in the user's zone. For Moscow that is three hours
+// EARLIER than the same date's UTC midnight, so comparing instants said the
+// anchor day itself was «before the series began», and the hour arithmetic put
+// every later day one step short — a Monday task surfacing on Tuesdays.
+//
+// Found on 20.09 by the first test that created a repeating task through the
+// API instead of inserting the row: until then both times in every test were
+// built in one zone, and the seam between a DATE and a local midnight was never
+// crossed.
+func TestADayIsADateWhateverZoneItArrivesIn(t *testing.T) {
+	msk, err := time.LoadLocation("Europe/Moscow")
+	if err != nil {
+		t.Fatal(err)
+	}
+	ny, err := time.LoadLocation("America/New_York")
+	if err != nil {
+		t.Fatal(err)
+	}
+	anchorUTC := time.Date(2026, 9, 21, 0, 0, 0, 0, time.UTC) // a Monday, as a DATE column returns it
+
+	daily, _ := Parse("FREQ=DAILY")
+	weekly, _ := Parse("FREQ=WEEKLY")
+	everyOther, _ := Parse("FREQ=DAILY;INTERVAL=2")
+
+	for _, loc := range []*time.Location{msk, ny, time.UTC} {
+		day := func(y int, m time.Month, d int) time.Time { return time.Date(y, m, d, 0, 0, 0, 0, loc) }
+
+		if !Occurs(daily, anchorUTC, day(2026, 9, 21)) {
+			t.Errorf("%s: the anchor day itself is not in a daily series", loc)
+		}
+		if Occurs(daily, anchorUTC, day(2026, 9, 20)) {
+			t.Errorf("%s: the day before the anchor is in the series", loc)
+		}
+		if !Occurs(weekly, anchorUTC, day(2026, 9, 28)) {
+			t.Errorf("%s: the next Monday is not in a weekly series", loc)
+		}
+		if Occurs(weekly, anchorUTC, day(2026, 9, 29)) {
+			t.Errorf("%s: a Monday series occurs on Tuesday", loc)
+		}
+		if Occurs(everyOther, anchorUTC, day(2026, 9, 22)) || !Occurs(everyOther, anchorUTC, day(2026, 9, 23)) {
+			t.Errorf("%s: «через день» lands on the wrong days", loc)
+		}
+	}
+
+	// ⚠ And across a daylight-saving change, where a local day is 23 or 25
+	// hours long and dividing hours by 24 drops or invents a day.
+	anchorNY := time.Date(2026, 10, 30, 0, 0, 0, 0, time.UTC)
+	afterDST := time.Date(2026, 11, 6, 0, 0, 0, 0, ny) // clocks went back on 1.11
+	if !Occurs(weekly, anchorNY, afterDST) {
+		t.Error("a weekly series loses its day across the end of daylight saving")
+	}
+}

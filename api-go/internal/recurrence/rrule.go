@@ -92,9 +92,22 @@ func Parse(rrule string) (*Rule, error) {
 	return rule, nil
 }
 
-// dayOf strips a timestamp to the calendar day it falls on, in its own location.
+// dayOf reduces a timestamp to the calendar DATE it shows in its own location,
+// and then forgets the location.
+//
+// 🔴 It used to keep it — time.Date(y, m, d, …, t.Location()) — which made two
+// values for the same date unequal whenever they arrived from different zones.
+// And they always do: the anchor is a DATE column, read back as midnight UTC,
+// while «сегодня» is LocalDay(), midnight in the user's zone. In Moscow the
+// second is three hours before the first, so the anchor day was «before the
+// series» and every later day counted one step short (a Monday task on
+// Tuesdays). West of Greenwich the same error ran the other way.
+//
+// Putting every date on the UTC axis makes the arithmetic below pure date
+// arithmetic: no zone to disagree about, and no 23- or 25-hour day at a
+// daylight-saving change for Hours()/24 to stumble over.
 func dayOf(t time.Time) time.Time {
-	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
+	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, time.UTC)
 }
 
 // Occurs reports whether `day` belongs to the series anchored at `anchor`.

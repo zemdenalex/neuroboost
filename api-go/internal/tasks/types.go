@@ -98,6 +98,12 @@ type CreateTaskRequest struct {
 	// default preset", an explicitly empty array means "deliberately no
 	// reminders".
 	ReminderOffsets *[]int `json:"reminder_offsets,omitempty"`
+	// Rrule makes the task repeat. On update: nil leaves it alone, "" turns the
+	// repeat off. Same grammar as events — FREQ=DAILY|WEEKLY|MONTHLY with
+	// INTERVAL/COUNT/UNTIL — checked by recurrence.Parse.
+	Rrule *string `json:"rrule,omitempty"`
+	// NagMinutes repeats an unanswered reminder every N minutes; 0 turns it off.
+	NagMinutes *int `json:"nag_minutes,omitempty"`
 }
 
 // BatchCreateRequest creates many tasks in one round-trip, so pasting a list
@@ -139,6 +145,12 @@ type UpdateTaskRequest struct {
 	Energy           *int          `json:"energy,omitempty"`
 	ParentID         *string       `json:"parent_id,omitempty"`
 	ReminderOffsets  *[]int        `json:"reminder_offsets,omitempty"`
+	// Rrule makes the task repeat. On update: nil leaves it alone, "" turns the
+	// repeat off. Same grammar as events — FREQ=DAILY|WEEKLY|MONTHLY with
+	// INTERVAL/COUNT/UNTIL — checked by recurrence.Parse.
+	Rrule *string `json:"rrule,omitempty"`
+	// NagMinutes repeats an unanswered reminder every N minutes; 0 turns it off.
+	NagMinutes *int `json:"nag_minutes,omitempty"`
 }
 
 // LogTimeRequest adds (or, with a negative value, removes) focused minutes
