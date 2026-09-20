@@ -6,13 +6,14 @@ status: verified
 verified_by: session-01VRP8SC
 verified_at: 2026-09-18
 tags: [neuroboost, bot, decision, ux, language]
-weight: { importance: 4, connectivity: 3, access: 1, last_accessed: 2026-09-18 }
+weight: { importance: 4, connectivity: 4, access: 2, last_accessed: 2026-09-20 }
 sources:
   - file: "ref/feedback/bot-proverka-v04113-otvet-denisa-2026-09-18.md"
 stakes: medium
 links:
   - implements: decision-bot-fixes-from-four-passes-17-09
   - relates-to: decision-onboarding-is-the-first-minute-17-09
+  - relates-to: decision-statistics-is-a-screen-you-browse-20-09
 ---
 Проход по v0.4.11.3, его слова:
 
