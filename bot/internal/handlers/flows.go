@@ -128,6 +128,10 @@ func (h *Handler) handleNewTaskFlow(chatID int64, text string) {
 			h.rewriteTaskListEntry(chatID, text)
 			return
 		}
+		// A wizard step that can be answered in words is answered in words.
+		if strings.HasPrefix(us.FlowStep, "wizard:") && h.handleWizardText(chatID, text) {
+			return
+		}
 		if us.FlowStep == "list" || strings.HasPrefix(us.FlowStep, "wizard:") {
 			// A screen that wants a button: the list survives.
 			h.sendHTMLWithKeyboard(chatID, h.t(chatID,
@@ -179,6 +183,9 @@ func (h *Handler) handleTaskCardSave(chatID int64, messageID int) {
 	}
 	if tags, ok := us.FlowData["tags"].([]string); ok && len(tags) > 0 {
 		req.Tags = tags
+	}
+	if rule, ok := us.FlowData["rrule"].(string); ok && rule != "" {
+		req.Rrule = &rule
 	}
 
 	task, err := h.api.CreateTask(us.AuthToken, req)

@@ -20,6 +20,12 @@ type TaskResult struct {
 	DueDate          *time.Time
 	EstimatedMinutes *int
 	Tags             []string
+	// Rrule is the repeat, in the API's grammar, or "" for a one-off task.
+	Rrule string
+	// RepeatAsked is «повтор» with no frequency: a question the card must ask,
+	// the same way an event's card does. Never a guess, never a word left in
+	// the title.
+	RepeatAsked bool
 }
 
 var (
@@ -128,5 +134,33 @@ func ParseTask(line string, now time.Time) TaskResult {
 	}
 
 	res.Title = cleanTitle(text)
+	res.Title, res.Rrule, res.RepeatAsked = taskRepeat(res.Title)
 	return res
+}
+
+// taskRepeat reads the repetition words out of a task's title.
+//
+// 🔴 It calls recogniseRepeat — the SAME recogniser the event parser runs — and
+// not a second vocabulary written beside it. Until 20.09 tasks had none at all,
+// so «повтор пить таблетки» meant one thing after 📅 and another after ➕. Two
+// lists would have closed that gap for a week and reopened it the first time a
+// word was added to one of them.
+//
+// Runs last, on the title that survived every other marker: by then «!1», «5м»
+// and «#тег» are already gone, so the recogniser only ever sees words. And it
+// honours ParseTask's contract — only the tokens the recogniser CLAIMED are cut;
+// anything it did not understand stays in the title where the user can see it.
+func taskRepeat(title string) (string, string, bool) {
+	toks := Tokenize(title)
+	var d Draft
+	if !recogniseRepeat(toks, &d) {
+		return title, "", false
+	}
+	var keep []string
+	for _, t := range toks {
+		if t.Field != FieldRepeat {
+			keep = append(keep, t.Text)
+		}
+	}
+	return cleanTitle(strings.Join(keep, " ")), d.RRule(), d.RepeatAsked
 }

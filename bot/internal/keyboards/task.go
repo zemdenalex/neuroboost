@@ -139,3 +139,48 @@ func wizardEscapes(lang i18n.Lang) []tgbotapi.InlineKeyboardButton {
 		tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "✅ Создать сейчас", "✅ Create now"), "nt_save"),
 	)
 }
+
+// RepeatCodes maps the wizard's repeat buttons to rules the API parses.
+//
+// One-letter codes on the wire, rules in one table: the handler reads this map
+// rather than switching on the letters, so a button and its rule cannot be
+// edited apart. "n" is «не повторять» — a real answer, which clears a repeat the
+// typed line may have set.
+var RepeatCodes = map[string]string{
+	"n":  "",
+	"d":  "FREQ=DAILY",
+	"d2": "FREQ=DAILY;INTERVAL=2",
+	"w":  "FREQ=WEEKLY",
+	"m":  "FREQ=MONTHLY",
+}
+
+// WizardRepeat asks how often a task comes back. current is the rule already
+// known ("" for none), marked the way the other steps mark their value.
+//
+// ⚠ No «свой вариант» button, deliberately: a custom period is TYPED — «раз в 3
+// дня», «каждые 2 недели» — and the step says so. The parser has understood
+// those since v0.4.11.2; a button that opens a second question to collect the
+// same sentence is one more step, and Denis's rule is that corrections go toward
+// fewer.
+func WizardRepeat(lang i18n.Lang, current string) tgbotapi.InlineKeyboardMarkup {
+	btn := func(text, code string) tgbotapi.InlineKeyboardButton {
+		if RepeatCodes[code] == current && (current != "" || code == "n") {
+			text = "✓ " + text
+		}
+		return tgbotapi.NewInlineKeyboardButtonData(text, "nt_r_"+code)
+	}
+	return tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			btn(i18n.T(lang, "Каждый день", "Every day"), "d"),
+			btn(i18n.T(lang, "Через день", "Every other day"), "d2"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			btn(i18n.T(lang, "Каждую неделю", "Every week"), "w"),
+			btn(i18n.T(lang, "Каждый месяц", "Every month"), "m"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			btn(i18n.T(lang, "Не повторять", "Do not repeat"), "n"),
+		),
+		wizardEscapes(lang),
+	)
+}

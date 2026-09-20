@@ -255,6 +255,12 @@ func (h *Handler) showTaskCard(chatID int64, text string) {
 	if len(r.Tags) > 0 {
 		us.FlowData["tags"] = r.Tags
 	}
+	if r.Rrule != "" {
+		us.FlowData["rrule"] = r.Rrule
+	}
+	if r.RepeatAsked {
+		us.FlowData["repeat_asked"] = true
+	}
 	us.FlowStep = "card"
 	// The kind can still be changed when the card came from a typed line.
 	raw, fromLine := us.FlowData["raw"].(string)

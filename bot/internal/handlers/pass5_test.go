@@ -162,8 +162,15 @@ func TestTaskCardNamesEveryField(t *testing.T) {
 	}
 	// The value that WAS given must still be printed, or the card passes by
 	// saying «нет» to everything.
-	if !strings.Contains(got.Text, "19.09") {
-		t.Errorf("срок из строки потерялся:\n%s", got.Text)
+	//
+	// 🔴 «Завтра» is computed, not written down. This line said "19.09" — true on
+	// 18.09, the day it was written, and false on every day since, so the test
+	// went red by the calendar with no code change. The date a test was written
+	// on is not a fact about the code (graph: learning-e2e-baseline-recorded-
+	// on-a-monday — the same mistake, a second time).
+	tomorrow := time.Now().In(h.location(chat)).AddDate(0, 0, 1).Format("02.01")
+	if !strings.Contains(got.Text, tomorrow) {
+		t.Errorf("срок из строки (%s) потерялся:\n%s", tomorrow, got.Text)
 	}
 }
 

@@ -463,6 +463,8 @@ func (h *Handler) HandleCallback(cb *tgbotapi.CallbackQuery) {
 		h.handleWizardPriority(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "nt_p_"))
 	case strings.HasPrefix(data, "nt_d_"):
 		h.handleWizardDue(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "nt_d_"))
+	case strings.HasPrefix(data, "nt_r_"):
+		h.handleWizardRepeat(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "nt_r_"))
 	case strings.HasPrefix(data, "nt_e_"):
 		h.handleWizardEstimate(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "nt_e_"))
 	}

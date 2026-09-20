@@ -53,6 +53,23 @@ func taskCardTextFull(lang i18n.Lang, r parse.TaskResult, tz, calendar, descript
 	}
 	b.WriteString(fieldLine("📅", i18n.T(lang, "Срок:", "Due:"), orNone(lang, due)))
 
+	// 🔴 The line that was missing on 20.09. Every other characteristic was
+	// named here, «нет» or not, per Denis's rule of 18.09 — except the one the
+	// release was about, so the card could not teach that tasks repeat and the
+	// bot could not be told to make one.
+	switch {
+	case r.Rrule != "":
+		b.WriteString(fieldLine("🔁", i18n.T(lang, "Повтор:", "Repeat:"), format.Escape(freqName(lang, r.Rrule))))
+	case r.RepeatAsked:
+		// Same wording as the event card: a question about to be asked is not
+		// an absence, and «нет» here would answer it silently.
+		b.WriteString(i18n.T(lang,
+			"⚠ повтор — частота не указана, спрошу\n",
+			"⚠ repeats — no frequency given, I will ask\n"))
+	default:
+		b.WriteString(fieldLine("🔁", i18n.T(lang, "Повтор:", "Repeat:"), noneWord(lang)))
+	}
+
 	priority := ""
 	if r.Priority != nil {
 		priority = format.PriorityEmoji(*r.Priority) + " " + priorityName(lang, *r.Priority)
@@ -102,7 +119,10 @@ func priorityName(lang i18n.Lang, p int) string {
 
 // wizardOrder is the sequence of optional fields, coarsest first: a priority is
 // a judgement, a date is a commitment, an estimate is a guess.
-var wizardOrder = []string{"priority", "due", "estimate"}
+//
+// «repeat» sits after the date on purpose: a series is anchored on the due date
+// when there is one, so «когда» has to be settled before «как часто».
+var wizardOrder = []string{"priority", "due", "repeat", "estimate"}
 
 // nextWizardStep returns the next field to ask about, and "done" once every
 // step has been visited.
@@ -195,6 +215,16 @@ func wizardStepText(lang i18n.Lang, step string, flowData map[string]any, loc *t
 			}
 		}
 		return i18n.T(lang, "📝 <b>Подробнее</b>\n\nКогда сделать? (можно пропустить)", "📝 <b>More</b>\n\nWhen is it due? (or skip)")
+	case "repeat":
+		hint := i18n.T(lang,
+			"\n\nСвой период — напиши: «раз в 3 дня», «каждые 2 недели».",
+			"\n\nFor your own period, type it: «every 3 days», «every 2 weeks».")
+		if rule, ok := flowData["rrule"].(string); ok && rule != "" {
+			now := i18n.T(lang, "📝 <b>Подробнее</b>\n\nПовторять? Сейчас: ", "📝 <b>More</b>\n\nRepeat? Now: ")
+			return now + format.Escape(freqName(lang, rule)) + hint
+		}
+		ask := i18n.T(lang, "📝 <b>Подробнее</b>\n\nПовторять? (можно пропустить)", "📝 <b>More</b>\n\nRepeat? (or skip)")
+		return ask + hint
 	case "estimate":
 		if m, ok := flowData["minutes"].(int); ok {
 			return fmt.Sprintf(i18n.T(lang, "📝 <b>Подробнее</b>\n\nСколько времени займёт? Сейчас: %s (можно заменить или пропустить)", "📝 <b>More</b>\n\nHow long will it take? Now: %s (replace it or skip)"),
@@ -219,6 +249,9 @@ func wizardKeyboardFor(lang i18n.Lang, step string, flowData map[string]any, loc
 		return keyboards.WizardPriority(lang, current)
 	case "due":
 		return keyboards.WizardDue(lang, wizardDueOffset(flowData, loc))
+	case "repeat":
+		rule, _ := flowData["rrule"].(string)
+		return keyboards.WizardRepeat(lang, rule)
 	case "estimate":
 		var current *int
 		if m, ok := flowData["minutes"].(int); ok {

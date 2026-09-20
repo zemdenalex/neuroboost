@@ -118,6 +118,14 @@ type CreateTaskReq struct {
 	DueDate          *string  `json:"due_date,omitempty"` // ISO 8601
 	EstimatedMinutes *int     `json:"estimated_minutes,omitempty"`
 	Tags             []string `json:"tags,omitempty"`
+	// Rrule makes the task repeat. omitempty matters: a one-off task must send
+	// no key at all, not an empty rule.
+	//
+	// 🔴 Absent until 20.09 — which is why «повторяющиеся задачи» shipped as a
+	// release note and could not be created by anyone.
+	Rrule *string `json:"rrule,omitempty"`
+	// NagMinutes repeats an unanswered reminder every N minutes.
+	NagMinutes *int `json:"nag_minutes,omitempty"`
 }
 
 type CreateFeedbackReq struct {

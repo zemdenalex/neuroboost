@@ -4,7 +4,9 @@ import "testing"
 
 func TestWizardVisitsEveryStepInOrder(t *testing.T) {
 	has := map[string]bool{}
-	order := []string{"priority", "due", "estimate", "done"}
+	// «repeat» joined on 20.09, after the date: a series is anchored on the due
+	// date, so «когда» is settled before «как часто».
+	order := []string{"priority", "due", "repeat", "estimate", "done"}
 	cur := "start"
 	for _, want := range order {
 		cur = nextWizardStep(cur, has)
