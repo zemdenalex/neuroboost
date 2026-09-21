@@ -128,13 +128,15 @@ func Convert(ctx context.Context, userID, taskID string, req ConvertRequest) (*C
 		calID = dest
 	}
 
+	tz := userZone(ctx, tx, userID)
+
 	var ev ConvertedEvent
 	err = tx.QueryRow(ctx, `
 		INSERT INTO event (user_id, calendar_id, title, description, starts_at, ends_at,
 		                   all_day, tags, task_id, timezone)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'Europe/Moscow')
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 		RETURNING id::text, calendar_id::text, title, starts_at, ends_at, all_day, task_id::text`,
-		userID, calID, title, description, startsAt, endsAt, req.AllDay, tags, taskID).
+		userID, calID, title, description, startsAt, endsAt, req.AllDay, tags, taskID, tz).
 		Scan(&ev.ID, &ev.CalendarID, &ev.Title, &ev.StartsAt, &ev.EndsAt, &ev.AllDay, &ev.TaskID)
 	if err != nil {
 		return nil, err
@@ -174,6 +176,24 @@ func Convert(ctx context.Context, userID, taskID string, req ConvertRequest) (*C
 		return nil, err
 	}
 	return &ev, nil
+}
+
+// rowQuerier is what both the pool and a transaction offer for one row.
+type rowQuerier interface {
+	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+}
+
+// userZone is the zone the user lives in, for storing on what they create.
+//
+// 🔴 Until 21.09 every event made from a task was stamped 'Europe/Moscow'.
+// The instant was still right — starts_at carries its offset — but the zone is
+// what the recurrence expander keeps the local hour in, so a New York series
+// slid by an hour at the first DST change after it was created.
+func userZone(ctx context.Context, q rowQuerier, userID string) string {
+	tz := "Europe/Moscow"
+	_ = q.QueryRow(ctx,
+		`SELECT COALESCE(timezone, 'Europe/Moscow') FROM "user" WHERE id = $1`, userID).Scan(&tz)
+	return tz
 }
 
 // ConvertedFrom reports the event a task was linked to, if any.

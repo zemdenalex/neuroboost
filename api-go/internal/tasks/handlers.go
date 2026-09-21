@@ -800,9 +800,9 @@ func scheduleTask(ctx context.Context, userID, taskID string, startsAt, endsAt t
 	var event ScheduledEvent
 	err = db.Pool.QueryRow(ctx, `
 		INSERT INTO event (user_id, calendar_id, title, starts_at, ends_at, all_day, task_id, color, timezone)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'Europe/Moscow')
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 		RETURNING id, task_id, title, starts_at, ends_at, all_day, color
-	`, userID, calID, task.Title, startsAt, endsAt, allDay, taskID, color).Scan(
+	`, userID, calID, task.Title, startsAt, endsAt, allDay, taskID, color, userZone(ctx, db.Pool, userID)).Scan(
 		&event.ID, &event.TaskID, &event.Title, &event.StartsAt, &event.EndsAt, &event.AllDay, &event.Color,
 	)
 
