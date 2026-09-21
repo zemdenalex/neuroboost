@@ -209,6 +209,8 @@ func TestEveryScheduleButtonHasAPrefixTheRouterKnows(t *testing.T) {
 		// callback beginning with those two bytes will be swallowed by them,
 		// because the router is an ordered switch. Pick another prefix.
 		"t2e_", "ev_", "t2", "e2t_", "e2",
+		// «ℹ️ Что это?», 22.09 — routed before every screen's own prefix.
+		"help_",
 	}
 	for name, kb := range scheduleKeyboards() {
 		eachButton(kb, func(data string) {

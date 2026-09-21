@@ -18,6 +18,6 @@ func PriorityStyle(lang i18n.Lang, current, prefix, backData, backLabel string) 
 		btn("circles", i18n.T(lang, "🔴 🟠 🟡  кружки", "🔴 🟠 🟡  circles")),
 		btn("dot", i18n.T(lang, "●1 ●2 ○3  точки", "●1 ●2 ○3  dots")),
 		btn("dash", i18n.T(lang, "— — —  тире", "— — —  dashes")),
-		tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData(backLabel, backData)),
+		tgbotapi.NewInlineKeyboardRow(HelpButton(lang, HelpPriority), tgbotapi.NewInlineKeyboardButtonData(backLabel, backData)),
 	)
 }

@@ -301,6 +301,13 @@ func (h *Handler) HandleCallback(cb *tgbotapi.CallbackQuery) {
 		return
 	}
 
+	// «ℹ️ Что это?» can sit on any screen, onboarding and the card included,
+	// so it is asked before any of them claims its prefix.
+	if strings.HasPrefix(data, "help_") {
+		h.handleHelp(chatID, cb.Message.MessageID, data)
+		return
+	}
+
 	// The confirmation card owns every dr_/dre_ callback. It is asked before
 	// the switch rather than inside it because the card has a dozen buttons
 	// with three prefixes, and a dozen more cases in a switch this long is how

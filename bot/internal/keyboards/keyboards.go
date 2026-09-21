@@ -95,6 +95,7 @@ func TaskRepeat(lang i18n.Lang, taskID, current string) tgbotapi.InlineKeyboardM
 			btn(i18n.T(lang, "Не повторять", "Don't repeat"), "n"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
+			HelpButton(lang, HelpRepeat),
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "« Назад", "« Back"), "task_action_"+taskID),
 		),
 	)
@@ -130,6 +131,7 @@ func TaskNag(lang i18n.Lang, taskID string, current int) tgbotapi.InlineKeyboard
 			btn(i18n.T(lang, "Не долбить", "Don't nag"), "off"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
+			HelpButton(lang, HelpNag),
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "« Назад", "« Back"), "task_action_"+taskID),
 		),
 	)
@@ -486,6 +488,7 @@ func TaskPostpone(lang i18n.Lang, taskID string) tgbotapi.InlineKeyboardMarkup {
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "✏️ Своё", "✏️ Custom"), "task_ppc_"+taskID),
 		),
 		tgbotapi.NewInlineKeyboardRow(
+			HelpButton(lang, HelpPostpone),
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "« Назад", "« Back"), "task_action_"+taskID),
 		),
 	)

@@ -48,10 +48,6 @@ func (h *Handler) handleToEventStep(chatID int64, messageID int, data string) {
 		h.editOrSend(chatID, messageID, h.t(chatID, "Отменено.", "Cancelled."), keyboards.BackToTasks(h.lang(chatID)))
 		return
 	}
-	if data == "t2i" {
-		h.sendHTML(chatID, convertExplanation(h.lang(chatID)))
-		return
-	}
 	if us.CurrentFlow != toEventFlow {
 		// A button from a flow that is gone: say so, write nothing.
 		h.editOrSend(chatID, messageID, h.t(chatID,
@@ -226,12 +222,4 @@ func (h *Handler) finishToEvent(chatID int64, messageID int, task api.Task) {
 		fmt.Sprintf(h.t(chatID, "✅ <b>В календаре</b>\n🕐 %s", "✅ <b>On the calendar</b>\n🕐 %s"),
 			humanRange(h.lang(chatID), start.In(now.Location()), end.In(now.Location()), now)),
 		keyboards.EventCard(h.lang(chatID), ev.ID))
-}
-
-// convertExplanation is the «ℹ️ Что это?» of both directions. It moves to the
-// screen-explanation registry with piece C.
-func convertExplanation(lang i18n.Lang) string {
-	return i18n.T(lang,
-		"ℹ️ <b>Задача и событие</b>\n\nЗадача — что сделать. Событие — когда.\n\n🔗 <b>Связать</b> — живут оба: событие даёт время и напоминания, задача закрывается только своим «Готово».\n➡️ <b>Перенести</b> — остаётся одно из двух.\n\nЧто потеряется, называется до подтверждения. ❌ Отмена ничего не меняет.",
-		"ℹ️ <b>Tasks and events</b>\n\nA task is what to do. An event is when.\n\n🔗 <b>Link</b> — both live: the event carries the time and reminders; the task closes only with its own «Done».\n➡️ <b>Move</b> — one of the two remains.\n\nAnything lost is named before you confirm. ❌ Cancel changes nothing.")
 }

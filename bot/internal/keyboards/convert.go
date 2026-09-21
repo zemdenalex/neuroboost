@@ -14,10 +14,19 @@ import (
 // a step code does not always fit Telegram's 64 bytes, and a button that
 // carries only its step cannot address the wrong task.
 
-// ConvertCancel is the row every step ends with.
+// ConvertCancel is the row every step ends with. Its «ℹ️» explains the
+// direction; the link-or-move question has its own (convertCancelOn).
 func ConvertCancel(lang i18n.Lang, prefix string) []tgbotapi.InlineKeyboardButton {
+	screen := HelpToEvent
+	if prefix == "e2" {
+		screen = HelpToTask
+	}
+	return convertCancelOn(lang, prefix, screen)
+}
+
+func convertCancelOn(lang i18n.Lang, prefix, screen string) []tgbotapi.InlineKeyboardButton {
 	return tgbotapi.NewInlineKeyboardRow(
-		tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "ℹ️ Что это?", "ℹ️ What is this?"), prefix+"i"),
+		HelpButton(lang, screen),
 		tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "❌ Отмена", "❌ Cancel"), prefix+"x"),
 	)
 }
@@ -29,7 +38,7 @@ func ConvertHow(lang i18n.Lang, prefix string) tgbotapi.InlineKeyboardMarkup {
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🔗 Связать", "🔗 Link"), prefix+"m_l"),
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "➡️ Перенести", "➡️ Move"), prefix+"m_m"),
 		),
-		ConvertCancel(lang, prefix),
+		convertCancelOn(lang, prefix, HelpLink),
 	)
 }
 

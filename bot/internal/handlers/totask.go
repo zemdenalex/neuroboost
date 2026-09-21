@@ -47,10 +47,6 @@ func (h *Handler) handleToTaskStep(chatID int64, messageID int, data string) {
 		h.editOrSend(chatID, messageID, h.t(chatID, "Отменено.", "Cancelled."), keyboards.AgendaActions(h.lang(chatID)))
 		return
 	}
-	if data == "e2i" {
-		h.sendHTML(chatID, convertExplanation(h.lang(chatID)))
-		return
-	}
 	if us.CurrentFlow != toTaskFlow {
 		h.editOrSend(chatID, messageID, h.t(chatID,
 			"Это меню устарело — открой событие заново.", "This menu is out of date — open the event again."),

@@ -20,8 +20,10 @@ func BroadcastConfirm(lang i18n.Lang, version string, n int) tgbotapi.InlineKeyb
 
 // UpdatesOff sits under every broadcast (spec 21.09 §D1).
 func UpdatesOff(lang i18n.Lang) tgbotapi.InlineKeyboardMarkup {
-	return tgbotapi.NewInlineKeyboardMarkup(tgbotapi.NewInlineKeyboardRow(
-		tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🔕 Не присылать обновления", "🔕 Stop sending updates"), "upd_off")))
+	return tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🔕 Не присылать обновления", "🔕 Stop sending updates"), "upd_off")),
+		tgbotapi.NewInlineKeyboardRow(HelpButton(lang, HelpUpdates)))
 }
 
 // UpdatesToggle is the Settings screen's one button — the opposite of now.
@@ -32,6 +34,8 @@ func UpdatesToggle(lang i18n.Lang, subscribed bool) tgbotapi.InlineKeyboardMarku
 	}
 	return tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(btn),
-		tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "« Настройки", "« Settings"), "settings_menu")),
+		tgbotapi.NewInlineKeyboardRow(
+			HelpButton(lang, HelpUpdates),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "« Настройки", "« Settings"), "settings_menu")),
 	)
 }
