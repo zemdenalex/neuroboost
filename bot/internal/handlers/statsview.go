@@ -405,7 +405,7 @@ func fmtHours(lang i18n.Lang, d time.Duration) string {
 func statsTitle(lang i18n.Lang, g statgrid.Grid) string {
 	switch g.Period {
 	case statgrid.Month:
-		return fmt.Sprintf("%s %d", monthName(lang, g.From.Month()), g.From.Year())
+		return fmt.Sprintf("%s %d", monthNominative(lang, g.From.Month()), g.From.Year())
 	case statgrid.Year:
 		return strconv.Itoa(g.From.Year())
 	case statgrid.All:
@@ -421,39 +421,9 @@ func statsTitle(lang i18n.Lang, g statgrid.Grid) string {
 	}
 }
 
-// monthName is the month in the nominative — «Сентябрь 2026».
-func monthName(lang i18n.Lang, m time.Month) string {
-	switch m {
-	case time.January:
-		return i18n.T(lang, "Январь", "January")
-	case time.February:
-		return i18n.T(lang, "Февраль", "February")
-	case time.March:
-		return i18n.T(lang, "Март", "March")
-	case time.April:
-		return i18n.T(lang, "Апрель", "April")
-	case time.May:
-		return i18n.T(lang, "Май", "May")
-	case time.June:
-		return i18n.T(lang, "Июнь", "June")
-	case time.July:
-		return i18n.T(lang, "Июль", "July")
-	case time.August:
-		return i18n.T(lang, "Август", "August")
-	case time.September:
-		return i18n.T(lang, "Сентябрь", "September")
-	case time.October:
-		return i18n.T(lang, "Октябрь", "October")
-	case time.November:
-		return i18n.T(lang, "Ноябрь", "November")
-	default:
-		return i18n.T(lang, "Декабрь", "December")
-	}
-}
-
 // monthShort is the first three letters, lower case — the year grid's rows.
 func monthShort(lang i18n.Lang, m time.Month) string {
-	r := []rune(strings.ToLower(monthName(lang, m)))
+	r := []rune(strings.ToLower(monthNominative(lang, m)))
 	if len(r) > 3 {
 		r = r[:3]
 	}
@@ -467,15 +437,8 @@ func (h *Handler) handleStatsView(chatID int64, messageID int, v statsView) {
 	us := h.store.GetOrCreate(chatID)
 	now := time.Now().In(loc)
 
-	kind, _ := h.api.BotSetting(us.AuthToken, "stats_scale")
-	if kind == "" {
-		kind = scaleDay24
-	}
-	sc := statgrid.Scale{Kind: kind}
-	if kind == scaleWork {
-		start, end := h.workHours(chatID)
-		sc.WorkStart, sc.WorkEnd = hourOf(start, 8), hourOf(end, 20)
-	}
+	sc := h.statsScale(chatID)
+	kind := sc.Kind
 
 	fetch := func(from, to time.Time) ([]api.Event, error) {
 		return h.api.GetEvents(us.AuthToken, from.UTC().Format(time.RFC3339), to.UTC().Format(time.RFC3339))
@@ -535,6 +498,22 @@ func (h *Handler) handleStatsView(chatID int64, messageID int, v statsView) {
 	text := renderStatsScreen(lang, v, g, statsData{Events: events, Tasks: tasks, Occ: occ, Refl: refl}, sc, loc, now)
 	h.editOrSend(chatID, messageID, text,
 		keyboards.StatsNav(lang, periodCode(v.Period), v.Entity, v.Offset, scaleLabel(lang, kind)))
+}
+
+// statsScale is the user's scale — the one statistics and the month calendar
+// share, so one day never looks different on the two screens (spec §4).
+func (h *Handler) statsScale(chatID int64) statgrid.Scale {
+	us := h.store.GetOrCreate(chatID)
+	kind, _ := h.api.BotSetting(us.AuthToken, "stats_scale")
+	if !scaleKinds[kind] {
+		kind = scaleDay24
+	}
+	sc := statgrid.Scale{Kind: kind}
+	if kind == scaleWork {
+		start, end := h.workHours(chatID)
+		sc.WorkStart, sc.WorkEnd = hourOf(start, 8), hourOf(end, 20)
+	}
+	return sc
 }
 
 // handleStatsScale moves to the next scale, remembers it, and redraws.

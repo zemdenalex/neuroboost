@@ -10,6 +10,7 @@ import (
 	"github.com/zemdenalex/neuroboost-bot/internal/format"
 	"github.com/zemdenalex/neuroboost-bot/internal/i18n"
 	"github.com/zemdenalex/neuroboost-bot/internal/keyboards"
+	"github.com/zemdenalex/neuroboost-bot/internal/statgrid"
 )
 
 // The month calendar, restored.
@@ -26,10 +27,12 @@ import (
 
 // dayCell is what one square knows about itself.
 type dayCell struct {
-	Date      time.Time
-	InMonth   bool
-	IsToday   bool
-	HasEvents bool
+	Date    time.Time
+	InMonth bool
+	IsToday bool
+	// Level is how full the day is, 0 (nothing) to 8 — the statistics
+	// measure (spec 22.09 §4), replacing the old «•» that only said «something».
+	Level int
 }
 
 // buildMonth lays out the six weeks a month view always shows.
@@ -37,7 +40,7 @@ type dayCell struct {
 // Always six rows, never five: a grid that changes height between months makes
 // the navigation buttons move under the user's thumb between taps. ISO weeks,
 // so the first column is Monday — the same rule the web grid follows.
-func buildMonth(year int, month time.Month, today time.Time, busy map[string]bool, loc *time.Location) []dayCell {
+func buildMonth(year int, month time.Month, today time.Time, levels map[string]int, loc *time.Location) []dayCell {
 	first := time.Date(year, month, 1, 0, 0, 0, 0, loc)
 
 	// Go's Weekday is Sunday=0; ISO wants Monday=0.
@@ -50,10 +53,10 @@ func buildMonth(year int, month time.Month, today time.Time, busy map[string]boo
 		d := start.AddDate(0, 0, i)
 		key := d.Format("2006-01-02")
 		cells = append(cells, dayCell{
-			Date:      d,
-			InMonth:   d.Month() == month && d.Year() == year,
-			IsToday:   key == todayKey,
-			HasEvents: busy[key],
+			Date:    d,
+			InMonth: d.Month() == month && d.Year() == year,
+			IsToday: key == todayKey,
+			Level:   levels[key],
 		})
 	}
 	return cells
@@ -69,8 +72,8 @@ func cellLabel(c dayCell) string {
 		return "🔸" + n
 	case !c.InMonth:
 		return "·" + n
-	case c.HasEvents:
-		return n + "•"
+	case c.Level > 0:
+		return n + statgrid.Glyph(c.Level)
 	default:
 		return n
 	}
@@ -98,21 +101,18 @@ func (h *Handler) showMonth(chatID int64, messageID, year int, month time.Month)
 	gridStart := first.AddDate(0, 0, -offset)
 	gridEnd := gridStart.AddDate(0, 0, 42)
 
-	busy := map[string]bool{}
 	us := h.store.GetOrCreate(chatID)
+	sc := h.statsScale(chatID)
+	var levels map[string]int
 	events, err := h.api.GetEvents(us.AuthToken,
 		gridStart.UTC().Format(time.RFC3339), gridEnd.UTC().Format(time.RFC3339))
 	if err == nil {
-		for _, e := range events {
-			if t, perr := time.Parse(time.RFC3339, e.StartsAt); perr == nil {
-				busy[t.In(loc).Format("2006-01-02")] = true
-			}
-		}
+		levels = dayLevels(events, gridStart, gridEnd, sc, loc)
 	}
 	// A failed load draws the grid without marks rather than an error screen:
 	// the month is still navigable, and the marks are an aid, not the content.
 
-	cells := buildMonth(year, month, now, busy, loc)
+	cells := buildMonth(year, month, now, levels, loc)
 	labels := make([]string, len(cells))
 	dates := make([]string, len(cells))
 	for i, c := range cells {
@@ -120,8 +120,9 @@ func (h *Handler) showMonth(chatID int64, messageID, year int, month time.Month)
 		dates[i] = c.Date.Format("2006-01-02")
 	}
 
-	text := fmt.Sprintf(h.t(chatID, "🗓 <b>%s %d</b>\n\nВыбери день. 🔸 сегодня · • есть события", "🗓 <b>%s %d</b>\n\nPick a day. 🔸 today · • has events"),
-		monthNominative(h.lang(chatID), month), year)
+	text := fmt.Sprintf(h.t(chatID, "🗓 <b>%s %d</b>\n\nВыбери день. 🔸 сегодня · ▁▄█ — насколько занят день (шкала: %s)",
+		"🗓 <b>%s %d</b>\n\nPick a day. 🔸 today · ▁▄█ — how full the day is (scale: %s)"),
+		monthNominative(h.lang(chatID), month), year, scaleLabel(h.lang(chatID), sc.Kind))
 	kb := keyboards.MonthGrid(h.lang(chatID), year, int(month), monthNominative(h.lang(chatID), month), labels, dates,
 		time.Now().In(loc).Format("2006-01-02"))
 

@@ -58,7 +58,7 @@ func TestBuildMonthHandlesAMonthStartingOnMonday(t *testing.T) {
 func TestBuildMonthMarksTodayAndBusyDays(t *testing.T) {
 	loc := mustLoad(t, "Europe/Moscow")
 	today := time.Date(2026, 8, 18, 23, 40, 0, 0, loc)
-	busy := map[string]bool{"2026-08-20": true, "2026-07-28": true}
+	busy := map[string]int{"2026-08-20": 5, "2026-07-28": 1}
 
 	cells := buildMonth(2026, time.August, today, busy, loc)
 
@@ -71,14 +71,14 @@ func TestBuildMonthMarksTodayAndBusyDays(t *testing.T) {
 			}
 			sawToday++
 		case "2026-08-20":
-			if !c.HasEvents {
-				t.Error("20 August is not marked busy")
+			if c.Level != 5 {
+				t.Errorf("20 August level %d, want 5", c.Level)
 			}
 			sawBusy++
 		case "2026-07-28":
 			// A busy day in the leading week: the grid queries the whole visible
 			// range for exactly this reason.
-			if !c.HasEvents {
+			if c.Level != 1 {
 				t.Error("28 July is not marked busy though it is on screen")
 			}
 			sawBusyOutside++
@@ -126,11 +126,11 @@ func TestCellLabelSaysWhichDayIsWhich(t *testing.T) {
 		want string
 	}{
 		{dayCell{Date: d(18), InMonth: true, IsToday: true}, "🔸18"},
-		{dayCell{Date: d(20), InMonth: true, HasEvents: true}, "20•"},
+		{dayCell{Date: d(20), InMonth: true, Level: 4}, "20▄"},
 		{dayCell{Date: d(20), InMonth: true}, "20"},
 		{dayCell{Date: d(2), InMonth: false}, "·2"},
 		// Today wins over busy: one square, and "where am I" beats "what is here".
-		{dayCell{Date: d(18), InMonth: true, IsToday: true, HasEvents: true}, "🔸18"},
+		{dayCell{Date: d(18), InMonth: true, IsToday: true, Level: 8}, "🔸18"},
 	}
 	for _, c := range cases {
 		if got := cellLabel(c.cell); got != c.want {
