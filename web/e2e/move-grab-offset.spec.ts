@@ -58,8 +58,9 @@ test.describe('move keeps its grab offset', () => {
 
     // Two hours tall, so its middle is a comfortable grab point well clear of
     // both resize handles (8px each).
-    const startMs = dayStart + 3 * HOUR
-    const endMs = dayStart + 5 * HOUR
+    // Band 06:30–09:30 — see the table in fixtures/localTime.ts.
+    const startMs = dayStart + 6 * HOUR + 30 * 60 * 1000
+    const endMs = dayStart + 8 * HOUR + 30 * 60 * 1000
     const title = `E2E move ${Date.now()}`
     const created = await ctx.post('/api/events', {
       data: {

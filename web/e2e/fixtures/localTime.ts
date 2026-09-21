@@ -7,6 +7,34 @@
  * guarding. Everything here works in the account's own zone for that reason.
  */
 
+/*
+ * 🔴 WHICH HOURS EACH SPEC SEEDS — one band per spec, never shared.
+ *
+ * Every spec logs in as the SAME e2e account and playwright runs them in
+ * parallel (fullyParallel). Two events in one hour share a lane and each is
+ * drawn at half width. On 21.09 four drag specs all seeded 03:00–05:00 today:
+ * the blocks squeezed each other, and on a Monday — the first column — the
+ * half-width block's resize handle sat under the floating «Tasks (0)» tab, so
+ * the drag grabbed the tab. crossday-resize and resize-click-noop failed every
+ * Monday evening run and passed on Tuesday, with no code changed.
+ *
+ * Local time, in the account's zone (localMidnightUtc), including where a drag
+ * moves the event to:
+ *
+ *   00:00–03:00  resize-click-noop     (00–02, end resized +1h) — earliest,
+ *                because it also runs at 375px, where only ~00:00–07:00 is
+ *                above the bottom navigation
+ *   03:15–06:15  drag-commit-repaint   (03:15–05:15, dragged +1h)
+ *   06:30–09:30  move-grab-offset      (06:30–08:30, dragged +1h)
+ *   10:00–13:30  overlap-overflow (desktop), shared-badge-mobile, calendar-move
+ *   18:00–20:00  overlap-overflow (mobile) — its own band, or the two
+ *                viewports' eight events each share one lane
+ *   13:40–14:30  crossday-resize       (end dragged to the next day, same hour;
+ *                desktop shows ~00:00–15:00)
+ *
+ * A new spec takes a free band and adds a line here.
+ */
+
 export const DAY_MS = 24 * 3600 * 1000
 
 /** Offset of an IANA zone at a given instant, in ms — the trick timezone.utils uses. */

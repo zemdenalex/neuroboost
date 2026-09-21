@@ -60,11 +60,13 @@ test.describe('cross-day resize', () => {
     const dayOffset = localWeekday(timeZone) === 0 ? -1 : 0
     const dayStart = localMidnightUtc(timeZone, dayOffset)
 
-    // 04:00–05:00 local: early enough to be clear of a working day's events, so
-    // the block keeps the full column width and its handle is not overlapped by
-    // a neighbour sharing the lane.
-    const startMs = dayStart + 4 * HOUR
-    const endMs = dayStart + 5 * HOUR
+    // Band 13:40–14:30 — see the table in fixtures/localTime.ts. Its own hours
+    // keep the block at full column width. It used to be 04:00–05:00, the
+    // hours three other parallel specs also used: squeezed to half width, on a
+    // Monday its handle sat under the «Tasks (0)» tab, and the drag grabbed
+    // the tab instead.
+    const startMs = dayStart + 13 * HOUR + 40 * 60 * 1000
+    const endMs = dayStart + 14 * HOUR + 30 * 60 * 1000
     const title = `E2E crossday ${Date.now()}`
     const created = await ctx.post('/api/events', {
       data: {
@@ -138,7 +140,7 @@ test.describe('cross-day resize', () => {
 
     expect(newStart, 'the anchored start must not move').toBe(startMs)
     // Y was held, so the end should land at the same time on the following day:
-    // 04:00 → next-day 05:00 is 25 hours. Allow a slot of slack for snapping.
+    // 13:40 → next-day 14:30 is 24h50m. Allow a slot of slack for snapping.
     expect(newEnd - newStart, 'the end should now sit on the next day').toBeGreaterThan(24 * HOUR)
     expect(newEnd - newStart, 'and only one day further, not more').toBeLessThan(26 * HOUR)
   })

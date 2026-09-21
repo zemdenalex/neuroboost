@@ -67,8 +67,12 @@ test.describe('clicking a resize handle', () => {
     // A workaround that outlived the bug it was written for, and which then
     // became the bug.
     const dayStart = localMidnightUtc(timeZone, 0)
-    const startMs = dayStart + 3 * HOUR
-    const endMs = dayStart + 5 * HOUR
+    // Band 00:00–03:00 — see the table in fixtures/localTime.ts. The earliest
+    // band because this spec also runs at 375px, where only about 00:00–07:00
+    // is above the bottom navigation: a handle at 08:00 sits under it (tried,
+    // 22.09 — the drag never reached the block).
+    const startMs = dayStart + 0 * HOUR
+    const endMs = dayStart + 2 * HOUR
 
     const title = `E2E clicknoop ${Date.now()}`
     const created = await ctx.post('/api/events', {

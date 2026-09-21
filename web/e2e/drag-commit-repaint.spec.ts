@@ -58,8 +58,9 @@ test.describe('what the grid shows between drop and refetch', () => {
 
     const dayOffset = localWeekday(timeZone) === 0 ? -1 : 0
     const dayStart = localMidnightUtc(timeZone, dayOffset)
-    const startMs = dayStart + 3 * HOUR
-    const endMs = dayStart + 5 * HOUR
+    // Band 03:15–06:15 — see the table in fixtures/localTime.ts.
+    const startMs = dayStart + 3 * HOUR + 15 * 60 * 1000
+    const endMs = dayStart + 5 * HOUR + 15 * 60 * 1000
 
     const title = `E2E repaint ${Date.now()}`
     const created = await ctx.post('/api/events', {
