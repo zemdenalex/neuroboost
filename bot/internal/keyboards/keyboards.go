@@ -36,9 +36,89 @@ func TaskActions(lang i18n.Lang, taskID string, repeats bool) tgbotapi.InlineKey
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "⏱ Оценка", "⏱ Estimate"), "task_est_"+taskID),
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🏷 Теги", "🏷 Tags"), "task_tag_"+taskID),
 		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🔁 Повтор", "🔁 Repeat"), "task_rp_"+taskID),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🔔 Долбить", "🔔 Nag"), "task_ng_"+taskID),
+		),
 		doneRow(lang, taskID, repeats),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "« Назад", "« Back"), "top_tasks"),
+		),
+	)
+}
+
+// tick marks the choice a task already carries, the way every wizard step
+// marks its known value.
+func tick(current bool) string {
+	if current {
+		return "✓ "
+	}
+	return ""
+}
+
+// TaskRepeat sets — or clears — the rule on a task that already exists.
+//
+// 🔴 The API has taken `rrule` on PATCH since 20.09 and the bot had no button,
+// so a repeat could be created and never turned off. Denis, 21.09, against the
+// line that said so: «Надо».
+//
+// Reuses RepeatCodes, the wizard's own table, so the choices offered on an
+// existing task can never drift from the choices offered while creating one.
+func TaskRepeat(lang i18n.Lang, taskID, current string) tgbotapi.InlineKeyboardMarkup {
+	btn := func(text, code string) tgbotapi.InlineKeyboardButton {
+		return tgbotapi.NewInlineKeyboardButtonData(
+			tick(RepeatCodes[code] == current && (current != "" || code == "n"))+text,
+			fmt.Sprintf("task_rpd_%s_%s", taskID, code))
+	}
+	return tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			btn(i18n.T(lang, "Каждый день", "Every day"), "d"),
+			btn(i18n.T(lang, "Через день", "Every other day"), "d2"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			btn(i18n.T(lang, "Каждую неделю", "Every week"), "w"),
+			btn(i18n.T(lang, "Каждый месяц", "Every month"), "m"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			btn(i18n.T(lang, "Не повторять", "Don't repeat"), "n"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "« Назад", "« Back"), "task_action_"+taskID),
+		),
+	)
+}
+
+// NagCodes maps the nagging buttons to minutes. 0 means "stop nagging".
+//
+// ⚠ The floor is 5 and the ceiling is a day — the same bounds the API
+// enforces (minNagMinutes / maxNagMinutes). Offering a value it would refuse
+// is a button that always answers with an error.
+var NagCodes = map[string]int{"off": 0, "10": 10, "15": 15, "30": 30, "60": 60}
+
+// TaskNag says how often an unanswered reminder comes back.
+//
+// 🔴 Per TASK, not per account: `nag_minutes` is a column on task and event,
+// and the API has no user-level default. Denis asked for «экран частоты
+// напоминаний» in settings; this is where the setting actually exists, and
+// building a global screen that silently writes nothing would be worse.
+func TaskNag(lang i18n.Lang, taskID string, current int) tgbotapi.InlineKeyboardMarkup {
+	btn := func(text, code string) tgbotapi.InlineKeyboardButton {
+		return tgbotapi.NewInlineKeyboardButtonData(
+			tick(NagCodes[code] == current)+text,
+			fmt.Sprintf("task_ngd_%s_%s", taskID, code))
+	}
+	return tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			btn(i18n.T(lang, "10 мин", "10 min"), "10"),
+			btn(i18n.T(lang, "15 мин", "15 min"), "15"),
+			btn(i18n.T(lang, "30 мин", "30 min"), "30"),
+			btn(i18n.T(lang, "Час", "An hour"), "60"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			btn(i18n.T(lang, "Не долбить", "Don't nag"), "off"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "« Назад", "« Back"), "task_action_"+taskID),
 		),
 	)
 }
@@ -378,6 +458,11 @@ func TaskPostpone(lang i18n.Lang, taskID string) tgbotapi.InlineKeyboardMarkup {
 		tgbotapi.NewInlineKeyboardRow(
 			btn(i18n.T(lang, "Неделю", "A week"), 7),
 			btn(i18n.T(lang, "Месяц", "A month"), 30),
+		),
+		// «Свой срок», asked for by Denis on 21.09 against the line that said
+		// it was deliberately missing: «Нужен».
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "✏️ Своё", "✏️ Custom"), "task_ppc_"+taskID),
 		),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "« Назад", "« Back"), "task_action_"+taskID),

@@ -216,9 +216,7 @@ func wizardStepText(lang i18n.Lang, step string, flowData map[string]any, loc *t
 		}
 		return i18n.T(lang, "📝 <b>Подробнее</b>\n\nКогда сделать? (можно пропустить)", "📝 <b>More</b>\n\nWhen is it due? (or skip)")
 	case "repeat":
-		hint := i18n.T(lang,
-			"\n\nСвой период — напиши: «раз в 3 дня», «каждые 2 недели».",
-			"\n\nFor your own period, type it: «every 3 days», «every 2 weeks».")
+		hint := wizardHint(lang, "repeat")
 		if rule, ok := flowData["rrule"].(string); ok && rule != "" {
 			now := i18n.T(lang, "📝 <b>Подробнее</b>\n\nПовторять? Сейчас: ", "📝 <b>More</b>\n\nRepeat? Now: ")
 			return now + format.Escape(freqName(lang, rule)) + hint
@@ -228,11 +226,37 @@ func wizardStepText(lang i18n.Lang, step string, flowData map[string]any, loc *t
 	case "estimate":
 		if m, ok := flowData["minutes"].(int); ok {
 			return fmt.Sprintf(i18n.T(lang, "📝 <b>Подробнее</b>\n\nСколько времени займёт? Сейчас: %s (можно заменить или пропустить)", "📝 <b>More</b>\n\nHow long will it take? Now: %s (replace it or skip)"),
-				format.Duration(m))
+				format.Duration(m)) + wizardHint(lang, "estimate")
 		}
-		return i18n.T(lang, "📝 <b>Подробнее</b>\n\nСколько времени займёт? (можно пропустить)", "📝 <b>More</b>\n\nHow long will it take? (or skip)")
+		return i18n.T(lang, "📝 <b>Подробнее</b>\n\nСколько времени займёт? (можно пропустить)", "📝 <b>More</b>\n\nHow long will it take? (or skip)") +
+			wizardHint(lang, "estimate")
 	}
 	return i18n.T(lang, "📝 <b>Подробнее</b>", "📝 <b>More</b>")
+}
+
+// wizardHint tells the reader that this step also takes a typed answer.
+//
+// 🔴 Denis, 21.09, after finding out that «5м» works: *«не понятно обычному
+// пользователю, что можно свой вариант; пускай пишет: нажми на кнопку или
+// напиши свой вариант, например 5м, 2ч, 3д — то же самое с повторами»*. The
+// parser has read those for weeks; only the screen was silent about it.
+//
+// 🔴 A hint ONLY where typing actually works — «estimate» and «repeat» are the
+// two steps handleWizardText answers. Promising it on a step that ignores text
+// would be the same defect as the card that said «спрошу» and did not:
+// a printed claim with nothing behind it.
+func wizardHint(lang i18n.Lang, step string) string {
+	switch step {
+	case "estimate":
+		return i18n.T(lang,
+			"\n\nНажми кнопку — или напиши своё: «5м», «90м», «2ч».",
+			"\n\nPress a button — or type your own: «5m», «90m», «2h».")
+	case "repeat":
+		return i18n.T(lang,
+			"\n\nНажми кнопку — или напиши своё: «раз в 3 дня», «каждые 2 недели».",
+			"\n\nPress a button — or type your own: «every 3 days», «every 2 weeks».")
+	}
+	return ""
 }
 
 // wizardKeyboardFor is the keyboard for a given wizard step. Every one of

@@ -137,6 +137,9 @@ func scheduleKeyboards() map[string]tgbotapi.InlineKeyboardMarkup {
 		"TaskScheduleDuration": keyboards.TaskScheduleDuration(i18n.RU, uuid, "eve"),
 		"TaskDue":              keyboards.TaskDue(i18n.RU, uuid),
 		"TaskEstimate":         keyboards.TaskEstimate(i18n.RU, uuid),
+		"TaskPostpone":         keyboards.TaskPostpone(i18n.RU, uuid),
+		"TaskRepeat":           keyboards.TaskRepeat(i18n.RU, uuid, "FREQ=DAILY"),
+		"TaskNag":              keyboards.TaskNag(i18n.RU, uuid, 10),
 	}
 }
 
@@ -189,7 +192,10 @@ func TestEveryScheduleButtonHasAPrefixTheRouterKnows(t *testing.T) {
 		// shorter prefix swallows it and «отложить на неделю» opens the menu
 		// again instead of postponing. Same collision that renamed cal_ to cl_
 		// on 18.09.
-		"task_ppd_", "task_pp_",
+		"task_ppd_", "task_ppc_", "task_pp_",
+		// Повтор and долбёж on an existing task, added 21.09. Same ordering
+		// rule: the value-carrying prefix before the screen's.
+		"task_rpd_", "task_rp_", "task_ngd_", "task_ng_",
 	}
 	for name, kb := range scheduleKeyboards() {
 		eachButton(kb, func(data string) {

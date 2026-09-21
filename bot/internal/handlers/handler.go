@@ -399,8 +399,30 @@ func (h *Handler) HandleCallback(cb *tgbotapi.CallbackQuery) {
 				h.handleTaskPostponeDays(chatID, cb.Message.MessageID, rest[:i], days)
 			}
 		}
+	case strings.HasPrefix(data, "task_ppc_"):
+		h.handleTaskPostponeCustom(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "task_ppc_"))
 	case strings.HasPrefix(data, "task_pp_"):
 		h.handleTaskPostpone(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "task_pp_"))
+	// 🔁 Повтор / 🔔 Долбить on an existing task. Same shape as task_ppd_ /
+	// task_pp_ above, and the same ordering rule: the value-carrying prefix is
+	// declared BEFORE the screen's, or «task_rpd_…» would be eaten by a
+	// «task_rp» test. It is not eaten today — the next character is «d», not
+	// «_» — but that is an accident of naming, and this switch is read as an
+	// ordered list, so the order is where the guarantee belongs.
+	case strings.HasPrefix(data, "task_rpd_"):
+		rest := strings.TrimPrefix(data, "task_rpd_")
+		if i := strings.LastIndex(rest, "_"); i > 0 {
+			h.handleTaskRepeatSet(chatID, cb.Message.MessageID, rest[:i], rest[i+1:])
+		}
+	case strings.HasPrefix(data, "task_rp_"):
+		h.handleTaskRepeatMenu(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "task_rp_"))
+	case strings.HasPrefix(data, "task_ngd_"):
+		rest := strings.TrimPrefix(data, "task_ngd_")
+		if i := strings.LastIndex(rest, "_"); i > 0 {
+			h.handleTaskNagSet(chatID, cb.Message.MessageID, rest[:i], rest[i+1:])
+		}
+	case strings.HasPrefix(data, "task_ng_"):
+		h.handleTaskNagMenu(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "task_ng_"))
 	case strings.HasPrefix(data, "task_done_"):
 		h.handleTaskDone(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "task_done_"))
 	case strings.HasPrefix(data, "task_delete_"):

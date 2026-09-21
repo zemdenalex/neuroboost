@@ -94,6 +94,8 @@ type Task struct {
 	Rrule string `json:"rrule,omitempty"`
 	// OccurrenceState is today's answer: "", "done" or "skipped".
 	OccurrenceState string `json:"occurrence_state,omitempty"`
+	// NagMinutes is how often an unanswered reminder comes back, 0 for never.
+	NagMinutes int `json:"nag_minutes,omitempty"`
 }
 
 // Repeats reports whether this task is a series.
