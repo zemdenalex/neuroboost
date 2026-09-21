@@ -158,6 +158,7 @@ func main() {
 		r.Patch("/api/events/{id}/move", e.MoveHandler)
 		r.Patch("/api/events/{id}/resize", e.ResizeHandler)
 		r.Post("/api/events/{id}/exceptions", e.AddExceptionHandler)
+		r.Post("/api/events/{id}/to-task", e.ToTaskHandler)
 		r.Post("/api/events/{id}/reflection", rfl.CreateForEventHandler)
 
 		// Tasks
