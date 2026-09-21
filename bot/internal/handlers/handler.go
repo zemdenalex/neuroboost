@@ -384,6 +384,12 @@ func (h *Handler) HandleCallback(cb *tgbotapi.CallbackQuery) {
 	// distinct, deliberately: a switch on prefixes where one is a prefix of
 	// another routes by declaration order, which is a rule nobody remembers
 	// when adding the fourth button.
+	// Task ↔ event, the full path (21.09). t2e_ opens it; every later step is
+	// a short t2 code, the choice itself living in the flow.
+	case strings.HasPrefix(data, "t2e_"):
+		h.handleToEventStart(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "t2e_"))
+	case strings.HasPrefix(data, "t2"):
+		h.handleToEventStep(chatID, cb.Message.MessageID, data)
 	case strings.HasPrefix(data, "task_sched_"):
 		h.handleTaskScheduleWhen(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "task_sched_"))
 	case strings.HasPrefix(data, "task_when_"):

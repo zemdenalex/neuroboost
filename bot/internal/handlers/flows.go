@@ -61,6 +61,8 @@ func (h *Handler) handleFlowInput(chatID int64, text string) {
 		h.handleKeywordInput(chatID, text)
 	case "postpone_custom":
 		h.handlePostponeCustomText(chatID, text)
+	case toEventFlow:
+		h.handleToEventText(chatID, text)
 	case "edit_task_tags":
 		h.handleEditTaskTags(chatID, text)
 	default:
