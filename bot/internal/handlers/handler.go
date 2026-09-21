@@ -504,6 +504,10 @@ func (h *Handler) HandleCallback(cb *tgbotapi.CallbackQuery) {
 		h.startKeywordFlow(chatID, cb.Message.MessageID)
 	case strings.HasPrefix(data, "kw_del_"):
 		h.handleKeywordDelete(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "kw_del_"))
+	case data == "settings_stscale":
+		h.handleScalePick(chatID, cb.Message.MessageID, "", false)
+	case strings.HasPrefix(data, "scl_"):
+		h.handleScalePick(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "scl_"), false)
 	case data == "settings_workhours":
 		h.handleWorkHours(chatID, cb.Message.MessageID)
 	case strings.HasPrefix(data, "wh_"):

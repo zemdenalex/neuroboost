@@ -118,7 +118,7 @@ func (h *Handler) showOnboardTZ(chatID int64, messageID int) {
 	row = append(row, tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "Другое…", "Other…"), "ob_tzother"))
 	rows = append(rows, row)
 	rows = append(rows, []tgbotapi.InlineKeyboardButton{
-		tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "✅ Верно, дальше →", "✅ Correct, next →"), "ob_finish"),
+		tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "✅ Верно, дальше →", "✅ Correct, next →"), "ob_scale"),
 	})
 
 	body := fmt.Sprintf(i18n.T(lang,
@@ -295,6 +295,12 @@ func (h *Handler) handleOnboardCallback(chatID int64, messageID int, data string
 		h.editOrSend(chatID, messageID, h.t(chatID,
 			"Напиши свой пояс: «UTC+5» или «Asia/Yekaterinburg».",
 			"Write your zone: «UTC+5» or «Asia/Yekaterinburg»."), keyboards.None())
+	case data == "ob_scale":
+		// Denis 22.09: onboarding asks for the statistics scale too.
+		us.FlowStep = "scale"
+		h.handleScalePick(chatID, messageID, "", true)
+	case strings.HasPrefix(data, "ob_sc_"):
+		h.handleScalePick(chatID, messageID, strings.TrimPrefix(data, "ob_sc_"), true)
 	case data == "ob_finish":
 		h.onboardClosing(chatID, messageID)
 	case data == "ob_skip":

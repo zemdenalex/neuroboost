@@ -97,15 +97,47 @@ func nextScale(kind string) string {
 	}
 }
 
-func scaleLabel(lang i18n.Lang, kind string) string {
-	switch kind {
-	case scaleWork:
-		return i18n.T(lang, "рабочие часы", "work hours")
-	case scalePeak:
-		return i18n.T(lang, "по максимуму", "busiest = full")
-	default:
-		return i18n.T(lang, "24 ч", "24 h")
+func scaleLabel(lang i18n.Lang, kind string) string { return keyboards.StatsScaleName(lang, kind) }
+
+// scaleKinds is the closed set a button may write; callback data is user input.
+var scaleKinds = map[string]bool{scaleDay24: true, scaleWork: true, scalePeak: true}
+
+// handleScalePick is the scale screen, from ⚙️ Settings or from onboarding
+// (spec §3). kind == "" only shows it; a known kind is saved first.
+func (h *Handler) handleScalePick(chatID int64, messageID int, kind string, onboarding bool) {
+	us := h.store.GetOrCreate(chatID)
+	lang := h.lang(chatID)
+	if kind != "" {
+		if !scaleKinds[kind] {
+			return
+		}
+		if err := h.api.SetBotSetting(us.AuthToken, "stats_scale", kind); err != nil {
+			h.sendText(chatID, h.t(chatID, "❌ Не сохранилось: ", "❌ Not saved: ")+h.errorText(chatID, err))
+			return
+		}
 	}
+	current, _ := h.api.BotSetting(us.AuthToken, "stats_scale")
+	if current == "" {
+		current = scaleDay24
+	}
+	start, end := h.workHours(chatID)
+	ws, we := hourOf(start, 8), hourOf(end, 20)
+	six := 6 * time.Hour
+	text := fmt.Sprintf(h.t(chatID,
+		"📏 <b>Шкала статистики</b>\n\nЧто считать полным столбиком. Пример — день, где занято 6 часов:\n"+
+			"• 24 ч → %s — одинаково для всех\n• рабочие часы (%02d–%02d) → %s\n• по максимуму → самый занятый день экрана = █\n\n"+
+			"Поменять можно в любой момент — и здесь, и кнопкой 📏 на экране статистики.",
+		"📏 <b>Statistics scale</b>\n\nWhat counts as a full bar. Example — a day with 6 hours booked:\n"+
+			"• 24 h → %s — the same for everyone\n• work hours (%02d–%02d) → %s\n• busiest = full → the fullest day on screen is █\n\n"+
+			"Change it any time — here, or with 📏 on the statistics screen."),
+		statgrid.Glyph(statgrid.Level(six, 24*time.Hour)), ws, we,
+		statgrid.Glyph(statgrid.Level(six, time.Duration(we-ws)*time.Hour)))
+
+	prefix, backData, backLabel := "scl_", "settings_menu", h.t(chatID, "« Настройки", "« Settings")
+	if onboarding {
+		prefix, backData, backLabel = "ob_sc_", "ob_finish", h.t(chatID, "Дальше →", "Next →")
+	}
+	h.editOrSend(chatID, messageID, text, keyboards.StatsScale(lang, current, prefix, backData, backLabel))
 }
 
 // statsData is what the screen is computed from.
