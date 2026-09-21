@@ -504,6 +504,13 @@ func (h *Handler) HandleCallback(cb *tgbotapi.CallbackQuery) {
 		h.startKeywordFlow(chatID, cb.Message.MessageID)
 	case strings.HasPrefix(data, "kw_del_"):
 		h.handleKeywordDelete(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "kw_del_"))
+	// Priority symbol (spec 21.09 §B): Settings and the one-time question.
+	case data == "settings_prio":
+		h.handlePriorityPick(chatID, cb.Message.MessageID, "", "prs_")
+	case strings.HasPrefix(data, "prs_"):
+		h.handlePriorityPick(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "prs_"), "prs_")
+	case strings.HasPrefix(data, "prq_"):
+		h.handlePriorityPick(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "prq_"), "prq_")
 	case data == "settings_stscale":
 		h.handleScalePick(chatID, cb.Message.MessageID, "", false)
 	case strings.HasPrefix(data, "scl_"):

@@ -47,6 +47,11 @@ type UserState struct {
 	Calendars   []api.CalendarDetail
 	CalendarsAt time.Time
 
+	// PriorityStyle is settings.bot.priority_style, cached like Lang: every
+	// task list draws it (spec 21.09 §B). "" means «not chosen» — circles.
+	PriorityStyle      string
+	PriorityStyleKnown bool
+
 	// Onboarded caches bot.onboarded once it is known to be true. False means
 	// "not known yet", never "known false" — that one is always re-read, so a
 	// user who finishes onboarding on the web or another device is not asked

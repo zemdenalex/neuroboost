@@ -146,7 +146,7 @@ func (h *Handler) handleTaskListCallback(chatID int64, messageID int, data strin
 			h.showTaskList(chatID, messageID)
 			return true
 		}
-		h.editOrSend(chatID, messageID, taskCardText(h.lang(chatID), tasks[i], h.timezone(chatID)), keyboards.TaskListItem(h.lang(chatID), i))
+		h.editOrSend(chatID, messageID, taskCardText(h.lang(chatID), tasks[i], h.timezone(chatID), h.priorityStyle(chatID)), keyboards.TaskListItem(h.lang(chatID), i))
 	case strings.HasPrefix(data, "dr_tdel_"):
 		i, valid := listIndex(strings.TrimPrefix(data, "dr_tdel_"), len(tasks))
 		if valid {
@@ -215,7 +215,7 @@ func (h *Handler) showTaskList(chatID int64, messageID int) {
 		}
 		fmt.Fprintf(&b, "\n%d. ", i+1)
 		if t.Priority != nil {
-			b.WriteString(format.PriorityEmoji(*t.Priority) + " ")
+			b.WriteString(h.prio(chatID, *t.Priority) + " ")
 		}
 		b.WriteString(format.Escape(title))
 		var meta []string
@@ -267,7 +267,7 @@ func (h *Handler) showTaskCard(chatID int64, text string) {
 	description, _ := us.FlowData["description"].(string)
 	h.sendHTMLWithKeyboard(chatID,
 		taskCardTextFull(h.lang(chatID), r, h.timezone(chatID),
-			h.calendarNameFor(chatID, ""), description),
+			h.calendarNameFor(chatID, ""), description, h.priorityStyle(chatID)),
 		keyboards.TaskCard(h.lang(chatID), fromLine && raw != ""))
 }
 

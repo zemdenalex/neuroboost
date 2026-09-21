@@ -9,6 +9,7 @@ import (
 
 	"github.com/zemdenalex/neuroboost-bot/internal/api"
 	"github.com/zemdenalex/neuroboost-bot/internal/config"
+	"github.com/zemdenalex/neuroboost-bot/internal/format"
 	"github.com/zemdenalex/neuroboost-bot/internal/i18n"
 	"github.com/zemdenalex/neuroboost-bot/internal/state"
 )
@@ -138,7 +139,7 @@ func TestTheHintAppearsOnlyWhereTypingIsHeard(t *testing.T) {
 		if wizardHint(i18n.RU, step) == "" {
 			t.Errorf("step %q takes a typed answer and says nothing about it", step)
 		}
-		if !strings.Contains(wizardStepText(i18n.RU, step, map[string]any{}, nil), "напиши") {
+		if !strings.Contains(wizardStepText(i18n.RU, step, map[string]any{}, nil, format.StyleCircles), "напиши") {
 			t.Errorf("step %q: the hint never reaches the screen", step)
 		}
 	}

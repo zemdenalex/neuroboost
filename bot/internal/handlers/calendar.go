@@ -241,7 +241,7 @@ func (h *Handler) handleCalendarDay(chatID int64, messageID int, date string) {
 			if t.EstimatedMinutes > 0 {
 				est = " ~" + format.Duration(t.EstimatedMinutes)
 			}
-			text += fmt.Sprintf("  %s %s%s\n", format.PriorityEmoji(t.Priority), format.Escape(t.Title), est)
+			text += fmt.Sprintf("  %s %s%s\n", h.prio(chatID, t.Priority), format.Escape(t.Title), est)
 		}
 	}
 

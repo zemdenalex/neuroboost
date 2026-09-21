@@ -64,7 +64,7 @@ func (h *Handler) handleToday(chatID int64, messageID int) {
 			if t.EstimatedMinutes > 0 {
 				dur = " ~" + format.Duration(t.EstimatedMinutes)
 			}
-			text += fmt.Sprintf("  %s %s%s\n", format.PriorityEmoji(t.Priority), format.Escape(t.Title), dur)
+			text += fmt.Sprintf("  %s %s%s\n", h.prio(chatID, t.Priority), format.Escape(t.Title), dur)
 		}
 		// 🔴 The header counts every task and the list shows five. On 21.09
 		// that screen said «Задачи: 6» above five lines, and neither Denis nor

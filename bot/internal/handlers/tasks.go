@@ -68,11 +68,11 @@ func (h *Handler) handleTasks(chatID int64, messageID int) {
 		if i >= 10 {
 			break
 		}
-		label := fmt.Sprintf("%s %s", format.PriorityEmoji(t.Priority), t.Title)
+		label := fmt.Sprintf("%s %s", h.prio(chatID, t.Priority), t.Title)
 		if len(label) > 40 {
 			label = label[:37] + "..."
 		}
-		line := fmt.Sprintf("%s %s", format.PriorityEmoji(t.Priority), format.Escape(t.Title))
+		line := fmt.Sprintf("%s %s", h.prio(chatID, t.Priority), format.Escape(t.Title))
 		if ev, ok := linked[t.ID]; ok {
 			if at, perr := time.Parse(time.RFC3339, ev.StartsAt); perr == nil {
 				line += "   📅 " + whenShort(h.lang(chatID), at, now)
@@ -125,7 +125,12 @@ func (h *Handler) handleTaskAction(chatID int64, messageID int, taskID string) {
 		return
 	}
 
-	text := fmt.Sprintf("%s <b>%s</b>\n", format.PriorityEmoji(priority), format.Escape(title))
+	text := fmt.Sprintf("%s <b>%s</b>\n", h.prio(chatID, priority), format.Escape(title))
+	if h.priorityStyle(chatID) == format.StyleDash {
+		// A dash says nothing about urgency; without this line the priority
+		// would be visible nowhere at all (spec 21.09 §B1).
+		text += fmt.Sprintf(h.t(chatID, "⚡ Приоритет: %s\n", "⚡ Priority: %s\n"), priorityName(h.lang(chatID), priority))
+	}
 	if estMin > 0 {
 		text += fmt.Sprintf("⏱ %s\n", format.Duration(estMin))
 	}

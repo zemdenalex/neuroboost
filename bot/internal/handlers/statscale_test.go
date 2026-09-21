@@ -70,8 +70,13 @@ func TestOnboardingAsksForTheScale(t *testing.T) {
 	const chat = 952
 	h.startOnboarding(chat, 0, "ru")
 	h.handleOnboardCallback(chat, 0, "ob_tz", nil)
+	// Zone → priority symbol (11.4 §B) → scale → end.
+	if !strings.Contains(fake.last(t).Markup, `"ob_prio"`) {
+		t.Fatalf("the timezone screen does not lead on: %s", fake.last(t).Markup)
+	}
+	h.handleOnboardCallback(chat, 0, "ob_prio", nil)
 	if !strings.Contains(fake.last(t).Markup, `"ob_scale"`) {
-		t.Fatalf("the timezone screen does not lead to the scale: %s", fake.last(t).Markup)
+		t.Fatalf("the priority step does not lead to the scale: %s", fake.last(t).Markup)
 	}
 	h.handleOnboardCallback(chat, 0, "ob_scale", nil)
 	h.handleOnboardCallback(chat, 0, "ob_sc_peak", nil)

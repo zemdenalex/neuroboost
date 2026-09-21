@@ -7,7 +7,6 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 
 	"github.com/zemdenalex/neuroboost-bot/internal/api"
-	"github.com/zemdenalex/neuroboost-bot/internal/format"
 	"github.com/zemdenalex/neuroboost-bot/internal/i18n"
 	"github.com/zemdenalex/neuroboost-bot/internal/keyboards"
 )
@@ -50,7 +49,7 @@ func (h *Handler) handlePlanning(chatID int64, messageID int) {
 			// are, so the cut is visible rather than silent.
 			break
 		}
-		label := fmt.Sprintf("⏰ %s %s", format.PriorityEmoji(t.Priority), t.Title)
+		label := fmt.Sprintf("⏰ %s %s", h.prio(chatID, t.Priority), t.Title)
 		rows = append(rows, tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(truncateLabel(label), "task_sched_"+t.ID),
 		))

@@ -269,6 +269,9 @@ func SettingsMenu(lang i18n.Lang) tgbotapi.InlineKeyboardMarkup {
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🕘 Рабочие часы", "🕘 Work hours"), "settings_workhours"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🔘 Символ приоритета", "🔘 Priority symbol"), "settings_prio"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "📏 Шкала статистики", "📏 Statistics scale"), "settings_stscale"),
 		),
 		tgbotapi.NewInlineKeyboardRow(

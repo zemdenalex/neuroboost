@@ -23,8 +23,8 @@ import (
 // complaint. The comment is replaced rather than deleted so the reversal is
 // visible: both positions are reasonable, and this one was chosen by the
 // person using the product.
-func taskCardText(lang i18n.Lang, r parse.TaskResult, tz string) string {
-	return taskCardTextFull(lang, r, tz, "", "")
+func taskCardText(lang i18n.Lang, r parse.TaskResult, tz, style string) string {
+	return taskCardTextFull(lang, r, tz, "", "", style)
 }
 
 // taskCardTextFull writes the task card, naming EVERY characteristic.
@@ -37,7 +37,7 @@ func taskCardText(lang i18n.Lang, r parse.TaskResult, tz string) string {
 // Repeat is deliberately absent: tasks have no recurrence in the database at
 // all (v0.4.11.4 adds it). Naming a field that cannot exist yet would be the
 // opposite failure — promising a control that is not there.
-func taskCardTextFull(lang i18n.Lang, r parse.TaskResult, tz, calendar, description string) string {
+func taskCardTextFull(lang i18n.Lang, r parse.TaskResult, tz, calendar, description, style string) string {
 	title := r.Title
 	if title == "" {
 		title = i18n.T(lang, "(без названия)", "(untitled)")
@@ -72,7 +72,7 @@ func taskCardTextFull(lang i18n.Lang, r parse.TaskResult, tz, calendar, descript
 
 	priority := ""
 	if r.Priority != nil {
-		priority = format.PriorityEmoji(*r.Priority) + " " + priorityName(lang, *r.Priority)
+		priority = format.Priority(style, *r.Priority) + " " + priorityName(lang, *r.Priority)
 	}
 	b.WriteString(fieldLine("🎯", i18n.T(lang, "Приоритет:", "Priority:"), orNone(lang, priority)))
 
@@ -199,12 +199,12 @@ func wizardDueOffset(flowData map[string]any, loc *time.Location) string {
 // value. That has to work even when the known value is not one of the
 // keyboard's quick choices (an arbitrary parsed date, say), so the text
 // carries it independently of what the keyboard can mark.
-func wizardStepText(lang i18n.Lang, step string, flowData map[string]any, loc *time.Location) string {
+func wizardStepText(lang i18n.Lang, step string, flowData map[string]any, loc *time.Location, style string) string {
 	switch step {
 	case "priority":
 		if p, ok := flowData["priority"].(int); ok {
 			return fmt.Sprintf(i18n.T(lang, "📝 <b>Подробнее</b>\n\nПриоритет? Сейчас: %s %s (можно заменить или пропустить)", "📝 <b>More</b>\n\nPriority? Now: %s %s (replace it or skip)"),
-				format.PriorityEmoji(p), format.PriorityLabel(lang, p))
+				format.Priority(style, p), format.PriorityLabel(lang, p))
 		}
 		return i18n.T(lang, "📝 <b>Подробнее</b>\n\nПриоритет? (можно пропустить)", "📝 <b>More</b>\n\nPriority? (or skip)")
 	case "due":
@@ -330,7 +330,7 @@ func (h *Handler) showWizardStep(chatID int64, messageID int, step string) {
 	us.FlowStep = "wizard:" + step
 	loc := h.location(chatID)
 	h.editOrSend(chatID, messageID,
-		wizardStepText(h.lang(chatID), step, us.FlowData, loc),
+		wizardStepText(h.lang(chatID), step, us.FlowData, loc, h.priorityStyle(chatID)),
 		wizardKeyboardFor(h.lang(chatID), step, us.FlowData, loc))
 }
 

@@ -16,6 +16,10 @@ import (
 // take them elsewhere. Both loads therefore degrade to a line of text rather
 // than to an early return.
 func (h *Handler) handleMenu(chatID int64, messageID int) {
+	// Once, for people onboarded before the choice existed (spec 21.09 §B2).
+	if h.askPriorityOnce(chatID, messageID) {
+		return
+	}
 	us := h.store.GetOrCreate(chatID)
 	loc := h.location(chatID)
 	now := time.Now().In(loc)
