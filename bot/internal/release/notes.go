@@ -29,38 +29,8 @@ type Note struct {
 // report said «выкачено».
 var notes = []Note{
 	{
-		Version:  "v0.4.11.5",
-		Released: "18.09.2026 · написана, на стенде ещё нет",
-		RU: "• 🔗 Аккаунт на сайте прямо из бота: ссылка для входа или код для привязки\n" +
-			"• Два аккаунта — на сайте и в Telegram — можно объединить в один\n" +
-			"• Бот спросит, ты ли это, и какой аккаунт оставить\n" +
-			"• Если личный календарь есть у обоих — спросит и про него",
-		EN: "• 🔗 Your website account from inside the bot: a sign-in link or a linking code\n" +
-			"• Two accounts — website and Telegram — can become one\n" +
-			"• The bot asks whether it is you, and which account stays\n" +
-			"• If both have a personal calendar, it asks about that too",
-	},
-	{
-		Version:  "v0.4.11.4",
-		Released: "18.09.2026 · на dev, в проде ещё нет",
-		RU: "• 📊 Статистика заработала — раньше там было «скоро»\n" +
-			"• Повторяющиеся задачи: отметил на сегодня — уходит из списка, завтра возвращается\n" +
-			"• Отложить серию на день или неделю, ритм не сдвигается\n" +
-			"• Задачу можно превратить в событие или связать с ним\n" +
-			"• Напоминание может повторяться, пока не ответишь\n" +
-			"• Дайджест и кнопки под уведомлением — на твоём языке\n" +
-			"• 🔴 Починено: «отложить» отвечало ошибкой всем и всегда",
-		EN: "• 📊 Stats actually works — it used to say «coming soon»\n" +
-			"• Repeating tasks: tick today and it leaves the list, returning tomorrow\n" +
-			"• Postpone a series by a day or a week; the rhythm does not shift\n" +
-			"• Turn a task into an event, or link the two\n" +
-			"• A reminder can repeat until you answer it\n" +
-			"• The digest and the notification buttons speak your language\n" +
-			"• 🔴 Fixed: «snooze» failed for everyone, every time",
-	},
-	{
 		Version:  "v0.4.11.3",
-		Released: "18.09.2026 03:00 · на dev",
+		Released: "21.09.2026 · в проде",
 		RU: "• Карточка называет все поля — повтор, календарь, теги, цвет — и пишет «нет» там, где пусто\n" +
 			"• Календари прямо в боте: создать, переименовать, цвет, участники, выйти\n" +
 			"• Пригласить можно ссылкой — она работает и для тех, у кого нет email\n" +
