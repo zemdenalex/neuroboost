@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
 
 	"github.com/go-chi/chi/v5"
 
@@ -44,7 +43,7 @@ func TestPressingDoneOnASeriesThatStartsTomorrowClosesTomorrow(t *testing.T) {
 	// it is the parsed one that anchors the series. Passing only the string —
 	// the first version of this test — anchored the series on today and made
 	// the test green against the very bug it was written for.
-	due := time.Now().AddDate(0, 0, 1)
+	due := userToday().AddDate(0, 0, 1)
 	tomorrow := due.Format("2006-01-02")
 	task, err := insertTask(ctx, user, CreateTaskRequest{
 		Title: "позвонить в банк", Rrule: str("FREQ=DAILY"), DueDate: &tomorrow,
@@ -92,7 +91,7 @@ func TestANamedDayOutsideTheSeriesIsStillRefused(t *testing.T) {
 	t.Cleanup(func() { _, _ = d.Pool.Exec(ctx, `DELETE FROM task WHERE id = $1`, task.ID) })
 
 	// Anchored today, weekly: tomorrow is not in the series.
-	tomorrow := time.Now().AddDate(0, 0, 1).Format("2006-01-02")
+	tomorrow := userToday().AddDate(0, 0, 1).Format("2006-01-02")
 	rec := callOccurrence(task.ID, user, map[string]any{"state": "done", "date": tomorrow})
 
 	if rec.Code != http.StatusBadRequest {

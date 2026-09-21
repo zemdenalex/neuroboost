@@ -177,7 +177,7 @@ func taskExists(t *testing.T, id string) (exists bool, status string) {
 
 func TestASeriesMustSayWhichPart(t *testing.T) {
 	_, ctx, user := repeatDB(t)
-	task := seriesTask(t, ctx, user, "FREQ=DAILY", time.Now())
+	task := seriesTask(t, ctx, user, "FREQ=DAILY", userToday())
 	rec := callConvert(task.ID, user, map[string]any{
 		"mode": "link", "starts_at": "2026-10-20T09:00:00Z", "ends_at": "2026-10-20T10:00:00Z",
 	})
@@ -188,7 +188,7 @@ func TestASeriesMustSayWhichPart(t *testing.T) {
 
 func TestSeriesLinkCopiesTheRuleAndLeavesTheStatus(t *testing.T) {
 	_, ctx, user := repeatDB(t)
-	day := time.Now().AddDate(0, 0, 2)
+	day := userToday().AddDate(0, 0, 2)
 	task := seriesTask(t, ctx, user, "FREQ=WEEKLY", day)
 	start := time.Date(day.Year(), day.Month(), day.Day(), 12, 0, 0, 0, time.UTC)
 
@@ -216,7 +216,7 @@ func TestSeriesLinkCopiesTheRuleAndLeavesTheStatus(t *testing.T) {
 
 func TestOnceMoveTakesOneDayAndTheSeriesLives(t *testing.T) {
 	_, ctx, user := repeatDB(t)
-	day := time.Now().AddDate(0, 0, 1)
+	day := userToday().AddDate(0, 0, 1)
 	task := seriesTask(t, ctx, user, "FREQ=DAILY", day)
 	// 09:00 UTC is the same calendar day in Europe/Moscow, the seeded user's zone.
 	start := time.Date(day.Year(), day.Month(), day.Day(), 9, 0, 0, 0, time.UTC)
@@ -250,7 +250,7 @@ func TestOnceMoveTakesOneDayAndTheSeriesLives(t *testing.T) {
 
 func TestOnceOnADayOutsideTheSeriesIsRefused(t *testing.T) {
 	_, ctx, user := repeatDB(t)
-	day := time.Now().AddDate(0, 0, 1)
+	day := userToday().AddDate(0, 0, 1)
 	task := seriesTask(t, ctx, user, "FREQ=WEEKLY", day)
 	other := day.AddDate(0, 0, 1) // weekly from `day`: the next day is not in it
 	start := time.Date(other.Year(), other.Month(), other.Day(), 9, 0, 0, 0, time.UTC)
@@ -269,7 +269,7 @@ func TestOnceOnADayOutsideTheSeriesIsRefused(t *testing.T) {
 // запись об отправке, и у клиента нет двери, через которую её создают.
 func TestOnceLeavesTheSeriesItsReminderLog(t *testing.T) {
 	_, ctx, user := repeatDB(t)
-	day := time.Now().AddDate(0, 0, 1)
+	day := userToday().AddDate(0, 0, 1)
 	task := seriesTask(t, ctx, user, "FREQ=DAILY", day)
 	var remID string
 	if err := db.Pool.QueryRow(ctx, `
