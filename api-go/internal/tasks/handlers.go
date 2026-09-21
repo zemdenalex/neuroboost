@@ -830,9 +830,7 @@ func scheduleTask(ctx context.Context, userID, taskID string, startsAt, endsAt t
 	// A one-off task hands its delivery log to the event; a series keeps its
 	// own, because only this one slot went into the calendar.
 	if rrule == nil || *rrule == "" {
-		if _, err := tx.Exec(ctx, `
-			UPDATE reminder SET event_id = $2, task_id = NULL, source_kind = 'EVENT'
-			 WHERE task_id = $1`, taskID, ev.ID); err != nil {
+		if err := handOverReminderLog(ctx, tx, taskID, ev.ID); err != nil {
 			return nil, err
 		}
 	}

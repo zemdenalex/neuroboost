@@ -207,10 +207,7 @@ func Convert(ctx context.Context, userID, taskID string, req ConvertRequest) (*C
 		// The collision it feared cannot happen either way. The dedupe index
 		// (000015:34) already guarantees the task's own reminders are unique per
 		// (offset, occurrence); rewriting them all to one event id preserves that.
-		if _, err := tx.Exec(ctx, `
-			UPDATE reminder
-			   SET event_id = $2, task_id = NULL, source_kind = 'EVENT'
-			 WHERE task_id = $1`, taskID, ev.ID); err != nil {
+		if err := handOverReminderLog(ctx, tx, taskID, ev.ID); err != nil {
 			return nil, err
 		}
 	}
@@ -287,6 +284,27 @@ func insertLinkedEvent(ctx context.Context, tx pgx.Tx, in linkedEvent) (*Convert
 		return nil, err
 	}
 	return &ev, nil
+}
+
+// handOverReminderLog gives a task's reminder journal to the event it became.
+//
+// 🔴 Queued rows are dropped, not moved. A PENDING row was timed off the task's
+// due DAY; moved under the event it would still fire at that time, next to the
+// row the scanner now builds from the event's own start and offsets — measured
+// 21.09 with the real scanner: three queued reminders for one thing. Snoozes
+// (negative minutes_before) and everything already sent or answered move, so
+// history and a pending «remind me in 10 minutes» survive.
+func handOverReminderLog(ctx context.Context, tx pgx.Tx, taskID, eventID string) error {
+	if _, err := tx.Exec(ctx, `
+		DELETE FROM reminder
+		 WHERE task_id = $1 AND status = 'PENDING' AND minutes_before >= 0`, taskID); err != nil {
+		return err
+	}
+	_, err := tx.Exec(ctx, `
+		UPDATE reminder
+		   SET event_id = $2, task_id = NULL, source_kind = 'EVENT'
+		 WHERE task_id = $1`, taskID, eventID)
+	return err
 }
 
 // rowQuerier is what both the pool and a transaction offer for one row.

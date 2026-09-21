@@ -220,6 +220,15 @@ func scanTasks(ctx context.Context, u scanUser, calIDs []string, st usersettings
 	// `status NOT IN ('DONE','CANCELLED')` still applies and still means the
 	// SERIES: a switched-off series reminds nobody. Whether TODAY is already
 	// done is task_occurrence, joined per candidate day below.
+	//
+	// 🔴 A task whose time went into a linked event reminds THROUGH the event
+	// (Denis 21.09: «событие = время на задачу, напоминания у события»). A
+	// one-off task with any linked event, or a series linked to a repeating
+	// event, is left to the event; otherwise the user gets both — measured on
+	// 21.09 as two queued messages for one thing. A series with only a one-off
+	// event linked («только этот раз») keeps reminding for its other days.
+	// If the event is deleted, event.task_id goes with it and the task reminds
+	// again on its own.
 	rows, err := db.Pool.Query(ctx, `
 		SELECT id, title, due_date, COALESCE(reminder_offsets, '{}'), rrule, repeat_anchor
 		FROM task
@@ -229,6 +238,11 @@ func scanTasks(ctx context.Context, u scanUser, calIDs []string, st usersettings
 		  AND (
 		        (rrule IS NULL AND due_date IS NOT NULL AND due_date BETWEEN $2 AND $3)
 		     OR (rrule IS NOT NULL AND repeat_anchor IS NOT NULL)
+		      )
+		  AND NOT EXISTS (
+		        SELECT 1 FROM event e
+		         WHERE e.task_id = task.id
+		           AND (task.rrule IS NULL OR e.rrule IS NOT NULL)
 		      )`,
 		calIDs, from, horizon)
 	if err != nil {

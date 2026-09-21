@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -13,6 +15,7 @@ import (
 
 	"neuroboost/api-go/internal/events"
 	"neuroboost/api-go/internal/middleware"
+	"neuroboost/api-go/internal/reminders"
 )
 
 // Задача ↔ событие через дверь клиента, против настоящей базы.
@@ -332,5 +335,74 @@ func TestQuickScheduleCopiesWhatConvertCopies(t *testing.T) {
 	// The web relies on SCHEDULED; the bot lists it next to TODO (A2). Denis 21.09.
 	if _, st := taskExists(t, task.ID); st != "SCHEDULED" {
 		t.Errorf("status = %q, want SCHEDULED — the web contract is unchanged", st)
+	}
+}
+
+// 🔴 «Событие = время на задачу. Напоминания у события» (Denis 21.09) — and
+// only there. Copying reminder_offsets onto the event made it remind for the
+// first time; this asks the real scanner, before and after, whether the task
+// then reminds as well. Two rows for one offset is two messages for one thing.
+func TestALinkedTaskRemindsOnceThroughItsEvent(t *testing.T) {
+	for _, door := range []string{"schedule", "convert"} {
+		t.Run(door, func(t *testing.T) {
+			d, ctx, user := repeatDB(t)
+			reminders.InitDB(d)
+			events.InitDB(d)
+			if _, err := d.Pool.Exec(ctx, `UPDATE "user" SET tg_id = $2, timezone = 'UTC' WHERE id = $1`,
+				user, time.Now().UnixNano()%1_000_000_000); err != nil {
+				t.Fatalf("tg_id: %v", err)
+			}
+
+			tomorrow := time.Now().UTC().AddDate(0, 0, 1)
+			due := time.Date(tomorrow.Year(), tomorrow.Month(), tomorrow.Day(), 0, 0, 0, 0, time.UTC)
+			dueStr := due.Format(time.RFC3339)
+			task, err := insertTask(ctx, user, CreateTaskRequest{
+				Title: "банк", DueDate: &dueStr, ReminderOffsets: &[]int{10},
+			}, &due)
+			if err != nil {
+				t.Fatalf("create: %v", err)
+			}
+			t.Cleanup(func() { _, _ = d.Pool.Exec(ctx, `DELETE FROM event WHERE task_id = $1`, task.ID) })
+			t.Cleanup(func() { _, _ = d.Pool.Exec(ctx, `DELETE FROM task WHERE id = $1`, task.ID) })
+
+			quiet := slog.New(slog.NewTextHandler(io.Discard, nil))
+			from, to := time.Now(), time.Now().Add(72*time.Hour)
+			// First pass: the task's own reminder is already queued, as it would
+			// be on a real server before anyone presses anything.
+			if _, err := reminders.Scan(ctx, from, to, quiet); err != nil {
+				t.Fatalf("scan: %v", err)
+			}
+
+			start := due.Add(9 * time.Hour)
+			body := map[string]any{
+				"starts_at": start.Format(time.RFC3339), "ends_at": start.Add(time.Hour).Format(time.RFC3339),
+			}
+			var rec *httptest.ResponseRecorder
+			if door == "schedule" {
+				rec = callSchedule(task.ID, user, body)
+			} else {
+				body["mode"] = "link"
+				rec = callConvert(task.ID, user, body)
+			}
+			if rec.Code != http.StatusCreated {
+				t.Fatalf("status %d: %s", rec.Code, rec.Body.String())
+			}
+			evID := createdEventID(t, rec)
+
+			if _, err := reminders.Scan(ctx, from, to, quiet); err != nil {
+				t.Fatalf("scan: %v", err)
+			}
+
+			var total, onEvent int
+			if err := d.Pool.QueryRow(ctx, `
+				SELECT count(*), count(*) FILTER (WHERE event_id = $2)
+				  FROM reminder WHERE user_id = $1 AND minutes_before = 10 AND status = 'PENDING'`,
+				user, evID).Scan(&total, &onEvent); err != nil {
+				t.Fatalf("count: %v", err)
+			}
+			if total != 1 || onEvent != 1 {
+				t.Errorf("pending 10-minute reminders: %d, on the event: %d — want exactly one, the event's", total, onEvent)
+			}
+		})
 	}
 }
