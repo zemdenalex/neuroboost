@@ -205,14 +205,41 @@ func (h *Handler) handleCalendarDay(chatID int64, messageID int, date string) {
 		return
 	}
 
+	// 🔴 Tasks too, and this is the screen Настя asked for on 21.09:
+	//
+	//	Нет функции: Показать задачи и события на день … Очень нужна
+	//	Часто такое нужно, когда с кем-то о чём-то договариваешься и надо
+	//	светиться по делам на эту дату. Неудобно будет искать вручную.
+	//
+	// The screen existed and showed only events, which is why she could not
+	// find it: a day that omits half of what is on it is not a day. A failed
+	// lookup leaves the events alone rather than losing the whole screen.
+	tasks, terr := h.api.GetTasks(us.AuthToken, "TODO")
+	if terr != nil {
+		tasks = nil
+	}
+	due := tasksDueOn(tasks, day)
+
 	text := fmt.Sprintf("📅 <b>%d %s %d</b>\n\n", day.Day(), monthGenitive(h.lang(chatID), day.Month()), day.Year())
-	if len(events) == 0 {
+	if len(events) == 0 && len(due) == 0 {
 		text += h.t(chatID, "Пусто.", "Nothing here.")
-	} else {
+	}
+	if len(events) > 0 {
+		text += fmt.Sprintf(h.t(chatID, "📅 <b>События: %d шт</b>\n", "📅 <b>Events: %d</b>\n"), len(events))
 		sort.Slice(events, func(i, j int) bool { return events[i].StartsAt < events[j].StartsAt })
 		for _, e := range events {
-			text += fmt.Sprintf("🕐 %s — %s\n",
-				format.FormatTime(e.StartsAt, h.timezone(chatID)), format.Escape(e.Title))
+			text += fmt.Sprintf("  %s — %s\n", h.eventWhen(chatID, e), format.Escape(e.Title))
+		}
+	}
+	if len(due) > 0 {
+		text += fmt.Sprintf(h.t(chatID, "\n🎯 <b>Задачи: %d шт</b>\n", "\n🎯 <b>Tasks: %d</b>\n"), len(due))
+		sort.Slice(due, func(i, j int) bool { return due[i].Priority < due[j].Priority })
+		for _, t := range due {
+			est := ""
+			if t.EstimatedMinutes > 0 {
+				est = " ~" + format.Duration(t.EstimatedMinutes)
+			}
+			text += fmt.Sprintf("  %s %s%s\n", format.PriorityEmoji(t.Priority), format.Escape(t.Title), est)
 		}
 	}
 

@@ -38,19 +38,21 @@ func (h *Handler) handleToday(chatID int64, messageID int) {
 	text := fmt.Sprintf(h.t(chatID,
 		"🎯 <b>Сегодня</b> — %s\n🕐 %s (%s)\n\n",
 		"🎯 <b>Today's focus</b> — %s\n🕐 %s (%s)\n\n"),
-		now.Format("Mon, Jan 2"),
+		dayLabel(h.lang(chatID), now),
 		now.Format("15:04"),
 		h.timezone(chatID),
 	)
 
-	text += fmt.Sprintf(h.t(chatID, "📅 <b>События: %d</b>\n", "📅 <b>Events: %d</b>\n"), len(events))
+	// «шт» after the count, asked for by Настя on 21.09: *«визуально не сразу
+	// понятно, что значат эти цифры рядом»*. English needs no such word.
+	text += fmt.Sprintf(h.t(chatID, "📅 <b>События: %d шт</b>\n", "📅 <b>Events: %d</b>\n"), len(events))
 	sort.Slice(events, func(i, j int) bool { return events[i].StartsAt < events[j].StartsAt })
 	for _, e := range events {
-		text += fmt.Sprintf("  %s — %s\n", format.FormatTime(e.StartsAt, h.timezone(chatID)), format.Escape(e.Title))
+		text += fmt.Sprintf("  %s — %s\n", h.eventWhen(chatID, e), format.Escape(e.Title))
 	}
 
 	if len(tasks) > 0 {
-		text += fmt.Sprintf(h.t(chatID, "\n🎯 <b>Задачи: %d</b>\n", "\n🎯 <b>Tasks: %d</b>\n"), len(tasks))
+		text += fmt.Sprintf(h.t(chatID, "\n🎯 <b>Задачи: %d шт</b>\n", "\n🎯 <b>Tasks: %d</b>\n"), len(tasks))
 		sort.Slice(tasks, func(i, j int) bool { return tasks[i].Priority < tasks[j].Priority })
 		limit := 5
 		if len(tasks) < limit {
@@ -63,9 +65,19 @@ func (h *Handler) handleToday(chatID int64, messageID int) {
 			}
 			text += fmt.Sprintf("  %s %s%s\n", format.PriorityEmoji(t.Priority), format.Escape(t.Title), dur)
 		}
+		// 🔴 The header counts every task and the list shows five. On 21.09
+		// that screen said «Задачи: 6» above five lines, and neither Denis nor
+		// Настя could have known the sixth existed. A number that disagrees
+		// with the list under it is worse than no number: it is not a count of
+		// anything the reader can see.
+		if rest := len(tasks) - limit; rest > 0 {
+			text += fmt.Sprintf(h.t(chatID,
+				"  … и ещё %d, кнопкой ниже\n",
+				"  … and %d more, button below\n"), rest)
+		}
 	}
 
-	h.editOrSend(chatID, messageID, text, keyboards.BackToMenu(h.lang(chatID)))
+	h.editOrSend(chatID, messageID, text, keyboards.TodayScreen(h.lang(chatID)))
 }
 
 // dayBounds is the half-open UTC range covering one local calendar day.

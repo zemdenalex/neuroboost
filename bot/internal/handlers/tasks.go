@@ -118,7 +118,12 @@ func (h *Handler) handleTaskAction(chatID int64, messageID int, taskID string) {
 		text += fmt.Sprintf("⏱ %s\n", format.Duration(estMin))
 	}
 	if dueDate != "" {
-		text += fmt.Sprintf("📅 Due: %s\n", format.FormatDate(dueDate, h.timezone(chatID)))
+		// Both halves of this line were English regardless of the chat's
+		// language: the word «Due» was never in i18n.T at all, and the date
+		// came out of Go's own «Mon, Jan 2». Denis's card on 21.09 read
+		// «📅 Due: Tue, Sep 22» with everything around it in Russian.
+		text += fmt.Sprintf(h.t(chatID, "📅 Срок: %s\n", "📅 Due: %s\n"),
+			dayLabelISO(h.lang(chatID), dueDate, h.timezone(chatID)))
 	}
 
 	if repeats {

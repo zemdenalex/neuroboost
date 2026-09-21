@@ -153,6 +153,24 @@ func BackToTasks(lang i18n.Lang) tgbotapi.InlineKeyboardMarkup {
 	)
 }
 
+// TodayScreen carries the one button the «Сегодня» screen needs of its own.
+//
+// 🔴 The task list there is cut at five, and the line that admits it used to
+// name «📋 Задачи» in prose — which is a reply button, and the screen has a
+// rule against pointing at those (TestNoScreenPointsAtAReplyButton). Prose
+// that names a button is a button the user has to go and find; this is the
+// button.
+func TodayScreen(lang i18n.Lang) tgbotapi.InlineKeyboardMarkup {
+	return tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "📋 Задачи", "📋 Tasks"), "top_tasks"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "« Меню", "« Menu"), "main_menu"),
+		),
+	)
+}
+
 func SettingsMenu(lang i18n.Lang) tgbotapi.InlineKeyboardMarkup {
 	return tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
