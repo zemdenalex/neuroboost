@@ -796,33 +796,66 @@ func scheduleTask(ctx context.Context, userID, taskID string, startsAt, endsAt t
 		return nil, err
 	}
 
-	// Create event from task
-	var event ScheduledEvent
-	err = db.Pool.QueryRow(ctx, `
-		INSERT INTO event (user_id, calendar_id, title, starts_at, ends_at, all_day, task_id, color, timezone)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-		RETURNING id, task_id, title, starts_at, ends_at, all_day, color
-	`, userID, calID, task.Title, startsAt, endsAt, allDay, taskID, color, userZone(ctx, db.Pool, userID)).Scan(
-		&event.ID, &event.TaskID, &event.Title, &event.StartsAt, &event.EndsAt, &event.AllDay, &event.Color,
-	)
+	// 🔴 Through the same insert as Convert, in one transaction. Until 21.09
+	// this path copied neither description nor tags, left reminder_offsets {}
+	// (an event that never reminds), stamped every event 'Europe/Moscow', and
+	// swallowed a failed status update as «non-fatal» — a half-done schedule.
+	tx, err := db.Pool.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
 
+	var description *string
+	var tags []string
+	var offsets []int
+	var rrule *string
+	if err := tx.QueryRow(ctx, `
+		-- recurrence-agnostic: copies the task's details onto the event it becomes.
+		SELECT description, COALESCE(tags, '{}'), COALESCE(reminder_offsets, '{}'), rrule
+		  FROM task WHERE id = $1`, taskID).Scan(&description, &tags, &offsets, &rrule); err != nil {
+		return nil, err
+	}
+
+	ev, err := insertLinkedEvent(ctx, tx, linkedEvent{
+		UserID: userID, CalendarID: calID, Title: task.Title, Timezone: userZone(ctx, tx, userID),
+		Description: description, Color: color, TaskID: &taskID,
+		Tags: tags, ReminderOffsets: offsets,
+		StartsAt: startsAt, EndsAt: endsAt, AllDay: allDay,
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	// Update task status to SCHEDULED
+	// A one-off task hands its delivery log to the event; a series keeps its
+	// own, because only this one slot went into the calendar.
+	if rrule == nil || *rrule == "" {
+		if _, err := tx.Exec(ctx, `
+			UPDATE reminder SET event_id = $2, task_id = NULL, source_kind = 'EVENT'
+			 WHERE task_id = $1`, taskID, ev.ID); err != nil {
+			return nil, err
+		}
+	}
+
+	// SCHEDULED stays on this path only: the web relies on it, and the bot
+	// lists SCHEDULED next to TODO (Denis 21.09). Convert(link) leaves the
+	// status alone.
 	calIDs, err := calendars.WritableIDsFor(ctx, userID)
-	if err == nil {
-		_, err = db.Pool.Exec(ctx, `
-			UPDATE task SET status = 'SCHEDULED', updated_at = NOW() WHERE id = $1 AND calendar_id = ANY($2)
-		`, taskID, calIDs)
-	}
-
 	if err != nil {
-		// Non-fatal, event was created
+		return nil, err
 	}
-
-	return &event, nil
+	if _, err := tx.Exec(ctx, `
+		UPDATE task SET status = 'SCHEDULED', updated_at = NOW()
+		 WHERE id = $1 AND calendar_id = ANY($2)`, taskID, calIDs); err != nil {
+		return nil, err
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return nil, err
+	}
+	return &ScheduledEvent{
+		ID: ev.ID, TaskID: taskID, Title: ev.Title, StartsAt: ev.StartsAt,
+		EndsAt: ev.EndsAt, AllDay: ev.AllDay, Color: color,
+	}, nil
 }
 
 // logTaskTime adds delta minutes to a task's actual_minutes, clamped at >= 0,

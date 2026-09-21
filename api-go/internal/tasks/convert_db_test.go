@@ -292,3 +292,45 @@ func TestOnceLeavesTheSeriesItsReminderLog(t *testing.T) {
 		t.Errorf("the series' reminder row moved to the one-off event (task_id now %v)", owner)
 	}
 }
+
+func callSchedule(taskID, userID string, body map[string]any) *httptest.ResponseRecorder {
+	return callTaskRoute(ScheduleHandler, "/api/tasks/"+taskID+"/schedule", taskID, userID, body)
+}
+
+// Denis 21.09: the quick button and the full path are one link with two doors.
+// Until now the quick one dropped the description and tags, and the event it
+// made had reminder_offsets {} — silent for ever.
+func TestQuickScheduleCopiesWhatConvertCopies(t *testing.T) {
+	_, ctx, user := repeatDB(t)
+	setZone(t, user, "Asia/Tokyo")
+	task, err := insertTask(ctx, user, CreateTaskRequest{
+		Title: "банк", Description: str("паспорт"), Tags: []string{"дела"}, ReminderOffsets: &[]int{15},
+	}, nil)
+	if err != nil {
+		t.Fatalf("create: %v", err)
+	}
+	t.Cleanup(func() { _, _ = db.Pool.Exec(ctx, `DELETE FROM event WHERE task_id = $1`, task.ID) })
+	t.Cleanup(func() { _, _ = db.Pool.Exec(ctx, `DELETE FROM task WHERE id = $1`, task.ID) })
+
+	rec := callSchedule(task.ID, user, map[string]any{
+		"starts_at": "2026-10-20T09:00:00+09:00", "ends_at": "2026-10-20T10:00:00+09:00",
+	})
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status %d: %s", rec.Code, rec.Body.String())
+	}
+	ev := loadEvent(t, createdEventID(t, rec))
+
+	if ev.Timezone != "Asia/Tokyo" {
+		t.Errorf("timezone = %q, want Asia/Tokyo", ev.Timezone)
+	}
+	if ev.Description == nil || *ev.Description != "паспорт" || len(ev.Tags) != 1 {
+		t.Errorf("description/tags not copied: %v %v", ev.Description, ev.Tags)
+	}
+	if len(ev.ReminderOffsets) != 1 || ev.ReminderOffsets[0] != 15 {
+		t.Errorf("reminder_offsets = %v, want [15]", ev.ReminderOffsets)
+	}
+	// The web relies on SCHEDULED; the bot lists it next to TODO (A2). Denis 21.09.
+	if _, st := taskExists(t, task.ID); st != "SCHEDULED" {
+		t.Errorf("status = %q, want SCHEDULED — the web contract is unchanged", st)
+	}
+}
