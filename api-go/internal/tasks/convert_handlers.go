@@ -50,6 +50,13 @@ func ConvertHandler(w http.ResponseWriter, r *http.Request) {
 			// a task with no time cannot become an event until the user is
 			// asked for one. A generic 400 would leave the bot guessing.
 			util.RespondError(w, http.StatusBadRequest, "NEEDS_TIME", err.Error())
+		case errors.Is(err, ErrRepeatChoiceRequired):
+			// The bot asks «вся серия или только этот раз» on exactly this code.
+			util.RespondError(w, http.StatusBadRequest, "REPEAT_CHOICE_REQUIRED", err.Error())
+		case errors.Is(err, ErrNotAnOccurrence):
+			util.RespondError(w, http.StatusBadRequest, "NOT_AN_OCCURRENCE", "That day is not in the series")
+		case errors.Is(err, ErrInvalidRepeat):
+			util.RespondError(w, http.StatusBadRequest, "REPEAT_UNSUPPORTED", "The task's repeat rule cannot be copied")
 		case errors.Is(err, calendars.ErrCalendarNotFound):
 			util.RespondError(w, http.StatusNotFound, "CALENDAR_NOT_FOUND", "Calendar not found")
 		default:

@@ -50,6 +50,20 @@ func TestConvertRefusesAnUnknownMode(t *testing.T) {
 	}
 }
 
+// An unknown repeat value is refused before the database: «series» and «once»
+// differ in whether the rest of a series survives, so guessing is not on offer.
+func TestConvertRefusesAnUnknownRepeat(t *testing.T) {
+	for _, rep := range []string{"all", "ONCE", "series "} {
+		_, err := Convert(context.Background(), "u1", "t1", ConvertRequest{
+			Mode: ModeLink, Repeat: rep,
+			StartsAt: "2026-09-19T15:00:00Z", EndsAt: "2026-09-19T16:00:00Z",
+		})
+		if !errors.Is(err, ErrRepeatChoiceRequired) {
+			t.Errorf("repeat %q: err = %v, want ErrRepeatChoiceRequired", rep, err)
+		}
+	}
+}
+
 // 🔴 Validation must come BEFORE the mode check is satisfied by a valid mode but
 // after nothing has been written. This asserts the ORDER: a bad mode with bad
 // times reports the mode, because that is the first thing the caller can fix.
