@@ -18,6 +18,11 @@ import (
 // the path, not a step out of it.
 func (h *Handler) handleHelp(chatID int64, messageID int, data string) {
 	if data == "help_x" {
+		// ⚠ Knowingly inert past 48 hours: Telegram refuses to delete an older
+		// bot message, and the edit fallback editOrSend uses is bound by the same
+		// window. Posting a new message instead would answer «Назад» with more
+		// text, the opposite of what was pressed. An explanation that old is not
+		// under anything the user is still doing.
 		if _, err := h.bot.Request(tgbotapi.NewDeleteMessage(chatID, messageID)); err != nil {
 			log.Printf("help in chat %d: could not delete the explanation: %s", chatID, logsafe.Redact(err))
 		}
