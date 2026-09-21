@@ -19,14 +19,22 @@ func dayLevels(events []api.Event, from, to time.Time, sc statgrid.Scale, loc *t
 	// All-day events book no hours (spec §1), but their days are not empty.
 	allDay := map[string]bool{}
 	for _, e := range events {
-		if !e.AllDay || len(e.StartsAt) < 10 || len(e.EndsAt) < 10 {
+		if !e.AllDay {
 			continue
 		}
-		// An all-day event is dates, not instants: read the date part as is.
-		start, err1 := time.ParseInLocation("2006-01-02", e.StartsAt[:10], loc)
-		end, err2 := time.ParseInLocation("2006-01-02", e.EndsAt[:10], loc)
+		// 🔴 Stored as INSTANTS at the user's local midnight (21:00Z for
+		// Moscow, checked on dev 22.09), sometimes at an odd hour. The day is
+		// where the instant falls in the user's zone — not the date printed in
+		// the string, which for Moscow is the day before.
+		s, err1 := time.Parse(time.RFC3339, e.StartsAt)
+		en, err2 := time.Parse(time.RFC3339, e.EndsAt)
 		if err1 != nil || err2 != nil {
 			continue
+		}
+		start := midnightIn(s, loc)
+		end := midnightIn(en, loc)
+		if !en.In(loc).Equal(end) {
+			end = end.AddDate(0, 0, 1) // an end inside a day includes that day
 		}
 		if !end.After(start) {
 			end = start.AddDate(0, 0, 1)
@@ -36,6 +44,15 @@ func dayLevels(events []api.Event, from, to time.Time, sc statgrid.Scale, loc *t
 		}
 	}
 
+	return levelsByDay(spans, allDay, from, to, sc)
+}
+
+func midnightIn(t time.Time, loc *time.Location) time.Time {
+	l := t.In(loc)
+	return time.Date(l.Year(), l.Month(), l.Day(), 0, 0, 0, 0, loc)
+}
+
+func levelsByDay(spans []statgrid.Span, allDay map[string]bool, from, to time.Time, sc statgrid.Scale) map[string]int {
 	type day struct {
 		cell statgrid.Cell
 		busy time.Duration

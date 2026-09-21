@@ -200,6 +200,9 @@ func renderStatsScreen(lang i18n.Lang, v statsView, g statgrid.Grid, d statsData
 		if allDay > 0 {
 			fmt.Fprintf(&b, i18n.T(lang, "🗓 Весь день: %d\n", "🗓 All-day: %d\n"), allDay)
 		}
+		if n := repeatingSeries(d.Events); n > 0 {
+			fmt.Fprintf(&b, i18n.T(lang, "🔁 Повторяющихся: %d\n", "🔁 Repeating: %d\n"), n)
+		}
 	}
 	if v.Entity == "a" || v.Entity == "t" {
 		b.WriteString(taskTotals(lang, d, g, today, upTo, loc))
@@ -209,6 +212,20 @@ func renderStatsScreen(lang i18n.Lang, v statsView, g statgrid.Grid, d statsData
 			daysWith(reflDays, g.From, upTo), daysBetween(g.From, upTo))
 	}
 	return b.String()
+}
+
+// repeatingSeries counts the series behind the events: occurrences arrive as
+// «uuid:date», and a daily series is one repeating thing, not seven.
+func repeatingSeries(events []api.Event) int {
+	seen := map[string]bool{}
+	for _, e := range events {
+		if e.Rrule == nil || *e.Rrule == "" {
+			continue
+		}
+		parent, _, _ := splitInstanceID(e.ID)
+		seen[parent] = true
+	}
+	return len(seen)
 }
 
 // statsGrid is the <pre> block: a header of columns and a line per row.

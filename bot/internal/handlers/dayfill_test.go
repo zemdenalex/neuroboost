@@ -28,13 +28,19 @@ func TestADaysFillFollowsTheScale(t *testing.T) {
 // a holiday must not look like a free Tuesday.
 func TestAnAllDayEventMarksItsDay(t *testing.T) {
 	from := time.Date(2026, 9, 1, 0, 0, 0, 0, statsMSK)
-	levels := dayLevels([]api.Event{{StartsAt: "2026-09-23T00:00:00Z", EndsAt: "2026-09-24T00:00:00Z", AllDay: true}},
+	// 🔴 The shape dev actually stores (checked 22.09): LOCAL midnight as an
+	// instant — 21:00Z the day before, for Moscow. Reading the date off the
+	// string marked the day before the holiday; the first fixture here was UTC
+	// midnight and could not tell the two apart.
+	levels := dayLevels([]api.Event{{StartsAt: "2026-09-22T21:00:00Z", EndsAt: "2026-09-23T21:00:00Z", AllDay: true}},
 		from, from.AddDate(0, 1, 0), statgrid.Scale{Kind: scaleDay24}, statsMSK)
 	if levels["2026-09-23"] != 1 {
-		t.Errorf("all-day day level = %d, want 1", levels["2026-09-23"])
+		t.Errorf("all-day day level = %d, want 1 (levels %v)", levels["2026-09-23"], levels)
 	}
-	if _, ok := levels["2026-09-24"]; ok {
-		t.Error("the all-day event spilled into the next day")
+	for _, other := range []string{"2026-09-22", "2026-09-24"} {
+		if _, ok := levels[other]; ok {
+			t.Errorf("the all-day event marked %s too", other)
+		}
 	}
 }
 

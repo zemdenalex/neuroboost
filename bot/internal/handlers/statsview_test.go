@@ -61,6 +61,19 @@ func TestTheWeekShowsBusyHoursOnceAndPlannedTwice(t *testing.T) {
 	}
 }
 
+// Spec §2: «Повторяющихся» counts series, not their days.
+func TestRepeatingCountsSeriesNotDays(t *testing.T) {
+	rule := "FREQ=DAILY"
+	text := weekScreen("e", statsTue, statsData{Events: []api.Event{
+		{ID: "s1:2026-09-21", Rrule: &rule, StartsAt: mskISO(21, 8, 0), EndsAt: mskISO(21, 9, 0)},
+		{ID: "s1:2026-09-22", Rrule: &rule, StartsAt: mskISO(22, 8, 0), EndsAt: mskISO(22, 9, 0)},
+		{ID: "one", StartsAt: mskISO(23, 8, 0), EndsAt: mskISO(23, 9, 0)},
+	}})
+	if !strings.Contains(text, "Повторяющихся: 1") {
+		t.Errorf("screen:\n%s", text)
+	}
+}
+
 // Week: a row per day, a bar per hour (Denis 21.09).
 func TestTheWeekGridIsTheDaysAndHours(t *testing.T) {
 	text := weekScreen("e", statsTue, statsData{Events: []api.Event{
