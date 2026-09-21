@@ -186,7 +186,7 @@ func (h *Handler) handleEventCard(chatID int64, messageID int, eventID string) {
 	st.CalendarName = h.calendarName(chatID, ev.CalendarID)
 	us.CurrentFlow = "new_event"
 	us.FlowStep = "card"
-	us.FlowData = map[string]any{"draft": &st, "series": isInstance}
+	us.FlowData = map[string]any{"draft": &st, "series": isInstance, "rawID": eventID}
 
 	text := renderDraft(h.lang(chatID), st, time.Now().In(h.location(chatID)))
 	if isInstance {
@@ -198,7 +198,7 @@ func (h *Handler) handleEventCard(chatID int64, messageID int, eventID string) {
 			"\n\n⚠ Это повторяющееся событие. Открыта вся серия, и изменения применятся ко всем повторам.",
 			"\n\n⚠ This event repeats. The whole series is open, and changes apply to every occurrence.")
 	}
-	h.editOrSend(chatID, messageID, text, keyboards.EventEditor(h.lang(chatID), parentID))
+	h.editOrSend(chatID, messageID, text, keyboards.EventEditor(h.lang(chatID), parentID, eventID))
 }
 
 func (h *Handler) handleEventDeleteAsk(chatID int64, messageID int, eventID string) {

@@ -386,6 +386,11 @@ func (h *Handler) HandleCallback(cb *tgbotapi.CallbackQuery) {
 	// when adding the fourth button.
 	// Task ↔ event, the full path (21.09). t2e_ opens it; every later step is
 	// a short t2 code, the choice itself living in the flow.
+	// Event → task (21.09), the same shape with an e2 prefix.
+	case strings.HasPrefix(data, "e2t_"):
+		h.handleToTaskStart(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "e2t_"))
+	case strings.HasPrefix(data, "e2"):
+		h.handleToTaskStep(chatID, cb.Message.MessageID, data)
 	case strings.HasPrefix(data, "t2e_"):
 		h.handleToEventStart(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "t2e_"))
 	case strings.HasPrefix(data, "t2"):

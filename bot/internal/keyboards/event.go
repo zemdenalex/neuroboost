@@ -78,7 +78,10 @@ func EventPicker(lang i18n.Lang, labels, ids []string, back string, page int) tg
 // выбор характеристики, если мы и так хотим изменить событие, то зачем еще два
 // раза это подтверждать». Opening an event from «✏️ Изменить» IS the intent to
 // change it, so the fields are the first screen, not the third.
-func EventEditor(lang i18n.Lang, id string) tgbotapi.InlineKeyboardMarkup {
+//
+// rawID is the id the event was opened with — an occurrence («uuid:date»)
+// stays one, so «✅ Сделать задачей» can offer «только этот раз» for that day.
+func EventEditor(lang i18n.Lang, id, rawID string) tgbotapi.InlineKeyboardMarkup {
 	fields := draftFields(lang)
 	var rows [][]tgbotapi.InlineKeyboardButton
 	for i := 0; i < len(fields); i += 2 {
@@ -89,6 +92,7 @@ func EventEditor(lang i18n.Lang, id string) tgbotapi.InlineKeyboardMarkup {
 		rows = append(rows, row)
 	}
 	rows = append(rows,
+		makeTaskRow(lang, rawID),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "💾 Сохранить", "💾 Save"), "dr_ok"),
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🗑 Удалить", "🗑 Delete"), "evd_"+id),
@@ -107,10 +111,18 @@ func EventCard(lang i18n.Lang, id string) tgbotapi.InlineKeyboardMarkup {
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "✏️ Изменить", "✏️ Edit"), "eve_"+id),
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🗑 Удалить", "🗑 Delete"), "evd_"+id),
 		),
+		makeTaskRow(lang, id),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "📅 События", "📅 Events"), "agenda_open"),
 		),
 	)
+}
+
+// makeTaskRow is «✅ Сделать задачей» — the other half of «превратить задачу в
+// событие и обратно» (Настя, 17–18.09; spec 21.09 §A2).
+func makeTaskRow(lang i18n.Lang, id string) []tgbotapi.InlineKeyboardButton {
+	return tgbotapi.NewInlineKeyboardRow(
+		tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "✅ Сделать задачей", "✅ Make it a task"), "e2t_"+id))
 }
 
 // EventDeleteConfirm asks once before deleting.

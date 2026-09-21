@@ -145,6 +145,8 @@ func scheduleKeyboards() map[string]tgbotapi.InlineKeyboardMarkup {
 		"ToEventWhen":          keyboards.ToEventWhen(i18n.RU),
 		"ToEventDuration":      keyboards.ToEventDuration(i18n.RU),
 		"ConvertConfirm":       keyboards.ConvertConfirm(i18n.RU, "t2"),
+		"ConvertHowE2":         keyboards.ConvertHow(i18n.RU, "e2"),
+		"ConvertRepeatE2":      keyboards.ConvertRepeat(i18n.RU, "e2", true),
 	}
 }
 
@@ -203,7 +205,7 @@ func TestEveryScheduleButtonHasAPrefixTheRouterKnows(t *testing.T) {
 		"task_rpd_", "task_rp_", "task_ngd_", "task_ng_",
 		// Task ↔ event, 21.09: the full path into the calendar, and the way to
 		// the event a linked task's time went into.
-		"t2e_", "ev_", "t2",
+		"t2e_", "ev_", "t2", "e2t_", "e2",
 	}
 	for name, kb := range scheduleKeyboards() {
 		eachButton(kb, func(data string) {

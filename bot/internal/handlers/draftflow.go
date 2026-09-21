@@ -426,7 +426,13 @@ func (h *Handler) showCard(chatID int64, messageID int) {
 		// event or change the one they opened.
 		// Since 17.09 the fields themselves sit on this screen (EventEditor):
 		// an opened event is one tap from any change.
-		card = keyboards.EventEditor(h.lang(chatID), st.EventID)
+		// The id the event was opened with, kept by handleEventCard: an
+		// occurrence must stay one after a field is edited.
+		rawID, _ := us.FlowData["rawID"].(string)
+		if rawID == "" {
+			rawID = st.EventID
+		}
+		card = keyboards.EventEditor(h.lang(chatID), st.EventID, rawID)
 	} else if _, inList := listOf(h, chatID); inList {
 		// ✅ is deliberately absent inside a list: creating is the list's own
 		// button, and a per-entry ✅ would create one event and leave the rest

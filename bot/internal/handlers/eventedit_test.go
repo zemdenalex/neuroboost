@@ -196,7 +196,7 @@ func TestEventPickLabelShowsWhenAndWhat(t *testing.T) {
 // The words on the card are the only thing telling the user whether they are
 // about to add a second event or change the one they opened.
 func TestEditingCardSaysSaveAndNeverCreate(t *testing.T) {
-	kb := keyboards.EventEditor(i18n.RU, "e1")
+	kb := keyboards.EventEditor(i18n.RU, "e1", "e1")
 	var labels, data []string
 	for _, row := range kb.InlineKeyboard {
 		for _, b := range row {
