@@ -205,6 +205,9 @@ func TestEveryScheduleButtonHasAPrefixTheRouterKnows(t *testing.T) {
 		"task_rpd_", "task_rp_", "task_ngd_", "task_ng_",
 		// Task ↔ event, 21.09: the full path into the calendar, and the way to
 		// the event a linked task's time went into.
+		// 🔴 "t2" and "e2" are CATCH-ALLS for the steps of those paths: any new
+		// callback beginning with those two bytes will be swallowed by them,
+		// because the router is an ordered switch. Pick another prefix.
 		"t2e_", "ev_", "t2", "e2t_", "e2",
 	}
 	for name, kb := range scheduleKeyboards() {
