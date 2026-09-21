@@ -11,6 +11,7 @@ import (
 	"github.com/go-chi/cors"
 
 	"neuroboost/api-go/internal/admin"
+	"neuroboost/api-go/internal/broadcast"
 	"neuroboost/api-go/internal/config"
 	"neuroboost/api-go/internal/database"
 	"neuroboost/api-go/internal/logger"
@@ -58,6 +59,7 @@ func main() {
 	exp.InitDB(db)
 	usersettings.InitDB(db)
 	rem.InitDB(db)
+	broadcast.InitDB(db)
 	rem.InitService(log)
 
 	// The reminder worker runs for the life of the process: it needs both the
@@ -120,6 +122,9 @@ func main() {
 		// Button presses forwarded by the notifier. The user is identified by
 		// tg_id inside the body, checked against the reminder's owner.
 		sr.Post("/notifications/action", rem.ActionHandler)
+		// The «что нового» broadcast (11.4 §D): who gets it, and each result.
+		sr.Get("/broadcast/recipients", broadcast.RecipientsHandler)
+		sr.Post("/broadcast/mark", broadcast.MarkHandler)
 	})
 
 	// Protected routes (JWT required)
