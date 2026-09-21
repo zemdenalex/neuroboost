@@ -194,3 +194,58 @@ func PostponeSeries(ctx context.Context, userID, taskID string, from time.Time, 
 	}
 	return closed, nil
 }
+
+// OccurrenceRow is one answered day of a series.
+type OccurrenceRow struct {
+	TaskID     string `json:"task_id"`
+	Occurrence string `json:"occurrence"`
+	State      string `json:"state"`
+}
+
+var (
+	// ErrRangeTooLarge bounds a read that statistics repeats per year for «Всё».
+	ErrRangeTooLarge = errors.New("range must be at most 366 days")
+	// ErrInvalidRange is a range that ends before it starts.
+	ErrInvalidRange = errors.New("from must be a date not after to")
+)
+
+// ListOccurrences returns the answered days of every series the caller can see
+// (spec 22.09 §5 — statistics counts the days a series was actually done).
+//
+// READ access (CalendarIDsFor), unlike marking a day: statistics shows a
+// shared calendar's series to everyone who can see it.
+//
+// ⚠ to_char on a DATE column does not depend on the session's zone — it is not
+// a timestamptz, so the day comes out as it was stored.
+func ListOccurrences(ctx context.Context, userID string, from, to time.Time) ([]OccurrenceRow, error) {
+	if to.Before(from) {
+		return nil, ErrInvalidRange
+	}
+	if to.Sub(from) > 366*24*time.Hour {
+		return nil, ErrRangeTooLarge
+	}
+	calIDs, err := calendars.CalendarIDsFor(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := db.Pool.Query(ctx, `
+		SELECT o.task_id::text, to_char(o.occurrence, 'YYYY-MM-DD'), o.state
+		  FROM task_occurrence o
+		  JOIN task t ON t.id = o.task_id
+		 WHERE t.calendar_id = ANY($1) AND o.occurrence BETWEEN $2 AND $3
+		 ORDER BY o.occurrence`,
+		calIDs, from.Format("2006-01-02"), to.Format("2006-01-02"))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []OccurrenceRow{}
+	for rows.Next() {
+		var r OccurrenceRow
+		if err := rows.Scan(&r.TaskID, &r.Occurrence, &r.State); err != nil {
+			return nil, err
+		}
+		out = append(out, r)
+	}
+	return out, rows.Err()
+}

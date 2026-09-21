@@ -137,3 +137,33 @@ func respondOccurrenceError(w http.ResponseWriter, err error) {
 		util.RespondError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to record the day")
 	}
 }
+
+// ListOccurrencesHandler handles GET /api/tasks/occurrences?from=&to= (dates, inclusive).
+func ListOccurrencesHandler(w http.ResponseWriter, r *http.Request) {
+	if db == nil {
+		util.RespondError(w, http.StatusInternalServerError, "DB_NOT_INITIALIZED", "Database not initialized")
+		return
+	}
+	userID := middleware.UserIDFromContext(r.Context())
+	if userID == "" {
+		util.RespondError(w, http.StatusUnauthorized, "NOT_AUTHENTICATED", "Not authenticated")
+		return
+	}
+	from, ferr := time.Parse("2006-01-02", r.URL.Query().Get("from"))
+	to, terr := time.Parse("2006-01-02", r.URL.Query().Get("to"))
+	if ferr != nil || terr != nil {
+		util.RespondError(w, http.StatusBadRequest, "INVALID_RANGE", "from and to must be YYYY-MM-DD")
+		return
+	}
+	rows, err := ListOccurrences(r.Context(), userID, from, to)
+	switch {
+	case errors.Is(err, ErrRangeTooLarge):
+		util.RespondError(w, http.StatusBadRequest, "RANGE_TOO_LARGE", err.Error())
+	case errors.Is(err, ErrInvalidRange):
+		util.RespondError(w, http.StatusBadRequest, "INVALID_RANGE", err.Error())
+	case err != nil:
+		util.RespondError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to list occurrences")
+	default:
+		util.RespondJSON(w, http.StatusOK, rows)
+	}
+}

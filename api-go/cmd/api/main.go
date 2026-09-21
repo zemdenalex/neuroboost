@@ -163,6 +163,7 @@ func main() {
 
 		// Tasks
 		r.Get("/api/tasks", t.ListHandler)
+		r.Get("/api/tasks/occurrences", t.ListOccurrencesHandler)
 		r.Post("/api/tasks", t.CreateHandler)
 		r.Post("/api/tasks/batch", t.BatchCreateHandler)
 		r.Get("/api/tasks/{id}", t.GetHandler)
