@@ -6,7 +6,7 @@ status: verified
 verified_by: session-01VRP8SC
 verified_at: 2026-09-16
 tags: [neuroboost, bot, decision, parsing, i18n]
-weight: { importance: 5, connectivity: 7, access: 2, last_accessed: 2026-09-18 }
+weight: { importance: 5, connectivity: 9, access: 2, last_accessed: 2026-09-21 }
 sources:
   - file: "ref/feedback/bot-zamechaniya-denisa-2026-09-15.md"
   - file: "ref/feedback/bot-prohod-otvet-denisa-2026-09-15.md"

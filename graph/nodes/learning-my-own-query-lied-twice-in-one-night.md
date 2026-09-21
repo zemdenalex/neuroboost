@@ -6,7 +6,7 @@ status: verified
 verified_by: session-01VRP8SC
 verified_at: 2026-09-18
 tags: [neuroboost, method, postgres, release, timezone]
-weight: { importance: 4, connectivity: 11, access: 4, last_accessed: 2026-09-18 }
+weight: { importance: 5, connectivity: 11, access: 4, last_accessed: 2026-09-21 }
 sources:
   - file: "docs/relizy/v0.4.11.2.md"
 stakes: high

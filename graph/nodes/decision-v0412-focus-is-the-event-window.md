@@ -6,7 +6,7 @@ status: verified
 verified_by: session-01VRP8SC
 verified_at: 2026-09-11
 tags: [neuroboost, calendar, frontend, decision]
-weight: { importance: 5, connectivity: 6, access: 3, last_accessed: 2026-09-18 }
+weight: { importance: 5, connectivity: 6, access: 3, last_accessed: 2026-09-21 }
 sources:
   - file: "docs/superpowers/specs/2026-09-11-calendar-event-window-design.md"
   - file: "ref/feedback/proverka-pered-relizom-otvet-denisa-2026-09-11.md"

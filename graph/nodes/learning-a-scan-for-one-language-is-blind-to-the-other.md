@@ -6,7 +6,7 @@ status: verified
 verified_by: session-01VRP8SC
 verified_at: 2026-09-16
 tags: [neuroboost, bot, i18n, testing, method]
-weight: { importance: 5, connectivity: 6, access: 2, last_accessed: 2026-09-18 }
+weight: { importance: 5, connectivity: 7, access: 2, last_accessed: 2026-09-21 }
 sources:
   - file: "bot/internal/handlers/i18n_scan_test.go"
   - file: "ref/feedback/bot-proverka-otvet-denisa-2026-09-16.md"

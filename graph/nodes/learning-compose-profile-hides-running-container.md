@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-08-10
 tags: [neuroboost, docker, deploy, telegram]
-weight: { importance: 5, connectivity: 5, access: 2, last_accessed: 2026-09-18 }
+weight: { importance: 5, connectivity: 5, access: 2, last_accessed: 2026-09-21 }
 sources:
   - command: "docker compose -f docker-compose.dev.yml config --services  # → db api web (bot скрыт)"
   - command: "docker ps --filter name=neuroboost-dev-bot  # → Up 9 minutes ПОСЛЕ деплоя с профилем"

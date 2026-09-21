@@ -6,7 +6,7 @@ status: verified
 verified_by: session-01WFKD2A
 verified_at: 2026-09-20
 tags: [neuroboost, method, testing, api, verification]
-weight: { importance: 5, connectivity: 5, access: 1, last_accessed: 2026-09-20 }
+weight: { importance: 5, connectivity: 6, access: 1, last_accessed: 2026-09-21 }
 sources:
   - file: "api-go/internal/tasks/repeat_write.go"
   - file: "api-go/internal/tasks/repeat_write_test.go"

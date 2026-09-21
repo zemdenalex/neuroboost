@@ -6,7 +6,7 @@ status: verified
 verified_by: session-01VRP8SC
 verified_at: 2026-09-18
 tags: [neuroboost, bot, testing, method, performance]
-weight: { importance: 4, connectivity: 4, access: 2, last_accessed: 2026-09-20 }
+weight: { importance: 5, connectivity: 4, access: 2, last_accessed: 2026-09-21 }
 sources:
   - file: "bot/internal/handlers/calendars_test.go"
 stakes: medium

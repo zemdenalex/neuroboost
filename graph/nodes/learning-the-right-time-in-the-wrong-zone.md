@@ -6,7 +6,7 @@ status: verified
 verified_by: session-01VRP8SC
 verified_at: 2026-09-18
 tags: [neuroboost, method, timezone, api, review]
-weight: { importance: 5, connectivity: 5, access: 2, last_accessed: 2026-09-20 }
+weight: { importance: 5, connectivity: 6, access: 2, last_accessed: 2026-09-21 }
 sources:
   - file: "api-go/internal/reminders/nag.go"
   - file: "api-go/internal/tasks/handlers.go"
@@ -16,6 +16,7 @@ links:
   - relates-to: learning-my-own-query-lied-twice-in-one-night
   - relates-to: learning-an-empty-result-is-not-an-answer
   - relates-to: learning-e2e-baseline-recorded-on-a-monday
+  - relates-to: learning-one-defect-can-hide-another
 ---
 18.09, за одну сессию — **три** дефекта одной формы. Ни один не выглядел как ошибка: во всех
 трёх время было настоящим, валидным и вычисленным без единого бага в арифметике. Просто **не в

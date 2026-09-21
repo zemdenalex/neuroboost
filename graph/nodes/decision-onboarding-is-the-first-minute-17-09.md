@@ -6,7 +6,7 @@ status: verified
 verified_by: session-01VRP8SC
 verified_at: 2026-09-18
 tags: [neuroboost, bot, decision, onboarding, users]
-weight: { importance: 5, connectivity: 4, access: 1, last_accessed: 2026-09-18 }
+weight: { importance: 5, connectivity: 7, access: 1, last_accessed: 2026-09-21 }
 sources:
   - file: "ref/feedback/bot-pervye-testery-2026-09-16-17.md"
   - file: "docs/superpowers/specs/2026-09-17-bot-v04112-onboarding-design.md"

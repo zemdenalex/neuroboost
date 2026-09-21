@@ -6,7 +6,7 @@ status: verified
 verified_by: session-01WFKD2A
 verified_at: 2026-09-20
 tags: [neuroboost, method, timezone, api, testing]
-weight: { importance: 5, connectivity: 4, access: 1, last_accessed: 2026-09-20 }
+weight: { importance: 5, connectivity: 4, access: 2, last_accessed: 2026-09-21 }
 sources:
   - file: "api-go/internal/recurrence/rrule.go"
   - file: "api-go/internal/recurrence/rrule_test.go"

@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-08-18
 tags: [neuroboost, bot, evidence, docs]
-weight: { importance: 5, connectivity: 15, access: 4, last_accessed: 2026-09-20 }
+weight: { importance: 5, connectivity: 15, access: 4, last_accessed: 2026-09-21 }
 sources:
   - file: "_legacy/snapshots-v0.0.1-v0.4.0/v0.2.1/apps/bot/src/index.mjs"
   - file: "docs/analiz-bot-vs-web-2026-08-18.md §2"

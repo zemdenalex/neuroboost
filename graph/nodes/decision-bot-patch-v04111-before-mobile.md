@@ -6,7 +6,7 @@ status: verified
 verified_by: session-01VRP8SC
 verified_at: 2026-09-15
 tags: [neuroboost, bot, release, decision, planning]
-weight: { importance: 5, connectivity: 10, access: 3, last_accessed: 2026-09-18 }
+weight: { importance: 5, connectivity: 10, access: 3, last_accessed: 2026-09-21 }
 sources:
   - file: "docs/relizy/v0.4.11.md"
   - file: "docs/superpowers/specs/2026-09-11-calendar-event-window-design.md"

@@ -6,7 +6,7 @@ status: verified
 verified_by: session-01VRP8SC
 verified_at: 2026-09-18
 tags: [neuroboost, bot, testing, method, telegram]
-weight: { importance: 5, connectivity: 8, access: 2, last_accessed: 2026-09-18 }
+weight: { importance: 5, connectivity: 10, access: 2, last_accessed: 2026-09-21 }
 sources:
   - file: "bot/internal/handlers/callback_test.go"
   - file: "ref/feedback/bot-proverka-v04112-otvet-denisa-2026-09-17.md"

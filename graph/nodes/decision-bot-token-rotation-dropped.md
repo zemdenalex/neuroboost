@@ -6,7 +6,7 @@ status: verified
 verified_by: session-01VRP8SC
 verified_at: 2026-09-11
 tags: [neuroboost, security, bot, decision]
-weight: { importance: 5, connectivity: 5, access: 2, last_accessed: 2026-09-18 }
+weight: { importance: 5, connectivity: 5, access: 2, last_accessed: 2026-09-21 }
 sources:
   - file: "docs/relizy/v0.4.11.md"
 stakes: high

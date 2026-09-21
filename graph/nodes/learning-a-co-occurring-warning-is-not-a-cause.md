@@ -6,7 +6,7 @@ status: verified
 verified_by: session-f4ad9d3d
 verified_at: 2026-08-23
 tags: [neuroboost, web, calendar, diagnosis, method]
-weight: { importance: 5, connectivity: 8, access: 2, last_accessed: 2026-09-18 }
+weight: { importance: 5, connectivity: 8, access: 2, last_accessed: 2026-09-21 }
 sources:
   - file: "web/src/components/Calendar/WeekGrid/WeekGrid.tsx"
   - file: "docs/defekty-prohod-vdvoem-2026-08-23.md"

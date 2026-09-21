@@ -4,8 +4,8 @@ Calendar-first productivity app for neurodivergent users. Go backend + React/Typ
 PostgreSQL + Telegram bot. "The calendar is truth; tasks exist to support scheduling and reflection."
 
 **Live:** https://neuroboost.website · **Staging:** https://dev.neuroboost.website
-**Released:** `v0.4.11.2` (17.09.2026 — бот: онбординг, быстрое добавление, повторы, многодневные события; 16 миграций) · **Unreleased:**
-всё, что после, — на `develop`
+**Released:** `v0.4.11.3` (21.09.2026 — срез `develop` по 18.09: карточки, календари в боте, приглашения, починка snooze; 21 миграция) · **Unreleased:**
+всё, что после, — на `develop`; план 11.4 — `docs/superpowers/specs/2026-09-21-v04114-bot-design.md`
 
 > 🟢 **Последний релиз — `v0.4.11.1` (16.09.2026), целиком ботовый.** Разбор строки
 > естественным языком, карточка подтверждения, списки, язык интерфейса ru/en,
@@ -43,6 +43,11 @@ PostgreSQL + Telegram bot. "The calendar is truth; tasks exist to support schedu
 
 **Реестр внешнего материала: `docs/sources.md`** (заведён 18.08 — до него внешних источников
 у проекта не было вовсе). Источники истины из него, которые нельзя заменять своей памятью:
+- 🔴 **Бот v0.4.11.4, проход 2 (21.09) — чеклист с отметками, лог чата с Настей и его концепт
+  «задачи дня»** — `ref/feedback/bot-proverka-v04114-prohod2-otvet-denisa-2026-09-21.md`. Разбор с
+  `file:line` — `docs/razbor-prohoda-v04114-2026-09-21.md`; из него выросли спека 11.4 и три решения:
+  символ приоритета — выбор из трёх, статистика — заполненность временем, релизы — мелкими.
+  ⚠ Таймауты в его логе — авария площадки М9, не бот (`docs/incident-2026-09-21-host-nedostupen.md`)
 - 🔴 **Бот v0.4.11.4 (20.09) — проход Дениса, дословно, остановлен на разделе 2** —
   `ref/feedback/bot-proverka-v04114-otvet-denisa-2026-09-20.md`. Его вывод: *«начиная со
   второго пункта там ничего нет»*, и он был прав. 🔴 **Урок дороже самого дефекта:

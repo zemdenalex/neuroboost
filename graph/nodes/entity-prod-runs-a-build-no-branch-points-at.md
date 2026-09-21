@@ -7,7 +7,7 @@ verified_by: session-f4ad9d3d
 verified_at: 2026-08-23
 disproven_at: 2026-09-11
 tags: [neuroboost, release, git, risk]
-weight: { importance: 5, connectivity: 9, access: 2, last_accessed: 2026-09-18 }
+weight: { importance: 5, connectivity: 9, access: 2, last_accessed: 2026-09-21 }
 sources:
   - file: "docs/proverka-vdvoem-2026-08-19.md"
   - file: "docs/superpowers/specs/2026-08-23-post-walkthrough-fixes-and-release-design.md"

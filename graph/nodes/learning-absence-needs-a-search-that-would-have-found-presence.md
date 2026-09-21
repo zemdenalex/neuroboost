@@ -6,7 +6,7 @@ status: verified
 verified_by: session-01VRP8SC
 verified_at: 2026-09-18
 tags: [neuroboost, method, search, api, migration]
-weight: { importance: 5, connectivity: 6, access: 2, last_accessed: 2026-09-18 }
+weight: { importance: 5, connectivity: 7, access: 2, last_accessed: 2026-09-21 }
 sources:
   - file: "api-go/migrations/000018_drop_redundant_task_event_id.up.sql"
   - file: "docs/superpowers/specs/2026-09-18-api-v04114-recurring-tasks-design.md"
