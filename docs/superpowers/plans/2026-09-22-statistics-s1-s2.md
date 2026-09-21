@@ -1,3 +1,5 @@
+<!-- паспорт: тип=план | статус=действует | строк=1222 | ~токенов=9782 | обновлён=по git -->
+
 # Статистика S1 + S2 — данные и расчёт сетки · план реализации
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.

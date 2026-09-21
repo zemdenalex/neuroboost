@@ -6,7 +6,7 @@ status: verified
 verified_by: session-01VRP8SC
 verified_at: 2026-09-16
 tags: [neuroboost, e2e, ci, timezone, testing]
-weight: { importance: 5, connectivity: 8, access: 2, last_accessed: 2026-09-21 }
+weight: { importance: 5, connectivity: 9, access: 3, last_accessed: 2026-09-22 }
 sources:
   - file: "web/e2e/shared-badge-mobile.spec.ts"
   - file: "web/e2e/fixtures/localTime.ts"
@@ -43,3 +43,19 @@ push'ей», который был верным для прошлого паде
 зоной из `/api/auth/me` — так уже делали drag-спеки. Родственник
 [[learning-e2e-baseline-recorded-on-a-monday]]: там дата прогона была частью базовой линии,
 здесь частью базовой линии оказался час прогона.
+
+## 🔴 22.09 — тот же класс вернулся дважды, уже после этого узла
+
+1. `overlap-overflow.spec.ts` (написан 18.09, **после** починки shared-badge) снова строил
+   «сегодня 10:00» через `new Date(); d.setHours(10)`. Скриншот упавшего прогона в 00:03 МСК
+   показал «вторник 22» — события легли на понедельник.
+2. **Go-тесты** `api-go/internal/tasks` (мои, A1 21.09) строили «завтра» из `time.Now()` — часы
+   **машины**. Моя машина на московском времени, как тестовый пользователь, — локально зелёно
+   всегда; CI на UTC — красный каждую ночь 21:00–24:00. `TZ=UTC` на Windows Go **игнорирует**,
+   воспроизвести «как в CI» нельзя было, пока не сделал структурно.
+
+Вывод: узел знания не остановил ту же строку в следующем файле — **урок, живущий только в памяти,
+не защищает код, написанный после него**. Что защищает: `api-go/internal/tasks/main_test.go`
+(`time.Local = time.UTC` на весь пакет — локальный прогон = прогон CI) и `userToday()`; для e2e —
+таблица полос часов в `web/e2e/fixtures/localTime.ts`. Родня:
+[[learning-parallel-e2e-specs-share-one-calendar]].

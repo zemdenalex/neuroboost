@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-09-21
 tags: [neuroboost, method, testing, release]
-weight: { importance: 5, connectivity: 4, access: 1, last_accessed: 2026-09-21 }
+weight: { importance: 5, connectivity: 6, access: 1, last_accessed: 2026-09-22 }
 sources:
   - file: "docs/relizy/plan-reliza-v0.4.11.3-2026-09-21.md"
 stakes: high
@@ -14,6 +14,7 @@ links:
   - relates-to: learning-a-cached-test-result-is-a-test-that-did-not-run
   - relates-to: learning-green-because-skipped-proves-nothing
   - relates-to: learning-a-control-nobody-runs-hides-a-control-that-cannot-work
+  - relates-to: learning-this-shell-turns-backslash-n-into-newlines
 ---
 21.09, релиз v0.4.11.3. Перед пушем в `main` я прогнал тесты бота на ветке релиза так:
 

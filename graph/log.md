@@ -1182,3 +1182,27 @@ CI/CD: `concurrency` в `ci.yml` (два push'а подряд ломают e2e �
   делает рассылку). После 11.4 — статистика → задачи дня.
 - Порядок: A1 (API) → A2 (бот) → B → D → C. Перед каждым — `superpowers:writing-plans`.
 - 🟡 Два открытых вопроса — в конце спеки; начинать можно, решить до своего шага.
+
+## [2026-09-21 20:16] consolidate | PRESERVED — transcript-20260921-201514.jsonl, 83 MB → .oversize/ (too large for one pass, kept for chunked consolidation)
+
+## [2026-09-22] recall | learning-the-right-time-in-the-wrong-zone, learning-e2e-fixture-time-in-runner-zone-fails-nightly, decision-statistics-is-a-screen-you-browse-20-09, decision-release-small-and-in-his-order-21-09, decision-priority-style-is-a-choice-21-09, entity-server-topology, learning-the-author-of-a-control-cannot-see-it-cannot-fail, entity-e2e-playwright-harness
+
+## [2026-09-22] handoff | 11.4 A+B+D и статистика — на dev, CI зелёный впервые с 21.09
+
+**Сделано (ночь 21→22.09), всё на `develop` = `ecf7af4`, запушено, dev-бот выкачен (`src.bak-2026-09-22-bd`):**
+- 11.4 **A** — задача ↔ событие: API (`convert` series|once, зона пользователя, `POST /api/events/{id}/to-task` с dry_run) и бот (полный путь в обе стороны, пометка «📅 вт 15:00», список показывает TODO+SCHEDULED). Попутно две дыры напоминаний — три на одно дело, потом вечное молчание — починены, мерились настоящим сканером.
+- **Статистика S1–S5** — экран период × сущность, заполнение временем, шкала 24 ч по умолчанию (кнопка 📏, ⚙️, онбординг), ручка `GET /api/tasks/occurrences`, месячный календарь рисует заполнение вместо точки.
+- 11.4 **B** — символ приоритета (кружки/точки/тире), онбординг: пояс → символ → шкала → готово; одноразовый вопрос старым пользователям.
+- 11.4 **D** — `/broadcast` только для админа: пробный прогон, результат по каждому в `settings.bot.broadcasts.<версия>` (без миграции), в логе только хэш; отписка 🔕.
+- CI: ночной красный от UTC-часов в Go-тестах (`tasks/main_test.go` пинит UTC) и e2e — полосы часов на спеку и вьюпорт. e2e 54 passed дважды.
+
+**Открыто:**
+- 🔴 До первой настоящей рассылки — написать заметки 11.4 в `bot/internal/release/notes.go`: сейчас первой стоит старая 11.5 «на стенде ещё нет».
+- 11.4 **C** — «ℹ️ Что это?» реестр (последний кусок 11.4), затем срез 11.4 на прод.
+- Денис проверяет dev: `docs/proverka-bota-v0.4.11.4-prohod3-2026-09-21.md` §A (18), §B (17), §D (9), §E (7).
+- 🟡 На подтверждение в спеках: `…/specs/2026-09-21-v04114-bot-design.md` (A1/A2/B/D блоки «сделан»), `…/specs/2026-09-22-statistics-design.md`.
+- Продуктовый дефект найден, не чинился: вкладка «Tasks (0)» закрывает события первой колонки ~04–05.
+
+**Читать первым:** `decision-task-event-and-statistics-details-22-09`, `learning-a-fix-to-linked-state-is-measured-at-its-consumer`, `learning-e2e-fixture-time-in-runner-zone-fails-nightly` (обновлён 22.09), `learning-this-shell-turns-backslash-n-into-newlines`.
+
+**Навыки на следующую сессию:** `superpowers:writing-plans` для куска C; `superpowers:executing-plans`; правка текстов с переводами строк — только Edit/Write.

@@ -6,7 +6,7 @@ status: verified
 verified_by: session-01WFKD2A
 verified_at: 2026-09-20
 tags: [neuroboost, bot, product, statistics]
-weight: { importance: 5, connectivity: 5, access: 2, last_accessed: 2026-09-21 }
+weight: { importance: 5, connectivity: 6, access: 3, last_accessed: 2026-09-22 }
 sources:
   - file: "ref/feedback/bot-proverka-v04114-otvet-denisa-2026-09-20.md"
   - file: "bot/internal/handlers/stats.go"
@@ -53,6 +53,7 @@ links:
 - **То же заполнение — в месячном календаре** вместо точки «есть события»: *«по-хорошему
   везде они должны быть»*. Возможно, это тот же показатель, что
   [[decision-day-commitments-concept-21-09]].
-- 🟡 Открыто: что строка и столбик для «Год» и «Всё».
+- ✅ Закрыто 22.09: «Год» — месяц × неделя, «Всё» — год × месяц; шкала 24 ч везде; экран построен
+  (S1–S5) и на dev — [[decision-task-event-and-statistics-details-22-09]].
 
 Порядок — после отписки, до «задач дня» ([[decision-release-small-and-in-his-order-21-09]]).
