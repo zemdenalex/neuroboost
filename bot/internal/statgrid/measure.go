@@ -44,6 +44,9 @@ func TaskMinutes(t api.Task) int {
 type Point struct {
 	At  time.Time
 	Dur time.Duration
+	// DayOnly marks a point that has a date and no hour — a day of a series.
+	// An hourly grid must not place it in 00:00.
+	DayOnly bool
 }
 
 // TaskPoints places done work in time: a closed one-off task at the moment it
@@ -70,7 +73,7 @@ func TaskPoints(tasks []api.Task, occ []api.TaskOccurrence, loc *time.Location) 
 		if err != nil {
 			continue
 		}
-		pts = append(pts, Point{At: day, Dur: time.Duration(TaskMinutes(byID[o.TaskID])) * time.Minute})
+		pts = append(pts, Point{At: day, Dur: time.Duration(TaskMinutes(byID[o.TaskID])) * time.Minute, DayOnly: true})
 	}
 	return pts
 }
@@ -93,6 +96,18 @@ func SumPoints(points []Point, c Cell) time.Duration {
 	var total time.Duration
 	for _, p := range points {
 		if !p.At.Before(c.From) && p.At.Before(c.To) {
+			total += p.Dur
+		}
+	}
+	return total
+}
+
+// SumPointsTimed is SumPoints without the day-only points — for cells shorter
+// than a day, where a point with no hour has no column to stand in.
+func SumPointsTimed(points []Point, c Cell) time.Duration {
+	var total time.Duration
+	for _, p := range points {
+		if !p.DayOnly && !p.At.Before(c.From) && p.At.Before(c.To) {
 			total += p.Dur
 		}
 	}

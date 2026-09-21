@@ -60,3 +60,16 @@ func TestReflectionDaysAreLocal(t *testing.T) {
 		t.Errorf("days = %v, want 22.09 in Moscow", days)
 	}
 }
+
+// A series day has a date and no hour. In the week grid (columns are hours) it
+// must not pile up in 00:00; it still counts toward the day.
+func TestSeriesDaysAreMarkedAsHavingNoHour(t *testing.T) {
+	pts := TaskPoints(nil, []api.TaskOccurrence{{TaskID: "s", Occurrence: "2026-09-22", State: "done"}}, msk)
+	if len(pts) != 1 || !pts[0].DayOnly {
+		t.Fatalf("points = %+v", pts)
+	}
+	c := Cell{From: time.Date(2026, 9, 22, 0, 0, 0, 0, msk), To: time.Date(2026, 9, 22, 1, 0, 0, 0, msk)}
+	if SumPointsTimed(pts, c) != 0 || SumPoints(pts, c) == 0 {
+		t.Error("a series day must count by day, never in the 00:00 hour")
+	}
+}
