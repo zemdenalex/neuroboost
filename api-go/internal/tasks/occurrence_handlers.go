@@ -62,13 +62,21 @@ func MarkOccurrenceHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// The day is resolved where the USER is, not where the server is.
-	_, _, tz, err := repeatOf(r.Context(), userID, taskID)
+	rule, anchor, tz, err := repeatOf(r.Context(), userID, taskID)
 	if err != nil {
 		respondOccurrenceError(w, err)
 		return
 	}
 
 	day := LocalDay(time.Now(), tz)
+	namedADate := req.Date != ""
+	if !namedADate && req.PostponeDays == 0 {
+		// A press, not a date: resolve it to the day of the series the user is
+		// actually looking at. See PressedDay for why today is not always it.
+		if resolved, ok := PressedDay(rule, anchor, day); ok {
+			day = resolved
+		}
+	}
 	if req.Date != "" {
 		parsed, perr := time.Parse("2006-01-02", req.Date)
 		if perr != nil {

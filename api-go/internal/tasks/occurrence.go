@@ -134,15 +134,30 @@ func MarkOccurrence(ctx context.Context, userID, taskID string, day time.Time, s
 	return err
 }
 
-// MarkOccurrenceAt records a day from an instant, resolving the day where the
-// user is. This is what a button press should call: the caller knows "now", not
-// "which calendar day the user thinks it is".
-func MarkOccurrenceAt(ctx context.Context, userID, taskID string, at time.Time, state string) error {
-	_, _, tz, err := repeatOf(ctx, userID, taskID)
-	if err != nil {
-		return err
+// PressedDay answers which day «✅ готово» means when the caller named no date.
+//
+// 🔴 Not always today, and that cost Denis the 21.09 pass. A task created
+// «позвонить в банк ЗАВТРА … каждый день» anchors its series on tomorrow, so
+// today is genuinely not in it — and the button answered him with
+// `API error 400: NOT_AN_OCCURRENCE`. The arithmetic was right and the answer
+// was useless: he pressed the only button the card offered.
+//
+// A press means «the one I am looking at»: today when today is in the series,
+// otherwise the first day that is. A COUNT or UNTIL series eventually has no
+// such day, and only then is the refusal the honest reply.
+//
+// ⚠ Only for a press. A date the caller NAMED is still refused when it is not
+// an occurrence — that guard is what keeps task_occurrence free of days nothing
+// will ever ask about, and silently sliding someone's chosen date to a
+// neighbouring one would be a worse answer than «no».
+func PressedDay(rule *recurrence.Rule, anchor, today time.Time) (time.Time, bool) {
+	if rule == nil {
+		return time.Time{}, false
 	}
-	return MarkOccurrence(ctx, userID, taskID, LocalDay(at, tz), state)
+	if recurrence.Occurs(rule, anchor, today) {
+		return today, true
+	}
+	return recurrence.Next(rule, anchor, today)
 }
 
 // PostponeSeries closes the next `days` days of a series, leaving its rhythm
