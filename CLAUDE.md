@@ -200,6 +200,13 @@ cd web && pnpm test --run                      # сколько тестов н�
 4. **Инверсия приоритета:** 1 = Emergency, 5 = If Possible (меньше число — выше приоритет),
    0 = Buffer.
 5. **Таймзона по умолчанию** «Europe/Moscow» местами захардкожена.
+   ✅ 21.09: события из задач (`convert`, `schedule`) берут `user.timezone` — `userZone` в
+   `tasks/convert.go`. Остальные вхождения — в основном `COALESCE(timezone,'Europe/Moscow')`,
+   то есть запасное значение, а не литерал: `grep -rn "'Europe/Moscow'" api-go/internal
+   --include=*.go | grep -v _test` (на 21.09 — 27 строк, считать заново).
+   🔴 Тест на зону не может проверять момент: `starts_at` несёт смещение и верен при любой
+   колонке `timezone`. Колонка кормит развёртку повтора — проверять серию через переход DST
+   (`TestAScheduledSeriesKeepsItsLocalHourAcrossDST`).
 6. **Массивы по умолчанию `[]`**, из API никогда не `null`.
 7. **Неделя начинается с понедельника** (ISO).
 8. **Версия в `/api/health` захардкожена** (`internal/status/handlers.go:44` → `"0.4.0"`) — по ней
