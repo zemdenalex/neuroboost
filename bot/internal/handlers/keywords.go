@@ -198,7 +198,7 @@ func (h *Handler) saveKeyword(chatID int64, messageID int, field, value string) 
 		// could not read first, because merging onto an empty map erases the
 		// rest of the user's settings (gotcha 21).
 		h.store.ClearFlow(chatID)
-		h.editOrSend(chatID, messageID, h.t(chatID, "❌ Не удалось сохранить: ", "❌ Could not save: ")+format.Escape(err.Error())+
+		h.editOrSend(chatID, messageID, h.t(chatID, "❌ Не удалось сохранить: ", "❌ Could not save: ")+format.Escape(h.errorText(chatID, err))+
 			h.t(chatID, "\n\nНастройки при этом не изменились.", "\n\nNothing was changed."), keyboards.SettingsMenu(h.lang(chatID)))
 		return
 	}
@@ -210,7 +210,7 @@ func (h *Handler) saveKeyword(chatID int64, messageID int, field, value string) 
 func (h *Handler) handleKeywordDelete(chatID int64, messageID int, word string) {
 	us := h.store.GetOrCreate(chatID)
 	if err := h.api.SetBotKeyword(us.AuthToken, word, "", ""); err != nil {
-		h.editOrSend(chatID, messageID, h.t(chatID, "❌ Не удалось удалить: ", "❌ Could not delete: ")+format.Escape(err.Error()),
+		h.editOrSend(chatID, messageID, h.t(chatID, "❌ Не удалось удалить: ", "❌ Could not delete: ")+format.Escape(h.errorText(chatID, err)),
 			keyboards.SettingsMenu(h.lang(chatID)))
 		return
 	}

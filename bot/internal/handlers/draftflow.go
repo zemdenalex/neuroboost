@@ -796,7 +796,7 @@ func (h *Handler) createFromDraft(chatID int64, messageID int, st draftState) {
 
 	if err := h.createOne(chatID, st); err != nil {
 		h.store.ClearFlow(chatID)
-		h.editOrSend(chatID, messageID, "❌ "+err.Error(), keyboards.HomeInline(h.lang(chatID)))
+		h.editOrSend(chatID, messageID, "❌ "+h.errorText(chatID, err), keyboards.HomeInline(h.lang(chatID)))
 		return
 	}
 

@@ -269,15 +269,45 @@ func wizardKeyboardFor(lang i18n.Lang, step string, flowData map[string]any, loc
 // card's ✅ Создать would have.
 func (h *Handler) advanceWizard(chatID int64, messageID int, current string) {
 	us := h.store.GetOrCreate(chatID)
+
+	// 🔴 A question asked FROM the card goes back to the card.
+	//
+	// «✅ Создать» on a draft that said «спрошу» opens the repeat step — and
+	// «повтор» sits third in wizardOrder, so advancing from it would walk the
+	// user into «Сколько времени займёт?» next. They pressed create, not
+	// «📝 Подробнее»; Denis's standing rule about this bot is «каждое
+	// замечание — в сторону меньшего числа шагов», and that would be one more.
+	//
+	// The branch lives here rather than at the three call sites that end this
+	// step — button, typed period, «пропустить» — because all three must obey
+	// it and only one of them is obvious.
+	if fromCard, _ := us.FlowData["repeat_from_card"].(bool); fromCard && current == "repeat" {
+		delete(us.FlowData, "repeat_from_card")
+		us.FlowStep = "card"
+		h.handleTaskCardSave(chatID, messageID)
+		return
+	}
+
 	next := nextWizardStep(current, wizardHas(us.FlowData))
 	if next == "done" {
 		us.FlowStep = "card"
 		h.handleTaskCardSave(chatID, messageID)
 		return
 	}
-	us.FlowStep = "wizard:" + next
+	h.showWizardStep(chatID, messageID, next)
+}
+
+// showWizardStep puts one step on screen without deciding which comes next.
+//
+// Extracted so a step can be reached out of order: «повтор» has to be askable
+// straight from the card, because the card promised to ask.
+func (h *Handler) showWizardStep(chatID int64, messageID int, step string) {
+	us := h.store.GetOrCreate(chatID)
+	us.FlowStep = "wizard:" + step
 	loc := h.location(chatID)
-	h.editOrSend(chatID, messageID, wizardStepText(h.lang(chatID), next, us.FlowData, loc), wizardKeyboardFor(h.lang(chatID), next, us.FlowData, loc))
+	h.editOrSend(chatID, messageID,
+		wizardStepText(h.lang(chatID), step, us.FlowData, loc),
+		wizardKeyboardFor(h.lang(chatID), step, us.FlowData, loc))
 }
 
 // handleTaskWizardStart is nt_wizard — "📝 Подробнее" pressed under the card.

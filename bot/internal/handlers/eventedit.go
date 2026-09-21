@@ -213,7 +213,7 @@ func (h *Handler) handleEventDelete(chatID int64, messageID int, eventID string)
 	parentID, _, _ := splitInstanceID(eventID)
 	if err := h.api.DeleteEvent(us.AuthToken, parentID); err != nil {
 		h.editOrSend(chatID, messageID,
-			h.t(chatID, "❌ Не удалось удалить: ", "❌ Could not delete: ")+format.Escape(err.Error()),
+			h.t(chatID, "❌ Не удалось удалить: ", "❌ Could not delete: ")+format.Escape(h.errorText(chatID, err)),
 			keyboards.AgendaActions(h.lang(chatID)))
 		return
 	}
@@ -263,7 +263,7 @@ func (h *Handler) updateFromDraft(chatID int64, messageID int, st draftState) {
 	h.store.ClearFlow(chatID)
 	if err != nil {
 		h.editOrSend(chatID, messageID,
-			h.t(chatID, "❌ Не удалось сохранить: ", "❌ Could not save: ")+format.Escape(err.Error()),
+			h.t(chatID, "❌ Не удалось сохранить: ", "❌ Could not save: ")+format.Escape(h.errorText(chatID, err)),
 			keyboards.AgendaActions(h.lang(chatID)))
 		return
 	}

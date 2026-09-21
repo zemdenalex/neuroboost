@@ -26,7 +26,7 @@ func (h *Handler) handleToday(chatID int64, messageID int) {
 	events, err := h.api.GetEvents(us.AuthToken, from, to)
 	if err != nil {
 		h.editOrSend(chatID, messageID,
-			h.t(chatID, "❌ Не удалось загрузить события: ", "❌ Could not load events: ")+err.Error(), keyboards.BackToMenu(h.lang(chatID)))
+			h.t(chatID, "❌ Не удалось загрузить события: ", "❌ Could not load events: ")+h.errorText(chatID, err), keyboards.BackToMenu(h.lang(chatID)))
 		return
 	}
 

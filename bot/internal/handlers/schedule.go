@@ -146,7 +146,7 @@ func (h *Handler) handleTaskSchedule(chatID int64, messageID int, data string) {
 	err := h.api.ScheduleTask(us.AuthToken, taskID,
 		start.UTC().Format(time.RFC3339), end.UTC().Format(time.RFC3339))
 	if err != nil {
-		h.sendText(chatID, h.t(chatID, "❌ Не удалось запланировать: ", "❌ Could not schedule: ")+err.Error())
+		h.sendText(chatID, h.t(chatID, "❌ Не удалось запланировать: ", "❌ Could not schedule: ")+h.errorText(chatID, err))
 		return
 	}
 

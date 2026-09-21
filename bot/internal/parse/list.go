@@ -72,12 +72,42 @@ func LooksLikeList(text string, now time.Time) bool {
 		return true
 	}
 
-	// One line with commas. A comma next to a recognised time is punctuation
-	// in a sentence — «Ужин, завтра 19:00» — not a separator.
+	// One line with commas: count the parts that could stand alone.
+	//
+	// 🔴 This used to ask «does the whole line have a time?» and fall silent if
+	// it did — punctuation in «Ужин, завтра 19:00». On 21.09 Denis typed four
+	// chores in one line and got ONE task called «пить таблетки, полить цветы
+	// через день, отчёт каждую неделю, раз дня протереть пыль». His note:
+	// «тут он должен был, увидев запятые, уточнить — это одна задача или 3».
+	//
+	// The old test was defeated by another defect: «раз в 3 дня» in the FOURTH
+	// clause made the parser read «в 3» as 03:00, so the whole line «had a
+	// time» and the question was suppressed. A heuristic that reads the line as
+	// one lump cannot judge whether it is one thing.
+	//
+	// Counting items instead: a part is an item when it leaves a TITLE behind.
+	// «завтра 19:00» leaves none — it is the time of the part before it — while
+	// every one of Denis's four clauses leaves one. Same test ParseEventList
+	// already uses to tell a day header from an event.
 	if strings.Contains(text, ",") {
-		return !ParseLine(text, now).Draft.HasTime
+		return commaItems(text, now) > 1
 	}
 	return len(splitByDays(text, now)) > 1
+}
+
+// commaItems counts the comma-separated parts that could stand as an entry.
+func commaItems(text string, now time.Time) int {
+	n := 0
+	for _, raw := range strings.Split(text, ",") {
+		s := strings.TrimSpace(raw)
+		if s == "" {
+			continue
+		}
+		if ParseLine(s, now).Title != "" {
+			n++
+		}
+	}
+	return n
 }
 
 // ParseEventList reads a block into one draft per entry, with day headers

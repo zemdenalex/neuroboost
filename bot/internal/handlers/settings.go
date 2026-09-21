@@ -110,7 +110,7 @@ func (h *Handler) handleWorkHourSet(chatID int64, messageID int, data string) {
 
 	us := h.store.GetOrCreate(chatID)
 	if _, err := h.api.PatchSettings(us.AuthToken, map[string]any{"work_" + which: value}); err != nil {
-		h.sendText(chatID, h.t(chatID, "❌ Не удалось сохранить: ", "❌ Could not save: ")+err.Error())
+		h.sendText(chatID, h.t(chatID, "❌ Не удалось сохранить: ", "❌ Could not save: ")+h.errorText(chatID, err))
 		return
 	}
 

@@ -31,7 +31,7 @@ func (h *Handler) handlePlanning(chatID int64, messageID int) {
 	plan, err := h.api.WeekPlan(us.AuthToken)
 	if err != nil {
 		h.editOrSend(chatID, messageID,
-			h.t(chatID, "❌ Не удалось загрузить план: ", "❌ Could not load the plan: ")+err.Error(), keyboards.BackToMenu(h.lang(chatID)))
+			h.t(chatID, "❌ Не удалось загрузить план: ", "❌ Could not load the plan: ")+h.errorText(chatID, err), keyboards.BackToMenu(h.lang(chatID)))
 		return
 	}
 

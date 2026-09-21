@@ -301,7 +301,7 @@ func (h *Handler) createTaskList(chatID int64, messageID int, parsed []parse.Tas
 			req.Tags = p.Tags
 		}
 		if _, err := h.api.CreateTask(us.AuthToken, req); err != nil {
-			failed = append(failed, format.Escape(p.Title)+" — "+format.Escape(err.Error()))
+			failed = append(failed, format.Escape(p.Title)+" — "+format.Escape(h.errorText(chatID, err)))
 			continue
 		}
 		made = append(made, format.Escape(p.Title))

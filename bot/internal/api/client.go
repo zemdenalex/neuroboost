@@ -195,7 +195,7 @@ func (c *Client) del(path string, token string) error {
 	}
 	resp.Body.Close()
 	if resp.StatusCode >= 400 {
-		return fmt.Errorf("API error %d", resp.StatusCode)
+		return errorFromBody(resp.StatusCode, nil)
 	}
 	return nil
 }
@@ -208,7 +208,7 @@ func (c *Client) do(req *http.Request, result any) error {
 	defer resp.Body.Close()
 	if resp.StatusCode >= 400 {
 		body, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("API error %d: %s", resp.StatusCode, string(body))
+		return errorFromBody(resp.StatusCode, body)
 	}
 	if result == nil {
 		return nil
@@ -539,7 +539,22 @@ func (c *Client) CreateLinkCode(token string) (string, int, error) {
 //
 // state and postponeDays are mutually exclusive; the API refuses both rather
 // than guessing, because they mean opposite things.
-func (c *Client) MarkOccurrence(token, taskID, state string, postponeDays int) error {
+// OccurrenceResult is which day the server actually acted on.
+//
+// 🔴 Read rather than assumed. A press with no date means «the day of the
+// series I am looking at», and since 21.09 that is not always today: a task
+// due tomorrow starts its series tomorrow. The bot used to answer «Сделано на
+// сегодня» from a constant, which would now be a lie on exactly the task that
+// made this necessary.
+type OccurrenceResult struct {
+	Occurrence    string `json:"occurrence"`
+	State         string `json:"state"`
+	PostponedDays int    `json:"postponed_days"`
+	Closed        int    `json:"closed"`
+	From          string `json:"from"`
+}
+
+func (c *Client) MarkOccurrence(token, taskID, state string, postponeDays int) (OccurrenceResult, error) {
 	body := map[string]any{}
 	if state != "" {
 		body["state"] = state
@@ -547,5 +562,15 @@ func (c *Client) MarkOccurrence(token, taskID, state string, postponeDays int) e
 	if postponeDays > 0 {
 		body["postpone_days"] = postponeDays
 	}
-	return c.post("/api/tasks/"+taskID+"/occurrences", token, body, nil)
+	// 🔴 The envelope. `c.do` decodes the body as given and unwraps nothing —
+	// every other call in this file declares its own `Data` field, and the
+	// first version of this one did not. It would have decoded to a zero
+	// value, Occurrence would have been "", and closedDayText would have
+	// printed «✅ Сделано на сегодня» on the task due tomorrow: the exact lie
+	// this whole change exists to stop, arrived at from the other side.
+	var resp struct {
+		Data OccurrenceResult `json:"data"`
+	}
+	err := c.post("/api/tasks/"+taskID+"/occurrences", token, body, &resp)
+	return resp.Data, err
 }

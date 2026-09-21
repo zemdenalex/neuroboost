@@ -77,7 +77,7 @@ func (h *Handler) handleNoteFlow(chatID int64, text string) {
 	})
 	h.store.ClearFlow(chatID)
 	if err != nil {
-		h.sendText(chatID, h.t(chatID, "❌ Не удалось сохранить: ", "❌ Could not save: ")+err.Error())
+		h.sendText(chatID, h.t(chatID, "❌ Не удалось сохранить: ", "❌ Could not save: ")+h.errorText(chatID, err))
 		return
 	}
 	h.sendText(chatID, h.t(chatID, "✅ Заметка сохранена задачей.", "✅ Note saved as a task."))
@@ -171,6 +171,29 @@ func (h *Handler) handleTaskCardSave(chatID int64, messageID int) {
 		return
 	}
 
+	// «⚠ повтор — частота не указана, спрошу» — and now it does.
+	//
+	// 🔴 21.09, Denis, next to that very line: «Ну пишет спрошу, но создать
+	// даёт без спроса». The card has said this since 18.09 and nothing ever
+	// asked. A promise printed and not kept is worse than no promise: it
+	// teaches that the card's lines are decoration, and the card is the only
+	// thing standing between a typed sentence and a row in the database.
+	//
+	// ⚠ The flag is dropped as the question goes up, not when it is answered.
+	// The promise was to ask ONCE — skipping the step, or pressing ✅ again,
+	// must move on rather than loop. That loop is what a «refuse until
+	// answered» reading of this would build.
+	if asked, _ := us.FlowData["repeat_asked"].(bool); asked {
+		delete(us.FlowData, "repeat_asked")
+		if rule, ok := us.FlowData["rrule"].(string); !ok || rule == "" {
+			// Marked so the answer comes straight back here instead of walking
+			// on into the rest of the wizard — see advanceWizard.
+			us.FlowData["repeat_from_card"] = true
+			h.showWizardStep(chatID, messageID, "repeat")
+			return
+		}
+	}
+
 	req := api.CreateTaskReq{Title: title, Status: "TODO"}
 	if p, ok := us.FlowData["priority"].(int); ok {
 		req.Priority = &p
@@ -191,7 +214,7 @@ func (h *Handler) handleTaskCardSave(chatID int64, messageID int) {
 	task, err := h.api.CreateTask(us.AuthToken, req)
 	h.store.ClearFlow(chatID)
 	if err != nil {
-		h.editOrSend(chatID, messageID, h.t(chatID, "❌ Не удалось создать: ", "❌ Could not create: ")+err.Error(), keyboards.HomeInline(h.lang(chatID)))
+		h.editOrSend(chatID, messageID, h.t(chatID, "❌ Не удалось создать: ", "❌ Could not create: ")+h.errorText(chatID, err), keyboards.HomeInline(h.lang(chatID)))
 		return
 	}
 

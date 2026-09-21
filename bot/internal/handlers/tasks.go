@@ -142,18 +142,52 @@ func (h *Handler) handleTaskDone(chatID int64, messageID int, taskID string) {
 	var err error
 	var msg string
 	if h.taskRepeats(chatID, taskID) {
-		err = h.api.MarkOccurrence(us.AuthToken, taskID, "done", 0)
-		msg = h.t(chatID, "✅ Сделано на сегодня. Завтра напомню снова.", "✅ Done for today. It comes back tomorrow.")
+		var res api.OccurrenceResult
+		res, err = h.api.MarkOccurrence(us.AuthToken, taskID, "done", 0)
+		msg = h.closedDayText(chatID, res.Occurrence)
 	} else {
 		err = h.api.UpdateTask(us.AuthToken, taskID, map[string]any{"status": "DONE"})
 		msg = h.t(chatID, "✅ Задача выполнена.", "✅ Task done.")
 	}
 	if err != nil {
-		h.sendText(chatID, h.t(chatID, "❌ Не получилось: ", "❌ That didn't work: ")+err.Error())
+		h.sendText(chatID, h.t(chatID, "❌ Не получилось: ", "❌ That didn't work: ")+h.errorText(chatID, err))
 		return
 	}
 	h.sendText(chatID, msg)
 	h.handleTasks(chatID, messageID)
+}
+
+// closedDayText names the day that was actually closed.
+//
+// 🔴 «Сделано на сегодня» used to be a constant, and on 21.09 that constant
+// turned into a lie. A task created «позвонить в банк ЗАВТРА … каждый день»
+// has no occurrence today; the press now closes the first day the series does
+// have, and calling that «сегодня» would hide the one fact the reader needs.
+//
+// ⚠ The date is numeric on purpose. Go's day and month names are English
+// whatever the chat's language — the same defect Denis saw as «Mon, Sep 21» —
+// and 22.09 needs no translation.
+func (h *Handler) closedDayText(chatID int64, occurrence string) string {
+	loc, err := time.LoadLocation(h.timezone(chatID))
+	if err != nil {
+		loc = time.UTC
+	}
+	today := time.Now().In(loc).Format("2006-01-02")
+
+	if occurrence == "" || occurrence == today {
+		return h.t(chatID,
+			"✅ Сделано на сегодня. Завтра напомню снова.",
+			"✅ Done for today. It comes back tomorrow.")
+	}
+
+	day, perr := time.Parse("2006-01-02", occurrence)
+	if perr != nil {
+		return h.t(chatID, "✅ Сделано.", "✅ Done.")
+	}
+	return fmt.Sprintf(h.t(chatID,
+		"✅ Закрыл %s — это ближайший день серии. Сегодня её в списке нет.",
+		"✅ Closed %s — the nearest day of the series. It isn't due today."),
+		day.Format("02.01"))
 }
 
 // taskRepeats answers whether a task is a series.
@@ -191,13 +225,30 @@ func (h *Handler) handleTaskPostpone(chatID int64, messageID int, taskID string)
 // ruled out, and it is the easy mistake here because it looks equivalent.
 func (h *Handler) handleTaskPostponeDays(chatID int64, messageID int, taskID string, days int) {
 	us := h.store.GetOrCreate(chatID)
-	if err := h.api.MarkOccurrence(us.AuthToken, taskID, "", days); err != nil {
-		h.sendText(chatID, h.t(chatID, "❌ Не получилось: ", "❌ That didn't work: ")+err.Error())
+	res, err := h.api.MarkOccurrence(us.AuthToken, taskID, "", days)
+	if err != nil {
+		h.sendText(chatID, h.t(chatID, "❌ Не получилось: ", "❌ That didn't work: ")+h.errorText(chatID, err))
+		return
+	}
+
+	// 🔴 Report what was actually skipped, not what was asked for.
+	//
+	// The server walks the days and closes only those the series has. «Отложить
+	// на неделю» on a task that comes back monthly may close nothing at all,
+	// and saying «отложил на 7 дн.» there is the same shape of defect as the
+	// card that promised to ask and did not: a printed claim with nothing
+	// behind it.
+	if res.Closed == 0 {
+		h.sendText(chatID, fmt.Sprintf(h.t(chatID,
+			"⏰ В ближайшие %d дн. у этой серии дней нет — пропускать нечего. Ритм не тронут.",
+			"⏰ The series has no days in the next %d — nothing to skip. The rhythm is untouched."), days))
+		h.handleTasks(chatID, messageID)
 		return
 	}
 	h.sendText(chatID, fmt.Sprintf(h.t(chatID,
-		"⏰ Отложил на %d дн. Ритм не тронут.",
-		"⏰ Postponed by %d day(s). The rhythm is untouched."), days))
+		"⏰ Отложил на %d дн. Пропущено дней серии: %d. Ритм не тронут.",
+		"⏰ Postponed by %d day(s); %d day(s) of the series skipped. The rhythm is untouched."),
+		days, res.Closed))
 	h.handleTasks(chatID, messageID)
 }
 
@@ -205,7 +256,7 @@ func (h *Handler) handleTaskDelete(chatID int64, messageID int, taskID string) {
 	us := h.store.GetOrCreate(chatID)
 	err := h.api.DeleteTask(us.AuthToken, taskID)
 	if err != nil {
-		h.sendText(chatID, h.t(chatID, "❌ Не получилось: ", "❌ That didn't work: ")+err.Error())
+		h.sendText(chatID, h.t(chatID, "❌ Не получилось: ", "❌ That didn't work: ")+h.errorText(chatID, err))
 		return
 	}
 	h.sendText(chatID, h.t(chatID, "🗑 Задача удалена.", "🗑 Task deleted."))
@@ -253,7 +304,7 @@ func (h *Handler) handleTaskDueSet(chatID int64, messageID int, data string) {
 	if err := h.api.UpdateTask(us.AuthToken, taskID, map[string]any{
 		"due_date": due.Format(time.RFC3339),
 	}); err != nil {
-		h.sendText(chatID, h.t(chatID, "❌ Не удалось сохранить: ", "❌ Could not save: ")+err.Error())
+		h.sendText(chatID, h.t(chatID, "❌ Не удалось сохранить: ", "❌ Could not save: ")+h.errorText(chatID, err))
 		return
 	}
 	h.handleTaskAction(chatID, messageID, taskID)
@@ -287,7 +338,7 @@ func (h *Handler) handleTaskEstimateSet(chatID int64, messageID int, data string
 	if err := h.api.UpdateTask(us.AuthToken, taskID, map[string]any{
 		"estimated_minutes": minutes,
 	}); err != nil {
-		h.sendText(chatID, h.t(chatID, "❌ Не удалось сохранить: ", "❌ Could not save: ")+err.Error())
+		h.sendText(chatID, h.t(chatID, "❌ Не удалось сохранить: ", "❌ Could not save: ")+h.errorText(chatID, err))
 		return
 	}
 	h.handleTaskAction(chatID, messageID, taskID)
@@ -334,7 +385,7 @@ func (h *Handler) handleEditTaskTags(chatID int64, text string) {
 	}
 
 	if err := h.api.UpdateTask(us.AuthToken, taskID, map[string]any{"tags": tags}); err != nil {
-		h.sendText(chatID, h.t(chatID, "❌ Не удалось сохранить: ", "❌ Could not save: ")+err.Error())
+		h.sendText(chatID, h.t(chatID, "❌ Не удалось сохранить: ", "❌ Could not save: ")+h.errorText(chatID, err))
 		return
 	}
 	h.sendText(chatID, h.t(chatID, "🏷 Теги обновлены", "🏷 Tags updated"))

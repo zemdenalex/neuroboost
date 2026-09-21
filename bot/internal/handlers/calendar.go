@@ -201,7 +201,7 @@ func (h *Handler) handleCalendarDay(chatID int64, messageID int, date string) {
 	us := h.store.GetOrCreate(chatID)
 	events, err := h.api.GetEvents(us.AuthToken, from, to)
 	if err != nil {
-		h.editOrSend(chatID, messageID, h.t(chatID, "❌ Не удалось загрузить день: ", "❌ Could not load the day: ")+err.Error(), keyboards.HomeInline(h.lang(chatID)))
+		h.editOrSend(chatID, messageID, h.t(chatID, "❌ Не удалось загрузить день: ", "❌ Could not load the day: ")+h.errorText(chatID, err), keyboards.HomeInline(h.lang(chatID)))
 		return
 	}
 
