@@ -193,6 +193,9 @@ func (h *Handler) HandleMessage(msg *tgbotapi.Message) {
 
 	if msg.IsCommand() {
 		switch msg.Command() {
+		case "broadcast":
+			// Admin only; a dry run first (spec 21.09 §D).
+			h.handleBroadcastCommand(chatID)
 		case "start", "help":
 			// 🔴 An invite link before onboarding, always. The invitation is
 			// why this person opened the bot at all; a language question in
@@ -505,6 +508,15 @@ func (h *Handler) HandleCallback(cb *tgbotapi.CallbackQuery) {
 	case strings.HasPrefix(data, "kw_del_"):
 		h.handleKeywordDelete(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "kw_del_"))
 	// Priority symbol (spec 21.09 §B): Settings and the one-time question.
+	// Broadcast and the way out of it (spec 21.09 §D).
+	case strings.HasPrefix(data, "bc_go_"):
+		h.handleBroadcastGo(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "bc_go_"))
+	case data == "settings_updates":
+		h.handleUpdatesSet(chatID, cb.Message.MessageID, "")
+	case data == "upd_off":
+		h.handleUpdatesSet(chatID, cb.Message.MessageID, "off")
+	case data == "upd_on":
+		h.handleUpdatesSet(chatID, cb.Message.MessageID, "on")
 	case data == "settings_prio":
 		h.handlePriorityPick(chatID, cb.Message.MessageID, "", "prs_")
 	case strings.HasPrefix(data, "prs_"):
