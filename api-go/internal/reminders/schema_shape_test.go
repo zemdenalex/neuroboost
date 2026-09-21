@@ -105,7 +105,11 @@ func TestTheRepairFixesTheLegacyProductionShape(t *testing.T) {
 	if err != nil {
 		t.Fatalf("connect: %v", err)
 	}
-	defer d.Close()
+	// 🔴 t.Cleanup, not defer: a deferred Close runs BEFORE the cleanups, so
+	// the DROP below met a closed pool, its error was discarded, and the probe
+	// table outlived every run (found 21.09 in the throwaway test database).
+	// Cleanups run last-registered-first, so this one closes the pool last.
+	t.Cleanup(d.Close)
 	ctx := context.Background()
 
 	const table = "reminder_legacy_shape_probe"
