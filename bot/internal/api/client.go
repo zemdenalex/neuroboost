@@ -42,6 +42,11 @@ type Event struct {
 	Tags            []string `json:"tags"`
 	ReminderOffsets []int    `json:"reminder_offsets"`
 	IsShared        bool     `json:"is_shared"`
+
+	// TaskID is the task this event gives time to, if linked. Occurrences of
+	// a series carry the parent's — that is how the task list finds «📅 вт
+	// 15:00» without a door of its own.
+	TaskID *string `json:"task_id,omitempty"`
 }
 
 // CreateEventReq mirrors api-go's CreateEventRequest for the fields the bot
