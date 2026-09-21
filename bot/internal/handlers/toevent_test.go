@@ -152,3 +152,44 @@ func TestAStaleToEventButtonWritesNothing(t *testing.T) {
 		t.Errorf("a ✅ from an abandoned card converted: %s", cf.convertBody)
 	}
 }
+
+// Every code the A1 endpoints answer with has a sentence, not the fallback.
+func TestA1ErrorCodesHaveWords(t *testing.T) {
+	h, _, _ := convertAPI(t, "", `{}`)
+	fallback := h.errorText(920, &api.Error{Status: 400, Code: "SOMETHING_UNKNOWN"})
+	for _, code := range []string{"REPEAT_CHOICE_REQUIRED", "OCCURRENCE_REQUIRED", "REPEAT_UNSUPPORTED", "NEEDS_TIME"} {
+		if got := h.errorText(920, &api.Error{Status: 400, Code: code}); got == fallback {
+			t.Errorf("%s falls back to the generic text", code)
+		}
+	}
+}
+
+// A slot on a day the series skips answers NOT_AN_OCCURRENCE. Here that does
+// not mean «the series ended» — the ✅ button's wording — but «pick a day it
+// has», and saying the first would send the user looking for a problem that
+// is not there.
+func TestADayOutsideTheSeriesIsExplainedAsSuch(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if strings.HasSuffix(r.URL.Path, "/convert") {
+			w.WriteHeader(http.StatusBadRequest)
+			_, _ = w.Write([]byte(`{"error":{"code":"NOT_AN_OCCURRENCE","message":"x"}}`))
+			return
+		}
+		_, _ = w.Write([]byte(`{"data":[` + seriesTaskJSON + `]}`))
+	}))
+	t.Cleanup(srv.Close)
+	bot, fake := newFakeTelegram(t)
+	h := New(bot, api.NewClient(srv.URL), state.NewStore(), config.Config{})
+	const chat = 921
+	h.handleToEventStart(chat, 0, "t1")
+	h.handleToEventStep(chat, 0, "t2m_l")
+	h.handleToEventStep(chat, 0, "t2r_o")
+	h.handleToEventStep(chat, 0, "t2w_tmr")
+	h.handleToEventStep(chat, 0, "t2d_30")
+	h.handleToEventStep(chat, 0, "t2ok")
+	text := fake.last(t).Text
+	if !strings.Contains(text, "не входит в серию") || strings.Contains(text, "закончилась") {
+		t.Errorf("reply: %q", text)
+	}
+}

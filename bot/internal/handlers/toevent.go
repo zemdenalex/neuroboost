@@ -208,8 +208,16 @@ func (h *Handler) finishToEvent(chatID int64, messageID int, task api.Task) {
 	})
 	h.store.ClearFlow(chatID)
 	if err != nil {
+		reason := h.errorText(chatID, err)
+		if api.CodeOf(err) == "NOT_AN_OCCURRENCE" {
+			// Here it means a slot on a day the series skips — not «the series
+			// ended», which is what the same code means under ✅.
+			reason = h.t(chatID,
+				"этот день не входит в серию. Выбери день по её расписанию.",
+				"that day is not in the series. Pick a day it has.")
+		}
 		h.editOrSend(chatID, messageID,
-			h.t(chatID, "❌ Не получилось: ", "❌ Did not work: ")+format.Escape(h.errorText(chatID, err)),
+			h.t(chatID, "❌ Не получилось: ", "❌ Did not work: ")+format.Escape(reason),
 			keyboards.BackToTasks(h.lang(chatID)))
 		return
 	}

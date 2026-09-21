@@ -43,6 +43,23 @@ func (h *Handler) errorText(chatID int64, err error) string {
 		return h.t(chatID,
 			"Эта серия уже закончилась — закрывать в ней нечего.",
 			"This series has already ended — there is no day left to close.")
+	// Task ↔ event (21.09): the codes the bot's own full path can still meet.
+	case "REPEAT_CHOICE_REQUIRED":
+		return h.t(chatID,
+			"Это повторяется — выбери «вся серия» или «только этот раз».",
+			"This repeats — choose «whole series» or «just this once».")
+	case "OCCURRENCE_REQUIRED":
+		return h.t(chatID,
+			"Не знаю, какой именно день. Открой событие из дня календаря.",
+			"I don't know which day. Open the event from a calendar day.")
+	case "REPEAT_UNSUPPORTED":
+		return h.t(chatID,
+			"Этот повтор перенести не получится — у него старое правило. Выбери «только этот раз».",
+			"This repeat cannot be carried over — its rule is an old one. Choose «just this once».")
+	case "NEEDS_TIME":
+		return h.t(chatID,
+			"Для календаря нужно время начала.",
+			"The calendar needs a start time.")
 	case "NOT_RECURRING":
 		return h.t(chatID,
 			"Эта задача не повторяется, так что «на сегодня» к ней не применить.",
