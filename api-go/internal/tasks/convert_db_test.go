@@ -406,3 +406,50 @@ func TestALinkedTaskRemindsOnceThroughItsEvent(t *testing.T) {
 		})
 	}
 }
+
+// 🔴 The event carries the reminders only while it is ahead. Linked to
+// yesterday and not done, a task with a deadline still ahead must remind on
+// its own again — the scanner's «leave it to the event» cannot outlive the
+// event, or the task falls silent for ever (advisor catch, 21.09).
+func TestATaskWhoseEventHasPassedRemindsAgain(t *testing.T) {
+	d, ctx, user := repeatDB(t)
+	reminders.InitDB(d)
+	events.InitDB(d)
+	if _, err := d.Pool.Exec(ctx, `UPDATE "user" SET tg_id = $2, timezone = 'UTC' WHERE id = $1`,
+		user, time.Now().UnixNano()%1_000_000_000); err != nil {
+		t.Fatalf("tg_id: %v", err)
+	}
+	tomorrow := time.Now().UTC().AddDate(0, 0, 1)
+	due := time.Date(tomorrow.Year(), tomorrow.Month(), tomorrow.Day(), 0, 0, 0, 0, time.UTC)
+	dueStr := due.Format(time.RFC3339)
+	task, err := insertTask(ctx, user, CreateTaskRequest{
+		Title: "банк", DueDate: &dueStr, ReminderOffsets: &[]int{10},
+	}, &due)
+	if err != nil {
+		t.Fatalf("create: %v", err)
+	}
+	t.Cleanup(func() { _, _ = d.Pool.Exec(ctx, `DELETE FROM event WHERE task_id = $1`, task.ID) })
+	t.Cleanup(func() { _, _ = d.Pool.Exec(ctx, `DELETE FROM task WHERE id = $1`, task.ID) })
+
+	yesterday := time.Now().UTC().Add(-26 * time.Hour).Truncate(time.Hour)
+	rec := callConvert(task.ID, user, map[string]any{
+		"mode": "link", "starts_at": yesterday.Format(time.RFC3339),
+		"ends_at": yesterday.Add(time.Hour).Format(time.RFC3339),
+	})
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status %d: %s", rec.Code, rec.Body.String())
+	}
+
+	quiet := slog.New(slog.NewTextHandler(io.Discard, nil))
+	if _, err := reminders.Scan(ctx, time.Now(), time.Now().Add(72*time.Hour), quiet); err != nil {
+		t.Fatalf("scan: %v", err)
+	}
+	var n int
+	if err := d.Pool.QueryRow(ctx,
+		`SELECT count(*) FROM reminder WHERE task_id = $1 AND status = 'PENDING'`, task.ID).Scan(&n); err != nil {
+		t.Fatalf("count: %v", err)
+	}
+	if n != 1 {
+		t.Errorf("pending reminders for the task: %d, want 1 — its event is in the past", n)
+	}
+}

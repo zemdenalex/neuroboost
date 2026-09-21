@@ -229,6 +229,14 @@ func scanTasks(ctx context.Context, u scanUser, calIDs []string, st usersettings
 	// event linked («только этот раз») keeps reminding for its other days.
 	// If the event is deleted, event.task_id goes with it and the task reminds
 	// again on its own.
+	//
+	// 🔴 And only while the event is still AHEAD. A one-off event that has
+	// passed will never remind again; if the task is still open, leaving it to
+	// the event would silence it for ever (measured 21.09: zero reminders for a
+	// task due tomorrow, linked to yesterday). A repeating event has no single
+	// end and keeps covering its task.
+	//
+	// (Answered days are still task_occurrence, consulted per day below.)
 	rows, err := db.Pool.Query(ctx, `
 		SELECT id, title, due_date, COALESCE(reminder_offsets, '{}'), rrule, repeat_anchor
 		FROM task
@@ -243,6 +251,7 @@ func scanTasks(ctx context.Context, u scanUser, calIDs []string, st usersettings
 		        SELECT 1 FROM event e
 		         WHERE e.task_id = task.id
 		           AND (task.rrule IS NULL OR e.rrule IS NOT NULL)
+		           AND (e.rrule IS NOT NULL OR e.ends_at > $2)
 		      )`,
 		calIDs, from, horizon)
 	if err != nil {
