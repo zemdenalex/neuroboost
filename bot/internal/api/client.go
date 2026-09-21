@@ -101,6 +101,13 @@ type Task struct {
 	OccurrenceState string `json:"occurrence_state,omitempty"`
 	// NagMinutes is how often an unanswered reminder comes back, 0 for never.
 	NagMinutes int `json:"nag_minutes,omitempty"`
+
+	// ActualMinutes is time logged against the task; statistics prefers it to
+	// the estimate (spec 22.09 §2).
+	ActualMinutes int `json:"actual_minutes,omitempty"`
+	// RepeatAnchor is the first day of a series (RFC3339), from which its days
+	// are counted.
+	RepeatAnchor string `json:"repeat_anchor,omitempty"`
 }
 
 // Repeats reports whether this task is a series.
