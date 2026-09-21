@@ -143,6 +143,23 @@ func detachOccurrence(ctx context.Context, userID string, e Event, parentID stri
 	}
 	defer tx.Rollback(ctx)
 
+	created, err := detachOccurrenceTx(ctx, tx, userID, e, parentID, occurrence)
+	if err != nil {
+		return nil, err
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return nil, err
+	}
+	return created, nil
+}
+
+// detachOccurrenceTx is detachOccurrence inside a transaction the caller owns.
+//
+// Split out 21.09 for «событие → задача, только этот раз, связать»: the
+// detached day and the new task it points at must commit together, or a
+// failure leaves a task with no event or a hidden occurrence with no task.
+func detachOccurrenceTx(ctx context.Context, tx pgx.Tx, userID string, e Event, parentID string, occurrence time.Time) (*Event, error) {
+	var err error
 	// The replacement stays on the series' own calendar, not the caller's
 	// personal one — otherwise detaching an occurrence from a shared calendar
 	// would move it into the editor's private calendar and it would vanish
@@ -242,10 +259,6 @@ func detachOccurrence(ctx context.Context, userID string, e Event, parentID stri
 		if _, err := tx.Exec(ctx, `DELETE FROM event WHERE id = $1`, *previousReplacement); err != nil {
 			return nil, err
 		}
-	}
-
-	if err := tx.Commit(ctx); err != nil {
-		return nil, err
 	}
 
 	return &created, nil
