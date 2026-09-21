@@ -16,6 +16,7 @@ import (
 	"github.com/zemdenalex/neuroboost-bot/internal/logsafe"
 	"github.com/zemdenalex/neuroboost-bot/internal/notifier"
 	"github.com/zemdenalex/neuroboost-bot/internal/state"
+	"github.com/zemdenalex/neuroboost-bot/internal/statgrid"
 )
 
 // handleNotificationAction performs a button press from a reminder message.
@@ -364,7 +365,16 @@ func (h *Handler) HandleCallback(cb *tgbotapi.CallbackQuery) {
 		h.store.ClearFlow(chatID)
 		h.handleMenu(chatID, cb.Message.MessageID)
 	case data == "stats":
-		h.handleStats(chatID, cb.Message.MessageID)
+		h.handleStatsView(chatID, cb.Message.MessageID, statsView{Period: statgrid.Week, Entity: "a"})
+	// Statistics (22.09): the screen's state rides in the button.
+	case strings.HasPrefix(data, "stsc_"):
+		if v, ok := parseStatsView(strings.TrimPrefix(data, "stsc_")); ok {
+			h.handleStatsScale(chatID, cb.Message.MessageID, v)
+		}
+	case strings.HasPrefix(data, "st_"):
+		if v, ok := parseStatsView(strings.TrimPrefix(data, "st_")); ok {
+			h.handleStatsView(chatID, cb.Message.MessageID, v)
+		}
 	case data == "create_menu":
 		h.editOrSend(chatID, cb.Message.MessageID, h.t(chatID, "Что создаём?", "What are we creating?"), keyboards.CreateMenu(h.lang(chatID)))
 	case data == "new_task":
