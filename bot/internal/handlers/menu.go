@@ -24,7 +24,8 @@ func (h *Handler) handleMenu(chatID int64, messageID int) {
 	text := fmt.Sprintf("🧠 <b>NeuroBoost</b> · %s\n─────────────\n", now.Format("02.01.2006"))
 
 	events, evErr := h.api.GetEvents(us.AuthToken, from, to)
-	tasks, tErr := h.api.GetTasks(us.AuthToken, "TODO")
+	tasks, tErr := h.api.GetTasks(us.AuthToken, "")
+	tasks = openTasks(tasks)
 
 	switch {
 	case evErr != nil && tErr != nil:

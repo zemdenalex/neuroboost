@@ -80,7 +80,7 @@ func TestTheCountNeverDisagreesWithTheList(t *testing.T) {
 		if strings.HasPrefix(r.URL.Path, "/api/tasks") {
 			rows := make([]string, 0, 6)
 			for i := 1; i <= 6; i++ {
-				rows = append(rows, fmt.Sprintf(`{"id":"t%d","title":"задача %d","priority":3}`, i, i))
+				rows = append(rows, fmt.Sprintf(`{"id":"t%d","title":"задача %d","status":"TODO","priority":3}`, i, i))
 			}
 			_, _ = fmt.Fprintf(w, `{"data":[%s]}`, strings.Join(rows, ","))
 			return
@@ -117,8 +117,8 @@ func TestADayShowsTasksAsWellAsEvents(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		if strings.HasPrefix(r.URL.Path, "/api/tasks") {
 			_, _ = w.Write([]byte(`{"data":[
-				{"id":"t1","title":"отдать документы","priority":2,"due_date":"2026-09-22"},
-				{"id":"t2","title":"другой день","priority":2,"due_date":"2026-09-23"}]}`))
+				{"id":"t1","title":"отдать документы","status":"TODO","priority":2,"due_date":"2026-09-22"},
+				{"id":"t2","title":"другой день","status":"TODO","priority":2,"due_date":"2026-09-23"}]}`))
 			return
 		}
 		_, _ = w.Write([]byte(`{"data":[{"id":"e1","title":"Оркестр",

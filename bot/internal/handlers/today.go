@@ -30,10 +30,11 @@ func (h *Handler) handleToday(chatID int64, messageID int) {
 		return
 	}
 
-	tasks, err := h.api.GetTasks(us.AuthToken, "TODO")
+	tasks, err := h.api.GetTasks(us.AuthToken, "")
 	if err != nil {
 		tasks = nil
 	}
+	tasks = openTasks(tasks)
 
 	text := fmt.Sprintf(h.t(chatID,
 		"🎯 <b>Сегодня</b> — %s\n🕐 %s (%s)\n\n",

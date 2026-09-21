@@ -214,10 +214,11 @@ func (h *Handler) handleCalendarDay(chatID int64, messageID int, date string) {
 	// The screen existed and showed only events, which is why she could not
 	// find it: a day that omits half of what is on it is not a day. A failed
 	// lookup leaves the events alone rather than losing the whole screen.
-	tasks, terr := h.api.GetTasks(us.AuthToken, "TODO")
+	tasks, terr := h.api.GetTasks(us.AuthToken, "")
 	if terr != nil {
 		tasks = nil
 	}
+	tasks = openTasks(tasks)
 	due := tasksDueOn(tasks, day)
 
 	text := fmt.Sprintf("📅 <b>%d %s %d</b>\n\n", day.Day(), monthGenitive(h.lang(chatID), day.Month()), day.Year())

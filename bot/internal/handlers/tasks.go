@@ -16,12 +16,13 @@ import (
 
 func (h *Handler) handleTasks(chatID int64, messageID int) {
 	us := h.store.GetOrCreate(chatID)
-	tasks, err := h.api.GetTasks(us.AuthToken, "TODO")
+	tasks, err := h.api.GetTasks(us.AuthToken, "")
 	if err != nil {
 		h.editOrSend(chatID, messageID,
 			h.t(chatID, "⚠️ Не дозвонился до сервера. Попробуй через минуту.", "⚠️ Could not reach the server. Try again in a minute."), keyboards.HomeInline(h.lang(chatID)))
 		return
 	}
+	tasks = openTasks(tasks)
 
 	if len(tasks) == 0 {
 		h.editOrSend(chatID, messageID, h.t(chatID, "📋 <b>Задач нет</b>", "📋 <b>No tasks</b>"), keyboards.TaskListEmpty(h.lang(chatID)))
