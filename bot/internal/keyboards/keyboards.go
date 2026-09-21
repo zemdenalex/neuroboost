@@ -26,11 +26,23 @@ import (
 // repeats adds the two controls that only a series has. A one-off task must
 // not be offered «Отложить серию»: there is no series, and the button would
 // answer with an error instead of doing nothing.
-func TaskActions(lang i18n.Lang, taskID string, repeats bool) tgbotapi.InlineKeyboardMarkup {
-	return tgbotapi.NewInlineKeyboardMarkup(
+//
+// Two ways into the calendar (Denis 21.09, «две кнопки: быстрая и полная»):
+// ⏰ is the two-tap slot + length; 📅 is the path that asks link or move and
+// shows what becomes what. linkedEventID, when set, adds a way to the event
+// the task's time already went into.
+func TaskActions(lang i18n.Lang, taskID string, repeats bool, linkedEventID string) tgbotapi.InlineKeyboardMarkup {
+	rows := [][]tgbotapi.InlineKeyboardButton{
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "⏰ Запланировать", "⏰ Schedule"), "task_sched_"+taskID),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "📅 В календарь", "📅 To calendar"), "t2e_"+taskID),
 		),
+	}
+	if linkedEventID != "" {
+		rows = append(rows, tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🗓 Открыть событие", "🗓 Open event"), "ev_"+linkedEventID)))
+	}
+	return tgbotapi.NewInlineKeyboardMarkup(append(rows,
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "📅 Срок", "📅 Due"), "task_due_"+taskID),
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "⏱ Оценка", "⏱ Estimate"), "task_est_"+taskID),
@@ -44,7 +56,7 @@ func TaskActions(lang i18n.Lang, taskID string, repeats bool) tgbotapi.InlineKey
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "« Назад", "« Back"), "top_tasks"),
 		),
-	)
+	)...)
 }
 
 // tick marks the choice a task already carries, the way every wizard step

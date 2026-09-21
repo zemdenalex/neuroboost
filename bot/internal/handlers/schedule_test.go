@@ -132,7 +132,7 @@ func TestParsePlanCallback(t *testing.T) {
 func scheduleKeyboards() map[string]tgbotapi.InlineKeyboardMarkup {
 	const uuid = "8f14e45f-ceea-467a-9575-0f0e2d4a2f1b"
 	return map[string]tgbotapi.InlineKeyboardMarkup{
-		"TaskActions":          keyboards.TaskActions(i18n.RU, uuid, true),
+		"TaskActions":          keyboards.TaskActions(i18n.RU, uuid, true, uuid+":2026-10-22"),
 		"TaskScheduleWhen":     keyboards.TaskScheduleWhen(i18n.RU, uuid),
 		"TaskScheduleDuration": keyboards.TaskScheduleDuration(i18n.RU, uuid, "eve"),
 		"TaskDue":              keyboards.TaskDue(i18n.RU, uuid),
@@ -196,6 +196,9 @@ func TestEveryScheduleButtonHasAPrefixTheRouterKnows(t *testing.T) {
 		// Повтор and долбёж on an existing task, added 21.09. Same ordering
 		// rule: the value-carrying prefix before the screen's.
 		"task_rpd_", "task_rp_", "task_ngd_", "task_ng_",
+		// Task ↔ event, 21.09: the full path into the calendar, and the way to
+		// the event a linked task's time went into.
+		"t2e_", "ev_",
 	}
 	for name, kb := range scheduleKeyboards() {
 		eachButton(kb, func(data string) {

@@ -58,6 +58,11 @@ func (h *Handler) handleTasks(chatID int64, messageID int) {
 
 	text := fmt.Sprintf(h.t(chatID, "📋 <b>Задачи (%d)</b>\n\n", "📋 <b>Tasks (%d)</b>\n\n"), len(tasks))
 
+	// Denis 21.09: a task whose time went into the calendar stays here, with
+	// the time next to it.
+	linked := h.linkedFor(chatID)
+	now := time.Now().In(h.location(chatID))
+
 	var rows [][]tgbotapi.InlineKeyboardButton
 	for i, t := range tasks {
 		if i >= 10 {
@@ -67,7 +72,13 @@ func (h *Handler) handleTasks(chatID int64, messageID int) {
 		if len(label) > 40 {
 			label = label[:37] + "..."
 		}
-		text += fmt.Sprintf("%s %s\n", format.PriorityEmoji(t.Priority), format.Escape(t.Title))
+		line := fmt.Sprintf("%s %s", format.PriorityEmoji(t.Priority), format.Escape(t.Title))
+		if ev, ok := linked[t.ID]; ok {
+			if at, perr := time.Parse(time.RFC3339, ev.StartsAt); perr == nil {
+				line += "   📅 " + whenShort(h.lang(chatID), at, now)
+			}
+		}
+		text += line + "\n"
 		rows = append(rows, tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(label, "task_action_"+t.ID),
 		))
@@ -131,7 +142,16 @@ func (h *Handler) handleTaskAction(chatID int64, messageID int, taskID string) {
 		text += h.t(chatID, "🔁 Повторяется\n", "🔁 Repeats\n")
 	}
 
-	h.editOrSend(chatID, messageID, text, keyboards.TaskActions(h.lang(chatID), taskID, repeats))
+	linkedID := ""
+	if ev, ok := h.linkedFor(chatID)[taskID]; ok {
+		if at, perr := time.Parse(time.RFC3339, ev.StartsAt); perr == nil {
+			text += fmt.Sprintf(h.t(chatID, "📅 Запланирована на %s\n", "📅 Scheduled for %s\n"),
+				whenShort(h.lang(chatID), at, time.Now().In(h.location(chatID))))
+			linkedID = ev.ID
+		}
+	}
+
+	h.editOrSend(chatID, messageID, text, keyboards.TaskActions(h.lang(chatID), taskID, repeats, linkedID))
 }
 
 // handleTaskDone ticks a task off — for today if it is a series, for good if it
