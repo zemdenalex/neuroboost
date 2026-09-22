@@ -37,7 +37,8 @@ var screenCall = regexp.MustCompile(`h\.((?:handle|show)[A-Za-z]*)\(([^\n]*)\)`)
 // here would be a hole in the rule, so the map carries the reason, not just the
 // name.
 var notAScreen = map[string]string{
-	"handleNotificationAction": "takes cb.Message itself — it clears the reminder's buttons, it does not render a screen",
+	"handleNotificationAction":   "takes cb.Message itself — it clears the reminder's buttons, it does not render a screen",
+	"showPriorityUnderBroadcast": "posts under a release broadcast on purpose — editing would replace the release notes the button was pressed under",
 }
 
 func TestEveryCallbackScreenRendersInPlace(t *testing.T) {

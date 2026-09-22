@@ -109,7 +109,7 @@ func (h *Handler) handleBroadcastGo(chatID int64, messageID int, version string)
 		lang := i18n.Parse(r.Lang)
 		msg := tgbotapi.NewMessage(r.TgID, broadcastText(lang, note))
 		msg.ParseMode = tgbotapi.ModeHTML
-		msg.ReplyMarkup = keyboards.UpdatesOff(lang)
+		msg.ReplyMarkup = keyboards.BroadcastFooter(lang, note.OfferPriority)
 
 		code := http200
 		if _, err := h.bot.Send(msg); err != nil {

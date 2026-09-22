@@ -26,6 +26,19 @@ func UpdatesOff(lang i18n.Lang) tgbotapi.InlineKeyboardMarkup {
 		tgbotapi.NewInlineKeyboardRow(HelpButton(lang, HelpUpdates)))
 }
 
+// BroadcastFooter is what goes under one release's broadcast: the unsubscribe,
+// and — for the release that made the symbol a choice — the way to choose it
+// without waiting for the one-time question (spec 21.09 §B2).
+func BroadcastFooter(lang i18n.Lang, offerPriority bool) tgbotapi.InlineKeyboardMarkup {
+	kb := UpdatesOff(lang)
+	if offerPriority {
+		row := tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData(
+			i18n.T(lang, "🔘 Выбрать символ приоритета", "🔘 Choose the priority symbol"), "bc_prio"))
+		kb.InlineKeyboard = append([][]tgbotapi.InlineKeyboardButton{row}, kb.InlineKeyboard...)
+	}
+	return kb
+}
+
 // UpdatesToggle is the Settings screen's one button — the opposite of now.
 func UpdatesToggle(lang i18n.Lang, subscribed bool) tgbotapi.InlineKeyboardMarkup {
 	btn := tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🔕 Не присылать", "🔕 Stop sending"), "upd_off")

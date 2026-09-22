@@ -18,6 +18,9 @@ type Note struct {
 	Released string
 	RU       string
 	EN       string
+	// OfferPriority puts «🔘 Выбрать символ приоритета» under this release's
+	// broadcast. Once, for the release that made the symbol a choice.
+	OfferPriority bool
 }
 
 // notes is newest first. A handful of entries is enough: «что нового» answers
@@ -29,38 +32,31 @@ type Note struct {
 // report said «выкачено».
 var notes = []Note{
 	{
-		Version:  "v0.4.11.5",
-		Released: "18.09.2026 · написана, на стенде ещё нет",
-		RU: "• 🔗 Аккаунт на сайте прямо из бота: ссылка для входа или код для привязки\n" +
-			"• Два аккаунта — на сайте и в Telegram — можно объединить в один\n" +
-			"• Бот спросит, ты ли это, и какой аккаунт оставить\n" +
-			"• Если личный календарь есть у обоих — спросит и про него",
-		EN: "• 🔗 Your website account from inside the bot: a sign-in link or a linking code\n" +
-			"• Two accounts — website and Telegram — can become one\n" +
-			"• The bot asks whether it is you, and which account stays\n" +
-			"• If both have a personal calendar, it asks about that too",
-	},
-	{
 		Version:  "v0.4.11.4",
-		Released: "18.09.2026 · на dev, в проде ещё нет",
-		RU: "• 📊 Статистика заработала — раньше там было «скоро»\n" +
-			"• Повторяющиеся задачи: отметил на сегодня — уходит из списка, завтра возвращается\n" +
-			"• Отложить серию на день или неделю, ритм не сдвигается\n" +
-			"• Задачу можно превратить в событие или связать с ним\n" +
-			"• Напоминание может повторяться, пока не ответишь\n" +
-			"• Дайджест и кнопки под уведомлением — на твоём языке\n" +
-			"• 🔴 Починено: «отложить» отвечало ошибкой всем и всегда",
-		EN: "• 📊 Stats actually works — it used to say «coming soon»\n" +
-			"• Repeating tasks: tick today and it leaves the list, returning tomorrow\n" +
-			"• Postpone a series by a day or a week; the rhythm does not shift\n" +
-			"• Turn a task into an event, or link the two\n" +
-			"• A reminder can repeat until you answer it\n" +
-			"• The digest and the notification buttons speak your language\n" +
-			"• 🔴 Fixed: «snooze» failed for everyone, every time",
+		Released: "22.09.2026 · на dev, в проде ещё нет",
+		// The priority symbol is a choice from this release on; people past
+		// onboarding are offered it under this release's broadcast (spec 21.09 §B2).
+		OfferPriority: true,
+		RU: "• 🔁 Повторяющиеся задачи: создать словом или кнопкой, отметить день, отложить, выключить повтор\n" +
+			"• 📅 Задачу — в календарь, событие — в задачу: связать или перенести, и заранее видно, что чем станет\n" +
+			"• 📊 Статистика — экран с кнопками: неделя, месяц, год, всё время; занятость по часам, задачи, рефлексии\n" +
+			"• 🗓 В месячном календаре видно, насколько заполнен каждый день\n" +
+			"• 🔔 «Долбить»: напоминание повторяется, пока не ответишь\n" +
+			"• 🔘 Символ приоритета на выбор — кружки, точки или тире\n" +
+			"• ℹ️ «Что это?» на новых экранах\n" +
+			"• 🔗 Аккаунт на сайте прямо из бота: ссылка для входа или код привязки",
+		EN: "• 🔁 Repeating tasks: create by word or button, tick a day, postpone, switch the repeat off\n" +
+			"• 📅 A task onto the calendar, an event into a task: link or move, and see first what becomes what\n" +
+			"• 📊 Statistics is a screen with buttons: week, month, year, all time; busy hours, tasks, reflections\n" +
+			"• 🗓 The month calendar shows how full each day is\n" +
+			"• 🔔 «Nag»: a reminder repeats until you answer it\n" +
+			"• 🔘 Choose the priority symbol — circles, dots or dashes\n" +
+			"• ℹ️ «What is this?» on the new screens\n" +
+			"• 🔗 Your website account from inside the bot: a sign-in link or a linking code",
 	},
 	{
 		Version:  "v0.4.11.3",
-		Released: "18.09.2026 03:00 · на dev",
+		Released: "21.09.2026 · в проде",
 		RU: "• Карточка называет все поля — повтор, календарь, теги, цвет — и пишет «нет» там, где пусто\n" +
 			"• Календари прямо в боте: создать, переименовать, цвет, участники, выйти\n" +
 			"• Пригласить можно ссылкой — она работает и для тех, у кого нет email\n" +

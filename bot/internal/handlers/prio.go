@@ -94,3 +94,12 @@ func (h *Handler) askPriorityOnce(chatID int64, messageID int) bool {
 	h.handlePriorityPick(chatID, messageID, "", "prq_")
 	return true
 }
+
+// showPriorityUnderBroadcast is «🔘 Выбрать символ» under the 11.4 broadcast.
+// The one screen of this bot that deliberately does NOT replace the message it
+// was pressed on: that message is the release notes, and they stay readable.
+// Choosing writes the key askPriorityOnce looks for, so the one-time question
+// is not asked afterwards (spec 21.09 §B2).
+func (h *Handler) showPriorityUnderBroadcast(chatID int64) {
+	h.handlePriorityPick(chatID, 0, "", "prq_")
+}

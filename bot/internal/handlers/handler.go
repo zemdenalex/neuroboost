@@ -528,6 +528,11 @@ func (h *Handler) HandleCallback(cb *tgbotapi.CallbackQuery) {
 		h.handlePriorityPick(chatID, cb.Message.MessageID, "", "prs_")
 	case strings.HasPrefix(data, "prs_"):
 		h.handlePriorityPick(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "prs_"), "prs_")
+	// From under the 11.4 broadcast: the picker comes as a new message, so the
+	// broadcast it was pressed under stays readable. Choosing writes the key the
+	// one-time question looks for, so that question is not asked afterwards.
+	case data == "bc_prio":
+		h.showPriorityUnderBroadcast(chatID)
 	case strings.HasPrefix(data, "prq_"):
 		h.handlePriorityPick(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "prq_"), "prq_")
 	case data == "settings_stscale":

@@ -15,6 +15,8 @@ import (
 
 	"github.com/zemdenalex/neuroboost-bot/internal/api"
 	"github.com/zemdenalex/neuroboost-bot/internal/config"
+	"github.com/zemdenalex/neuroboost-bot/internal/i18n"
+	"github.com/zemdenalex/neuroboost-bot/internal/keyboards"
 	"github.com/zemdenalex/neuroboost-bot/internal/release"
 	"github.com/zemdenalex/neuroboost-bot/internal/state"
 )
@@ -36,11 +38,12 @@ type bcWorld struct {
 	isAdmin  bool
 	settings string
 	patched  string
+	markups  map[string]string // chat_id → reply_markup of its last sendMessage
 }
 
 func newBCWorld(t *testing.T, admin bool) (*Handler, *bcWorld) {
 	t.Helper()
-	w := &bcWorld{sentTo: map[string]int{}, marks: map[int64]int{}, isAdmin: admin, settings: `{"bot":{"lang":"ru"}}`}
+	w := &bcWorld{sentTo: map[string]int{}, markups: map[string]string{}, marks: map[int64]int{}, isAdmin: admin, settings: `{"bot":{"lang":"ru"}}`}
 
 	tg := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		_ = r.ParseForm()
@@ -58,6 +61,7 @@ func newBCWorld(t *testing.T, admin bool) (*Handler, *bcWorld) {
 		w.mu.Lock()
 		if strings.HasSuffix(r.URL.Path, "/sendMessage") {
 			w.sentTo[chat]++
+			w.markups[chat] = r.Form.Get("reply_markup")
 		}
 		if txt := r.Form.Get("text"); txt != "" {
 			w.texts = append(w.texts, txt)
@@ -178,5 +182,40 @@ func TestUnsubscribingKeepsTheRestOfTheSettings(t *testing.T) {
 	h.handleUpdatesSet(okChat, 0, "on")
 	if !strings.Contains(w.patched, `"updates":"on"`) {
 		t.Errorf("PATCH = %s", w.patched)
+	}
+}
+
+// Spec 21.09 §B2: the 11.4 broadcast carries «🔘 Выбрать символ» next to the
+// unsubscribe — for everyone past onboarding, without waiting for the question.
+func TestTheReleaseBroadcastOffersThePrioritySymbol(t *testing.T) {
+	if !release.Latest().OfferPriority {
+		t.Skip("the newest release does not offer the symbol")
+	}
+	h, w := newBCWorld(t, true)
+	h.handleBroadcastGo(adminChat, 0, release.Latest().Version)
+	m := w.markups["700000001"]
+	if !strings.Contains(m, `"bc_prio"`) || !strings.Contains(m, `"upd_off"`) {
+		t.Errorf("the broadcast footer is %s — want both «Выбрать символ» and the unsubscribe", m)
+	}
+}
+
+// A release that does not offer it sends only the unsubscribe.
+func TestAnOrdinaryBroadcastFooterHasNoPriorityButton(t *testing.T) {
+	if m := markupOf(keyboards.BroadcastFooter(i18n.RU, false)); strings.Contains(m, "bc_prio") {
+		t.Errorf("an ordinary broadcast offers the symbol: %s", m)
+	}
+}
+
+// The picker opens UNDER the broadcast as a new message: editing would replace
+// the release notes the button was pressed under.
+func TestBroadcastPriorityButtonOpensThePickerAsANewMessage(t *testing.T) {
+	h, fake, chat := quickHandler(t)
+	press(h, chat, "bc_prio")
+	got := fake.last(t)
+	if got.Method != "sendMessage" || fake.called_("editMessageText") {
+		t.Errorf("bc_prio answered with %s (edit called: %v) — the broadcast was overwritten", got.Method, fake.called_("editMessageText"))
+	}
+	if !strings.Contains(got.Markup, `"prq_dot"`) {
+		t.Errorf("bc_prio did not open the symbol picker: %s", got.Markup)
 	}
 }

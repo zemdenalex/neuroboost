@@ -1,6 +1,7 @@
 package release
 
 import (
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -40,4 +41,50 @@ func TestAllNotesAreNewestFirst(t *testing.T) {
 	if all[0].Version != Latest().Version {
 		t.Errorf("All() is not newest-first: starts with %s, Latest is %s", all[0].Version, Latest().Version)
 	}
+}
+
+// Newest-first is checked on the numbers, not trusted to the order they were
+// typed in: /broadcast sends Latest(), i.e. notes[0].
+//
+// ⚠ What this does NOT catch — the 22.09 case. A «v0.4.11.5» written on 18.09
+// sat on top, correctly ordered, describing account linking that had in fact
+// shipped silently inside v0.4.11.3. Whether the top note is the release being
+// cut is a question for the person cutting it; the spec says so (§D).
+func TestVersionsStrictlyDescend(t *testing.T) {
+	all := All()
+	for i := 1; i < len(all); i++ {
+		if !versionLess(all[i].Version, all[i-1].Version) {
+			t.Errorf("%s is listed below %s but is not older", all[i].Version, all[i-1].Version)
+		}
+	}
+}
+
+// Only one release offers the priority symbol: the one that made it a choice.
+func TestOnlyOneReleaseOffersThePrioritySymbol(t *testing.T) {
+	var n int
+	for _, note := range All() {
+		if note.OfferPriority {
+			n++
+		}
+	}
+	if n != 1 {
+		t.Errorf("%d releases offer the priority symbol, want exactly 1", n)
+	}
+}
+
+func versionLess(a, b string) bool {
+	pa, pb := strings.Split(strings.TrimPrefix(a, "v"), "."), strings.Split(strings.TrimPrefix(b, "v"), ".")
+	for i := 0; i < len(pa) || i < len(pb); i++ {
+		var x, y int
+		if i < len(pa) {
+			x, _ = strconv.Atoi(pa[i])
+		}
+		if i < len(pb) {
+			y, _ = strconv.Atoi(pb[i])
+		}
+		if x != y {
+			return x < y
+		}
+	}
+	return false
 }
