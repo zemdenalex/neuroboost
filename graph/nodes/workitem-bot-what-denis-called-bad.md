@@ -10,8 +10,8 @@ weight: { importance: 5, connectivity: 3, access: 2, last_accessed: 2026-09-21 }
 sources:
   - file: "docs/proverka-bota-2026-08-19.md"
 links:
-  - relates-to: learning-green-tests-are-not-a-deployed-bot
-  - relates-to: decision-brainstorm-the-bot-before-building-more
+  - relates-to: "[[learning-green-tests-are-not-a-deployed-bot]]"
+  - relates-to: "[[decision-brainstorm-the-bot-before-building-more]]"
 ---
 Денис прошёл бота руками 19.08 и сказал дословно: *«The bot that I touched is still shit,
 notes are tasks for some reason, tasks creation is bad, calendar view is much worse than what

@@ -13,9 +13,9 @@ sources:
   - file: "api-go/internal/reminders/text.go (формат, 7 тестов)"
 stakes: high
 links:
-  - relates-to: learning-innerwidth-grows-with-the-defect-it-should-report
-  - relates-to: learning-a-test-that-cannot-fail-guards-nothing
-  - relates-to: learning-digest-sent-empty-text
+  - relates-to: "[[learning-innerwidth-grows-with-the-defect-it-should-report]]"
+  - relates-to: "[[learning-a-test-that-cannot-fail-guards-nothing]]"
+  - relates-to: "[[learning-digest-sent-empty-text]]"
 ---
 **Что случилось.** Напоминания в Telegram были объявлены рабочими: строки в `reminder` имели
 `status = SENT`, `attempts = 0`, доставка проверялась живой отправкой, snooze — тоже. Всё

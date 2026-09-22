@@ -13,11 +13,11 @@ sources:
   - file: "docs/superpowers/specs/2026-09-15-bot-natural-language-creation-design.md"
 stakes: high
 links:
-  - superseded-by: decision-bot-fixes-from-four-passes-17-09
-  - relates-to: decision-onboarding-is-the-first-minute-17-09
-  - implements: decision-bot-patch-v04111-before-mobile
-  - relates-to: learning-a-scan-for-one-language-is-blind-to-the-other
-  - relates-to: entity-recurring-instance-ids-are-list-only
+  - superseded-by: "[[decision-bot-fixes-from-four-passes-17-09]]"
+  - relates-to: "[[decision-onboarding-is-the-first-minute-17-09]]"
+  - implements: "[[decision-bot-patch-v04111-before-mobile]]"
+  - relates-to: "[[learning-a-scan-for-one-language-is-blind-to-the-other]]"
+  - relates-to: "[[entity-recurring-instance-ids-are-list-only]]"
 ---
 Ответы Дениса на вопросы о правилах, дословно по смыслу, с датами.
 

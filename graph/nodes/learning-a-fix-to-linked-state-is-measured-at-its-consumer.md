@@ -13,8 +13,8 @@ sources:
   - file: "api-go/internal/tasks/convert_db_test.go"
 stakes: high
 links:
-  - relates-to: learning-the-right-time-in-the-wrong-zone
-  - relates-to: learning-a-handler-test-says-nothing-about-a-control
+  - relates-to: "[[learning-the-right-time-in-the-wrong-zone]]"
+  - relates-to: "[[learning-a-handler-test-says-nothing-about-a-control]]"
 ---
 A1 (21.09): событие из задачи стало получать копию `reminder_offsets` — раньше `{}`, и оно не
 напоминало никогда (Known Broken). Тесты convert проверяли **колонку** события — зелёные.

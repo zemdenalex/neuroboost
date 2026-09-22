@@ -10,8 +10,8 @@ sources:
   - file: "api-go/migrations — 000010 (reminder_offsets + журнал доставки reminder)"
   - file: ".remember/handoff-2026-07-28.md §Что построено в P2"
 links:
-  - relates-to: learning-snooze-sentinel-not-null
-  - relates-to: workitem-p2-notifications-last-mile
+  - relates-to: "[[learning-snooze-sentinel-not-null]]"
+  - relates-to: "[[workitem-p2-notifications-last-mile]]"
 ---
 **Summary:** В Postgres два NULL не равны друг другу, поэтому уникальный индекс не защищает
 строку, у которой ключевое поле NULL — дедупликация напоминаний молча не работала бы.

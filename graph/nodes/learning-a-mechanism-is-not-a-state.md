@@ -13,9 +13,9 @@ sources:
   - commit: "7fed490"
 stakes: high
 links:
-  - relates-to: learning-a-test-that-cannot-fail-guards-nothing
-  - relates-to: learning-stale-comment-outlived-its-constraint
-  - relates-to: entity-p3-sharing-shipped-2026-08-17
+  - relates-to: "[[learning-a-test-that-cannot-fail-guards-nothing]]"
+  - relates-to: "[[learning-stale-comment-outlived-its-constraint]]"
+  - relates-to: "[[entity-p3-sharing-shipped-2026-08-17]]"
 ---
 Утром 17.08 я написал Денису, что приглашения в общий календарь **заблокированы**: в проде он
 существует двумя записями — одна с `tg_id` и без email, вторая с email и без `tg_id`. Взял из

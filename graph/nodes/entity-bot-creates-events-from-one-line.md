@@ -13,9 +13,9 @@ sources:
   - command: "docker compose up -d --build bot на 185.214.10.107 → healthy"
 stakes: medium
 links:
-  - relates-to: entity-bot-deploys-by-hand-not-by-ci
-  - relates-to: learning-sent-measures-delivery-not-usefulness
-  - relates-to: entity-p3-slice2-calendar-crud
+  - relates-to: "[[entity-bot-deploys-by-hand-not-by-ci]]"
+  - relates-to: "[[learning-sent-measures-delivery-not-usefulness]]"
+  - relates-to: "[[entity-p3-slice2-calendar-crud]]"
 ---
 **Чего не было до 13.08.** Календарь-first продукт умел поймать с телефона задачу, но не
 событие: кнопка `🗓 Calendar` отвечала «coming in a future update». Денис упёрся в это руками.

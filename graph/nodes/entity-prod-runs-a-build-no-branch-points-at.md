@@ -12,11 +12,11 @@ sources:
   - file: "docs/proverka-vdvoem-2026-08-19.md"
   - file: "docs/superpowers/specs/2026-08-23-post-walkthrough-fixes-and-release-design.md"
 links:
-  - relates-to: entity-v0410-released-with-an-outage
-  - relates-to: learning-merge-to-main-is-the-release
-  - relates-to: workitem-release-v0410-gated-by-denis-report
-  - relates-to: decision-safety-wave-before-any-release
-  - relates-to: learning-a-stale-local-ref-answers-confidently
+  - relates-to: "[[entity-v0410-released-with-an-outage]]"
+  - relates-to: "[[learning-merge-to-main-is-the-release]]"
+  - relates-to: "[[workitem-release-v0410-gated-by-denis-report]]"
+  - relates-to: "[[decision-safety-wave-before-any-release]]"
+  - relates-to: "[[learning-a-stale-local-ref-answers-confidently]]"
 ---
 🔴 **ЭТОТ УЗЕЛ БЫЛ НЕВЕРЕН. Опровергнуто со свидетелем 11.09.2026.**
 

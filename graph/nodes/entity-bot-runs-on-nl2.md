@@ -12,13 +12,13 @@ sources:
   - command: "docker exec neuroboost-dev-db psql -d neuroboost_dev -c 'select status, sent_at from reminder order by created_at desc limit 1'  # → SENT, 2026-08-10 01:34:39Z"
 stakes: high
 links:
-  - relates-to: learning-fix-in-the-wrong-container-looks-like-a-broken-fix
-  - relates-to: entity-server-topology
-  - relates-to: learning-prod-has-no-svc-routes
-  - relates-to: learning-tg-id-null-kills-reminders-silently
-  - relates-to: learning-digest-sent-empty-text
-  - relates-to: learning-compose-profile-hides-running-container
-  - relates-to: workitem-bot-authtoken-never-set
+  - relates-to: "[[learning-fix-in-the-wrong-container-looks-like-a-broken-fix]]"
+  - relates-to: "[[entity-server-topology]]"
+  - relates-to: "[[learning-prod-has-no-svc-routes]]"
+  - relates-to: "[[learning-tg-id-null-kills-reminders-silently]]"
+  - relates-to: "[[learning-digest-sent-empty-text]]"
+  - relates-to: "[[learning-compose-profile-hides-running-container]]"
+  - relates-to: "[[workitem-bot-authtoken-never-set]]"
 ---
 Route B доведена до конца 10.08 ~01:31 UTC. **Свидетельство — строка `SENT` в журнале,
 а не «контейнер поднялся».**

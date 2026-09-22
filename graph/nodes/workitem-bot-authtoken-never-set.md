@@ -13,8 +13,8 @@ sources:
   - command: "живой прогон Дениса по кнопкам dev-бота 12–13.08: /today вернул событие и 2 задачи, задачи создались"
 stakes: medium
 links:
-  - relates-to: entity-p3-slice2-calendar-crud
-  - relates-to: learning-a-test-that-cannot-fail-guards-nothing
+  - relates-to: "[[entity-p3-slice2-calendar-crud]]"
+  - relates-to: "[[learning-a-test-that-cannot-fail-guards-nothing]]"
 ---
 ✅ **Закрыто.** `ensureAuth` (`bot/internal/handlers/handler.go:77`) выдаёт чату JWT через
 Telegram-login до того, как любой обработчик попробует токен использовать, и обновляет его за

@@ -12,9 +12,9 @@ sources:
   - file: "api-go/internal/recurrence/rrule_test.go"
 stakes: high
 links:
-  - relates-to: learning-the-right-time-in-the-wrong-zone
-  - relates-to: learning-a-test-that-seeds-the-column-never-opened-the-door
-  - relates-to: learning-e2e-fixture-time-in-runner-zone-fails-nightly
+  - relates-to: "[[learning-the-right-time-in-the-wrong-zone]]"
+  - relates-to: "[[learning-a-test-that-seeds-the-column-never-opened-the-door]]"
+  - relates-to: "[[learning-e2e-fixture-time-in-runner-zone-fails-nightly]]"
 ---
 20.09. Первый тест, создавший повторяющуюся задачу **через API**, упал со строкой «that day is
 not in the series» — для **ежедневной** задачи, созданной **сегодня**.

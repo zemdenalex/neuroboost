@@ -13,9 +13,9 @@ sources:
   - file: "api-go/internal/events/handlers.go:711 — подстановка только когда поле ОТСУТСТВУЕТ"
 stakes: high
 links:
-  - relates-to: learning-checkbox-in-a-plan-is-a-claim-not-evidence
-  - relates-to: learning-a-test-that-cannot-fail-guards-nothing
-  - relates-to: learning-redaction-at-the-output-does-not-protect-a-value-that-leaves-the-process
+  - relates-to: "[[learning-checkbox-in-a-plan-is-a-claim-not-evidence]]"
+  - relates-to: "[[learning-a-test-that-cannot-fail-guards-nothing]]"
+  - relates-to: "[[learning-redaction-at-the-output-does-not-protect-a-value-that-leaves-the-process]]"
 ---
 Пункт «сменить пресет по умолчанию → новое событие сразу получает его смещения» стоял в
 `docs/staging-check-v0.4.10.md` с v0.4.10 и **ни разу не выполнялся**. Он не выполнялся.

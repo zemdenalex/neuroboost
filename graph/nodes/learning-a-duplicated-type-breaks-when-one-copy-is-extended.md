@@ -13,8 +13,8 @@ sources:
   - file: "web/src/api/tasks.ts + web/src/api/index.ts — два стека задач, два scheduleTask"
 stakes: medium
 links:
-  - relates-to: learning-four-of-my-own-defects-in-one-session
-  - relates-to: learning-stale-comment-outlived-its-constraint
+  - relates-to: "[[learning-four-of-my-own-defects-in-one-session]]"
+  - relates-to: "[[learning-stale-comment-outlived-its-constraint]]"
 ---
 За одну сессию (14–15.08) наткнулся на три одинаковых типа, объявленных дважды. Ни один не
 ломался «сам по себе» — все три сломались **в момент, когда одну копию дополнили, а вторую

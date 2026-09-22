@@ -12,12 +12,12 @@ sources:
   - file: "_legacy/snapshots-v0.0.1-v0.4.0/v0.2.1/apps/bot/src/index.mjs (bot.action registry)"
 stakes: high
 links:
-  - relates-to: learning-stale-comment-outlived-its-constraint
-  - relates-to: learning-three-known-defects-were-already-fixed
-  - relates-to: entity-bot-creates-events-from-one-line
-  - relates-to: decision-restore-what-the-rewrite-dropped
-  - relates-to: learning-a-button-is-not-a-feature
-  - relates-to: decision-brainstorm-the-bot-before-building-more
+  - relates-to: "[[learning-stale-comment-outlived-its-constraint]]"
+  - relates-to: "[[learning-three-known-defects-were-already-fixed]]"
+  - relates-to: "[[entity-bot-creates-events-from-one-line]]"
+  - relates-to: "[[decision-restore-what-the-rewrite-dropped]]"
+  - relates-to: "[[learning-a-button-is-not-a-feature]]"
+  - relates-to: "[[decision-brainstorm-the-bot-before-building-more]]"
 ---
 Сравнение поверхности нынешнего Go-бота с его же предшественником v0.2.1 (Telegraf, 3130
 строк) показало регрессию по **трём** позициям: запланировать задачу на время кнопками

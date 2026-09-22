@@ -11,10 +11,10 @@ sources:
   - file: "docs/relizy/v0.4.11.2.md"
 stakes: high
 links:
-  - relates-to: learning-the-right-time-in-the-wrong-zone
-  - relates-to: learning-absence-needs-a-search-that-would-have-found-presence
-  - relates-to: learning-fixture-data-can-disarm-a-control
-  - relates-to: learning-e2e-fixture-time-in-runner-zone-fails-nightly
+  - relates-to: "[[learning-the-right-time-in-the-wrong-zone]]"
+  - relates-to: "[[learning-absence-needs-a-search-that-would-have-found-presence]]"
+  - relates-to: "[[learning-fixture-data-can-disarm-a-control]]"
+  - relates-to: "[[learning-e2e-fixture-time-in-runner-zone-fails-nightly]]"
 ---
 Ночь релиза v0.4.11.2, два случая подряд.
 

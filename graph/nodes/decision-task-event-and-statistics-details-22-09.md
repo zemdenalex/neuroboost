@@ -12,9 +12,9 @@ sources:
   - file: "docs/superpowers/specs/2026-09-22-statistics-design.md"
 stakes: medium
 links:
-  - relates-to: decision-statistics-is-a-screen-you-browse-20-09
-  - relates-to: decision-release-small-and-in-his-order-21-09
-  - relates-to: decision-priority-style-is-a-choice-21-09
+  - relates-to: "[[decision-statistics-is-a-screen-you-browse-20-09]]"
+  - relates-to: "[[decision-release-small-and-in-his-order-21-09]]"
+  - relates-to: "[[decision-priority-style-is-a-choice-21-09]]"
 ---
 Ответы Дениса вариантами (AskUserQuestion), ночь 21→22.09:
 

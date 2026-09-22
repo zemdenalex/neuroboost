@@ -12,10 +12,10 @@ sources:
   - file: "docs/defekty-prohod-vdvoem-2026-08-23.md"
 stakes: high
 links:
-  - relates-to: learning-explain-a-red-test-with-numbers
-  - relates-to: learning-drag-flicker-comment-lied
-  - relates-to: learning-a-test-that-cannot-fail-guards-nothing
-  - relates-to: learning-a-warning-counted-is-not-a-warning-read
+  - relates-to: "[[learning-explain-a-red-test-with-numbers]]"
+  - relates-to: "[[learning-drag-flicker-comment-lied]]"
+  - relates-to: "[[learning-a-test-that-cannot-fail-guards-nothing]]"
+  - relates-to: "[[learning-a-warning-counted-is-not-a-warning-read]]"
 ---
 Денис сообщил: на телефоне, планшете и в узком окне на компьютере **события исчезают при
 прокрутке вверх-вниз**, и приложил консоль, где десятки раз повторялось `Unable to

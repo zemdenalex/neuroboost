@@ -12,9 +12,9 @@ sources:
   - file: "docs/superpowers/plans/2026-08-11-p3-slice1-calendar-foundation.md — File Structure перечисляет events/handlers.go и tasks/handlers.go"
 stakes: high
 links:
-  - relates-to: entity-p3-slice1-calendar-foundation
-  - relates-to: learning-green-because-skipped-proves-nothing
-  - relates-to: learning-a-rule-satisfied-literally-can-keep-the-defect
+  - relates-to: "[[entity-p3-slice1-calendar-foundation]]"
+  - relates-to: "[[learning-green-because-skipped-proves-nothing]]"
+  - relates-to: "[[learning-a-rule-satisfied-literally-can-keep-the-defect]]"
 ---
 План среза 1 перечислял **два** файла: `events/handlers.go` и `tasks/handlers.go`. Я составлял
 его, посчитав вхождения `user_id` в этих двух пакетах — 23 и 17 — и решил, что знаю объём.

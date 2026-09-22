@@ -12,13 +12,13 @@ sources:
   - file: "web/playwright.config.ts"
 stakes: medium
 links:
-  - relates-to: learning-green-because-skipped-proves-nothing
-  - relates-to: learning-md2-lived-in-untested-producers
-  - relates-to: learning-native-confirm-hides-the-r1-dialog
-  - relates-to: learning-checkbox-in-a-plan-is-a-claim-not-evidence
-  - relates-to: entity-server-topology
-  - relates-to: learning-e2e-baseline-recorded-on-a-monday
-  - relates-to: learning-stale-comment-outlived-its-constraint
+  - relates-to: "[[learning-green-because-skipped-proves-nothing]]"
+  - relates-to: "[[learning-md2-lived-in-untested-producers]]"
+  - relates-to: "[[learning-native-confirm-hides-the-r1-dialog]]"
+  - relates-to: "[[learning-checkbox-in-a-plan-is-a-claim-not-evidence]]"
+  - relates-to: "[[entity-server-topology]]"
+  - relates-to: "[[learning-e2e-baseline-recorded-on-a-monday]]"
+  - relates-to: "[[learning-stale-comment-outlived-its-constraint]]"
 ---
 ⚠️ **Базовая линия имеет дату.** Числа «17 passed / 1 skipped» сняты 10.08, в понедельник, и
 две мобильные спеки проходили именно поэтому —

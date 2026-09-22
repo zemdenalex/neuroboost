@@ -11,8 +11,8 @@ sources:
   - file: "docs/relizy/plan-reliza-v0.4.11.3-2026-09-21.md"
 stakes: medium
 links:
-  - relates-to: learning-count-the-failures-not-the-successes
-  - relates-to: decision-release-small-and-in-his-order-21-09
+  - relates-to: "[[learning-count-the-failures-not-the-successes]]"
+  - relates-to: "[[decision-release-small-and-in-his-order-21-09]]"
 ---
 21.09, первая рассылка «Что нового» трём живым пользователям прод-бота. Скрипт был сделан
 аккуратно — id не печатаются, токен не печатается — и потому отдал только сводку:

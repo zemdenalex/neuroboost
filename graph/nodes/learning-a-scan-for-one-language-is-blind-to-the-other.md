@@ -12,10 +12,10 @@ sources:
   - file: "ref/feedback/bot-proverka-otvet-denisa-2026-09-16.md"
 stakes: high
 links:
-  - relates-to: learning-a-fake-that-accepts-anything-is-not-a-control
-  - relates-to: learning-a-handler-test-says-nothing-about-a-control
-  - relates-to: learning-a-warning-counted-is-not-a-warning-read
-  - relates-to: learning-a-stale-local-ref-answers-confidently
+  - relates-to: "[[learning-a-fake-that-accepts-anything-is-not-a-control]]"
+  - relates-to: "[[learning-a-handler-test-says-nothing-about-a-control]]"
+  - relates-to: "[[learning-a-warning-counted-is-not-a-warning-read]]"
+  - relates-to: "[[learning-a-stale-local-ref-answers-confidently]]"
 ---
 16.09 бот стал двуязычным: 346 строк через `i18n.T(lang, ru, en)`. Проверка —
 `TestNoUntranslatedUserFacingText`, скан исходников: **строка с кириллицей вне `T` —

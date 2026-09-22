@@ -11,8 +11,8 @@ sources:
   - file: "docs/relizy/v0.4.11.1.md"
 stakes: medium
 links:
-  - relates-to: learning-compose-profile-hides-running-container
-  - relates-to: learning-green-tests-are-not-a-deployed-bot
+  - relates-to: "[[learning-compose-profile-hides-running-container]]"
+  - relates-to: "[[learning-green-tests-are-not-a-deployed-bot]]"
 ---
 16.09, выкат i18n на dev-бота (nl-2). После `docker compose up -d --build bot`:
 

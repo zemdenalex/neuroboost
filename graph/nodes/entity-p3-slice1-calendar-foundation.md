@@ -14,10 +14,10 @@ sources:
   - file: "docs/superpowers/specs/2026-08-11-p3-shared-calendars-design.md"
 stakes: high
 links:
-  - relates-to: learning-green-because-skipped-proves-nothing
-  - relates-to: learning-plan-named-two-files-invariant-lived-in-eight
-  - relates-to: learning-merge-to-main-is-the-release
-  - relates-to: learning-prod-has-no-svc-routes
+  - relates-to: "[[learning-green-because-skipped-proves-nothing]]"
+  - relates-to: "[[learning-plan-named-two-files-invariant-lived-in-eight]]"
+  - relates-to: "[[learning-merge-to-main-is-the-release]]"
+  - relates-to: "[[learning-prod-has-no-svc-routes]]"
 ---
 **Что изменилось в основании.** До 11.08 колонка `user_id` отвечала сразу за две вещи: кто
 владелец строки и кому её видно. Теперь они разведены: доступ даёт членство в календаре

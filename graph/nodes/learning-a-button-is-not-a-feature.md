@@ -12,12 +12,12 @@ sources:
   - file: "docs/analiz-bot-vs-web-2026-08-18.md §2"
 stakes: high
 links:
-  - relates-to: learning-a-rewrite-can-drop-features-silently
-  - relates-to: learning-a-test-that-cannot-fail-guards-nothing
-  - relates-to: learning-a-mechanism-is-not-a-state
-  - relates-to: learning-a-setting-with-no-reader
-  - relates-to: learning-a-rule-satisfied-literally-can-keep-the-defect
-  - relates-to: learning-a-handler-test-says-nothing-about-a-control
+  - relates-to: "[[learning-a-rewrite-can-drop-features-silently]]"
+  - relates-to: "[[learning-a-test-that-cannot-fail-guards-nothing]]"
+  - relates-to: "[[learning-a-mechanism-is-not-a-state]]"
+  - relates-to: "[[learning-a-setting-with-no-reader]]"
+  - relates-to: "[[learning-a-rule-satisfied-literally-can-keep-the-defect]]"
+  - relates-to: "[[learning-a-handler-test-says-nothing-about-a-control]]"
 ---
 17–18.08 я сравнивал Go-бота с его предшественником v0.2.1 и читал **`keyboards.mjs`** — файл,
 который рисует кнопки. Вышел список из пяти потерянных возможностей; он уехал в

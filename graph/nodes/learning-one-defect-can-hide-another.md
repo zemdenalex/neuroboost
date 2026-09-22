@@ -13,8 +13,8 @@ sources:
   - file: "api-go/internal/tasks/occurrence.go"
 stakes: medium
 links:
-  - relates-to: learning-the-right-time-in-the-wrong-zone
-  - relates-to: learning-a-day-is-a-date-not-an-instant
+  - relates-to: "[[learning-the-right-time-in-the-wrong-zone]]"
+  - relates-to: "[[learning-a-day-is-a-date-not-an-instant]]"
 ---
 21.09. Денис написал одной строкой четыре дела через запятую и получил **одну** задачу с
 изуродованным названием «… раз **дня** протереть пыль». Два дефекта держали друг друга:

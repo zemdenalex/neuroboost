@@ -12,10 +12,10 @@ sources:
   - file: "docs/superpowers/specs/2026-09-18-api-v04114-recurring-tasks-design.md"
 stakes: high
 links:
-  - relates-to: learning-an-empty-result-is-not-an-answer
-  - relates-to: learning-my-own-query-lied-twice-in-one-night
-  - relates-to: learning-a-migration-can-break-a-query-that-never-changed
-  - relates-to: learning-a-button-is-not-a-feature
+  - relates-to: "[[learning-an-empty-result-is-not-an-answer]]"
+  - relates-to: "[[learning-my-own-query-lied-twice-in-one-night]]"
+  - relates-to: "[[learning-a-migration-can-break-a-query-that-never-changed]]"
+  - relates-to: "[[learning-a-button-is-not-a-feature]]"
 ---
 18.09. Настя просила «превратить задачу в событие». Я проверил, есть ли связь между ними:
 

@@ -13,9 +13,9 @@ sources:
   - command: "cd web && corepack pnpm exec playwright test multiday-resize --project=desktop  # 1 passed, перетаскивание мышью"
 stakes: high
 links:
-  - relates-to: entity-e2e-playwright-harness
-  - relates-to: learning-native-confirm-hides-the-r1-dialog
-  - relates-to: learning-checkbox-in-a-plan-is-a-claim-not-evidence
+  - relates-to: "[[entity-e2e-playwright-harness]]"
+  - relates-to: "[[learning-native-confirm-hides-the-r1-dialog]]"
+  - relates-to: "[[learning-checkbox-in-a-plan-is-a-claim-not-evidence]]"
 ---
 `handleResizeComplete` был **написан правильно** и уже умел абсолютные координаты. Поля
 `anchorMs` / `cursorMs` объявлены в типах с комментарием «optional while producers are

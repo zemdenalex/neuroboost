@@ -11,8 +11,8 @@ sources:
   - file: "docs/relizy/plan-reliza-v0.4.11.3-2026-09-21.md"
 stakes: high
 links:
-  - relates-to: decision-release-small-and-in-his-order-21-09
-  - relates-to: learning-a-test-that-seeds-the-column-never-opened-the-door
+  - relates-to: "[[decision-release-small-and-in-his-order-21-09]]"
+  - relates-to: "[[learning-a-test-that-seeds-the-column-never-opened-the-door]]"
 ---
 21.09 Денис попросил дробить: сначала на прод то, что он прошёл 18-го, новое — позже. Код
 режется по коммитам свободно. **Схема — нет:** миграции 000017–000021 все закоммичены 18.09.

@@ -13,8 +13,8 @@ sources:
   - quote: "Как и с расширеным созданием события, нужно чтобы было просто выбрать, но иметь возможность расширить для управления"
 stakes: medium
 links:
-  - relates-to: entity-p3-sharing-shipped-2026-08-17
-  - relates-to: learning-one-component-in-two-containers-trades-drift-for-fit
+  - relates-to: "[[entity-p3-sharing-shipped-2026-08-17]]"
+  - relates-to: "[[learning-one-component-in-two-containers-trades-drift-for-fit]]"
 ---
 Три решения Дениса от 17.08, его словами.
 

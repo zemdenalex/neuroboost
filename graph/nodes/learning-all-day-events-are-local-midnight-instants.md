@@ -12,7 +12,7 @@ sources:
   - file: "bot/internal/handlers/dayfill.go"
 stakes: medium
 links:
-  - relates-to: learning-the-right-time-in-the-wrong-zone
+  - relates-to: "[[learning-the-right-time-in-the-wrong-zone]]"
 ---
 Проверено на dev 22.09: `2026-10-13 21:00 → 2026-10-29 21:00 UTC` (локальные полуночи Москвы) и
 `… 15:00 → … 15:00 UTC` (так их создаёт один из клиентов). **Даты в UTC-строке нет** — есть момент.

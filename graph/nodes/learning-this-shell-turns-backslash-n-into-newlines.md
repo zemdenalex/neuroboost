@@ -11,7 +11,7 @@ sources:
   - file: "bot/internal/handlers/statsview.go"
 stakes: low
 links:
-  - relates-to: learning-count-the-failures-not-the-successes
+  - relates-to: "[[learning-count-the-failures-not-the-successes]]"
 ---
 22.09 трижды: Python-замена через heredoc с экранированным переводом строки в Go-строке вставила
 **настоящие** переводы строк («string literal not terminated»); один раз assert просто не нашёл

@@ -13,9 +13,9 @@ sources:
   - file: "docs/site-audit-2026-08-12.md"
 stakes: medium
 links:
-  - relates-to: learning-getboundingclientrect-reports-layout-not-paint
-  - relates-to: learning-wider-viewport-is-not-a-wider-column
-  - relates-to: learning-a-test-that-cannot-fail-guards-nothing
+  - relates-to: "[[learning-getboundingclientrect-reports-layout-not-paint]]"
+  - relates-to: "[[learning-wider-viewport-is-not-a-wider-column]]"
+  - relates-to: "[[learning-a-test-that-cannot-fail-guards-nothing]]"
 ---
 **Ловушка.** Детектор горизонтального переполнения сравнивал `document.scrollWidth` с
 `window.innerWidth`. На `/admin`, открытой в браузере шириной **375**, он отчитался

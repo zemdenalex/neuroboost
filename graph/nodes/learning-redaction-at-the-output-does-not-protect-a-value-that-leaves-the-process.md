@@ -13,9 +13,9 @@ sources:
   - command: "grep -rn logsafe api-go/ → 0 вхождений"
 stakes: high
 links:
-  - relates-to: learning-a-test-that-cannot-fail-guards-nothing
-  - relates-to: entity-bot-deploys-by-hand-not-by-ci
-  - relates-to: learning-four-of-my-own-defects-in-one-session
+  - relates-to: "[[learning-a-test-that-cannot-fail-guards-nothing]]"
+  - relates-to: "[[entity-bot-deploys-by-hand-not-by-ci]]"
+  - relates-to: "[[learning-four-of-my-own-defects-in-one-session]]"
 ---
 **14.08** три `log.Printf`, печатавших `*url.Error` с полным URL Telegram, обернули в
 `logsafe.Redact`, и в `CLAUDE.md` появилось «✅ свой код больше не течёт». **16.08 выяснилось,

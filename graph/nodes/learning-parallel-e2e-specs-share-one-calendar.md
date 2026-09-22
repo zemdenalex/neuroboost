@@ -12,9 +12,9 @@ sources:
   - file: "web/e2e/crossday-resize.spec.ts"
 stakes: medium
 links:
-  - relates-to: learning-e2e-fixture-time-in-runner-zone-fails-nightly
-  - relates-to: learning-e2e-baseline-recorded-on-a-monday
-  - relates-to: entity-e2e-playwright-harness
+  - relates-to: "[[learning-e2e-fixture-time-in-runner-zone-fails-nightly]]"
+  - relates-to: "[[learning-e2e-baseline-recorded-on-a-monday]]"
+  - relates-to: "[[entity-e2e-playwright-harness]]"
 ---
 21.09 e2e падал «не в тех» спеках в разные прогоны: днём `crossday-resize` и `resize-click-noop`
 (desktop), ночью `overlap-overflow` (mobile). Код между прогонами не менялся — только время и

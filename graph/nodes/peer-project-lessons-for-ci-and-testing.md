@@ -11,7 +11,7 @@ sources:
   - file: ".remember/night-loop-2026-08-10.md §8-бис (rules from FilinTermy, Archifex, AVOCAR, Nivium, KaUnion)"
 stakes: medium
 links:
-  - related-to: workitem-p2-notifications-last-mile
+  - related-to: "[[workitem-p2-notifications-last-mile]]"
 ---
 **Summary:** Five explicit rules extracted from neighbouring projects and documented for NeuroBoost's night-loop work.
 

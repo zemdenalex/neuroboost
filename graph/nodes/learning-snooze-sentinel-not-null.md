@@ -13,9 +13,9 @@ sources:
   - command: "select status from reminder where minutes_before=-1  # SENT — Telegram принял inline-клавиатуру"
 stakes: medium
 links:
-  - relates-to: learning-null-key-passes-a-unique-index
-  - relates-to: learning-digest-sent-empty-text
-  - relates-to: entity-bot-runs-on-nl2
+  - relates-to: "[[learning-null-key-passes-a-unique-index]]"
+  - relates-to: "[[learning-digest-sent-empty-text]]"
+  - relates-to: "[[entity-bot-runs-on-nl2]]"
 ---
 Шаг 7 P2 (кнопки и snooze) закрыт 11.08. Две детали, каждая из которых выглядит косметической
 и не является ею.

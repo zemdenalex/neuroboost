@@ -13,8 +13,8 @@ sources:
   - file: "web/src/lib/reminders/offsets.ts:137 matchPreset — возвращает первое совпадение"
 stakes: high
 links:
-  - relates-to: learning-a-control-nobody-runs-hides-a-control-that-cannot-work
-  - relates-to: learning-sent-measures-delivery-not-usefulness
+  - relates-to: "[[learning-a-control-nobody-runs-hides-a-control-that-cannot-work]]"
+  - relates-to: "[[learning-sent-measures-delivery-not-usefulness]]"
 ---
 **Симптом, как его увидел Денис (14.08):** в настройках пресет «без» показывает напоминания
 «за 1 день» и «за 1 час»; селект пресета всегда стоит на «без» и **не даёт выбрать другой** —

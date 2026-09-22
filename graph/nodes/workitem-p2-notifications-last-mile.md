@@ -15,18 +15,18 @@ work:
   block-reason: "значение SERVICE_TOKEN и доступы к зарубежному хосту — у Дениса"
   status: blocked
 links:
-  - relates-to: learning-bot-is-a-second-go-module
-  - relates-to: workitem-release-v0410-gated-by-denis-report
-  - relates-to: workitem-bot-authtoken-never-set
-  - relates-to: entity-p3-slice2-calendar-crud
-  - relates-to: learning-null-key-passes-a-unique-index
-  - relates-to: learning-goroutine-panic-takes-the-whole-api
-  - worked-by: workitem-night-loop-2026-08-10
-  - relates-to: entity-server-topology
-  - relates-to: entity-bot-runs-on-nl2
-  - relates-to: learning-prod-has-no-svc-routes
-  - relates-to: learning-digest-sent-empty-text
-  - relates-to: learning-tg-id-null-kills-reminders-silently
+  - relates-to: "[[learning-bot-is-a-second-go-module]]"
+  - relates-to: "[[workitem-release-v0410-gated-by-denis-report]]"
+  - relates-to: "[[workitem-bot-authtoken-never-set]]"
+  - relates-to: "[[entity-p3-slice2-calendar-crud]]"
+  - relates-to: "[[learning-null-key-passes-a-unique-index]]"
+  - relates-to: "[[learning-goroutine-panic-takes-the-whole-api]]"
+  - worked-by: "[[workitem-night-loop-2026-08-10]]"
+  - relates-to: "[[entity-server-topology]]"
+  - relates-to: "[[entity-bot-runs-on-nl2]]"
+  - relates-to: "[[learning-prod-has-no-svc-routes]]"
+  - relates-to: "[[learning-digest-sent-empty-text]]"
+  - relates-to: "[[learning-tg-id-null-kills-reminders-silently]]"
 ---
 **Summary:** Собрано 8 шагов из 10 (не 9, как говорил ROADMAP до 10.08), staging обновлён; но
 уведомление физически не доедет до Telegram, пока не заданы `SERVICE_TOKEN` и бот не переехал

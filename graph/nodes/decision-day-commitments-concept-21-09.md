@@ -11,8 +11,8 @@ sources:
   - file: "ref/feedback/bot-proverka-v04114-prohod2-otvet-denisa-2026-09-21.md"
 stakes: medium
 links:
-  - relates-to: decision-statistics-is-a-screen-you-browse-20-09
-  - relates-to: decision-release-small-and-in-his-order-21-09
+  - relates-to: "[[decision-statistics-is-a-screen-you-browse-20-09]]"
+  - relates-to: "[[decision-release-small-and-in-his-order-21-09]]"
 ---
 Механика, о которой он *«долго думал, но не уверен, где и как её реализовать»*: классические
 «задачи дня» плюс визуализация, подсмотренная у календаря Atrioc (зелёная полоса прогресса,

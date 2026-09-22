@@ -11,7 +11,7 @@ sources:
   - file: ".remember/night-loop-2026-08-10.md lines 25–36"
 stakes: high
 links:
-  - related-to: decision-graph-now-enabled
+  - related-to: "[[decision-graph-now-enabled]]"
 ---
 **Summary:** NeuroBoost enforces a three-layer split to prevent drift and duplicate-source-of-truth disease (observed in Archifex per §8-бис).
 

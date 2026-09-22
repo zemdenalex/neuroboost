@@ -13,9 +13,9 @@ sources:
   - commit: "6916150"
 stakes: high
 links:
-  - relates-to: learning-a-test-that-cannot-fail-guards-nothing
-  - relates-to: entity-p3-sharing-shipped-2026-08-17
-  - relates-to: learning-a-mechanism-is-not-a-state
+  - relates-to: "[[learning-a-test-that-cannot-fail-guards-nothing]]"
+  - relates-to: "[[entity-p3-sharing-shipped-2026-08-17]]"
+  - relates-to: "[[learning-a-mechanism-is-not-a-state]]"
 ---
 17.08 Денис первый раз нажал кнопку «Принять» на приглашении в Telegram. Оно **сработало**:
 членство стало `editor/active` через всю цепочку — кнопка → бот → `/api/svc/notifications/action`

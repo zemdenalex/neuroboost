@@ -10,7 +10,7 @@ sources:
   - file: "api-go/internal/events/recurrence.go — expandRecurrence, разыменование *event.Rrule"
   - file: ".remember/handoff-2026-07-28.md §Что построено в P2"
 links:
-  - relates-to: workitem-p2-notifications-last-mile
+  - relates-to: "[[workitem-p2-notifications-last-mile]]"
 ---
 **Summary:** `OccurrencesInRange` звала `expandRecurrence`, которая разыменовывает `*event.Rrule`
 без guard'а — на любом НЕповторяющемся событии тикер паниковал, и вместе с горутиной падал

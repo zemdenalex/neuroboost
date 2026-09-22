@@ -12,8 +12,8 @@ sources:
   - command: "ssh -o BatchMode=yes root@62.76.228.106 'docker ps'"
 stakes: high
 links:
-  - relates-to: workitem-p2-notifications-last-mile
-  - relates-to: entity-server-topology
+  - relates-to: "[[workitem-p2-notifications-last-mile]]"
+  - relates-to: "[[entity-server-topology]]"
 ---
 **Блокера нет.** Узел был заведён консолидатором 10.08 ~03:25 по промежуточному состоянию
 и утверждал, что деплой упирается в несовпадение host-key у `193.104.57.79`. Это оказалось

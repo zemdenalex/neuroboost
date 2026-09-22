@@ -13,12 +13,12 @@ sources:
   - file: "docs/smoke-bot-parity-2026-08-19.md §3"
 stakes: high
 links:
-  - relates-to: learning-a-button-is-not-a-feature
-  - relates-to: learning-explain-a-red-test-with-numbers
-  - relates-to: learning-a-setting-with-no-reader
-  - relates-to: learning-merge-to-main-is-the-release
-  - relates-to: decision-bot-token-rotation-dropped
-  - relates-to: decision-bot-patch-v04111-before-mobile
+  - relates-to: "[[learning-a-button-is-not-a-feature]]"
+  - relates-to: "[[learning-explain-a-red-test-with-numbers]]"
+  - relates-to: "[[learning-a-setting-with-no-reader]]"
+  - relates-to: "[[learning-merge-to-main-is-the-release]]"
+  - relates-to: "[[decision-bot-token-rotation-dropped]]"
+  - relates-to: "[[decision-bot-patch-v04111-before-mobile]]"
 ---
 За ночь на 19.08 я вернул боту четыре возможности, покрыл их тестами, прогнал против живого API
 на staging и четыре раза сказал «готово». Денис прошёл бота руками и увидел **старое**:

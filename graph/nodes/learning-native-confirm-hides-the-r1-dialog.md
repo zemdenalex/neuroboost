@@ -12,8 +12,8 @@ sources:
   - command: "cd web && corepack pnpm exec playwright test recurring-scope  # 2 passed после page.on('dialog', d => d.accept())"
 stakes: medium
 links:
-  - relates-to: entity-e2e-playwright-harness
-  - relates-to: learning-checkbox-in-a-plan-is-a-claim-not-evidence
+  - relates-to: "[[entity-e2e-playwright-harness]]"
+  - relates-to: "[[learning-checkbox-in-a-plan-is-a-claim-not-evidence]]"
 ---
 Диалог R1 («Только это событие / Все повторы») открыт в браузере **впервые** 10.08 — до этого
 он был «проверен» чтением JSON. Открылся и работает; Escape отменяет удаление и событие

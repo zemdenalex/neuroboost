@@ -12,9 +12,9 @@ sources:
   - commit: "4320fce"
 stakes: high
 links:
-  - relates-to: learning-stale-comment-outlived-its-constraint
-  - relates-to: learning-a-mechanism-is-not-a-state
-  - relates-to: entity-bot-creates-events-from-one-line
+  - relates-to: "[[learning-stale-comment-outlived-its-constraint]]"
+  - relates-to: "[[learning-a-mechanism-is-not-a-state]]"
+  - relates-to: "[[entity-bot-creates-events-from-one-line]]"
 ---
 Денис попросил новый чеклист приёмки: старый протух местами (предупреждал про R1, починенный
 28.07). Правило, которое я в него заложил — **у каждого предупреждения дата и команда, которой

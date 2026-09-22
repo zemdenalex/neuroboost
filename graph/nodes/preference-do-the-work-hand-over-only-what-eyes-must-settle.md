@@ -12,8 +12,8 @@ sources:
   - quote: "Пусть луп идёт"
 stakes: high
 links:
-  - relates-to: learning-two-neighbouring-paths-one-broken-reading-finds-neither
-  - relates-to: preference-never-replace-a-working-capability-with-a-simpler-one
+  - relates-to: "[[learning-two-neighbouring-paths-one-broken-reading-finds-neither]]"
+  - relates-to: "[[preference-never-replace-a-working-capability-with-a-simpler-one]]"
 ---
 **Слова Дениса, дословно (16.08):** *«Ты можешь сделать всё сам, скажи только что визуально
 проверить»* — в ответ на предложение пройти staging-чеклист из 56 пунктов самому.

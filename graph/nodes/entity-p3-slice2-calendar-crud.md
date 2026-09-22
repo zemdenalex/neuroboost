@@ -14,11 +14,11 @@ sources:
   - file: "docs/superpowers/plans/2026-08-11-p3-slice2-inherited-debt.md"
 stakes: high
 links:
-  - relates-to: entity-calendars-hold-events-since-slice2plus
-  - relates-to: entity-p3-slice1-calendar-foundation
-  - relates-to: learning-a-test-that-cannot-fail-guards-nothing
-  - relates-to: learning-guard-floor-left-behind-becomes-a-hiding-place
-  - relates-to: learning-merge-to-main-is-the-release
+  - relates-to: "[[entity-calendars-hold-events-since-slice2plus]]"
+  - relates-to: "[[entity-p3-slice1-calendar-foundation]]"
+  - relates-to: "[[learning-a-test-that-cannot-fail-guards-nothing]]"
+  - relates-to: "[[learning-guard-floor-left-behind-becomes-a-hiding-place]]"
+  - relates-to: "[[learning-merge-to-main-is-the-release]]"
 ---
 **Что появилось.** Срез 2 равен §10.2 спеки дословно: CRUD календарей и список в настройках,
 **без приглашений**. Роли на путях записи событий и задач по-прежнему не проверяются — до

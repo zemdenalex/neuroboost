@@ -14,10 +14,10 @@ sources:
   - file: "ref/feedback/bot-prohod4-otvet-denisa-2026-09-17.md"
 stakes: high
 links:
-  - superseded-by: decision-bot-vocabulary-and-symbols-18-09
-  - implements: decision-bot-nl-creation-rules-15-09
-  - relates-to: learning-a-fake-that-accepts-anything-is-not-a-control
-  - relates-to: decision-onboarding-is-the-first-minute-17-09
+  - superseded-by: "[[decision-bot-vocabulary-and-symbols-18-09]]"
+  - implements: "[[decision-bot-nl-creation-rules-15-09]]"
+  - relates-to: "[[learning-a-fake-that-accepts-anything-is-not-a-control]]"
+  - relates-to: "[[decision-onboarding-is-the-first-minute-17-09]]"
 ---
 Четыре прохода по dev-боту за один вечер, его слова:
 

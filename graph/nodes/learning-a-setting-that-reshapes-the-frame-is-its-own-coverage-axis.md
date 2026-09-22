@@ -13,9 +13,9 @@ sources:
   - file: "docs/site-audit-2026-08-12.md"
 stakes: medium
 links:
-  - relates-to: learning-a-test-that-cannot-fail-guards-nothing
-  - relates-to: learning-e2e-baseline-recorded-on-a-monday
-  - relates-to: learning-getboundingclientrect-reports-layout-not-paint
+  - relates-to: "[[learning-a-test-that-cannot-fail-guards-nothing]]"
+  - relates-to: "[[learning-e2e-baseline-recorded-on-a-monday]]"
+  - relates-to: "[[learning-getboundingclientrect-reports-layout-not-paint]]"
 ---
 **Что случилось.** Прогон покрыл **13 маршрутов × 2 вьюпорта** и нашёл четыре мелких дефекта
 читаемости. Худший дефект он не увидел вовсе — потому что открывал только **раскладку по

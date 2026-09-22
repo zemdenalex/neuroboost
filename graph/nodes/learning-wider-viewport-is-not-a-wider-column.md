@@ -13,8 +13,8 @@ sources:
   - file: "docs/site-audit-2026-08-12.md"
 stakes: medium
 links:
-  - relates-to: learning-a-setting-that-reshapes-the-frame-is-its-own-coverage-axis
-  - relates-to: learning-getboundingclientrect-reports-layout-not-paint
+  - relates-to: "[[learning-a-setting-that-reshapes-the-frame-is-its-own-coverage-axis]]"
+  - relates-to: "[[learning-getboundingclientrect-reports-layout-not-paint]]"
 ---
 **Что случилось.** Починив нечитаемый чип задачи на 375px, я поставил брейкпоинт `md` (768):
 ниже — список строками, выше — семь колонок. Проверял на 375 и 1440, оба хороши. Замер на

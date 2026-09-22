@@ -11,8 +11,8 @@ sources:
   - file: "bot/internal/handlers/calendars_test.go"
 stakes: medium
 links:
-  - relates-to: learning-a-fake-that-accepts-anything-is-not-a-control
-  - relates-to: learning-a-migration-can-break-a-query-that-never-changed
+  - relates-to: "[[learning-a-fake-that-accepts-anything-is-not-a-control]]"
+  - relates-to: "[[learning-a-migration-can-break-a-query-that-never-changed]]"
 ---
 18.09, оптимизация экрана календарей в боте. Я написал кэш списка на 10 секунд и тест:
 нажать кнопку, убедиться, что запрос списка ровно один.

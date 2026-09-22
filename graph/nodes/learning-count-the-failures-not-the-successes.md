@@ -11,10 +11,10 @@ sources:
   - file: "docs/relizy/plan-reliza-v0.4.11.3-2026-09-21.md"
 stakes: high
 links:
-  - relates-to: learning-a-cached-test-result-is-a-test-that-did-not-run
-  - relates-to: learning-green-because-skipped-proves-nothing
-  - relates-to: learning-a-control-nobody-runs-hides-a-control-that-cannot-work
-  - relates-to: learning-this-shell-turns-backslash-n-into-newlines
+  - relates-to: "[[learning-a-cached-test-result-is-a-test-that-did-not-run]]"
+  - relates-to: "[[learning-green-because-skipped-proves-nothing]]"
+  - relates-to: "[[learning-a-control-nobody-runs-hides-a-control-that-cannot-work]]"
+  - relates-to: "[[learning-this-shell-turns-backslash-n-into-newlines]]"
 ---
 21.09, релиз v0.4.11.3. Перед пушем в `main` я прогнал тесты бота на ветке релиза так:
 

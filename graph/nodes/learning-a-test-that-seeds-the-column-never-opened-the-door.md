@@ -13,10 +13,10 @@ sources:
   - file: "ref/feedback/bot-proverka-v04114-otvet-denisa-2026-09-20.md"
 stakes: high
 links:
-  - relates-to: learning-a-test-that-cannot-fail-guards-nothing
-  - relates-to: learning-green-tests-are-not-a-deployed-bot
-  - relates-to: learning-a-button-is-not-a-feature
-  - relates-to: learning-absence-needs-a-search-that-would-have-found-presence
+  - relates-to: "[[learning-a-test-that-cannot-fail-guards-nothing]]"
+  - relates-to: "[[learning-green-tests-are-not-a-deployed-bot]]"
+  - relates-to: "[[learning-a-button-is-not-a-feature]]"
+  - relates-to: "[[learning-absence-needs-a-search-that-would-have-found-presence]]"
 ---
 18.09 за ночь построены повторяющиеся задачи: таблица `task_occurrence`, состояние дня,
 «отложить серию», долбёж. Восемь файлов, десятки тестов, все зелёные. Фича попала в релизные

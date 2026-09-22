@@ -11,8 +11,8 @@ sources:
   - file: ".github/workflows/ci.yml"
 stakes: medium
 links:
-  - relates-to: learning-e2e-fixture-time-in-runner-zone-fails-nightly
-  - relates-to: peer-project-lessons-for-ci-and-testing
+  - relates-to: "[[learning-e2e-fixture-time-in-runner-zone-fails-nightly]]"
+  - relates-to: "[[peer-project-lessons-for-ci-and-testing]]"
 ---
 17.09, два случая с одинаковыми числами.
 

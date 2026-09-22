@@ -11,9 +11,9 @@ sources:
   - file: "api-go/internal/reminders/service.go"
 stakes: high
 links:
-  - relates-to: learning-absence-needs-a-search-that-would-have-found-presence
-  - relates-to: learning-my-own-query-lied-twice-in-one-night
-  - relates-to: learning-a-fake-that-accepts-anything-is-not-a-control
+  - relates-to: "[[learning-absence-needs-a-search-that-would-have-found-presence]]"
+  - relates-to: "[[learning-my-own-query-lied-twice-in-one-night]]"
+  - relates-to: "[[learning-a-fake-that-accepts-anything-is-not-a-control]]"
 ---
 18.09. Я научил API присылать язык получателя вместе с уведомлением, а бот — рисовать кнопки на
 нём. Юнит-тесты зелёные, показаны красными. Но юнит-тест доказывает, что **бот рисует**; он не

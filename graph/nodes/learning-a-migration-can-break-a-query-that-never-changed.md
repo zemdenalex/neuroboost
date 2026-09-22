@@ -13,10 +13,10 @@ sources:
   - file: "ref/feedback/bot-proverka-v04113-otvet-denisa-2026-09-18.md"
 stakes: high
 links:
-  - relates-to: learning-clipping-belongs-on-the-box-that-has-the-height
-  - relates-to: learning-stale-comment-outlived-its-constraint
-  - relates-to: learning-my-own-query-lied-twice-in-one-night
-  - relates-to: learning-a-fake-that-accepts-anything-is-not-a-control
+  - relates-to: "[[learning-clipping-belongs-on-the-box-that-has-the-height]]"
+  - relates-to: "[[learning-stale-comment-outlived-its-constraint]]"
+  - relates-to: "[[learning-my-own-query-lied-twice-in-one-night]]"
+  - relates-to: "[[learning-a-fake-that-accepts-anything-is-not-a-control]]"
 ---
 18.09. Денис нажал «отложить на час» — шесть раз подряд «⚠️ Не получилось». Я **не стал
 объяснять**, а открыл лог dev-API:

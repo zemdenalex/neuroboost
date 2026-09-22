@@ -11,7 +11,7 @@ sources:
   - file: "docs/incident-2026-09-21-host-nedostupen.md"
 stakes: high
 links:
-  - relates-to: entity-server-topology
+  - relates-to: "[[entity-server-topology]]"
 ---
 21.09, 15:52–17:07 MSK: хост `62.76.228.106` недоступен целиком — прод и staging вместе.
 Причина — технические работы на кластере М9 (со слов Дениса).

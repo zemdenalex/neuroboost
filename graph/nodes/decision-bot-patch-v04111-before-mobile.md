@@ -12,11 +12,11 @@ sources:
   - file: "docs/superpowers/specs/2026-09-11-calendar-event-window-design.md"
 stakes: high
 links:
-  - supersedes-order-of: decision-v0412-focus-is-the-event-window
-  - relates-to: entity-bot-deploys-by-hand-not-by-ci
-  - relates-to: learning-green-tests-are-not-a-deployed-bot
-  - relates-to: decision-brainstorm-the-bot-before-building-more
-  - implemented-by: decision-bot-nl-creation-rules-15-09
+  - supersedes-order-of: "[[decision-v0412-focus-is-the-event-window]]"
+  - relates-to: "[[entity-bot-deploys-by-hand-not-by-ci]]"
+  - relates-to: "[[learning-green-tests-are-not-a-deployed-bot]]"
+  - relates-to: "[[decision-brainstorm-the-bot-before-building-more]]"
+  - implemented-by: "[[decision-bot-nl-creation-rules-15-09]]"
 ---
 Его слова 15.09, дословно: *«давай я напишу что заметил в боте, я бы хотел его улучшить и
 поправить, включим это в 0.4.11.1, а потом уже перейдем к 12 где улучшим мобилку и тд»*.

@@ -13,8 +13,8 @@ sources:
   - file: "docs/site-audit-2026-08-12.md"
 stakes: medium
 links:
-  - relates-to: learning-a-test-that-cannot-fail-guards-nothing
-  - relates-to: learning-a-setting-that-reshapes-the-frame-is-its-own-coverage-axis
+  - relates-to: "[[learning-a-test-that-cannot-fail-guards-nothing]]"
+  - relates-to: "[[learning-a-setting-that-reshapes-the-frame-is-its-own-coverage-axis]]"
 ---
 **Ловушка.** Детектор «что осталось под фиксированной панелью» сравнивал середину элемента с
 верхом панели по `getBoundingClientRect()`. На `/calendar` он показал метку `09:00` под панелью.

@@ -12,9 +12,9 @@ sources:
   - file: "web/src/lib/reminders/presetLabel.test.ts (translator: dict[key] ?? key → ?? String(key))"
 stakes: high
 links:
-  - relates-to: learning-a-test-that-cannot-fail-guards-nothing
-  - relates-to: learning-four-of-my-own-defects-in-one-session
-  - relates-to: learning-a-control-nobody-runs-hides-a-control-that-cannot-work
+  - relates-to: "[[learning-a-test-that-cannot-fail-guards-nothing]]"
+  - relates-to: "[[learning-four-of-my-own-defects-in-one-session]]"
+  - relates-to: "[[learning-a-control-nobody-runs-hides-a-control-that-cannot-work]]"
 ---
 `presetLabel` искала подпись в объектном литерале, поэтому `BUILT_IN_LABELS['toString']`
 возвращала `Object.prototype.toString` — **истинное значение** — и проходила проверку

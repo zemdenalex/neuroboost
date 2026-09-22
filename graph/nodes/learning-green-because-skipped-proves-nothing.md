@@ -13,8 +13,8 @@ sources:
   - file: "api-go/internal/export/export_test.go, api-go/internal/tasks/handlers_test.go"
 stakes: high
 links:
-  - relates-to: entity-e2e-playwright-harness
-  - relates-to: learning-checkbox-in-a-plan-is-a-claim-not-evidence
+  - relates-to: "[[entity-e2e-playwright-harness]]"
+  - relates-to: "[[learning-checkbox-in-a-plan-is-a-claim-not-evidence]]"
 ---
 Срез 1 проекта P3 перевёл доступ к событиям и задачам с колонки `user_id` на членство в
 календаре. Двенадцать задач подряд шли с зелёным `go test ./...`. При первом же push CI упал:

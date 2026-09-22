@@ -12,11 +12,11 @@ sources:
   - file: "web/src/components/TaskSidebar/taskControls.test.ts"
 stakes: high
 links:
-  - relates-to: learning-a-scan-for-one-language-is-blind-to-the-other
-  - relates-to: learning-a-test-that-cannot-fail-guards-nothing
-  - relates-to: learning-a-button-is-not-a-feature
-  - relates-to: learning-the-author-of-a-control-cannot-see-it-cannot-fail
-  - relates-to: learning-a-warning-counted-is-not-a-warning-read
+  - relates-to: "[[learning-a-scan-for-one-language-is-blind-to-the-other]]"
+  - relates-to: "[[learning-a-test-that-cannot-fail-guards-nothing]]"
+  - relates-to: "[[learning-a-button-is-not-a-feature]]"
+  - relates-to: "[[learning-the-author-of-a-control-cannot-see-it-cannot-fail]]"
+  - relates-to: "[[learning-a-warning-counted-is-not-a-warning-read]]"
 ---
 23.08 я заменил две `console.log`-заглушки на настоящую навигацию и написал
 `taskHandlers.test.ts`: скан `Calendar.tsx`, утверждающий, что обработчик не заглушка.

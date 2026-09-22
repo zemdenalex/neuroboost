@@ -11,10 +11,10 @@ sources:
   - file: "docs/superpowers/specs/2026-08-23-post-walkthrough-fixes-and-release-design.md"
 stakes: high
 links:
-  - relates-to: entity-prod-runs-a-build-no-branch-points-at
-  - relates-to: preference-rotate-after-it-works
-  - relates-to: learning-merge-to-main-is-the-release
-  - relates-to: learning-a-stale-local-ref-answers-confidently
+  - relates-to: "[[entity-prod-runs-a-build-no-branch-points-at]]"
+  - relates-to: "[[preference-rotate-after-it-works]]"
+  - relates-to: "[[learning-merge-to-main-is-the-release]]"
+  - relates-to: "[[learning-a-stale-local-ref-answers-confidently]]"
 ---
 После прохода вдвоём Денис выбрал, как выкатываться, и выбрал не самое быстрое.
 

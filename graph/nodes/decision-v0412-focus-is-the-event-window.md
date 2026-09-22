@@ -12,10 +12,10 @@ sources:
   - file: "ref/feedback/proverka-pered-relizom-otvet-denisa-2026-09-11.md"
 stakes: high
 links:
-  - relates-to: entity-calendars-hold-events-since-slice2plus
-  - relates-to: learning-a-handler-test-says-nothing-about-a-control
-  - relates-to: preference-never-replace-a-working-capability-with-a-simpler-one
-  - relates-to: decision-bot-patch-v04111-before-mobile
+  - relates-to: "[[entity-calendars-hold-events-since-slice2plus]]"
+  - relates-to: "[[learning-a-handler-test-says-nothing-about-a-control]]"
+  - relates-to: "[[preference-never-replace-a-working-capability-with-a-simpler-one]]"
+  - relates-to: "[[decision-bot-patch-v04111-before-mobile]]"
 ---
 ⚠ **Порядок изменён 15.09:** перед этим фокусом встал патч по боту **v0.4.11.1** — см.
 [[decision-bot-patch-v04111-before-mobile]]. Содержание фокуса не поменялось, поменялась

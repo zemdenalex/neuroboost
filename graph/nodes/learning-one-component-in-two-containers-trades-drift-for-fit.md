@@ -13,9 +13,9 @@ sources:
   - file: "web/e2e/mobile-overflow.spec.ts — мерит scrollWidth ДОКУМЕНТА"
 stakes: medium
 links:
-  - relates-to: entity-calendars-hold-events-since-slice2plus
-  - relates-to: learning-a-control-nobody-runs-hides-a-control-that-cannot-work
-  - relates-to: preference-never-replace-a-working-capability-with-a-simpler-one
+  - relates-to: "[[entity-calendars-hold-events-since-slice2plus]]"
+  - relates-to: "[[learning-a-control-nobody-runs-hides-a-control-that-cannot-work]]"
+  - relates-to: "[[preference-never-replace-a-working-capability-with-a-simpler-one]]"
 ---
 15.08 я смонтировал в поповер фильтра **ту же** `CalendarsSection`, что рендерит страница
 настроек, и обосновал это так: «переименование, цвет и удаление не смогут разъехаться между

@@ -13,12 +13,12 @@ sources:
   - command: "/opt/neuroboost-bot/src → 'fatal: not a git repository', deploy-скрипта нет"
 stakes: high
 links:
-  - relates-to: entity-bot-creates-events-from-one-line
-  - relates-to: learning-merge-to-main-is-the-release
-  - relates-to: workitem-bot-authtoken-never-set
-  - relates-to: learning-sent-measures-delivery-not-usefulness
-  - relates-to: decision-v0412-focus-is-the-event-window
-  - relates-to: decision-bot-patch-v04111-before-mobile
+  - relates-to: "[[entity-bot-creates-events-from-one-line]]"
+  - relates-to: "[[learning-merge-to-main-is-the-release]]"
+  - relates-to: "[[workitem-bot-authtoken-never-set]]"
+  - relates-to: "[[learning-sent-measures-delivery-not-usefulness]]"
+  - relates-to: "[[decision-v0412-focus-is-the-event-window]]"
+  - relates-to: "[[decision-bot-patch-v04111-before-mobile]]"
 ---
 🔴 **`deploy-dev` в CI обновляет api, web и db — и не знает про бота.** Бот работает на
 **другой машине** (`185.214.10.107`), его исходники лежат в `/opt/neuroboost-bot/src` простой

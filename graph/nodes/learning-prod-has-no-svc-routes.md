@@ -12,9 +12,9 @@ sources:
   - command: "curl -s -o /dev/null -w '%{http_code}' -H 'Authorization: Bearer x' https://dev.neuroboost.website/api/svc/notifications/pending  # → 503 до токена, 401 после"
 stakes: high
 links:
-  - relates-to: entity-server-topology
-  - relates-to: learning-merge-to-main-is-the-release
-  - relates-to: entity-bot-runs-on-nl2
+  - relates-to: "[[entity-server-topology]]"
+  - relates-to: "[[learning-merge-to-main-is-the-release]]"
+  - relates-to: "[[entity-bot-runs-on-nl2]]"
 ---
 **Один curl отвечает на вопрос «где Денис может пользоваться приложением».**
 

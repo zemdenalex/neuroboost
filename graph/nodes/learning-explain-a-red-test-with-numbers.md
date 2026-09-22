@@ -12,10 +12,10 @@ sources:
   - file: "web/src/components/Calendar/WeekGrid/EventBlock.tsx"
 stakes: high
 links:
-  - relates-to: learning-a-test-that-cannot-fail-guards-nothing
-  - relates-to: learning-a-button-is-not-a-feature
-  - relates-to: learning-e2e-baseline-recorded-on-a-monday
-  - relates-to: learning-a-co-occurring-warning-is-not-a-cause
+  - relates-to: "[[learning-a-test-that-cannot-fail-guards-nothing]]"
+  - relates-to: "[[learning-a-button-is-not-a-feature]]"
+  - relates-to: "[[learning-e2e-baseline-recorded-on-a-monday]]"
+  - relates-to: "[[learning-a-co-occurring-warning-is-not-a-cause]]"
 ---
 Новая мобильная спека падала в CI и проходила локально. Я объяснил это **три раза**, и первые
 два объяснения были неверны — каждое звучало убедительно и каждое стоило круга CI.

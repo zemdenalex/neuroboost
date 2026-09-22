@@ -12,9 +12,9 @@ sources:
   - file: "api-go/internal/calendars/scoping_test.go"
 stakes: medium
 links:
-  - relates-to: learning-a-test-that-cannot-fail-guards-nothing
-  - relates-to: entity-p3-slice1-calendar-foundation
-  - relates-to: entity-p3-slice2-calendar-crud
+  - relates-to: "[[learning-a-test-that-cannot-fail-guards-nothing]]"
+  - relates-to: "[[entity-p3-slice1-calendar-foundation]]"
+  - relates-to: "[[entity-p3-slice2-calendar-crud]]"
 ---
 **Что случилось.** У архитектурных тестов в `scoping_test.go` есть «пол» —
 `minSQLBlocksScanned`. Он существует не ради счёта запросов, а на случай, что **сама охрана

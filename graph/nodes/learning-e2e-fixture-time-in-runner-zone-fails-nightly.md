@@ -12,10 +12,10 @@ sources:
   - file: "web/e2e/fixtures/localTime.ts"
 stakes: medium
 links:
-  - relates-to: learning-two-pushes-within-five-minutes-break-each-others-e2e
-  - relates-to: learning-my-own-query-lied-twice-in-one-night
-  - relates-to: learning-e2e-baseline-recorded-on-a-monday
-  - relates-to: entity-e2e-playwright-harness
+  - relates-to: "[[learning-two-pushes-within-five-minutes-break-each-others-e2e]]"
+  - relates-to: "[[learning-my-own-query-lied-twice-in-one-night]]"
+  - relates-to: "[[learning-e2e-baseline-recorded-on-a-monday]]"
+  - relates-to: "[[entity-e2e-playwright-harness]]"
 ---
 15–16.09 e2e на `develop` упал дважды подряд: 1 из 50, `shared-badge-mobile.spec.ts:172`,
 на его же положительном контроле («no shared event rendered»).

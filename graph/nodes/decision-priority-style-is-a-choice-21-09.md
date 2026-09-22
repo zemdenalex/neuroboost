@@ -12,9 +12,9 @@ sources:
   - file: "docs/superpowers/plans/2026-09-21-v04114-release-plan.md"
 stakes: low
 links:
-  - relates-to: decision-bot-vocabulary-and-symbols-18-09
-  - relates-to: decision-onboarding-is-the-first-minute-17-09
-  - relates-to: decision-release-small-and-in-his-order-21-09
+  - relates-to: "[[decision-bot-vocabulary-and-symbols-18-09]]"
+  - relates-to: "[[decision-onboarding-is-the-first-minute-17-09]]"
+  - relates-to: "[[decision-release-small-and-in-his-order-21-09]]"
 ---
 Повод — Настя, первый посторонний читатель бота, 21.09: *«смайлики слишком из разных цветов
 как будто, нет одного стиля визуально, особенно кружки жёлтые рядом с задачами … лучше без

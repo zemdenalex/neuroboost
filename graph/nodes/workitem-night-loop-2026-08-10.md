@@ -10,12 +10,12 @@ sources:
   - file: ".remember/night-loop-2026-08-10.md (542 строки)"
 stakes: high
 links:
-  - relates-to: entity-server-topology
-  - relates-to: entity-e2e-playwright-harness
-  - relates-to: workitem-p2-notifications-last-mile
-  - relates-to: entity-p3-slice2-calendar-crud
-  - relates-to: workitem-release-v0410-gated-by-denis-report
-  - relates-to: learning-a-check-outside-the-checklist-never-runs
+  - relates-to: "[[entity-server-topology]]"
+  - relates-to: "[[entity-e2e-playwright-harness]]"
+  - relates-to: "[[workitem-p2-notifications-last-mile]]"
+  - relates-to: "[[entity-p3-slice2-calendar-crud]]"
+  - relates-to: "[[workitem-release-v0410-gated-by-denis-report]]"
+  - relates-to: "[[learning-a-check-outside-the-checklist-never-runs]]"
 ---
 **Заказ Дениса (10.08, 03:14–04:19):** *«я хочу начать пользоваться приложением, есть 3
 главных блокера, поработай ночью в свежей сессии, чтобы утром я мог начать пользоваться,

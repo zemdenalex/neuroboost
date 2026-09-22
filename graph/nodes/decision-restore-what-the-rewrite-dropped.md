@@ -12,9 +12,9 @@ sources:
   - quote: "хочу уже на этой неделе использовать neuroboost по полной"
 stakes: medium
 links:
-  - relates-to: learning-a-rewrite-can-drop-features-silently
-  - relates-to: learning-stale-comment-outlived-its-constraint
-  - relates-to: entity-v0410-released-with-an-outage
+  - relates-to: "[[learning-a-rewrite-can-drop-features-silently]]"
+  - relates-to: "[[learning-stale-comment-outlived-its-constraint]]"
+  - relates-to: "[[entity-v0410-released-with-an-outage]]"
 ---
 Поставленный вопрос: `CLAUDE.md` утверждал, что месячного вида календаря в боте нет **и не
 планируется**, — а в v0.2.1 он работал (`calendar_prev/next_YYYY_MM`, `calendar_day_*`).

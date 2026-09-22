@@ -12,9 +12,9 @@ sources:
   - command: "api-go/internal/reminders/scan.go:38 — WHERE tg_id IS NOT NULL"
 stakes: high
 links:
-  - relates-to: learning-prod-has-no-svc-routes
-  - relates-to: entity-bot-runs-on-nl2
-  - relates-to: learning-null-key-passes-a-unique-index
+  - relates-to: "[[learning-prod-has-no-svc-routes]]"
+  - relates-to: "[[entity-bot-runs-on-nl2]]"
+  - relates-to: "[[learning-null-key-passes-a-unique-index]]"
 ---
 `Scan` отбирает пользователей запросом `WHERE tg_id IS NOT NULL`
 (`api-go/internal/reminders/scan.go:38`). Пользователь без привязки к Telegram

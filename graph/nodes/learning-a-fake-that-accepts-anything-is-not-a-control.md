@@ -12,11 +12,11 @@ sources:
   - file: "ref/feedback/bot-proverka-v04112-otvet-denisa-2026-09-17.md"
 stakes: high
 links:
-  - relates-to: learning-my-first-cache-test-passed-with-the-cache-off
-  - relates-to: learning-the-author-of-a-control-cannot-see-it-cannot-fail
-  - relates-to: learning-a-scan-for-one-language-is-blind-to-the-other
-  - relates-to: learning-a-button-is-not-a-feature
-  - relates-to: learning-my-own-query-lied-twice-in-one-night
+  - relates-to: "[[learning-my-first-cache-test-passed-with-the-cache-off]]"
+  - relates-to: "[[learning-the-author-of-a-control-cannot-see-it-cannot-fail]]"
+  - relates-to: "[[learning-a-scan-for-one-language-is-blind-to-the-other]]"
+  - relates-to: "[[learning-a-button-is-not-a-feature]]"
+  - relates-to: "[[learning-my-own-query-lied-twice-in-one-night]]"
 ---
 17.09. `tgbotapi.NewInlineKeyboardMarkup()` без строк сериализуется как
 `{"inline_keyboard":null}`. Настоящий Telegram отвечает

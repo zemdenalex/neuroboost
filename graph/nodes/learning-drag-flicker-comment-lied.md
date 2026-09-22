@@ -13,9 +13,9 @@ sources:
   - command: "grep -n 'setDrag(null)' web/src/components/Calendar/WeekGrid/useWeekGridDrag.ts  # onUp"
 stakes: low
 links:
-  - relates-to: learning-stale-comment-outlived-its-constraint
-  - relates-to: entity-e2e-playwright-harness
-  - relates-to: learning-a-co-occurring-warning-is-not-a-cause
+  - relates-to: "[[learning-stale-comment-outlived-its-constraint]]"
+  - relates-to: "[[entity-e2e-playwright-harness]]"
+  - relates-to: "[[learning-a-co-occurring-warning-is-not-a-cause]]"
 ---
 ✅ **Починено 11.08** (`c27b94a`). Сначала было отложено как design change — и правильно, потому
 что решение зависело от утверждения, которое оказалось ложным.

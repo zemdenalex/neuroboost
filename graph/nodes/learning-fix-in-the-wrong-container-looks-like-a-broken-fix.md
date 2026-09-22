@@ -13,9 +13,9 @@ sources:
   - command: "curl -s -o /dev/null -w '%{http_code}' -X POST .../api/auth/telegram  # 401 на обоих контурах = маршрут есть"
 stakes: high
 links:
-  - relates-to: entity-bot-runs-on-nl2
-  - relates-to: workitem-bot-authtoken-never-set
-  - relates-to: learning-prod-has-no-svc-routes
+  - relates-to: "[[entity-bot-runs-on-nl2]]"
+  - relates-to: "[[workitem-bot-authtoken-never-set]]"
+  - relates-to: "[[learning-prod-has-no-svc-routes]]"
 ---
 Утром 11.08 Денис прислал переписку с ботом: `/start` отвечает, а `🎯 Today` и `📋 Tasks`
 падают с `MISSING_TOKEN`. Ровно тот симптом, который был починен несколько часов назад и

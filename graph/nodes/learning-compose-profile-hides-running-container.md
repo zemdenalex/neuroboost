@@ -12,9 +12,9 @@ sources:
   - command: "docker ps --filter name=neuroboost-dev-bot  # → Up 9 minutes ПОСЛЕ деплоя с профилем"
 stakes: medium
 links:
-  - relates-to: learning-compose-build-can-start-a-silent-container
-  - relates-to: entity-bot-runs-on-nl2
-  - relates-to: learning-merge-to-main-is-the-release
+  - relates-to: "[[learning-compose-build-can-start-a-silent-container]]"
+  - relates-to: "[[entity-bot-runs-on-nl2]]"
+  - relates-to: "[[learning-merge-to-main-is-the-release]]"
 ---
 `docker compose stop <service>` **не переживает деплой**: job `deploy-dev`
 (`.github/workflows/ci.yml`) выполняет `down --remove-orphans` и следом `up -d`, то есть

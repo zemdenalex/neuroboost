@@ -12,10 +12,10 @@ sources:
   - file: "graph/nodes/entity-prod-runs-a-build-no-branch-points-at.md"
 stakes: high
 links:
-  - relates-to: entity-prod-runs-a-build-no-branch-points-at
-  - relates-to: learning-merge-to-main-is-the-release
-  - relates-to: learning-checkbox-in-a-plan-is-a-claim-not-evidence
-  - relates-to: learning-a-co-occurring-warning-is-not-a-cause
+  - relates-to: "[[entity-prod-runs-a-build-no-branch-points-at]]"
+  - relates-to: "[[learning-merge-to-main-is-the-release]]"
+  - relates-to: "[[learning-checkbox-in-a-plan-is-a-claim-not-evidence]]"
+  - relates-to: "[[learning-a-co-occurring-warning-is-not-a-cause]]"
 ---
 23.08 я построил всю картину релиза на `git rev-list --count main..develop` и получил
 **341**. 11.09 та же команда дала **53**. Код между этими датами не менялся ни строкой.

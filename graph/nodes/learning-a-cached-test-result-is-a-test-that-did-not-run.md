@@ -11,9 +11,9 @@ sources:
   - file: "api-go/internal/accounts/fk_test.go"
 stakes: high
 links:
-  - relates-to: learning-a-test-that-cannot-fail-guards-nothing
-  - relates-to: learning-my-first-cache-test-passed-with-the-cache-off
-  - relates-to: learning-a-control-nobody-runs-hides-a-control-that-cannot-work
+  - relates-to: "[[learning-a-test-that-cannot-fail-guards-nothing]]"
+  - relates-to: "[[learning-my-first-cache-test-passed-with-the-cache-off]]"
+  - relates-to: "[[learning-a-control-nobody-runs-hides-a-control-that-cannot-work]]"
 ---
 20.09. Тест сверяет список внешних ключей на `"user"`, который знает слияние аккаунтов, с тем,
 что реально есть в базе. Зелёный. Показываю красным: создаю в тестовой БД таблицу с `user_id`,

@@ -12,10 +12,10 @@ sources:
   - file: "web/src/components/Calendar/EventEditor/useEditorForm.ts"
 stakes: high
 links:
-  - relates-to: learning-a-test-that-cannot-fail-guards-nothing
-  - relates-to: learning-a-co-occurring-warning-is-not-a-cause
-  - relates-to: learning-the-deploy-job-swallowed-two-failures-for-months
-  - relates-to: learning-a-control-nobody-runs-hides-a-control-that-cannot-work
+  - relates-to: "[[learning-a-test-that-cannot-fail-guards-nothing]]"
+  - relates-to: "[[learning-a-co-occurring-warning-is-not-a-cause]]"
+  - relates-to: "[[learning-the-deploy-job-swallowed-two-failures-for-months]]"
+  - relates-to: "[[learning-a-control-nobody-runs-hides-a-control-that-cannot-work]]"
 ---
 Дефект C3 — событие не переносилось в другой календарь — оказался stale closure:
 `handleSave` не держал `calendarId` в зависимостях `useCallback`, поэтому при смене одного

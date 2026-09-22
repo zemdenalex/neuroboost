@@ -13,10 +13,10 @@ sources:
   - command: "тест с двумя пишущими членами: до починки 2 исключения и 2 замены, после — 1 и 1"
 stakes: high
 links:
-  - relates-to: learning-insert-and-update-ask-different-access-questions
-  - relates-to: entity-calendars-hold-events-since-slice2plus
-  - relates-to: learning-null-key-passes-a-unique-index
-  - relates-to: learning-a-test-that-cannot-fail-guards-nothing
+  - relates-to: "[[learning-insert-and-update-ask-different-access-questions]]"
+  - relates-to: "[[entity-calendars-hold-events-since-slice2plus]]"
+  - relates-to: "[[learning-null-key-passes-a-unique-index]]"
+  - relates-to: "[[learning-a-test-that-cannot-fail-guards-nothing]]"
 ---
 `event_exception` несла `UNIQUE (user_id, event_id, occurrence)` из baseline, поэтому upsert в
 `detachOccurrence` конфликтовал **по пользователю**. А `fetchExceptions` читает исключения

@@ -13,12 +13,12 @@ sources:
   - command: "cd web && corepack pnpm test --run mobileDayOffset  # 6 тестов"
 stakes: medium
 links:
-  - relates-to: learning-fixture-data-can-disarm-a-control
-  - relates-to: learning-two-neighbouring-paths-one-broken-reading-finds-neither
-  - relates-to: learning-stale-comment-outlived-its-constraint
-  - relates-to: entity-e2e-playwright-harness
-  - relates-to: learning-e2e-fixture-time-in-runner-zone-fails-nightly
-  - relates-to: learning-stale-comment-outlived-its-constraint
+  - relates-to: "[[learning-fixture-data-can-disarm-a-control]]"
+  - relates-to: "[[learning-two-neighbouring-paths-one-broken-reading-finds-neither]]"
+  - relates-to: "[[learning-stale-comment-outlived-its-constraint]]"
+  - relates-to: "[[entity-e2e-playwright-harness]]"
+  - relates-to: "[[learning-e2e-fixture-time-in-runner-zone-fails-nightly]]"
+  - relates-to: "[[learning-stale-comment-outlived-its-constraint]]"
 ---
 11.08 две мобильные спеки `recurring-scope` упали **без единой правки, их касающейся**. Первая
 мысль — регрессия моей итерации. Она была неверной по прямому основанию: e2e бьёт в

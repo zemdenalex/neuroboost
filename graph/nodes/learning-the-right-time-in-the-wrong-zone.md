@@ -13,12 +13,12 @@ sources:
   - file: "api-go/internal/tasks/occurrence.go"
 stakes: high
 links:
-  - relates-to: learning-my-own-query-lied-twice-in-one-night
-  - relates-to: learning-an-empty-result-is-not-an-answer
-  - relates-to: learning-e2e-baseline-recorded-on-a-monday
-  - relates-to: learning-one-defect-can-hide-another
-  - relates-to: learning-all-day-events-are-local-midnight-instants
-  - relates-to: learning-a-fix-to-linked-state-is-measured-at-its-consumer
+  - relates-to: "[[learning-my-own-query-lied-twice-in-one-night]]"
+  - relates-to: "[[learning-an-empty-result-is-not-an-answer]]"
+  - relates-to: "[[learning-e2e-baseline-recorded-on-a-monday]]"
+  - relates-to: "[[learning-one-defect-can-hide-another]]"
+  - relates-to: "[[learning-all-day-events-are-local-midnight-instants]]"
+  - relates-to: "[[learning-a-fix-to-linked-state-is-measured-at-its-consumer]]"
 ---
 18.09, за одну сессию — **три** дефекта одной формы. Ни один не выглядел как ошибка: во всех
 трёх время было настоящим, валидным и вычисленным без единого бага в арифметике. Просто **не в

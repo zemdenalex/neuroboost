@@ -12,8 +12,8 @@ sources:
   - file: "web/e2e/overlap-overflow.spec.ts"
 stakes: medium
 links:
-  - relates-to: learning-my-own-query-lied-twice-in-one-night
-  - relates-to: learning-e2e-baseline-recorded-on-a-monday
+  - relates-to: "[[learning-my-own-query-lied-twice-in-one-night]]"
+  - relates-to: "[[learning-e2e-baseline-recorded-on-a-monday]]"
 ---
 Денис 18.09: «выход за поля в вебе в событиях, **чем больше событий тем больше они за поля
 выходят**».

@@ -12,10 +12,10 @@ sources:
   - file: "docs/resheniya-bot-navigation-2026-08-19.md"
 stakes: high
 links:
-  - relates-to: learning-a-test-that-cannot-fail-guards-nothing
-  - relates-to: learning-fixture-data-can-disarm-a-control
-  - relates-to: learning-a-control-nobody-runs-hides-a-control-that-cannot-work
-  - relates-to: learning-a-handler-test-says-nothing-about-a-control
+  - relates-to: "[[learning-a-test-that-cannot-fail-guards-nothing]]"
+  - relates-to: "[[learning-fixture-data-can-disarm-a-control]]"
+  - relates-to: "[[learning-a-control-nobody-runs-hides-a-control-that-cannot-work]]"
+  - relates-to: "[[learning-a-handler-test-says-nothing-about-a-control]]"
 ---
 Я требую от каждого теста доказательства, что он умеет краснеть, и сам пишу саботаж, которым
 это доказывается. Для парсера строки задачи я предписал: заменить границу в шаблоне приоритета

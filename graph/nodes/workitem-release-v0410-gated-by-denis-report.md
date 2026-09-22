@@ -15,8 +15,8 @@ work:
   block-reason: "нужен проход Дениса по staging-чеклисту руками и его явное «мержим»"
   status: blocked
 links:
-  - relates-to: learning-merge-to-main-is-the-release
-  - relates-to: workitem-p2-notifications-last-mile
+  - relates-to: "[[learning-merge-to-main-is-the-release]]"
+  - relates-to: "[[workitem-p2-notifications-last-mile]]"
 ---
 **Summary:** PR #9 (`develop` → `main`, **124** коммитов на 10.08 08:00 — пересчитывать `git rev-list --count main..develop`, число росло всю ночь) открыт и НЕ смёржен; мерж и
 есть релиз, поэтому это единственная точка, где нужен явный «да» Дениса.

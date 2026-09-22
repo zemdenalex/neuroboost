@@ -13,9 +13,9 @@ sources:
   - file: "api-go/internal/events/occurrence.go — detachOccurrence не проверяла доступ вовсе"
 stakes: high
 links:
-  - relates-to: learning-written-per-user-read-per-calendar
-  - relates-to: entity-calendars-hold-events-since-slice2plus
-  - relates-to: learning-a-test-that-cannot-fail-guards-nothing
+  - relates-to: "[[learning-written-per-user-read-per-calendar]]"
+  - relates-to: "[[entity-calendars-hold-events-since-slice2plus]]"
+  - relates-to: "[[learning-a-test-that-cannot-fail-guards-nothing]]"
 ---
 Правило «записи скоупятся `WritableIDsFor`, чтения — `CalendarIDsFor`» закрыло десять мест, но
 **охранный тест считал `scheduleTask` чистой**, потому что в ней есть `WritableIDsFor`.

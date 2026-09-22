@@ -12,10 +12,10 @@ sources:
   - file: "docs/release-readiness-2026-08-18.md · docs/analiz-bot-vs-web-2026-08-18.md"
 stakes: high
 links:
-  - relates-to: learning-empty-is-not-the-same-shape
-  - relates-to: learning-merge-to-main-is-the-release
-  - relates-to: entity-p3-sharing-shipped-2026-08-17
-  - relates-to: entity-prod-runs-a-build-no-branch-points-at
+  - relates-to: "[[learning-empty-is-not-the-same-shape]]"
+  - relates-to: "[[learning-merge-to-main-is-the-release]]"
+  - relates-to: "[[entity-p3-sharing-shipped-2026-08-17]]"
+  - relates-to: "[[entity-prod-runs-a-build-no-branch-points-at]]"
 ---
 Денис дал явное «да» и релиз уехал: **299 коммитов**, миграции **8 → 15**, P1 + P2 +
 P3 срезы 1–4.

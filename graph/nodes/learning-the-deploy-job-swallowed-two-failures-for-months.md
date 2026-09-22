@@ -13,10 +13,10 @@ sources:
   - command: "dev: 2 строки user (e130d018, 5ba8577f); prod: 6 (ce841d6a, 46f66faa, …) — пересечение пусто"
 stakes: high
 links:
-  - relates-to: learning-a-control-nobody-runs-hides-a-control-that-cannot-work
-  - relates-to: learning-a-test-that-cannot-fail-guards-nothing
-  - relates-to: learning-merge-to-main-is-the-release
-  - relates-to: entity-bot-deploys-by-hand-not-by-ci
+  - relates-to: "[[learning-a-control-nobody-runs-hides-a-control-that-cannot-work]]"
+  - relates-to: "[[learning-a-test-that-cannot-fail-guards-nothing]]"
+  - relates-to: "[[learning-merge-to-main-is-the-release]]"
+  - relates-to: "[[entity-bot-deploys-by-hand-not-by-ci]]"
 ---
 Обе находки — из job'а `deploy` / `deploy-dev` в `ci.yml`, и обе одного устройства: команда,
 чей отказ дописан через `|| echo "…"`.

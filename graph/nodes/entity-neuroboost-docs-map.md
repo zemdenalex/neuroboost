@@ -9,9 +9,9 @@ created: 2026-08-10
 sources:
   - file: "docs/DOCS-MAP.md"
 links:
-  - relates-to: learning-checkbox-in-a-plan-is-a-claim-not-evidence
-  - relates-to: learning-merge-to-main-is-the-release
-  - relates-to: workitem-release-v0410-gated-by-denis-report
+  - relates-to: "[[learning-checkbox-in-a-plan-is-a-claim-not-evidence]]"
+  - relates-to: "[[learning-merge-to-main-is-the-release]]"
+  - relates-to: "[[workitem-release-v0410-gated-by-denis-report]]"
 ---
 **Summary:** В проекте 27 markdown-документов на ~14 000 строк, и половина из них врёт о статусе.
 `docs/DOCS-MAP.md` — единственное место, где по каждому сказано: живой / справочный / архив /

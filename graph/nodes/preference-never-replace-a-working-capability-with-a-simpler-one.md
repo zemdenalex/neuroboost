@@ -11,8 +11,8 @@ sources:
   - quote: "Bruh you just removed the infinite color range to make the picker, create the rule to never remove working function to replace it with simpler one"
 stakes: high
 links:
-  - relates-to: preference-do-the-work-hand-over-only-what-eyes-must-settle
-  - relates-to: learning-four-of-my-own-defects-in-one-session
+  - relates-to: "[[preference-do-the-work-hand-over-only-what-eyes-must-settle]]"
+  - relates-to: "[[learning-four-of-my-own-defects-in-one-session]]"
 ---
 **Слова Дениса, дословно (15.08):** *«Bruh you just removed the infinite color range to make the
 picker, create the rule to never remove working function to replace it with simpler one. We need

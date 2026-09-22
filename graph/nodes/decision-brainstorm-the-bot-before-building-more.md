@@ -11,10 +11,10 @@ sources:
   - file: "graph/log.md 2026-08-19"
 stakes: high
 links:
-  - relates-to: workitem-bot-what-denis-called-bad
-  - relates-to: learning-green-tests-are-not-a-deployed-bot
-  - relates-to: decision-restore-what-the-rewrite-dropped
-  - relates-to: decision-bot-patch-v04111-before-mobile
+  - relates-to: "[[workitem-bot-what-denis-called-bad]]"
+  - relates-to: "[[learning-green-tests-are-not-a-deployed-bot]]"
+  - relates-to: "[[decision-restore-what-the-rewrite-dropped]]"
+  - relates-to: "[[decision-bot-patch-v04111-before-mobile]]"
 ---
 Его слова, дословно: *«let's focus on planning what the bot should look like and implementing
 it, improving the code and making more functions, so planning and brainstorming then

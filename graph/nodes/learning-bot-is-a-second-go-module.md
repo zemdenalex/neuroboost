@@ -10,7 +10,7 @@ sources:
   - file: "bot/go.mod (собственный модуль) · .github/workflows/ci.yml — шаг «Build and test bot»"
   - file: ".remember/handoff-2026-07-28.md §Что построено в P2"
 links:
-  - relates-to: workitem-p2-notifications-last-mile
+  - relates-to: "[[workitem-p2-notifications-last-mile]]"
 ---
 **Summary:** В репозитории два Go-модуля — `api-go/` и `bot/`. Ни `go build ./...`, ни `go test ./...`
 из `api-go` не заходят в `bot/`, поэтому бот мог не компилироваться, а CI была зелёной.

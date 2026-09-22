@@ -10,7 +10,7 @@ sources:
   - file: ".remember/night-loop-2026-08-10.md lines 12–36"
   - file: "CLAUDE.md §Memory — **new** (was: 'This project has **no `graph/`**, deliberately')"
 links:
-  - related-to: memory-split-claude-graph-remember
+  - related-to: "[[memory-split-claude-graph-remember]]"
 ---
 **Summary:** `CLAUDE.md` is being rewritten to reflect that NeuroBoost now maintains a `graph/` directory (same as other ventures: V001, V004). Prior guidance stated deliberately no graph.
 

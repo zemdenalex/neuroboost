@@ -13,11 +13,11 @@ sources:
   - command: "gh run 31733415454 → e2e success, 26 passed / 4 skipped"
 stakes: high
 links:
-  - relates-to: learning-an-editor-that-contains-a-chooser-corrupts-what-it-edits
-  - relates-to: learning-a-test-that-cannot-fail-guards-nothing
-  - relates-to: learning-green-because-skipped-proves-nothing
-  - relates-to: learning-e2e-baseline-recorded-on-a-monday
-  - relates-to: learning-sent-measures-delivery-not-usefulness
+  - relates-to: "[[learning-an-editor-that-contains-a-chooser-corrupts-what-it-edits]]"
+  - relates-to: "[[learning-a-test-that-cannot-fail-guards-nothing]]"
+  - relates-to: "[[learning-green-because-skipped-proves-nothing]]"
+  - relates-to: "[[learning-e2e-baseline-recorded-on-a-monday]]"
+  - relates-to: "[[learning-sent-measures-delivery-not-usefulness]]"
 ---
 **13.08.** В `web/e2e/` лежало 10 Playwright-спек, и `ci.yml` не содержал ни одного вхождения
 `playwright`/`e2e`. При этом `CLAUDE.md` цитировал три из них как доказательство, что MD1 и MD2

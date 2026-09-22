@@ -14,10 +14,10 @@ sources:
   - command: "саботаж: вернуть присланный id без проверки → падают 2 теста"
 stakes: high
 links:
-  - relates-to: learning-one-component-in-two-containers-trades-drift-for-fit
-  - relates-to: entity-p3-slice2-calendar-crud
-  - relates-to: learning-a-duplicated-type-breaks-when-one-copy-is-extended
-  - relates-to: learning-the-deploy-job-swallowed-two-failures-for-months
+  - relates-to: "[[learning-one-component-in-two-containers-trades-drift-for-fit]]"
+  - relates-to: "[[entity-p3-slice2-calendar-crud]]"
+  - relates-to: "[[learning-a-duplicated-type-breaks-when-one-copy-is-extended]]"
+  - relates-to: "[[learning-the-deploy-job-swallowed-two-failures-for-months]]"
 ---
 **Как нашлось (Денис, 14.08):** *«я могу добавить новый календарь, но дальше с ним ничего не
 происходит, нигде не могу его выбрать»*. Причина была не в UI: у `CreateEventRequest` **не было

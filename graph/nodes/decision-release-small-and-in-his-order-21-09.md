@@ -12,10 +12,10 @@ sources:
   - file: "docs/superpowers/plans/2026-09-21-v04114-release-plan.md"
 stakes: high
 links:
-  - relates-to: learning-migrations-decide-where-a-release-can-be-cut
-  - relates-to: decision-statistics-is-a-screen-you-browse-20-09
-  - relates-to: decision-priority-style-is-a-choice-21-09
-  - relates-to: learning-a-tally-cannot-say-whom-to-retry
+  - relates-to: "[[learning-migrations-decide-where-a-release-can-be-cut]]"
+  - relates-to: "[[decision-statistics-is-a-screen-you-browse-20-09]]"
+  - relates-to: "[[decision-priority-style-is-a-choice-21-09]]"
+  - relates-to: "[[learning-a-tally-cannot-say-whom-to-retry]]"
 ---
 Его слова, 21.09, когда прод отставал на 81 коммит и 5 миграций:
 

@@ -10,8 +10,8 @@ sources:
   - file: "docs/superpowers/plans/2026-04-23-v0.4.9-polish.md — Task 7.4"
   - file: "docs/DOCS-MAP.md §0"
 links:
-  - relates-to: entity-neuroboost-docs-map
-  - remedied-by: entity-e2e-playwright-harness
+  - relates-to: "[[entity-neuroboost-docs-map]]"
+  - remedied-by: "[[entity-e2e-playwright-harness]]"
 ---
 **Summary:** Состояние работы в этом проекте нельзя читать по `- [x]` — оно врёт в обе стороны.
 

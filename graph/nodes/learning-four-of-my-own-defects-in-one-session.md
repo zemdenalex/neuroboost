@@ -13,10 +13,10 @@ sources:
   - file: "web/src/pages/Settings/sections/RemindersSection.tsx (ref вместо side effect в апдейтере)"
 stakes: high
 links:
-  - relates-to: preference-never-replace-a-working-capability-with-a-simpler-one
-  - relates-to: learning-green-because-skipped-proves-nothing
-  - relates-to: learning-a-test-that-cannot-fail-guards-nothing
-  - relates-to: learning-a-control-nobody-runs-hides-a-control-that-cannot-work
+  - relates-to: "[[preference-never-replace-a-working-capability-with-a-simpler-one]]"
+  - relates-to: "[[learning-green-because-skipped-proves-nothing]]"
+  - relates-to: "[[learning-a-test-that-cannot-fail-guards-nothing]]"
+  - relates-to: "[[learning-a-control-nobody-runs-hides-a-control-that-cannot-work]]"
 ---
 Сессия 13–14.08 была про контроли, которые не могут отказать. Четыре таких я произвёл сам, в
 среднем через час после того, как записал про этот класс. Полезны не как покаяние, а как

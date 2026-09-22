@@ -13,9 +13,9 @@ sources:
   - command: "cd api-go && go test ./internal/reminders/  # 6 новых тестов в digest_test.go"
 stakes: high
 links:
-  - relates-to: entity-bot-runs-on-nl2
-  - relates-to: learning-tg-id-null-kills-reminders-silently
-  - relates-to: learning-null-key-passes-a-unique-index
+  - relates-to: "[[entity-bot-runs-on-nl2]]"
+  - relates-to: "[[learning-tg-id-null-kills-reminders-silently]]"
+  - relates-to: "[[learning-null-key-passes-a-unique-index]]"
 ---
 `insertDigest` писал строку журнала с `message = ''` — литеральной пустой строкой.
 `PendingHandler` отдавал её как `COALESCE(r.message,'')`, нотифаер звал `bot.Send` с пустым

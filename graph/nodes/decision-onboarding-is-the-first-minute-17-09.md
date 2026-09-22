@@ -12,8 +12,8 @@ sources:
   - file: "docs/superpowers/specs/2026-09-17-bot-v04112-onboarding-design.md"
 stakes: high
 links:
-  - relates-to: decision-bot-fixes-from-four-passes-17-09
-  - relates-to: decision-bot-nl-creation-rules-15-09
+  - relates-to: "[[decision-bot-fixes-from-four-passes-17-09]]"
+  - relates-to: "[[decision-bot-nl-creation-rules-15-09]]"
 ---
 Первые два человека вне Дениса открыли прод-бота 16–17.09.
 

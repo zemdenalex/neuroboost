@@ -13,15 +13,15 @@ sources:
   - file: "api-go/internal/calendars/crud_test.go"
 stakes: high
 links:
-  - relates-to: learning-a-stand-in-kinder-than-the-real-thing-is-not-a-test
-  - relates-to: learning-green-because-skipped-proves-nothing
-  - relates-to: entity-p3-slice2-calendar-crud
-  - relates-to: learning-checkbox-in-a-plan-is-a-claim-not-evidence
-  - relates-to: learning-explain-a-red-test-with-numbers
-  - relates-to: learning-the-author-of-a-control-cannot-see-it-cannot-fail
-  - relates-to: learning-a-handler-test-says-nothing-about-a-control
-  - relates-to: learning-a-warning-counted-is-not-a-warning-read
-  - relates-to: learning-a-cached-test-result-is-a-test-that-did-not-run
+  - relates-to: "[[learning-a-stand-in-kinder-than-the-real-thing-is-not-a-test]]"
+  - relates-to: "[[learning-green-because-skipped-proves-nothing]]"
+  - relates-to: "[[entity-p3-slice2-calendar-crud]]"
+  - relates-to: "[[learning-checkbox-in-a-plan-is-a-claim-not-evidence]]"
+  - relates-to: "[[learning-explain-a-red-test-with-numbers]]"
+  - relates-to: "[[learning-the-author-of-a-control-cannot-see-it-cannot-fail]]"
+  - relates-to: "[[learning-a-handler-test-says-nothing-about-a-control]]"
+  - relates-to: "[[learning-a-warning-counted-is-not-a-warning-read]]"
+  - relates-to: "[[learning-a-cached-test-result-is-a-test-that-did-not-run]]"
 ---
 **Правило.** Прежде чем засчитать тест как охрану, ответь: **что я должен сломать, чтобы он
 покраснел?** Если ответа нет — тест ничего не измеряет, а его зелёный цвет читается как

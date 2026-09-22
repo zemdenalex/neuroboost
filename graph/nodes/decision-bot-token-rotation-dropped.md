@@ -11,9 +11,9 @@ sources:
   - file: "docs/relizy/v0.4.11.md"
 stakes: high
 links:
-  - relates-to: preference-rotate-after-it-works
-  - relates-to: learning-redaction-at-the-output-does-not-protect-a-value-that-leaves-the-process
-  - relates-to: entity-bot-runs-on-nl2
+  - relates-to: "[[preference-rotate-after-it-works]]"
+  - relates-to: "[[learning-redaction-at-the-output-does-not-protect-a-value-that-leaves-the-process]]"
+  - relates-to: "[[entity-bot-runs-on-nl2]]"
 ---
 Ротация токена бота в BotFather висела предусловием релиза с 23.08 — его же решение
 тогда («сначала безопасность, потом фичи»). 10.09 на прямой вопрос он ответил:

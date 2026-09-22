@@ -12,9 +12,9 @@ sources:
   - file: "bot/internal/keyboards/menu.go"
 stakes: high
 links:
-  - relates-to: learning-plan-named-two-files-invariant-lived-in-eight
-  - relates-to: learning-a-button-is-not-a-feature
-  - relates-to: learning-a-mechanism-is-not-a-state
+  - relates-to: "[[learning-plan-named-two-files-invariant-lived-in-eight]]"
+  - relates-to: "[[learning-a-button-is-not-a-feature]]"
+  - relates-to: "[[learning-a-mechanism-is-not-a-state]]"
 ---
 Спека требовала: **ни один экран не отсылает пользователя к кнопке reply-клавиатуры — если
 действие доступно с экрана, там стоит кнопка**. Я написал под это сторожевой тест, он нашёл семь

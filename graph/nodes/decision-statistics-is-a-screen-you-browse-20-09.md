@@ -12,8 +12,8 @@ sources:
   - file: "bot/internal/handlers/stats.go"
 stakes: medium
 links:
-  - relates-to: decision-bot-vocabulary-and-symbols-18-09
-  - relates-to: decision-onboarding-is-the-first-minute-17-09
+  - relates-to: "[[decision-bot-vocabulary-and-symbols-18-09]]"
+  - relates-to: "[[decision-onboarding-is-the-first-minute-17-09]]"
 ---
 20.09, проход по v0.4.11.4. Экран статистики впервые показал числа вместо «Скоро», и Денис
 принял факт, но не форму. Дословно:

@@ -13,9 +13,9 @@ sources:
   - file: "docs/analiz-bot-vs-web-2026-08-18.md §2"
 stakes: high
 links:
-  - relates-to: learning-a-button-is-not-a-feature
-  - relates-to: learning-a-test-that-cannot-fail-guards-nothing
-  - relates-to: learning-a-rewrite-can-drop-features-silently
+  - relates-to: "[[learning-a-button-is-not-a-feature]]"
+  - relates-to: "[[learning-a-test-that-cannot-fail-guards-nothing]]"
+  - relates-to: "[[learning-a-rewrite-can-drop-features-silently]]"
 ---
 В ночь на 19.08 я вернул в бота экран рабочих часов — одну из трёх возможностей, потерянных
 при переписывании с Node.js на Go. Через час, строя экран Planning, понадобилась длина рабочей

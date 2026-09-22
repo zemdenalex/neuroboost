@@ -13,10 +13,10 @@ sources:
   - file: "CLAUDE.md gotcha 18"
 stakes: high
 links:
-  - relates-to: learning-a-mechanism-is-not-a-state
-  - relates-to: learning-a-test-that-cannot-fail-guards-nothing
-  - relates-to: entity-v0410-released-with-an-outage
-  - relates-to: learning-green-because-skipped-proves-nothing
+  - relates-to: "[[learning-a-mechanism-is-not-a-state]]"
+  - relates-to: "[[learning-a-test-that-cannot-fail-guards-nothing]]"
+  - relates-to: "[[entity-v0410-released-with-an-outage]]"
+  - relates-to: "[[learning-green-because-skipped-proves-nothing]]"
 ---
 Релиз `v0.4.10` уронил прод на ~4 минуты. Миграция `000010` упала на
 `column "minutes_before" does not exist`, `schema_migrations` встала в `dirty = 10`, после

@@ -13,8 +13,8 @@ sources:
   - file: "bot/internal/handlers/instanceid.go"
 stakes: high
 links:
-  - relates-to: learning-a-handler-test-says-nothing-about-a-control
-  - relates-to: decision-bot-nl-creation-rules-15-09
+  - relates-to: "[[learning-a-handler-test-says-nothing-about-a-control]]"
+  - relates-to: "[[decision-bot-nl-creation-rules-15-09]]"
 ---
 Факт API, который стоил блокера в релизе бота 16.09.
 

@@ -11,10 +11,9 @@ sources:
   - file: "E:/Projects/.claude/rules/source-registry.md — слой 5"
 stakes: medium
 links:
-  - relates-to: entity-e2e-playwright-harness
-  - relates-to: learning-checkbox-in-a-plan-is-a-claim-not-evidence
+  - relates-to: "[[entity-e2e-playwright-harness]]"
+  - relates-to: "[[learning-checkbox-in-a-plan-is-a-claim-not-evidence]]"
 ---
-
 **Что произошло.** В промпт ночного лупа был написан раздел §9-бис: как делать визуальную
 проверку, какими командами, на каких вьюпортах. Раздел подробный и верный. Но **шаг 6
 чек-листа итерации — тот, который луп реально исполняет каждый проход — про него не

@@ -13,11 +13,11 @@ sources:
   - file: "api-go/internal/calendars/members.go"
 stakes: high
 links:
-  - relates-to: decision-sharing-shape-and-colour-defaults
-  - relates-to: learning-written-per-user-read-per-calendar
-  - relates-to: learning-insert-and-update-ask-different-access-questions
-  - relates-to: learning-a-silent-success-reads-as-a-failure
-  - relates-to: learning-a-mechanism-is-not-a-state
+  - relates-to: "[[decision-sharing-shape-and-colour-defaults]]"
+  - relates-to: "[[learning-written-per-user-read-per-calendar]]"
+  - relates-to: "[[learning-insert-and-update-ask-different-access-questions]]"
+  - relates-to: "[[learning-a-silent-success-reads-as-a-failure]]"
+  - relates-to: "[[learning-a-mechanism-is-not-a-state]]"
 ---
 Срез 3 P3 сделан целиком за один вечер 17.08, после вопроса Дениса: *«их вообще можно с
 кем-то вместе использовать? Вроде бы кнопки поделиться нет, тогда смысл теряется»*.
