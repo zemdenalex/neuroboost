@@ -42,7 +42,7 @@
 | Файл | Что |
 |---|---|
 | `api-go/migrations/000022_day_commitment.up.sql` / `.down.sql` | две таблицы |
-| `api-go/internal/daytasks/level.go` | `Level`, `LevelShare`, `LevelRemaining` — чистые |
+| `api-go/internal/daytasks/level.go` | `Level(done, target)` — чистая |
 | `api-go/internal/daytasks/level_test.go` | таблица N = 3…7 |
 | `api-go/internal/daytasks/rules.go` | `CanRemove(day, now, tz)`, `Target(raw settings)` — чистые |
 | `api-go/internal/daytasks/rules_test.go` | полдень в New York, границы цели |
