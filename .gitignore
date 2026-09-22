@@ -167,3 +167,5 @@ graph/.pending/
 
 # Резервные копии, которые оставляют после себя скрипты графа.
 graph/*.bak-*
+# Obsidian vault config (open_in_obsidian.py)
+.obsidian/
