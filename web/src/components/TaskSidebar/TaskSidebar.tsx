@@ -76,14 +76,22 @@ export function TaskSidebar({
   
   const todoCount = tasks.filter(t => t.status !== 'DONE').length;
   
+  // 🔴 The collapsed tab is a strip in the layout, not an overlay. It was
+  // `fixed left-0 top-1/2` over the page: on desktop it sat on Monday around
+  // 04:00–05:30 and swallowed presses meant for events there (22.09,
+  // e2e/sidebar-tab-overlap.spec.ts). Its text also never turned: the class
+  // `writing-mode-vertical` was defined nowhere, so the «vertical» tab was a
+  // 92px horizontal box. `[writing-mode:vertical-rl]` is the form Eisenhower
+  // already uses.
   if (!isOpen) {
     return (
       <button
         onClick={onToggle}
-        className="fixed left-0 top-1/2 -translate-y-1/2 bg-zinc-800 border border-zinc-700 rounded-r px-2 py-4 hover:bg-zinc-700 transition-colors z-40"
+        data-testid="task-sidebar-tab"
+        className="h-full flex items-center justify-center bg-zinc-900 border-r border-zinc-700 px-1.5 hover:bg-zinc-800 transition-colors"
         title={t('title')}
       >
-        <span className="writing-mode-vertical text-xs font-mono">
+        <span className="[writing-mode:vertical-rl] rotate-180 text-xs font-mono text-zinc-400">
           {t('title')} ({todoCount})
         </span>
       </button>

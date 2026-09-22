@@ -365,7 +365,7 @@ export function Calendar() {
       </div>
 
       {/* Main calendar area */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div data-testid="calendar-main" className="flex-1 flex flex-col min-w-0">
         <WeekGrid
           events={shownEvents}
           currentWeekOffset={currentWeekOffset}
