@@ -353,8 +353,7 @@ func TestALinkedTaskRemindsOnceThroughItsEvent(t *testing.T) {
 				t.Fatalf("tg_id: %v", err)
 			}
 
-			tomorrow := time.Now().UTC().AddDate(0, 0, 1)
-			due := time.Date(tomorrow.Year(), tomorrow.Month(), tomorrow.Day(), 0, 0, 0, 0, time.UTC)
+			due := twoMidnightsAhead()
 			dueStr := due.Format(time.RFC3339)
 			task, err := insertTask(ctx, user, CreateTaskRequest{
 				Title: "банк", DueDate: &dueStr, ReminderOffsets: &[]int{10},
@@ -419,8 +418,7 @@ func TestATaskWhoseEventHasPassedRemindsAgain(t *testing.T) {
 		user, time.Now().UnixNano()%1_000_000_000); err != nil {
 		t.Fatalf("tg_id: %v", err)
 	}
-	tomorrow := time.Now().UTC().AddDate(0, 0, 1)
-	due := time.Date(tomorrow.Year(), tomorrow.Month(), tomorrow.Day(), 0, 0, 0, 0, time.UTC)
+	due := twoMidnightsAhead()
 	dueStr := due.Format(time.RFC3339)
 	task, err := insertTask(ctx, user, CreateTaskRequest{
 		Title: "банк", DueDate: &dueStr, ReminderOffsets: &[]int{10},
@@ -452,4 +450,16 @@ func TestATaskWhoseEventHasPassedRemindsAgain(t *testing.T) {
 	if n != 1 {
 		t.Errorf("pending reminders for the task: %d, want 1 — its event is in the past", n)
 	}
+}
+
+// twoMidnightsAhead is a due date whose 10-minute reminder is always ahead of
+// now and inside a 72-hour scan.
+//
+// 🔴 It was «tomorrow 00:00»: the reminder then falls at 23:50 TODAY, and a run
+// between 23:50 and 00:00 UTC — CI at 23:58, 22.09 — scans from a «now» that is
+// already past it, finds nothing, and fails a test about something else. The
+// hour of the run is part of the fixture.
+func twoMidnightsAhead() time.Time {
+	d := time.Now().UTC().AddDate(0, 0, 2)
+	return time.Date(d.Year(), d.Month(), d.Day(), 0, 0, 0, 0, time.UTC)
 }
