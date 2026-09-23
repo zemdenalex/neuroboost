@@ -253,3 +253,48 @@ func TestADayIsTheUsersDateNotUTCs(t *testing.T) {
 		t.Errorf("closed today in %s, counted %+v (%v); want done 1", zone, days, err)
 	}
 }
+
+// Spec §4: already-promised first, then yesterday's undone, then due, then
+// priority; never a done task, never more than N.
+func TestProposalOrder(t *testing.T) {
+	_, ctx, user := dayDB(t)
+	today := Today(time.Now(), ny)
+	yesterday := today.AddDate(0, 0, -1)
+
+	pinned := newTask(t, user, map[string]any{"title": "заранее", "priority": 5})
+	carried := newTask(t, user, map[string]any{"title": "вчерашнее", "priority": 5})
+	due := newTask(t, user, map[string]any{"title": "срок сегодня", "priority": 4,
+		"due_date": today.Format(time.RFC3339)})
+	urgent := newTask(t, user, map[string]any{"title": "срочно", "priority": 1})
+	buffer := newTask(t, user, map[string]any{"title": "буфер", "priority": 0})
+	done := newTask(t, user, map[string]any{"title": "сделано", "priority": 1})
+	extra := newTask(t, user, map[string]any{"title": "лишнее", "priority": 3})
+	closeTask(t, user, done)
+
+	if err := Add(ctx, user, today, pinned); err != nil {
+		t.Fatal(err)
+	}
+	if err := Confirm(ctx, user, yesterday, []string{carried}); err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := Propose(ctx, user, today)
+	if err != nil {
+		t.Fatalf("propose: %v", err)
+	}
+	var ids []string
+	for _, it := range got {
+		ids = append(ids, it.TaskID)
+	}
+	want := []string{pinned, carried, due, urgent, extra} // N=5: buffer is sixth, done never
+	if fmt.Sprint(ids) != fmt.Sprint(want) {
+		t.Errorf("proposal = %v\nwant       %v (pinned, carried, due, urgent, extra)", ids, want)
+	}
+	_ = buffer
+
+	// Proposing writes nothing.
+	days, _ := List(ctx, user, today, today)
+	if days[0].Confirmed || len(days[0].Items) != 1 {
+		t.Errorf("proposal wrote something: %+v", days[0])
+	}
+}
