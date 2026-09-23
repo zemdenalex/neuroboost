@@ -22,6 +22,7 @@
 | 22.09 | Хранение: **новая таблица `day_commitment`** |
 | 22.09 | Шкала при N ≠ 5: *«1 for 3, 2 for other number of tasks»* — прочтение §3 **подтверждено** |
 | 22.09 | Перенос вчерашних невыполненных в предложение — **да** |
+| 23.09 | Смена N посреди дня: **сегодня остаётся с той целью, с которой день взят**; новая N — с завтра. Цель хранится в `day_commitment_day.target` |
 | 22.09 | Клетка календаря: *«on onboarding you should explain those functions and let people choose what to show»* |
 
 ---
