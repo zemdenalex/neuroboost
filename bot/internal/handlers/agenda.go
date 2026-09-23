@@ -45,7 +45,7 @@ func agendaText(lang i18n.Lang, events []api.Event, now time.Time, tz string) st
 		if err != nil {
 			// A row we cannot place in time is still a row the user owns. Show
 			// it without a heading rather than dropping it silently.
-			text += fmt.Sprintf("🕐 — %s\n", format.Escape(e.Title))
+			text += fmt.Sprintf("🕐 · %s\n", format.Escape(e.Title))
 			continue
 		}
 		day := start.In(loc).Format("2006-01-02")
@@ -56,12 +56,21 @@ func agendaText(lang i18n.Lang, events []api.Event, now time.Time, tz string) st
 			case tomorrow:
 				text += i18n.T(lang, "\n<b>Завтра</b>\n", "\n<b>Tomorrow</b>\n")
 			default:
-				text += fmt.Sprintf("\n<b>%s</b>\n", start.In(loc).Format("02.01, Mon"))
+				// Our weekday, not Go's English «Mon» (Denis, 23.09).
+				local := start.In(loc)
+				text += fmt.Sprintf("\n<b>%s %s</b>\n", weekdayShort(lang, (int(local.Weekday())+6)%7), local.Format("02.01"))
 			}
 			lastDay = day
 		}
-		text += fmt.Sprintf("🕐 %s — %s\n",
-			format.FormatTime(e.StartsAt, tz), format.Escape(e.Title))
+		// Start–end, or «весь день» (Denis, 23.09: «в списке событий нет конца»).
+		// No em-dash between time and title: user-facing text rule.
+		when := format.FormatTime(e.StartsAt, tz)
+		if e.AllDay {
+			when = i18n.T(lang, "весь день", "all day")
+		} else if end, err := time.Parse(time.RFC3339, e.EndsAt); err == nil && end.After(start) {
+			when += "–" + format.FormatTime(e.EndsAt, tz)
+		}
+		text += fmt.Sprintf("🕐 %s · %s\n", when, format.Escape(e.Title))
 	}
 	return text
 }

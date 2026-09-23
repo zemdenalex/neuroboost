@@ -197,8 +197,8 @@ func TestMonthGridRowsAreSevenWide(t *testing.T) {
 
 	// Rows 2..7 are the weeks. Telegram renders whatever it is given, so a row
 	// of six and a row of eight would simply look wrong and never error.
-	// The footer is two rows since 23.09: four buttons in one row get cut
-	// on a phone.
+	// The footer, Denis 23.09: «шкала, сегодня, календари три кнопки сверху,
+	// кнопка меню снизу».
 	if len(kb.InlineKeyboard) != 10 {
 		t.Fatalf("got %d rows, want 10 (nav + weekdays + 6 weeks + 2 footer)", len(kb.InlineKeyboard))
 	}
@@ -303,5 +303,21 @@ func TestShiftDayRefusesGarbage(t *testing.T) {
 		if _, ok := shiftDay(bad, 1); ok {
 			t.Errorf("shiftDay accepted %q", bad)
 		}
+	}
+}
+
+func TestMonthGridFooterIsThreeThenMenu(t *testing.T) {
+	kb := keyboards.MonthGrid(i18n.RU, 2026, 9, "Сентябрь", nil, nil, "2026-09-23")
+	rows := kb.InlineKeyboard
+	top, bottom := rows[len(rows)-2], rows[len(rows)-1]
+	var order []string
+	for _, b := range top {
+		order = append(order, *b.CallbackData)
+	}
+	if strings.Join(order, " ") != "cal_scale cal_day_2026-09-23 cls" {
+		t.Errorf("footer row = %v, want scale · today · calendars", order)
+	}
+	if len(bottom) != 1 || *bottom[0].CallbackData != "main_menu" {
+		t.Errorf("last row is not «🏠 Меню» alone: %+v", bottom)
 	}
 }
