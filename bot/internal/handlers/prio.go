@@ -69,8 +69,8 @@ func (h *Handler) handlePriorityPick(chatID int64, messageID int, style, prefix 
 	// One line per language: the untranslated-text scan reads i18n.T call
 	// sites line by line, and a Russian continuation line is invisible to it.
 	text := h.t(chatID,
-		"🔘 <b>Символ приоритета</b>\n\nКак отмечать срочность в списках:\n\n🔴 позвонить в банк\n🟡 купить хлеб — <i>кружки</i>\n\n●1 позвонить в банк\n○3 купить хлеб — <i>точки с цифрой</i>\n\n— позвонить в банк\n— купить хлеб — <i>только порядок</i>\n\nПоменять можно в любой момент.",
-		"🔘 <b>Priority symbol</b>\n\nHow urgency is marked in lists:\n\n🔴 call the bank\n🟡 buy bread — <i>circles</i>\n\n●1 call the bank\n○3 buy bread — <i>dots with a digit</i>\n\n— call the bank\n— buy bread — <i>order only</i>\n\nChange it any time.")
+		"🔘 <b>Символ приоритета</b>\n\nКак отмечать срочность в списках:\n\n🔴 позвонить в банк\n🟡 купить хлеб · <i>кружки</i>\n\n●1 позвонить в банк\n○3 купить хлеб · <i>точки с цифрой</i>\n\n— позвонить в банк\n— купить хлеб · <i>только порядок</i>\n\nПоменять можно в любой момент.",
+		"🔘 <b>Priority symbol</b>\n\nHow urgency is marked in lists:\n\n🔴 call the bank\n🟡 buy bread · <i>circles</i>\n\n●1 call the bank\n○3 buy bread · <i>dots with a digit</i>\n\n— call the bank\n— buy bread · <i>order only</i>\n\nChange it any time.")
 	h.editOrSend(chatID, messageID, text,
 		keyboards.PriorityStyle(h.lang(chatID), h.priorityStyle(chatID), prefix, backData, backLabel))
 }

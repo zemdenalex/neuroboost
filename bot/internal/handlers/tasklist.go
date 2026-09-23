@@ -33,20 +33,20 @@ func taskGuide(lang i18n.Lang) string {
 <code>позвонить в банк завтра 30м !1 #дела</code>
    → позвонить в банк · срок завтра · 30 мин · приоритет 1 · тег «дела»
 
-<b>Слова-триггеры в задаче</b> — убираю их из названия:
+<b>Слова-триггеры в задаче</b>: убираю их из названия:
 
-<code>!1</code> … <code>!5</code> — приоритет: <code>!1</code> срочно, <code>!5</code> если получится
-<code>30м</code> · <code>2ч</code> — сколько займёт
-<code>завтра</code> · <code>16.09</code> — срок
-<code>#тег</code> — тег
-<code>задача</code> — слово-подсказка, что это задача, в названии не останется
+<code>!1</code> … <code>!5</code>: приоритет, <code>!1</code> срочно, <code>!5</code> если получится
+<code>30м</code> · <code>2ч</code>: сколько займёт
+<code>завтра</code> · <code>16.09</code>: срок
+<code>#тег</code>: тег
+<code>задача</code>: слово-подсказка, что это задача, в названии не останется
 
-<b>Списком</b> — несколько строк или через запятую:
+<b>Списком</b>: несколько строк или через запятую:
 
 <code>завтра помыться, поесть, поспать</code>
    → спрошу, одна это задача или три; день из строки достанется всем
 
-⚠ Время суток (<code>15:00</code>) делает из задачи ещё и событие — покажу карточку события.`,
+⚠ Время суток (<code>15:00</code>) делает из задачи ещё и событие, покажу карточку события.`,
 		`➕ <b>New task</b>
 
 Write what needs doing. For example:
@@ -54,20 +54,20 @@ Write what needs doing. For example:
 <code>позвонить в банк завтра 30м !1 #дела</code>
    → позвонить в банк · due tomorrow · 30 min · priority 1 · tag «дела»
 
-<b>Trigger words in a task</b> — I take them out of the title:
+<b>Trigger words in a task</b>: I take them out of the title:
 
-<code>!1</code> … <code>!5</code> — priority: <code>!1</code> urgent, <code>!5</code> if possible
-<code>30м</code> · <code>2ч</code> — how long it takes
-<code>завтра</code> · <code>16.09</code> — the due date
-<code>#тег</code> — a tag
-<code>задача</code> — the word that says it is a task; it does not stay in the title
+<code>!1</code> … <code>!5</code>: priority, <code>!1</code> urgent, <code>!5</code> if possible
+<code>30м</code> · <code>2ч</code>: how long it takes
+<code>завтра</code> · <code>16.09</code>: the due date
+<code>#тег</code>: a tag
+<code>задача</code>: the word that says it is a task; it does not stay in the title
 
-<b>As a list</b> — several lines, or commas:
+<b>As a list</b>: several lines, or commas:
 
 <code>завтра помыться, поесть, поспать</code>
    → I will ask whether that is one task or three; the day goes to all of them
 
-⚠ A clock time (<code>15:00</code>) makes it an event as well — I will show the event card.`)
+⚠ A clock time (<code>15:00</code>) makes it an event as well; I will show the event card.`)
 }
 
 func (h *Handler) startNewTaskFlow(chatID int64) {
@@ -86,13 +86,13 @@ func taskGuideShort(lang i18n.Lang) string {
 Напиши, что сделать, например:
 <code>позвонить в банк завтра 30м !1</code>
 
-Можно несколько строк сразу — списком.`,
+Можно несколько строк сразу, списком.`,
 		`➕ <b>New task</b>
 
 Write what needs doing, for example:
 <code>позвонить в банк завтра 30м !1</code>
 
-Several lines at once work too — as a list.`)
+Several lines at once work too, as a list.`)
 }
 
 // handleGuideFull swaps a short guide for the full one, in place. The flow is
@@ -155,7 +155,7 @@ func (h *Handler) handleTaskListCallback(chatID int64, messageID int, data strin
 		}
 		if len(tasks) == 0 {
 			h.store.ClearFlow(chatID)
-			h.editOrSend(chatID, messageID, h.t(chatID, "Список пуст — ничего не создано.", "The list is empty — nothing was created."), keyboards.BackToTasks(h.lang(chatID)))
+			h.editOrSend(chatID, messageID, h.t(chatID, "Список пуст, ничего не создано.", "The list is empty; nothing was created."), keyboards.BackToTasks(h.lang(chatID)))
 			return true
 		}
 		h.showTaskList(chatID, messageID)
@@ -167,8 +167,8 @@ func (h *Handler) handleTaskListCallback(chatID int64, messageID int, data strin
 		}
 		us.FlowStep = "list:rewrite:" + strconv.Itoa(i)
 		h.editOrSend(chatID, messageID, h.t(chatID,
-			"Напиши эту задачу заново — приоритет, оценка и срок читаются как обычно.",
-			"Write this task again — priority, estimate and due date are read as usual."), keyboards.None())
+			"Напиши эту задачу заново: приоритет, оценка и срок читаются как обычно.",
+			"Write this task again: priority, estimate and due date are read as usual."), keyboards.None())
 	default:
 		return false
 	}
@@ -301,7 +301,7 @@ func (h *Handler) createTaskList(chatID int64, messageID int, parsed []parse.Tas
 			req.Tags = p.Tags
 		}
 		if _, err := h.api.CreateTask(us.AuthToken, req); err != nil {
-			failed = append(failed, format.Escape(p.Title)+" — "+format.Escape(h.errorText(chatID, err)))
+			failed = append(failed, format.Escape(p.Title)+": "+format.Escape(h.errorText(chatID, err)))
 			continue
 		}
 		made = append(made, format.Escape(p.Title))

@@ -73,7 +73,7 @@ func planningText(lang i18n.Lang, scheduled, available float64, unscheduled int)
 	case unscheduled == 0:
 		text += i18n.T(lang, "✨ Незапланированных задач нет.", "✨ Nothing left to schedule.")
 	case unscheduled == 1:
-		text += i18n.T(lang, "Одна задача ждёт места в календаре — нажми, чтобы поставить:", "One task is waiting for a slot — tap it to schedule:")
+		text += i18n.T(lang, "Одна задача ждёт места в календаре. Нажми, чтобы поставить:", "One task is waiting for a slot. Tap it to schedule:")
 	default:
 		text += fmt.Sprintf(i18n.T(lang, "Задач без времени: <b>%d</b>. Нажми любую, чтобы поставить в календарь:", "Tasks with no time: <b>%d</b>. Tap any of them to schedule:"), unscheduled)
 	}

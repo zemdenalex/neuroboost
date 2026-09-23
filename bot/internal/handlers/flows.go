@@ -15,7 +15,7 @@ func (h *Handler) startNoteFlow(chatID int64) {
 	us := h.store.GetOrCreate(chatID)
 	us.CurrentFlow = "note"
 	us.FlowStep = "text"
-	h.sendText(chatID, h.t(chatID, "📝 Пришли заметку — сохраню её задачей.", "📝 Send a note — I'll save it as a task."))
+	h.sendText(chatID, h.t(chatID, "📝 Пришли заметку, сохраню её задачей.", "📝 Send a note; I'll save it as a task."))
 }
 
 func (h *Handler) handleFlowInput(chatID int64, text string) {
@@ -141,8 +141,8 @@ func (h *Handler) handleNewTaskFlow(chatID int64, text string) {
 		if us.FlowStep == "list" || strings.HasPrefix(us.FlowStep, "wizard:") {
 			// A screen that wants a button: the list survives.
 			h.sendHTMLWithKeyboard(chatID, h.t(chatID,
-				"Здесь нужна кнопка — список на месте.",
-				"This screen needs a button — the list is still here."), keyboards.BackToTasks(h.lang(chatID)))
+				"Здесь нужна кнопка, список на месте.",
+				"This screen needs a button; the list is still here."), keyboards.BackToTasks(h.lang(chatID)))
 			return
 		}
 		h.store.ClearFlow(chatID)

@@ -137,8 +137,8 @@ func (h *Handler) showCalendarCard(chatID int64, messageID int, id string) {
 	b.WriteString(fieldLine("🔑", i18n.T(lang, "Роль:", "Role:"), roleName(lang, c.Role)))
 	if c.IsPersonal() {
 		b.WriteString(i18n.T(lang,
-			"\nЛичный календарь — его нельзя удалить или покинуть.",
-			"\nThe personal calendar — it cannot be deleted or left."))
+			"\nЛичный календарь: его нельзя удалить или покинуть.",
+			"\nThe personal calendar: it cannot be deleted or left."))
 	}
 
 	h.editOrSend(chatID, messageID, b.String(),
@@ -296,8 +296,8 @@ func (h *Handler) handleCalendarText(chatID int64, flow, text string) {
 			// no email, so there is nothing to invite by. Say the way out
 			// instead of the error code.
 			h.sendHTMLWithKeyboard(chatID, i18n.T(lang,
-				"У этого email нет аккаунта. Дай ссылку — она работает и без email.",
-				"No account with that email. Send them the link instead — it needs no email."),
+				"У этого email нет аккаунта. Дай ссылку: она работает и без email.",
+				"No account with that email. Send them the link instead: it needs no email."),
 				keyboards.CalendarInvite(lang, id))
 			return
 		}
@@ -443,13 +443,13 @@ func (h *Handler) acceptInviteLink(chatID int64, messageID int, token string) {
 	c, err := h.api.AcceptInviteLink(h.store.GetOrCreate(chatID).AuthToken, token)
 	if err != nil {
 		h.editOrSend(chatID, messageID, i18n.T(lang,
-			"Ссылка не сработала — возможно, её уже использовали. Попроси новую.",
-			"That link did not work — it may already have been used. Ask for a new one."),
+			"Ссылка не сработала. Возможно, её уже использовали. Попроси новую.",
+			"That link did not work. It may already have been used. Ask for a new one."),
 			keyboards.None())
 		return
 	}
 	h.editOrSend(chatID, messageID, fmt.Sprintf(i18n.T(lang,
-		"Готово — ты в календаре «%s».", "Done — you are in «%s»."),
+		"Готово, ты в календаре «%s».", "Done, you are in «%s»."),
 		format.Escape(c.Name)), keyboards.None())
 
 	if h.needsOnboarding(chatID) {

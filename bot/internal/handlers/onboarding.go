@@ -122,7 +122,7 @@ func (h *Handler) showOnboardTZ(chatID int64, messageID int) {
 	})
 
 	body := fmt.Sprintf(i18n.T(lang,
-		"🕐 <b>Сколько у тебя сейчас времени?</b>\n\nСейчас стоит: <b>%s</b> (%s). Если не так — нажми своё время.",
+		"🕐 <b>Сколько у тебя сейчас времени?</b>\n\nСейчас стоит: <b>%s</b> (%s). Если не так, нажми своё время.",
 		"🕐 <b>What time is it for you now?</b>\n\nSet now: <b>%s</b> (%s). If that is wrong, tap your time."),
 		now.In(current).Format("15:04"), current.String())
 	h.editOrSend(chatID, messageID, body, tgbotapi.NewInlineKeyboardMarkup(rows...))
@@ -216,12 +216,12 @@ func (h *Handler) onboardClosing(chatID int64, messageID int) {
 	h.send(chatID, done)
 
 	h.sendHTMLWithKeyboard(chatID, i18n.T(lang,
-		`✍️ <b>Просто напиши мне, что нужно</b> — без кнопок:
+		`✍️ <b>Просто напиши мне, что нужно</b>, без кнопок:
 
 <code>завтра в 15 стоматолог напомни за час</code>
 
 Я спрошу, событие это или задача, покажу, что понял, и создам только после подтверждения.`,
-		`✍️ <b>Just write to me what you need</b> — no buttons:
+		`✍️ <b>Just write to me what you need</b>, no buttons:
 
 <code>tomorrow at 15 dentist remind in 1h</code>
 

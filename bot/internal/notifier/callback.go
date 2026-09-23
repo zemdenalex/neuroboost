@@ -287,7 +287,7 @@ func ActionReply(lang i18n.Lang, action string, minutes int) string {
 	case ActionAck:
 		return "👌"
 	case ActionAccept:
-		return i18n.T(lang, "✅ Календарь добавлен — он появится в списке.", "✅ Calendar added — it will show up in the list.")
+		return i18n.T(lang, "✅ Календарь добавлен, он появится в списке.", "✅ Calendar added; it will show up in the list.")
 	case ActionDecline:
 		return i18n.T(lang, "Приглашение отклонено.", "Invitation declined.")
 	case ActionKeepSite, ActionKeepTg:

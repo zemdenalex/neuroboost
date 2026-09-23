@@ -34,7 +34,7 @@ func creationGuide(lang i18n.Lang) string {
    → Ужин · завтра · 19:00–20:00
 
 <code>среда 14:00-15:00 оркестр повтор</code>
-   → оркестр · ср · 14:00–15:00 · повтор — спрошу частоту
+   → оркестр · ср · 14:00–15:00 · повтор, спрошу частоту
 
 <code>анализы весь день четверг</code>
    → анализы · чт · весь день
@@ -45,26 +45,26 @@ func creationGuide(lang i18n.Lang) string {
 <code>зарядка каждый день 07:00 напомнить за 10м</code>
    → зарядка · каждый день · 07:00 · напомню за 10 мин.
 
-<b>Слова-триггеры</b> — пишешь в строке, я убираю их из названия:
+<b>Слова-триггеры</b>: пишешь в строке, я убираю их из названия:
 
-<code>задача</code> — создам ещё и задачу, связанную с событием
-<code>весь день</code> — без времени, на весь день
-<code>с 14.10 по 29.10</code> — событие на несколько дней
-<code>повтор</code> — спрошу, как часто
-<code>каждый день</code> · <code>раз в 3 дня</code> · <code>через день</code> — период повтора
-<code>10 раз</code> · <code>до 01.12</code> — когда повтор кончится
-<code>синий</code> · <code>красный</code> · <code>зелёный</code> … — цвет события
-<code>#тег</code> — тег
-<code>напомнить за 15м</code> · <code>напомни за час</code> — напоминание
-<b>название календаря</b> — положу событие в него
+<code>задача</code>: создам ещё и задачу, связанную с событием
+<code>весь день</code>: без времени, на весь день
+<code>с 14.10 по 29.10</code>: событие на несколько дней
+<code>повтор</code>: спрошу, как часто
+<code>каждый день</code> · <code>раз в 3 дня</code> · <code>через день</code>: период повтора
+<code>10 раз</code> · <code>до 01.12</code>: когда повтор кончится
+<code>синий</code> · <code>красный</code> · <code>зелёный</code> …: цвет события
+<code>#тег</code>: тег
+<code>напомнить за 15м</code> · <code>напомни за час</code>: напоминание
+<b>название календаря</b>: положу событие в него
 
 <b>Дни:</b> <code>завтра</code> · <code>среда</code> · <code>следующая среда</code> · <code>пн</code> · <code>wednesday</code> · <code>16.09</code>
 <b>Время:</b> <code>14:00</code> · <code>14:00-15:30</code> · <code>1330</code> · <code>в 15</code> · <code>полдень</code>
 
-<b>Своё слово</b> — ⚙️ Настройки → 🔤 Ключевые слова: любое слово можно назначить тегом, цветом, календарём, датой, временем или повтором.
-<b>Списком</b> — несколько строк сразу, спрошу, одна это запись или список.
+<b>Своё слово</b>: ⚙️ Настройки → 🔤 Ключевые слова: любое слово можно назначить тегом, цветом, календарём, датой, временем или повтором.
+<b>Списком</b>: несколько строк сразу, спрошу, одна это запись или список.
 
-Покажу, что понял, и спрошу подтверждение — создам только после него.`,
+Покажу, что понял, и спрошу подтверждение. Создам только после него.`,
 		`📅 <b>New event</b>
 
 Write it in one line. Here is what I understand:
@@ -73,7 +73,7 @@ Write it in one line. Here is what I understand:
    → Ужин · tomorrow · 19:00–20:00
 
 <code>среда 14:00-15:00 оркестр повтор</code>
-   → оркестр · Wed · 14:00–15:00 · repeats — I will ask how often
+   → оркестр · Wed · 14:00–15:00 · repeats, I will ask how often
 
 <code>анализы весь день четверг</code>
    → анализы · Thu · all day
@@ -84,28 +84,28 @@ Write it in one line. Here is what I understand:
 <code>зарядка каждый день 07:00 напомнить за 10м</code>
    → зарядка · every day · 07:00 · reminder 10m before
 
-<b>Trigger words</b> — write them in the line and I take them out of the title:
+<b>Trigger words</b>: write them in the line and I take them out of the title:
 
-<code>задача</code> — also creates a task, linked to the event
-<code>весь день</code> — no time, all day
-<code>с 14.10 по 29.10</code> — an event over several days
-<code>повтор</code> — I will ask how often
-<code>каждый день</code> · <code>раз в 3 дня</code> · <code>через день</code> — how often it repeats
-<code>10 раз</code> · <code>до 01.12</code> — when the series ends
-<code>синий</code> · <code>красный</code> · <code>зелёный</code> … — the colour
-<code>#тег</code> — a tag
-<code>напомнить за 15м</code> · <code>напомни за час</code> — a reminder
-<b>a calendar name</b> — puts the event in it
+<code>задача</code>: also creates a task, linked to the event
+<code>весь день</code>: no time, all day
+<code>с 14.10 по 29.10</code>: an event over several days
+<code>повтор</code>: I will ask how often
+<code>каждый день</code> · <code>раз в 3 дня</code> · <code>через день</code>: how often it repeats
+<code>10 раз</code> · <code>до 01.12</code>: when the series ends
+<code>синий</code> · <code>красный</code> · <code>зелёный</code> …: the colour
+<code>#тег</code>: a tag
+<code>напомнить за 15м</code> · <code>напомни за час</code>: a reminder
+<b>a calendar name</b>: puts the event in it
 
 <b>Days:</b> <code>завтра</code> · <code>среда</code> · <code>следующая среда</code> · <code>пн</code> · <code>wednesday</code> · <code>16.09</code>
 <b>Times:</b> <code>14:00</code> · <code>14:00-15:30</code> · <code>1330</code> · <code>в 15</code> · <code>полдень</code>
 
-<b>Your own word</b> — ⚙️ Settings → 🔤 Keywords: any word can stand for a tag, a colour, a calendar, a date, a time or a repeat.
-<b>As a list</b> — several lines at once, I will ask whether it is one entry or a list.
+<b>Your own word</b>: ⚙️ Settings → 🔤 Keywords: any word can stand for a tag, a colour, a calendar, a date, a time or a repeat.
+<b>As a list</b>: several lines at once, I will ask whether it is one entry or a list.
 
 ⚠ These words work in both languages and are not translated with the interface.
 
-I will show what I understood and ask you to confirm — nothing is created before that.`)
+I will show what I understood and ask you to confirm. Nothing is created before that.`)
 }
 
 // creationGuideShort is what opens by default since v0.4.11.2.
@@ -121,14 +121,14 @@ func creationGuideShort(lang i18n.Lang) string {
 <code>Ужин завтра 19:00</code>
 <code>зарядка каждый день 07:00</code>
 
-Можно несколько строк сразу — списком.`,
+Можно несколько строк сразу, списком.`,
 		`📅 <b>New event</b>
 
 Write it in one line, for example:
 <code>Ужин завтра 19:00</code>
 <code>зарядка каждый день 07:00</code>
 
-Several lines at once work too — as a list.`)
+Several lines at once work too, as a list.`)
 }
 
 func (h *Handler) startNewEventFlow(chatID int64) {
@@ -147,8 +147,8 @@ func (h *Handler) startNewEventForDay(chatID int64, date string) {
 	us.FlowStep = "line"
 	us.FlowData = map[string]any{"date": date}
 	h.sendHTML(chatID, h.t(chatID, "📅 <b>Событие на ", "📅 <b>Event on ")+format.Escape(date)+
-		h.t(chatID, "</b>\n\nНапиши время и название — например «18:00 Ужин».",
-			"</b>\n\nWrite the time and the title — «18:00 Ужин», say."))
+		h.t(chatID, "</b>\n\nНапиши время и название, например «18:00 Ужин».",
+			"</b>\n\nWrite the time and the title, «18:00 Ужин» for instance."))
 }
 
 // draftOf returns the draft this chat is building, creating none if there is
@@ -339,14 +339,14 @@ func (h *Handler) keepDraft(chatID int64) {
 		// A list with no entry picked: «back to the card» would find no card
 		// and wipe the list, so the way back is to the list itself.
 		h.sendHTMLWithKeyboard(chatID, h.t(chatID,
-			"Здесь нужна кнопка — список на месте.",
-			"This screen needs a button — the list is still here."),
+			"Здесь нужна кнопка, список на месте.",
+			"This screen needs a button; the list is still here."),
 			keyboards.BackToList(h.lang(chatID)))
 		return
 	}
 	h.sendHTMLWithKeyboard(chatID, h.t(chatID,
-		"Здесь нужна кнопка — черновик на месте. «🗑 Отменить», чтобы начать заново.",
-		"This screen needs a button — the draft is still here. «🗑 Cancel» to start over."),
+		"Здесь нужна кнопка, черновик на месте. «🗑 Отменить», чтобы начать заново.",
+		"This screen needs a button; the draft is still here. «🗑 Cancel» to start over."),
 		keyboards.DraftBack(h.lang(chatID)))
 }
 
@@ -457,7 +457,7 @@ func (h *Handler) showCard(chatID int64, messageID int) {
 
 func (h *Handler) lostDraft(chatID int64) {
 	h.store.ClearFlow(chatID)
-	h.sendHTMLWithKeyboard(chatID, h.t(chatID, "Черновик потерялся — начнём заново.", "Lost the draft — let's start over."), keyboards.HomeInline(h.lang(chatID)))
+	h.sendHTMLWithKeyboard(chatID, h.t(chatID, "Черновик потерялся, начнём заново.", "Lost the draft; let's start over."), keyboards.HomeInline(h.lang(chatID)))
 }
 
 // handleDraftCallback answers every button of the confirmation card.
@@ -529,8 +529,8 @@ func (h *Handler) handleDraftCallback(chatID int64, messageID int, data string) 
 	case data == "dr_daytext":
 		us.FlowStep = "edit:date"
 		h.editOrSend(chatID, messageID, h.t(chatID,
-			"Напиши дату: «16.09», «среда», «завтра» — или промежуток «с 14.10 по 29.10».",
-			"Write the date: «16.09», «среда», «завтра» — or a span «с 14.10 по 29.10»."),
+			"Напиши дату: «16.09», «среда», «завтра» или промежуток «с 14.10 по 29.10».",
+			"Write the date: «16.09», «среда», «завтра» or a span «с 14.10 по 29.10»."),
 			keyboards.DraftBack(h.lang(chatID)))
 
 	case data == "dr_back":
@@ -543,17 +543,17 @@ func (h *Handler) handleDraftCallback(chatID int64, messageID int, data string) 
 	case data == "dre_title":
 		us.FlowStep = "edit:title"
 		h.editOrSend(chatID, messageID,
-			h.t(chatID, "Напиши название. Здесь оно берётся <b>как есть</b> — ключевые слова не действуют.", "Write the title. Here it is taken <b>as is</b> — keywords do nothing."), keyboards.DraftBack(h.lang(chatID)))
+			h.t(chatID, "Напиши название. Здесь оно берётся <b>как есть</b>: ключевые слова не действуют.", "Write the title. Here it is taken <b>as is</b>: keywords do nothing."), keyboards.DraftBack(h.lang(chatID)))
 
 	case data == "dre_note":
 		us.FlowStep = "edit:note"
 		h.editOrSend(chatID, messageID,
-			h.t(chatID, "Напиши описание — сохранится целиком, на карточке видно начало.", "Write the description — it is saved in full; the card shows the beginning."), keyboards.DraftBack(h.lang(chatID)))
+			h.t(chatID, "Напиши описание. Сохранится целиком, на карточке видно начало.", "Write the description. It is saved in full; the card shows the beginning."), keyboards.DraftBack(h.lang(chatID)))
 
 	case data == "dre_tags":
 		us.FlowStep = "edit:tags"
 		h.editOrSend(chatID, messageID,
-			h.t(chatID, "Теги через запятую. Здесь любое слово — тег, даже «полдень».", "Tags, comma separated. Here any word is a tag, even «полдень»."), keyboards.DraftBack(h.lang(chatID)))
+			h.t(chatID, "Теги через запятую. Здесь любое слово считается тегом, даже «полдень».", "Tags, comma separated. Here any word is a tag, even «полдень»."), keyboards.DraftBack(h.lang(chatID)))
 
 	case data == "dre_date":
 		us.FlowStep = "edit:date"
@@ -886,8 +886,8 @@ func (h *Handler) createOne(chatID int64, st draftState) (string, error) {
 	if err != nil {
 		if taskID != nil {
 			return "", fmt.Errorf(h.t(chatID,
-				"событие не создано (%w), но задача создана — она в списке задач",
-				"event not created (%w), but the task was — it is in your task list"), err)
+				"событие не создано (%w), но задача создана: она в списке задач",
+				"event not created (%w), but the task was: it is in your task list"), err)
 		}
 		return "", fmt.Errorf(h.t(chatID, "событие не создано: %w", "event not created: %w"), err)
 	}

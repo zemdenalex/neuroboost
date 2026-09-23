@@ -45,8 +45,8 @@ func (h *Handler) askSnoozeInterval(chatID int64, reminderID string) {
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "❌ Отмена", "❌ Cancel"), "snz_no")))
 
 	h.sendHTMLWithKeyboard(chatID, i18n.T(lang,
-		"Через сколько напомнить? Нажми или напиши — «40 минут», «2 часа», «90».",
-		"When should I remind you? Tap one, or write — «40 minutes», «2 hours», «90»."), kb)
+		"Через сколько напомнить? Нажми или напиши: «40 минут», «2 часа», «90».",
+		"When should I remind you? Tap one, or write: «40 minutes», «2 hours», «90»."), kb)
 }
 
 // handleSnoozeCallback owns snz_*.
@@ -78,8 +78,8 @@ func (h *Handler) handleSnoozeText(chatID int64, flow, text string) {
 	minutes, ok := parse.Interval(text)
 	if !ok {
 		h.sendHTMLWithKeyboard(chatID, h.t(chatID,
-			"Не понял, через сколько. Напиши числом — «40», «2 часа».",
-			"I did not get the interval. Write a number — «40», «2 hours»."), keyboards.None())
+			"Не понял, через сколько. Напиши числом: «40», «2 часа».",
+			"I did not get the interval. Write a number: «40», «2 hours»."), keyboards.None())
 		return
 	}
 	h.applySnooze(chatID, reminderID, minutes)
@@ -92,8 +92,8 @@ func (h *Handler) applySnooze(chatID int64, reminderID string, minutes int) {
 	}
 	if _, err := h.api.NotificationAction(h.cfg.ServiceToken, chatID, reminderID, notifier.ActionSnooze, minutes); err != nil {
 		h.sendHTMLWithKeyboard(chatID, i18n.T(lang,
-			"⚠️ Не получилось отложить — попробуй ещё раз.",
-			"⚠️ Could not postpone it — try again."), keyboards.None())
+			"⚠️ Не получилось отложить, попробуй ещё раз.",
+			"⚠️ Could not postpone it; try again."), keyboards.None())
 		return
 	}
 	h.sendText(chatID, notifier.ActionReply(lang, notifier.ActionSnooze, minutes))

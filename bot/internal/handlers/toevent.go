@@ -35,8 +35,8 @@ func (h *Handler) handleToEventStart(chatID int64, messageID int, taskID string)
 	us.FlowStep = "how"
 	us.FlowData = map[string]any{"taskID": taskID}
 	h.editOrSend(chatID, messageID, fmt.Sprintf(h.t(chatID,
-		"📅 <b>%s</b> — в календарь\n\n🔗 <b>Связать</b> — задача останется в списке, у события будут её время и напоминания.\n➡️ <b>Перенести</b> — останется только событие.",
-		"📅 <b>%s</b> — to the calendar\n\n🔗 <b>Link</b> — the task stays in the list; the event carries its time and reminders.\n➡️ <b>Move</b> — only the event remains."),
+		"📅 <b>%s</b>: в календарь\n\n🔗 <b>Связать</b>: задача останется в списке, у события будут её время и напоминания.\n➡️ <b>Перенести</b>: останется только событие.",
+		"📅 <b>%s</b>: to the calendar\n\n🔗 <b>Link</b>: the task stays in the list; the event carries its time and reminders.\n➡️ <b>Move</b>: only the event remains."),
 		format.Escape(task.Title)), keyboards.ConvertHow(h.lang(chatID), "t2"))
 }
 
@@ -51,7 +51,7 @@ func (h *Handler) handleToEventStep(chatID int64, messageID int, data string) {
 	if us.CurrentFlow != toEventFlow {
 		// A button from a flow that is gone: say so, write nothing.
 		h.editOrSend(chatID, messageID, h.t(chatID,
-			"Это меню устарело — открой задачу заново.", "This menu is out of date — open the task again."),
+			"Это меню устарело, открой задачу заново.", "This menu is out of date; open the task again."),
 			keyboards.BackToTasks(h.lang(chatID)))
 		return
 	}
@@ -67,8 +67,8 @@ func (h *Handler) handleToEventStep(chatID int64, messageID int, data string) {
 		us.FlowData["mode"] = map[string]string{"t2m_l": "link", "t2m_m": "move"}[data]
 		if task.Repeats() {
 			h.editOrSend(chatID, messageID, h.t(chatID,
-				"🔁 Это повторяющаяся задача.\n\n<b>Вся серия</b> — событие тоже будет повторяться.\n<b>Только этот раз</b> — в календарь уйдёт один день, серия задачи останется.",
-				"🔁 This task repeats.\n\n<b>Whole series</b> — the event repeats too.\n<b>Just this once</b> — one day goes to the calendar; the series stays a task."),
+				"🔁 Это повторяющаяся задача.\n\n<b>Вся серия</b>: событие тоже будет повторяться.\n<b>Только этот раз</b>: в календарь уйдёт один день, серия задачи останется.",
+				"🔁 This task repeats.\n\n<b>Whole series</b>: the event repeats too.\n<b>Just this once</b>: one day goes to the calendar; the series stays a task."),
 				keyboards.ConvertRepeat(h.lang(chatID), "t2", true))
 			return
 		}
@@ -193,7 +193,7 @@ func (h *Handler) finishToEvent(chatID int64, messageID int, task api.Task) {
 	if err != nil || minutes <= 0 || mode == "" {
 		h.store.ClearFlow(chatID)
 		h.editOrSend(chatID, messageID, h.t(chatID,
-			"Это меню устарело — открой задачу заново.", "This menu is out of date — open the task again."),
+			"Это меню устарело, открой задачу заново.", "This menu is out of date; open the task again."),
 			keyboards.BackToTasks(h.lang(chatID)))
 		return
 	}

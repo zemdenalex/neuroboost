@@ -227,7 +227,7 @@ func renderDraft(lang i18n.Lang, st draftState, now time.Time) string {
 			weekdayName(lang, st.D.Day.Weekday()), st.D.Day.Day(), monthGenitive(lang, st.D.Day.Month()),
 			checkMark(lang, st.D.IsUncertain(parse.FieldDay)))
 	} else {
-		b.WriteString(i18n.T(lang, "⚠ дата не указана — спрошу\n", "⚠ no date — I will ask\n"))
+		b.WriteString(i18n.T(lang, "⚠ дата не указана, спрошу\n", "⚠ no date, I will ask\n"))
 	}
 
 	switch {
@@ -240,7 +240,7 @@ func renderDraft(lang i18n.Lang, st draftState, now time.Time) string {
 		fmt.Fprintf(&b, "%s %s%s\n", clockFace(st.D.Start), offsetHHMM(st.D.Start),
 			checkMark(lang, st.D.IsUncertain(parse.FieldTime)))
 	default:
-		b.WriteString(i18n.T(lang, "⚠ время не указано — спрошу\n", "⚠ no time — I will ask\n"))
+		b.WriteString(i18n.T(lang, "⚠ время не указано, спрошу\n", "⚠ no time, I will ask\n"))
 	}
 
 	// 💬 for the name of the thing. Denis, 18.09: «надо поменять иконки, у
@@ -257,8 +257,8 @@ func renderDraft(lang i18n.Lang, st draftState, now time.Time) string {
 		// 🔴 Denis, 17.09: «карточка одна, но теперь непонятно, что ещё и
 		// задача была создана». The ✅ icon alone did not say it.
 		b.WriteString(i18n.T(lang,
-			"✅ и задача — её можно отметить выполненной\n",
-			"✅ plus a task — it can be ticked off\n"))
+			"✅ и задача: её можно отметить выполненной\n",
+			"✅ plus a task: it can be ticked off\n"))
 	}
 
 	// 🔴 From here down every characteristic is printed, filled or not. Denis,
@@ -278,8 +278,8 @@ func renderDraft(lang i18n.Lang, st draftState, now time.Time) string {
 		// Stronger than «нет»: a question that is about to be asked is not an
 		// absence, and printing «нет» here would answer it silently.
 		b.WriteString(i18n.T(lang,
-			"⚠ повтор — частота не указана, спрошу\n",
-			"⚠ repeats — no frequency given, I will ask\n"))
+			"⚠ повтор: частота не указана, спрошу\n",
+			"⚠ repeats: no frequency given, I will ask\n"))
 	default:
 		b.WriteString(fieldLine("🔁", i18n.T(lang, "Повтор:", "Repeat:"), noneWord(lang)))
 	}

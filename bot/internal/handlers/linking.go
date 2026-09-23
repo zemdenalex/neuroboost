@@ -31,11 +31,11 @@ func (h *Handler) handleLinkingCallback(chatID int64, messageID int, data string
 	case "lnk":
 		title := i18n.T(lang, "🔗 <b>Аккаунт на сайте</b>", "🔗 <b>Website account</b>")
 		a := i18n.T(lang,
-			"<b>Войти на сайт</b> — пришлю ссылку, она откроет сайт уже вошедшим.",
-			"<b>Sign in</b> — I will send a link that opens the site already signed in.")
+			"<b>Войти на сайт</b>: пришлю ссылку, она откроет сайт уже вошедшим.",
+			"<b>Sign in</b>: I will send a link that opens the site already signed in.")
 		b := i18n.T(lang,
-			"<b>Привязать сайт</b> — пришлю код, его надо ввести в Профиле на сайте.",
-			"<b>Link the website</b> — I will send a code to type into your Profile.")
+			"<b>Привязать сайт</b>: пришлю код, его надо ввести в Профиле на сайте.",
+			"<b>Link the website</b>: I will send a code to type into your Profile.")
 		h.editOrSend(chatID, messageID, title+"\n\n"+a+"\n"+b, keyboards.Linking(lang))
 
 	case "lnk_web":
@@ -48,7 +48,7 @@ func (h *Handler) handleLinkingCallback(chatID int64, messageID int, data string
 		head := i18n.T(lang, "🔗 Ссылка работает один раз и живёт ",
 			"🔗 The link works once and lasts ")
 		tail := i18n.T(lang,
-			"Откроешь — попадёшь на сайт уже вошедшим. Задай там email и пароль.",
+			"Откроешь и попадёшь на сайт уже вошедшим. Задай там email и пароль.",
 			"Opening it signs you in. Set an email and a password there.")
 		// ⚠ A new message, not an edit: this is the thing the person has to tap
 		// or copy, and an edited message scrolls away under whatever comes next.

@@ -149,8 +149,8 @@ func (h *Handler) handleEventPicker(chatID int64, messageID int, page int) {
 	}
 	if len(events) == 0 {
 		h.editOrSend(chatID, messageID, h.t(chatID,
-			"📅 Ближайших событий нет — редактировать нечего.",
-			"📅 Nothing upcoming — there is nothing to edit."),
+			"📅 Ближайших событий нет, редактировать нечего.",
+			"📅 Nothing upcoming; there is nothing to edit."),
 			keyboards.AgendaActions(h.lang(chatID)))
 		return
 	}
@@ -174,8 +174,8 @@ func (h *Handler) handleEventCard(chatID int64, messageID int, eventID string) {
 	ev, err := h.api.GetEvent(us.AuthToken, parentID)
 	if err != nil || ev == nil || ev.ID == "" {
 		h.editOrSend(chatID, messageID, h.t(chatID,
-			"❌ Не удалось открыть событие — возможно, оно уже удалено.",
-			"❌ Could not open the event — it may already be deleted."),
+			"❌ Не удалось открыть событие. Возможно, оно уже удалено.",
+			"❌ Could not open the event. It may already be deleted."),
 			keyboards.AgendaActions(h.lang(chatID)))
 		return
 	}

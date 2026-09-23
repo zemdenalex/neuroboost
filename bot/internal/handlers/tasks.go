@@ -216,8 +216,8 @@ func (h *Handler) closedDayText(chatID int64, occurrence string) string {
 		return h.t(chatID, "✅ Сделано.", "✅ Done.")
 	}
 	return fmt.Sprintf(h.t(chatID,
-		"✅ Закрыл %s — это ближайший день серии. Сегодня её в списке нет.",
-		"✅ Closed %s — the nearest day of the series. It isn't due today."),
+		"✅ Закрыл %s: это ближайший день серии. Сегодня её в списке нет.",
+		"✅ Closed %s: the nearest day of the series. It isn't due today."),
 		day.Format("02.01"))
 }
 
@@ -244,7 +244,7 @@ func (h *Handler) taskRepeats(chatID int64, taskID string) bool {
 // handleTaskPostpone offers the intervals Denis listed on 18.09.
 func (h *Handler) handleTaskPostpone(chatID int64, messageID int, taskID string) {
 	h.editOrSend(chatID, messageID, h.t(chatID,
-		"⏰ <b>Отложить</b>\n\nНа сколько? Ритм не сдвинется — просто пропущу эти дни.",
+		"⏰ <b>Отложить</b>\n\nНа сколько? Ритм не сдвинется, просто пропущу эти дни.",
 		"⏰ <b>Postpone</b>\n\nFor how long? The rhythm stays; these days are just skipped."),
 		keyboards.TaskPostpone(h.lang(chatID), taskID))
 }
@@ -271,8 +271,8 @@ func (h *Handler) handleTaskPostponeDays(chatID int64, messageID int, taskID str
 	// behind it.
 	if res.Closed == 0 {
 		h.sendText(chatID, fmt.Sprintf(h.t(chatID,
-			"⏰ В ближайшие %d дн. у этой серии дней нет — пропускать нечего. Ритм не тронут.",
-			"⏰ The series has no days in the next %d — nothing to skip. The rhythm is untouched."), days))
+			"⏰ В ближайшие %d дн. у этой серии дней нет, пропускать нечего. Ритм не тронут.",
+			"⏰ The series has no days in the next %d; nothing to skip. The rhythm is untouched."), days))
 		h.handleTasks(chatID, messageID)
 		return
 	}

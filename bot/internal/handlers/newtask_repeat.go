@@ -64,8 +64,8 @@ func (h *Handler) handleWizardText(chatID int64, text string) bool {
 		r := parse.ParseTask(text, now)
 		if r.EstimatedMinutes == nil || strings.TrimSpace(r.Title) != "" {
 			h.sendHTMLWithKeyboard(chatID, i18n.T(lang,
-				"Не понял длительность. Напиши как «5м», «30м» или «1ч» — или нажми кнопку.",
-				"I could not read that. Write it like «5м», «30м» or «1ч» — or press a button."),
+				"Не понял длительность. Напиши как «5м», «30м» или «1ч», или нажми кнопку.",
+				"I could not read that. Write it like «5м», «30м» or «1ч», or press a button."),
 				wizardKeyboardFor(lang, step, us.FlowData, loc))
 			return true
 		}
@@ -77,8 +77,8 @@ func (h *Handler) handleWizardText(chatID int64, text string) bool {
 		d, ok := parse.RepeatText(text, now)
 		if !ok {
 			h.sendHTMLWithKeyboard(chatID, i18n.T(lang,
-				"Не понял период. Напиши как «раз в 3 дня» или «каждые 2 недели» — или нажми кнопку.",
-				"I could not read that. Write it like «every 3 days» — or press a button."),
+				"Не понял период. Напиши как «раз в 3 дня» или «каждые 2 недели», или нажми кнопку.",
+				"I could not read that. Write it like «every 3 days», or press a button."),
 				wizardKeyboardFor(lang, step, us.FlowData, loc))
 			return true
 		}

@@ -30,13 +30,13 @@ func (h *Handler) handleFeedbackCallback(chatID int64, messageID int, data strin
 	case "fb_bug", "fb_idea":
 		kind := "bug"
 		prompt := i18n.T(lang,
-			"Опиши, что сломалось — одним сообщением. Я передам.",
-			"Describe what broke — in one message. I will pass it on.")
+			"Опиши, что сломалось, одним сообщением. Я передам.",
+			"Describe what broke in one message. I will pass it on.")
 		if data == "fb_idea" {
 			kind = "feature"
 			prompt = i18n.T(lang,
-				"Расскажи, чего не хватает — одним сообщением. Я передам.",
-				"Tell us what is missing — in one message. I will pass it on.")
+				"Расскажи, чего не хватает, одним сообщением. Я передам.",
+				"Tell us what is missing in one message. I will pass it on.")
 		}
 		h.store.GetOrCreate(chatID).CurrentFlow = feedbackFlowPrefix + kind
 		h.sendHTMLWithKeyboard(chatID, prompt, keyboards.BackToMenu(lang))
@@ -77,7 +77,7 @@ func (h *Handler) handleFeedbackText(chatID int64, flow, text string) {
 
 	if text == "" {
 		h.sendHTMLWithKeyboard(chatID, i18n.T(lang,
-			"Пустое сообщение — не отправил.", "Empty message — nothing sent."),
+			"Пустое сообщение, не отправил.", "Empty message, nothing sent."),
 			keyboards.BackToMenu(lang))
 		return
 	}

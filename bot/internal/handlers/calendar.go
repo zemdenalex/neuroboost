@@ -122,8 +122,8 @@ func (h *Handler) showMonth(chatID int64, messageID, year int, month time.Month)
 		dates[i] = c.Date.Format("2006-01-02")
 	}
 
-	text := fmt.Sprintf(h.t(chatID, "🗓 <b>%s %d</b>\n\nВыбери день. 🔸 сегодня · ▁▄█ — насколько занят день (шкала: %s)",
-		"🗓 <b>%s %d</b>\n\nPick a day. 🔸 today · ▁▄█ — how full the day is (scale: %s)"),
+	text := fmt.Sprintf(h.t(chatID, "🗓 <b>%s %d</b>\n\nВыбери день. 🔸 сегодня · ▁▄█: насколько занят день (шкала: %s)",
+		"🗓 <b>%s %d</b>\n\nPick a day. 🔸 today · ▁▄█: how full the day is (scale: %s)"),
 		monthNominative(h.lang(chatID), month), year, scaleLabel(h.lang(chatID), sc.Kind))
 	kb := keyboards.MonthGrid(h.lang(chatID), year, int(month), monthNominative(h.lang(chatID), month), labels, dates,
 		time.Now().In(loc).Format("2006-01-02"))
@@ -232,7 +232,7 @@ func (h *Handler) handleCalendarDay(chatID int64, messageID int, date string) {
 		text += fmt.Sprintf(h.t(chatID, "📅 <b>События: %d шт</b>\n", "📅 <b>Events: %d</b>\n"), len(events))
 		sort.Slice(events, func(i, j int) bool { return events[i].StartsAt < events[j].StartsAt })
 		for _, e := range events {
-			text += fmt.Sprintf("  %s — %s\n", h.eventWhen(chatID, e), format.Escape(e.Title))
+			text += fmt.Sprintf("  %s · %s\n", h.eventWhen(chatID, e), format.Escape(e.Title))
 		}
 	}
 	if len(due) > 0 {

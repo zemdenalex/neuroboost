@@ -35,7 +35,7 @@ func (h *Handler) handleKeywords(chatID int64, messageID int) {
 	var b strings.Builder
 	b.WriteString(h.t(chatID, "🔤 <b>Свои слова</b>\n\n", "🔤 <b>Your words</b>\n\n"))
 	if len(vocab) == 0 {
-		b.WriteString(h.t(chatID, "Пока ни одного.\n\nСлово, написанное в строке создания, задаёт характеристику события — тег, цвет, календарь, дату — и в название не попадает.", "None yet.\n\nA word written in a creation line sets one characteristic of the event — a tag, a colour, a calendar, a date — and stays out of the title."))
+		b.WriteString(h.t(chatID, "Пока ни одного.\n\nСлово, написанное в строке создания, задаёт характеристику события (тег, цвет, календарь, дату) и в название не попадает.", "None yet.\n\nA word written in a creation line sets one characteristic of the event (a tag, a colour, a calendar, a date) and stays out of the title."))
 	}
 
 	words := make([]string, 0, len(vocab))
@@ -87,7 +87,7 @@ func (h *Handler) startKeywordFlow(chatID int64, messageID int) {
 	us.FlowStep = "word"
 	us.FlowData = map[string]any{}
 	h.editOrSend(chatID, messageID,
-		h.t(chatID, "Напиши <b>одно слово</b>. Потом выберешь, что оно означает.\n\nНапример: <code>созвон</code> — и дальше «Календарь», «Работа».", "Write <b>one word</b>. Then you'll pick what it means.\n\nFor example: <code>созвон</code> — then «Calendar», «Работа»."),
+		h.t(chatID, "Напиши <b>одно слово</b>. Потом выберешь, что оно означает.\n\nНапример: <code>созвон</code>, и дальше «Календарь», «Работа».", "Write <b>one word</b>. Then you'll pick what it means.\n\nFor example: <code>созвон</code>, then «Calendar», «Работа»."),
 		keyboards.TriggerCancel(h.lang(chatID)))
 }
 
@@ -174,11 +174,11 @@ func (h *Handler) handleKeywordCallback(chatID int64, messageID int, data string
 func valuePrompt(lang i18n.Lang, field parse.Field, word string) string {
 	switch field {
 	case parse.FieldTag:
-		return i18n.T(lang, "Каким тегом? Напиши тег — или отправь <code>", "Which tag? Write it — or send <code>") + format.Escape(word) + i18n.T(lang, "</code>, чтобы тег назывался так же.", "</code> to name the tag after the word.")
+		return i18n.T(lang, "Каким тегом? Напиши тег или отправь <code>", "Which tag? Write it or send <code>") + format.Escape(word) + i18n.T(lang, "</code>, чтобы тег назывался так же.", "</code> to name the tag after the word.")
 	case parse.FieldCalendar:
 		return i18n.T(lang, "В какой календарь? Напиши его название ровно так, как оно в приложении.", "Which calendar? Write its name exactly as it is in the app.")
 	case parse.FieldDay:
-		return i18n.T(lang, "Какой день? Например: <code>завтра</code>, <code>среда</code>, <code>следующий понедельник</code>.\n\n⚠ Сохраню фразу, а не дату — «завтра» останется завтрашним днём и через неделю.", "Which day? For example: <code>завтра</code>, <code>среда</code>, <code>следующий понедельник</code>.\n\n⚠ I store the phrase, not the date — «завтра» still means tomorrow a week from now.")
+		return i18n.T(lang, "Какой день? Например: <code>завтра</code>, <code>среда</code>, <code>следующий понедельник</code>.\n\n⚠ Сохраню фразу, а не дату: «завтра» останется завтрашним днём и через неделю.", "Which day? For example: <code>завтра</code>, <code>среда</code>, <code>следующий понедельник</code>.\n\n⚠ I store the phrase, not the date: «завтра» still means tomorrow a week from now.")
 	case parse.FieldTime:
 		return i18n.T(lang, "Какое время? Например: <code>14:00</code> или <code>14:00-15:30</code>.", "What time? For example: <code>14:00</code> or <code>14:00-15:30</code>.")
 	}

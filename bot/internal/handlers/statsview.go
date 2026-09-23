@@ -140,12 +140,12 @@ func (h *Handler) handleScalePickFrom(chatID int64, messageID int, kind, origin 
 	ws, we := hourOf(start, 8), hourOf(end, 20)
 	six := 6 * time.Hour
 	text := fmt.Sprintf(h.t(chatID,
-		"📏 <b>Шкала статистики</b>\n\nЧто считать полным столбиком. Пример — день, где занято 6 часов:\n"+
-			"• 24 ч → %s — одинаково для всех\n• рабочие часы (%02d–%02d) → %s\n• по максимуму → самый занятый день экрана = █\n\n"+
-			"Поменять можно в любой момент — и здесь, и кнопкой 📏 на экране статистики.",
-		"📏 <b>Statistics scale</b>\n\nWhat counts as a full bar. Example — a day with 6 hours booked:\n"+
-			"• 24 h → %s — the same for everyone\n• work hours (%02d–%02d) → %s\n• busiest = full → the fullest day on screen is █\n\n"+
-			"Change it any time — here, or with 📏 on the statistics screen."),
+		"📏 <b>Шкала статистики</b>\n\nЧто считать полным столбиком. Например, день, где занято 6 часов:\n"+
+			"• 24 ч → %s, одинаково для всех\n• рабочие часы (%02d–%02d) → %s\n• по максимуму → самый занятый день экрана = █\n\n"+
+			"Поменять можно в любой момент: и здесь, и кнопкой 📏 на экране статистики.",
+		"📏 <b>Statistics scale</b>\n\nWhat counts as a full bar. For example, a day with 6 hours booked:\n"+
+			"• 24 h → %s, the same for everyone\n• work hours (%02d–%02d) → %s\n• busiest = full → the fullest day on screen is █\n\n"+
+			"Change it any time: here, or with 📏 on the statistics screen."),
 		statgrid.Glyph(statgrid.Level(six, 24*time.Hour)), ws, we,
 		statgrid.Glyph(statgrid.Level(six, time.Duration(we-ws)*time.Hour)))
 
@@ -185,7 +185,7 @@ func renderStatsScreen(lang i18n.Lang, v statsView, g statgrid.Grid, d statsData
 
 	if busy == 0 && allDay == 0 && taskTime == 0 && reflN == 0 {
 		b.WriteString("\n" + i18n.T(lang,
-			"Пока пусто. Заведи событие или задачу — здесь появятся числа.",
+			"Пока пусто. Заведи событие или задачу, и здесь появятся числа.",
 			"Nothing yet. Add an event or a task and the numbers will appear."))
 		return b.String()
 	}

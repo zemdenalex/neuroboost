@@ -80,7 +80,7 @@ func (h *Handler) handleQuickCallback(chatID int64, messageID int, data string) 
 	// card too. Without it there is nothing to act on.
 	if raw == "" {
 		h.editOrSend(chatID, messageID,
-			h.t(chatID, "Не помню, о чём это было — напиши ещё раз.", "I no longer remember what this was about — write it again."),
+			h.t(chatID, "Не помню, о чём это было, напиши ещё раз.", "I no longer remember what this was about; write it again."),
 			keyboards.HomeInline(h.lang(chatID)))
 		return true
 	}

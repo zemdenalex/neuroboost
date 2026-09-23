@@ -95,7 +95,7 @@ func (h *Handler) createList(chatID int64, messageID int) {
 	var left []*draftState
 	for _, st := range list {
 		if _, err := h.createOne(chatID, *st); err != nil {
-			failed = append(failed, format.Escape(st.Title)+" — "+format.Escape(h.errorText(chatID, err)))
+			failed = append(failed, format.Escape(st.Title)+": "+format.Escape(h.errorText(chatID, err)))
 			left = append(left, st)
 			continue
 		}
@@ -108,8 +108,8 @@ func (h *Handler) createList(chatID int64, messageID int) {
 	}
 	if len(failed) > 0 {
 		b.WriteString(h.t(chatID, "\n❌ <b>Не создано</b>\n• ", "\n❌ <b>Not created</b>\n• ") + strings.Join(failed, "\n• ") +
-			h.t(chatID, "\n\nОстались в черновике — нажми «Создать», чтобы попробовать ещё раз.",
-				"\n\nThey are still in the draft — press Create to try again."))
+			h.t(chatID, "\n\nОстались в черновике. Нажми «Создать», чтобы попробовать ещё раз.",
+				"\n\nThey are still in the draft. Press Create to try again."))
 	}
 
 	us := h.store.GetOrCreate(chatID)

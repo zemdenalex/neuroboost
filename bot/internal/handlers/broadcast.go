@@ -78,8 +78,8 @@ func (h *Handler) handleBroadcastCommand(chatID int64) {
 		}
 	}
 	text := fmt.Sprintf(h.t(chatID,
-		"📣 <b>Рассылка %s</b> — пробный прогон, ничего не отправлено\n\nПолучателей: %d (ru %d · en %d) — активные за %d дней, подписанные, ещё не получившие.\n\n— RU —\n%s\n\n— EN —\n%s",
-		"📣 <b>Broadcast %s</b> — dry run, nothing sent\n\nRecipients: %d (ru %d · en %d) — active in %d days, subscribed, not yet reached.\n\n— RU —\n%s\n\n— EN —\n%s"),
+		"📣 <b>Рассылка %s</b>: пробный прогон, ничего не отправлено\n\nПолучателей: %d (ru %d · en %d): активные за %d дней, подписанные, ещё не получившие.\n\n<b>RU</b>\n%s\n\n<b>EN</b>\n%s",
+		"📣 <b>Broadcast %s</b>: dry run, nothing sent\n\nRecipients: %d (ru %d · en %d): active in %d days, subscribed, not yet reached.\n\n<b>RU</b>\n%s\n\n<b>EN</b>\n%s"),
 		note.Version, len(list), ru, en, broadcastActiveDays,
 		broadcastText(i18n.RU, note), broadcastText(i18n.EN, note))
 	h.sendHTMLWithKeyboard(chatID, text, keyboards.BroadcastConfirm(h.lang(chatID), note.Version, len(list)))
@@ -94,8 +94,8 @@ func (h *Handler) handleBroadcastGo(chatID int64, messageID int, version string)
 	if version != note.Version {
 		// A button from an older dry run must not send a different release.
 		h.editOrSend(chatID, messageID, h.t(chatID,
-			"Эта кнопка от прошлой версии — запусти /broadcast заново.",
-			"That button is from an older version — run /broadcast again."), keyboards.None())
+			"Эта кнопка от прошлой версии, запусти /broadcast заново.",
+			"That button is from an older version; run /broadcast again."), keyboards.None())
 		return
 	}
 	list, err := h.api.BroadcastRecipients(h.cfg.ServiceToken, note.Version, broadcastActiveDays)
@@ -136,8 +136,8 @@ func (h *Handler) handleBroadcastGo(chatID int64, messageID int, version string)
 
 	if unrecorded > 0 {
 		h.sendText(chatID, fmt.Sprintf(h.t(chatID,
-			"⚠ Результат не записался у %d — повторный запуск может прислать им ещё раз.",
-			"⚠ %d results were not recorded — a second run may send to them again."), unrecorded))
+			"⚠ Результат не записался у %d: повторный запуск может прислать им ещё раз.",
+			"⚠ %d results were not recorded: a second run may send to them again."), unrecorded))
 	}
 	h.editOrSend(chatID, messageID, fmt.Sprintf(h.t(chatID,
 		"📣 <b>Рассылка %s отправлена</b>\n\nДошло: %d · заблокировали бота: %d · не дошло: %d\n\nПовторный /broadcast пошлёт только тем, кому не дошло.",

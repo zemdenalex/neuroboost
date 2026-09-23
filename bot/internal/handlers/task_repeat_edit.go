@@ -98,7 +98,7 @@ func (h *Handler) handleTaskNagMenu(chatID int64, messageID int, taskID string) 
 		return
 	}
 	h.editOrSend(chatID, messageID, h.t(chatID,
-		"🔔 <b>Долбить</b>\n\nЕсли напоминание осталось без ответа — через сколько повторить?",
+		"🔔 <b>Долбить</b>\n\nЕсли напоминание осталось без ответа, через сколько повторить?",
 		"🔔 <b>Nag</b>\n\nIf a reminder goes unanswered, how soon should it come back?"),
 		keyboards.TaskNag(h.lang(chatID), taskID, t.NagMinutes))
 }
@@ -146,8 +146,8 @@ func (h *Handler) handleTaskPostponeCustom(chatID int64, messageID int, taskID s
 	us.FlowStep = "text"
 	us.FlowData["taskID"] = taskID
 	h.editOrSend(chatID, messageID, h.t(chatID,
-		"⏰ <b>Отложить</b>\n\nНа сколько дней? Напиши число — например «10».\n\nРитм не сдвинется: эти дни просто будут пропущены.\n\n«cancel» — отмена.",
-		"⏰ <b>Postpone</b>\n\nFor how many days? Type a number — «10», say.\n\nThe rhythm stays; these days are simply skipped.\n\n«cancel» to stop."),
+		"⏰ <b>Отложить</b>\n\nНа сколько дней? Напиши число, например «10».\n\nРитм не сдвинется: эти дни просто будут пропущены.\n\n«cancel» отменяет.",
+		"⏰ <b>Postpone</b>\n\nFor how many days? Type a number, «10» for instance.\n\nThe rhythm stays; these days are simply skipped.\n\n«cancel» to stop."),
 		keyboards.None())
 }
 
@@ -162,8 +162,8 @@ func (h *Handler) handlePostponeCustomText(chatID int64, text string) {
 		// since 20.09. A number that could not be read is a question still
 		// open, not a flow to abandon.
 		h.sendText(chatID, fmt.Sprintf(h.t(chatID,
-			"Нужно число дней от 1 до %d. Напиши, например, «10» — или «cancel».",
-			"I need a number of days from 1 to %d. Type «10», say — or «cancel»."), maxPostponeDays))
+			"Нужно число дней от 1 до %d. Напиши, например, «10» или «cancel».",
+			"I need a number of days from 1 to %d. Type «10», say, or «cancel»."), maxPostponeDays))
 		return
 	}
 

@@ -37,8 +37,8 @@ func (h *Handler) handleToday(chatID int64, messageID int) {
 	tasks = openTasks(tasks)
 
 	text := fmt.Sprintf(h.t(chatID,
-		"🎯 <b>Сегодня</b> — %s\n🕐 %s (%s)\n\n",
-		"🎯 <b>Today's focus</b> — %s\n🕐 %s (%s)\n\n"),
+		"🎯 <b>Сегодня</b>: %s\n🕐 %s (%s)\n\n",
+		"🎯 <b>Today's focus</b>: %s\n🕐 %s (%s)\n\n"),
 		dayLabel(h.lang(chatID), now),
 		now.Format("15:04"),
 		h.timezone(chatID),
@@ -49,7 +49,7 @@ func (h *Handler) handleToday(chatID int64, messageID int) {
 	text += fmt.Sprintf(h.t(chatID, "📅 <b>События: %d шт</b>\n", "📅 <b>Events: %d</b>\n"), len(events))
 	sort.Slice(events, func(i, j int) bool { return events[i].StartsAt < events[j].StartsAt })
 	for _, e := range events {
-		text += fmt.Sprintf("  %s — %s\n", h.eventWhen(chatID, e), format.Escape(e.Title))
+		text += fmt.Sprintf("  %s · %s\n", h.eventWhen(chatID, e), format.Escape(e.Title))
 	}
 
 	if len(tasks) > 0 {

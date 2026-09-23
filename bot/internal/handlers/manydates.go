@@ -43,7 +43,7 @@ func (h *Handler) askManyDates(chatID int64, messageID int) {
 	h.store.GetOrCreate(chatID).FlowStep = "dates"
 
 	h.editOrSend(chatID, messageID, fmt.Sprintf(h.t(chatID,
-		"Нашёл несколько дат: %s.\n\nОдно событие на весь промежуток — или по одному на каждую выбранную дату?",
+		"Нашёл несколько дат: %s.\n\nОдно событие на весь промежуток или по одному на каждую выбранную дату?",
 		"Several dates here: %s.\n\nOne event across the whole span, or one on each date you tick?"),
 		strings.Join(labels, ", ")),
 		keyboards.ManyDates(h.lang(chatID), labels[0], labels[len(labels)-1]))
@@ -126,7 +126,7 @@ func (h *Handler) handleDatesCallback(chatID int64, messageID int, data string) 
 
 func (h *Handler) showDatePicker(chatID int64, messageID int, dates []time.Time, chosen []bool) {
 	h.editOrSend(chatID, messageID, h.t(chatID,
-		"Отметь даты — на каждую создам такое же событие.",
-		"Tick the dates — I will create the same event on each."),
+		"Отметь даты, на каждую создам такое же событие.",
+		"Tick the dates; I will create the same event on each."),
 		keyboards.DatePicker(h.lang(chatID), dateLabels(dates), chosen))
 }

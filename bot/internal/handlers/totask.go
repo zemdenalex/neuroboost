@@ -24,8 +24,8 @@ func (h *Handler) handleToTaskStart(chatID int64, messageID int, rawEventID stri
 	ev, err := h.api.GetEvent(us.AuthToken, parentID)
 	if err != nil || ev == nil || ev.ID == "" {
 		h.editOrSend(chatID, messageID, h.t(chatID,
-			"❌ Не удалось открыть событие — возможно, оно уже удалено.",
-			"❌ Could not open the event — it may already be deleted."),
+			"❌ Не удалось открыть событие. Возможно, оно уже удалено.",
+			"❌ Could not open the event. It may already be deleted."),
 			keyboards.AgendaActions(h.lang(chatID)))
 		return
 	}
@@ -34,8 +34,8 @@ func (h *Handler) handleToTaskStart(chatID int64, messageID int, rawEventID stri
 	us.FlowData = map[string]any{"eventID": rawEventID, "title": ev.Title,
 		"repeats": ev.Rrule != nil && *ev.Rrule != ""}
 	h.editOrSend(chatID, messageID, fmt.Sprintf(h.t(chatID,
-		"✅ <b>%s</b> — сделать задачей\n\n🔗 <b>Связать</b> — событие останется и будет указывать на задачу.\n➡️ <b>Перенести</b> — останется только задача.",
-		"✅ <b>%s</b> — make it a task\n\n🔗 <b>Link</b> — the event stays and points at the task.\n➡️ <b>Move</b> — only the task remains."),
+		"✅ <b>%s</b>: сделать задачей\n\n🔗 <b>Связать</b>: событие останется и будет указывать на задачу.\n➡️ <b>Перенести</b>: останется только задача.",
+		"✅ <b>%s</b>: make it a task\n\n🔗 <b>Link</b>: the event stays and points at the task.\n➡️ <b>Move</b>: only the task remains."),
 		format.Escape(ev.Title)), keyboards.ConvertHow(h.lang(chatID), "e2"))
 }
 
@@ -49,7 +49,7 @@ func (h *Handler) handleToTaskStep(chatID int64, messageID int, data string) {
 	}
 	if us.CurrentFlow != toTaskFlow {
 		h.editOrSend(chatID, messageID, h.t(chatID,
-			"Это меню устарело — открой событие заново.", "This menu is out of date — open the event again."),
+			"Это меню устарело, открой событие заново.", "This menu is out of date; open the event again."),
 			keyboards.AgendaActions(h.lang(chatID)))
 		return
 	}
@@ -62,14 +62,14 @@ func (h *Handler) handleToTaskStep(chatID int64, messageID int, data string) {
 		us.FlowData["mode"] = map[string]string{"e2m_l": "link", "e2m_m": "move"}[data]
 		if repeats {
 			text := h.t(chatID,
-				"🔁 Это повторяющееся событие.\n\n<b>Вся серия</b> — задача тоже будет повторяться.",
-				"🔁 This event repeats.\n\n<b>Whole series</b> — the task repeats too.")
+				"🔁 Это повторяющееся событие.\n\n<b>Вся серия</b>: задача тоже будет повторяться.",
+				"🔁 This event repeats.\n\n<b>Whole series</b>: the task repeats too.")
 			if isInstance {
-				text += h.t(chatID, "\n<b>Только этот раз</b> — задача на один день, серия событий останется.",
-					"\n<b>Just this once</b> — a task for one day; the series of events stays.")
+				text += h.t(chatID, "\n<b>Только этот раз</b>: задача на один день, серия событий останется.",
+					"\n<b>Just this once</b>: a task for one day; the series of events stays.")
 			} else {
-				text += h.t(chatID, "\n\n⚠ Открыта вся серия, поэтому один день выбрать нельзя — открой событие из дня календаря.",
-					"\n\n⚠ The whole series is open, so one day cannot be chosen — open the event from a calendar day.")
+				text += h.t(chatID, "\n\n⚠ Открыта вся серия, поэтому один день выбрать нельзя. Открой событие из дня календаря.",
+					"\n\n⚠ The whole series is open, so one day cannot be chosen. Open the event from a calendar day.")
 			}
 			h.editOrSend(chatID, messageID, text, keyboards.ConvertRepeat(h.lang(chatID), "e2", isInstance))
 			return

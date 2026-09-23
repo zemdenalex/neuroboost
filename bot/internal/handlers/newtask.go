@@ -64,8 +64,8 @@ func taskCardTextFull(lang i18n.Lang, r parse.TaskResult, tz, calendar, descript
 		// Same wording as the event card: a question about to be asked is not
 		// an absence, and «нет» here would answer it silently.
 		b.WriteString(i18n.T(lang,
-			"⚠ повтор — частота не указана, спрошу\n",
-			"⚠ repeats — no frequency given, I will ask\n"))
+			"⚠ повтор: частота не указана, спрошу\n",
+			"⚠ repeats: no frequency given, I will ask\n"))
 	default:
 		b.WriteString(fieldLine("🔁", i18n.T(lang, "Повтор:", "Repeat:"), noneWord(lang)))
 	}
@@ -249,12 +249,12 @@ func wizardHint(lang i18n.Lang, step string) string {
 	switch step {
 	case "estimate":
 		return i18n.T(lang,
-			"\n\nНажми кнопку — или напиши своё: «5м», «90м», «2ч».",
-			"\n\nPress a button — or type your own: «5m», «90m», «2h».")
+			"\n\nНажми кнопку или напиши своё: «5м», «90м», «2ч».",
+			"\n\nPress a button or type your own: «5m», «90m», «2h».")
 	case "repeat":
 		return i18n.T(lang,
-			"\n\nНажми кнопку — или напиши своё: «раз в 3 дня», «каждые 2 недели».",
-			"\n\nPress a button — or type your own: «every 3 days», «every 2 weeks».")
+			"\n\nНажми кнопку или напиши своё: «раз в 3 дня», «каждые 2 недели».",
+			"\n\nPress a button or type your own: «every 3 days», «every 2 weeks».")
 	}
 	return ""
 }

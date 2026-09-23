@@ -52,7 +52,7 @@ func (h *Handler) handleLanguage(chatID int64, messageID int) {
 	// reads.
 	body := i18n.T(lang,
 		"🌐 <b>Язык</b>\n\nЯзык кнопок и сообщений бота.\n\n"+
-			"⚠ Слова, которые бот <b>понимает</b> при создании, работают на обоих языках всегда — от этой настройки они не зависят.",
+			"⚠ Слова, которые бот <b>понимает</b> при создании, работают на обоих языках всегда: от этой настройки они не зависят.",
 		"🌐 <b>Language</b>\n\nThe language of the bot's buttons and messages.\n\n"+
 			"⚠ The words the bot <b>understands</b> when you create something work in both languages regardless of this setting.")
 

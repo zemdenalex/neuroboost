@@ -48,7 +48,7 @@ func (h *Handler) handleNotificationAction(chatID int64, from *tgbotapi.User, ms
 	)
 	if err != nil {
 		log.Printf("notification action %s for %s failed: %v", action.Action, action.ReminderID, err)
-		h.sendText(chatID, h.t(chatID, "⚠️ Не получилось — попробуй ещё раз.", "⚠️ That didn't work — try again."))
+		h.sendText(chatID, h.t(chatID, "⚠️ Не получилось, попробуй ещё раз.", "⚠️ That didn't work; try again."))
 		return
 	}
 
