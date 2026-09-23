@@ -800,16 +800,21 @@ func (h *Handler) createFromDraft(chatID int64, messageID int, st draftState) {
 	loc := h.location(chatID)
 	start, end := draftBounds(st)
 
-	if err := h.createOne(chatID, st); err != nil {
+	eventID, err := h.createOne(chatID, st)
+	if err != nil {
 		h.store.ClearFlow(chatID)
 		h.editOrSend(chatID, messageID, "❌ "+h.errorText(chatID, err), keyboards.HomeInline(h.lang(chatID)))
 		return
 	}
 
 	h.store.ClearFlow(chatID)
+	// 🔴 Denis, 23.09 (pass 3): «кнопка изменить после создания отправляет в
+	// список событий». The answer carried the События screen's keyboard, whose
+	// ✏️ opens the picker. Under «✅ Создано», «изменить» means the event just
+	// made — the task → calendar path already answered with its card.
 	h.editOrSend(chatID, messageID, fmt.Sprintf(h.t(chatID, "✅ <b>Создано</b>\n%s\n🕐 %s", "✅ <b>Created</b>\n%s\n🕐 %s"),
 		format.Escape(st.Title), humanRange(h.lang(chatID), start.In(loc), end.In(loc), time.Now().In(loc))),
-		keyboards.AgendaActions(h.lang(chatID)))
+		keyboards.EventCard(h.lang(chatID), eventID))
 }
 
 // draftBounds turns the draft's day and offsets into two instants. An all-day
@@ -838,7 +843,8 @@ func draftBounds(st draftState) (time.Time, time.Time) {
 // it by task_id. If the second call fails the first has already happened, and
 // that is said out loud rather than compensated for — a silent rollback that
 // can itself fail is worse than an honest sentence.
-func (h *Handler) createOne(chatID int64, st draftState) error {
+// It returns the id of the event it made.
+func (h *Handler) createOne(chatID int64, st draftState) (string, error) {
 	us := h.store.GetOrCreate(chatID)
 
 	var taskID *string
@@ -847,7 +853,7 @@ func (h *Handler) createOne(chatID int64, st draftState) error {
 			Title: st.Title, Status: "TODO", Tags: st.D.Tags,
 		})
 		if err != nil {
-			return fmt.Errorf(h.t(chatID, "задача не создана: %w", "task not created: %w"), err)
+			return "", fmt.Errorf(h.t(chatID, "задача не создана: %w", "task not created: %w"), err)
 		}
 		taskID = &task.ID
 	}
@@ -876,15 +882,16 @@ func (h *Handler) createOne(chatID int64, st draftState) error {
 		req.CalendarID = &id
 	}
 
-	if _, err := h.api.CreateEvent(us.AuthToken, req); err != nil {
+	ev, err := h.api.CreateEvent(us.AuthToken, req)
+	if err != nil {
 		if taskID != nil {
-			return fmt.Errorf(h.t(chatID,
+			return "", fmt.Errorf(h.t(chatID,
 				"событие не создано (%w), но задача создана — она в списке задач",
 				"event not created (%w), but the task was — it is in your task list"), err)
 		}
-		return fmt.Errorf(h.t(chatID, "событие не создано: %w", "event not created: %w"), err)
+		return "", fmt.Errorf(h.t(chatID, "событие не создано: %w", "event not created: %w"), err)
 	}
-	return nil
+	return ev.ID, nil
 }
 
 // withoutField drops one field from the "read loosely" list.

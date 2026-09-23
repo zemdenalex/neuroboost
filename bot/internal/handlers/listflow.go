@@ -94,7 +94,7 @@ func (h *Handler) createList(chatID int64, messageID int) {
 	var made, failed []string
 	var left []*draftState
 	for _, st := range list {
-		if err := h.createOne(chatID, *st); err != nil {
+		if _, err := h.createOne(chatID, *st); err != nil {
 			failed = append(failed, format.Escape(st.Title)+" — "+format.Escape(h.errorText(chatID, err)))
 			left = append(left, st)
 			continue
