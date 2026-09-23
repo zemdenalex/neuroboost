@@ -3,6 +3,7 @@ package handlers
 import (
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -334,4 +335,31 @@ func (h *Handler) handleDayTaskDate(chatID int64, text string) {
 	}
 	h.store.ClearFlow(chatID)
 	h.pinTask(chatID, 0, day, taskID)
+}
+
+// handleDayTarget is ⚙️ → 🎯 Задач в день: N, 3…7 (spec §1, Denis 22.09). It
+// is written top level, not under bot.*, because the server reads it for the
+// level. A day already taken keeps the target it was taken with (Denis 23.09).
+func (h *Handler) handleDayTarget(chatID int64, messageID int, raw string) {
+	us := h.store.GetOrCreate(chatID)
+	if raw != "" {
+		n, err := strconv.Atoi(raw)
+		if err != nil || n < 3 || n > 7 {
+			return
+		}
+		if _, err := h.api.PatchSettings(us.AuthToken, map[string]any{"day_tasks_target": n}); err != nil {
+			h.sendText(chatID, h.t(chatID, "❌ Не сохранилось: ", "❌ Not saved: ")+h.errorText(chatID, err))
+			return
+		}
+	}
+	current := 5
+	if s, err := h.api.MySettings(us.AuthToken); err == nil {
+		if v, ok := s["day_tasks_target"].(float64); ok && v >= 3 && v <= 7 {
+			current = int(v)
+		}
+	}
+	h.editOrSend(chatID, messageID, h.t(chatID,
+		"🎯 <b>Задач в день</b>\n\nСколько дел ты берёшь на день. Цвет дня считается от этого числа.\n\nНовое число действует со следующего взятого дня: уже взятый день остаётся со своим.",
+		"🎯 <b>Tasks per day</b>\n\nHow many things you take on for a day. The day's colour is counted against this number.\n\nA new number applies from the next day you take: a day already taken keeps its own."),
+		keyboards.DayTarget(h.lang(chatID), current))
 }

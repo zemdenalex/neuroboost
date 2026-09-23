@@ -108,6 +108,8 @@ func HomeInline(lang i18n.Lang) tgbotapi.InlineKeyboardMarkup {
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "📊 Статистика", "📊 Stats"), "stats"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
+			// «Задачи дня» (spec 2026-09-22 §8): «today» resolves in the user's zone.
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "📌 Задачи дня", "📌 Day tasks"), "dt_d_today"),
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "⚙️ Настройки", "⚙️ Settings"), "settings_menu"),
 		),
 	)

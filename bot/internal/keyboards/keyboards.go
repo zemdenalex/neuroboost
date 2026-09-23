@@ -54,6 +54,9 @@ func TaskActions(lang i18n.Lang, taskID string, repeats bool, linkedEventID stri
 		),
 		doneRow(lang, taskID, repeats),
 		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "📌 В задачи дня", "📌 To day tasks"), "dt_pin_"+taskID),
+		),
+		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "« Назад", "« Back"), "top_tasks"),
 		),
 	)...)
@@ -278,6 +281,9 @@ func SettingsMenu(lang i18n.Lang) tgbotapi.InlineKeyboardMarkup {
 		),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "📏 Шкала статистики", "📏 Statistics scale"), "settings_stscale"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🎯 Задач в день", "🎯 Tasks per day"), "settings_dtn"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🔤 Ключевые слова", "🔤 Keywords"), "settings_keywords"),

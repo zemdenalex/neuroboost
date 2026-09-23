@@ -550,6 +550,10 @@ func (h *Handler) HandleCallback(cb *tgbotapi.CallbackQuery) {
 		h.handleScalePickFrom(chatID, cb.Message.MessageID, "", scaleFromCalendar)
 	case strings.HasPrefix(data, "cal_sc_"):
 		h.handleScalePickFrom(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "cal_sc_"), scaleFromCalendar)
+	case data == "settings_dtn":
+		h.handleDayTarget(chatID, cb.Message.MessageID, "")
+	case strings.HasPrefix(data, "dtn_"):
+		h.handleDayTarget(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "dtn_"))
 	case data == "settings_stscale":
 		h.handleScalePick(chatID, cb.Message.MessageID, "", false)
 	case strings.HasPrefix(data, "scl_"):

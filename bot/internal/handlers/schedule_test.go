@@ -211,6 +211,9 @@ func TestEveryScheduleButtonHasAPrefixTheRouterKnows(t *testing.T) {
 		"t2e_", "ev_", "t2", "e2t_", "e2",
 		// «ℹ️ Что это?», 22.09 — routed before every screen's own prefix.
 		"help_",
+		// «Задачи дня», 23.09: 📌 on the card. dt_ is one prefix, routed by
+		// handleDayTasksCallback before the switch.
+		"dt_",
 	}
 	for name, kb := range scheduleKeyboards() {
 		eachButton(kb, func(data string) {

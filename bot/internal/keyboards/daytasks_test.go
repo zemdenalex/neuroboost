@@ -162,3 +162,16 @@ func TestTargetOffersThreeToSevenAndTicksTheCurrent(t *testing.T) {
 		t.Errorf("the current target is not ticked")
 	}
 }
+
+// The ways in (spec §8): the menu, a task's card, and the target in Settings.
+func TestDayTasksCanBeReached(t *testing.T) {
+	if !has(HomeInline(i18n.RU), "dt_d_today") {
+		t.Errorf("the menu has no 📌 Задачи дня")
+	}
+	if !has(TaskActions(i18n.RU, dtID, false, ""), "dt_pin_"+dtID) {
+		t.Errorf("the task card has no 📌 В задачи дня")
+	}
+	if !has(SettingsMenu(i18n.RU), "settings_dtn") {
+		t.Errorf("Settings has no 🎯 Задач в день")
+	}
+}
