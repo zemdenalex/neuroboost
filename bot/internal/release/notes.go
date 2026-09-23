@@ -33,7 +33,7 @@ type Note struct {
 var notes = []Note{
 	{
 		Version:  "v0.4.11.4",
-		Released: "22.09.2026 · на dev, в проде ещё нет",
+		Released: "23.09.2026 · в проде",
 		// The priority symbol is a choice from this release on; people past
 		// onboarding are offered it under this release's broadcast (spec 21.09 §B2).
 		OfferPriority: true,
