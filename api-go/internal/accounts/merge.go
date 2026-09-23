@@ -220,7 +220,7 @@ func moveEverythingElse(ctx context.Context, tx pgx.Tx, keep, absorb string) err
 	return nil
 }
 
-// moveOrDrop handles the two tables where both accounts may already hold a row
+// moveOrDrop handles the tables where both accounts may already hold a row
 // that a unique constraint says only one of them may hold.
 func moveOrDrop(ctx context.Context, tx pgx.Tx, c Column, keep, absorb string) error {
 	switch c.Table {
@@ -253,6 +253,25 @@ func moveOrDrop(ctx context.Context, tx pgx.Tx, c Column, keep, absorb string) e
 		if _, err := tx.Exec(ctx,
 			`UPDATE calendar_member SET user_id = $1 WHERE user_id = $2`, keep, absorb); err != nil {
 			return fmt.Errorf("calendar_member move: %w", err)
+		}
+	case "day_commitment", "day_commitment_day":
+		// «Задачи дня»: where both accounts hold the same key, the survivor's
+		// row wins; the rest move. The key columns other than user_id are the
+		// ones the two rows are compared on.
+		on := "k.day = a.day"
+		if c.Table == "day_commitment" {
+			on += " AND k.task_id = a.task_id"
+		}
+		if _, err := tx.Exec(ctx, fmt.Sprintf(`
+			DELETE FROM %[1]s a
+			 WHERE a.user_id = $2
+			   AND EXISTS (SELECT 1 FROM %[1]s k WHERE k.user_id = $1 AND %[2]s)`, c.Table, on),
+			keep, absorb); err != nil {
+			return fmt.Errorf("%s dedupe: %w", c.Table, err)
+		}
+		if _, err := tx.Exec(ctx,
+			fmt.Sprintf(`UPDATE %s SET user_id = $1 WHERE user_id = $2`, c.Table), keep, absorb); err != nil {
+			return fmt.Errorf("%s move: %w", c.Table, err)
 		}
 	default:
 		return fmt.Errorf("no MoveOrDrop rule for %s — add one before merging", c.Key())

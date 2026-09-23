@@ -48,6 +48,8 @@ var Columns = []Column{
 	{"calendar_invite", "created_by", Move, ""},
 	{"calendar_invite", "used_by", Move, ""},
 	{"calendar_member", "user_id", MoveOrDrop, "UNIQUE (calendar_id, user_id) — both accounts can be in one shared calendar"},
+	{"day_commitment", "user_id", MoveOrDrop, "PRIMARY KEY (user_id, day, task_id) — both accounts can promise one shared task for one day"},
+	{"day_commitment_day", "user_id", MoveOrDrop, "PRIMARY KEY (user_id, day) — both accounts can have taken the same day"},
 	{"event", "user_id", Move, ""},
 	{"event_exception", "user_id", Move, ""},
 	{"feedback", "user_id", Move, ""},

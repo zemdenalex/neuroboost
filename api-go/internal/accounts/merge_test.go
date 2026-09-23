@@ -398,3 +398,52 @@ func TestOwnerAndMembershipStayInStep(t *testing.T) {
 		t.Errorf("ownership did not move to the surviving account")
 	}
 }
+
+// «Задачи дня» are keyed by (user, day[, task]). Both accounts may have taken
+// the same day with the same task — a task from a calendar both share — and
+// the survivor's row must win rather than the merge failing on the key.
+// Without a rule these rows are not an error: they vanish by cascade.
+func TestMergeKeepsDayTasksOfBothAccounts(t *testing.T) {
+	d := openDB(t)
+	ctx := context.Background()
+
+	tgID := int64(time.Now().UnixNano() % 1_000_000_000)
+	email := fmt.Sprintf("merge-day-%d@example.test", tgID)
+	site := makeUser(t, d, nil, &email)
+	tg := makeUser(t, d, &tgID, nil)
+	cal := makePersonalCalendar(t, d, site)
+	makePersonalCalendar(t, d, tg)
+
+	var task string
+	if err := d.Pool.QueryRow(ctx,
+		`INSERT INTO task (user_id, calendar_id, title) VALUES ($1, $2, 'общее') RETURNING id`,
+		site, cal).Scan(&task); err != nil {
+		t.Fatalf("create task: %v", err)
+	}
+	for _, q := range []struct {
+		sql  string
+		args []any
+	}{
+		{`INSERT INTO day_commitment (user_id, day, task_id) VALUES ($1, '2026-09-22', $2)`, []any{site, task}},
+		{`INSERT INTO day_commitment (user_id, day, task_id) VALUES ($1, '2026-09-22', $2)`, []any{tg, task}},
+		{`INSERT INTO day_commitment (user_id, day, task_id) VALUES ($1, '2026-09-23', $2)`, []any{tg, task}},
+		{`INSERT INTO day_commitment_day (user_id, day) VALUES ($1, '2026-09-22')`, []any{site}},
+		{`INSERT INTO day_commitment_day (user_id, day) VALUES ($1, '2026-09-22')`, []any{tg}},
+		{`INSERT INTO day_commitment_day (user_id, day) VALUES ($1, '2026-09-21')`, []any{tg}},
+	} {
+		if _, err := d.Pool.Exec(ctx, q.sql, q.args...); err != nil {
+			t.Fatalf("seed: %v", err)
+		}
+	}
+
+	choice := string(CalendarsMerge)
+	if err := Merge(ctx, d.Pool, makeRequest(t, d, site, tg, site, &choice)); err != nil {
+		t.Fatalf("merge: %v", err)
+	}
+	if n := count(t, d, `SELECT count(*) FROM day_commitment WHERE user_id = $1`, site); n != 2 {
+		t.Errorf("survivor has %d promised days, want 2 (22nd shared, 23rd from the absorbed account)", n)
+	}
+	if n := count(t, d, `SELECT count(*) FROM day_commitment_day WHERE user_id = $1`, site); n != 2 {
+		t.Errorf("survivor has %d taken days, want 2 (21st and 22nd)", n)
+	}
+}
