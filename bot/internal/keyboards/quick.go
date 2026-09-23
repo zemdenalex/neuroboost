@@ -28,6 +28,26 @@ func QuickAddKind(lang i18n.Lang, taskFirst bool) tgbotapi.InlineKeyboardMarkup 
 	)
 }
 
+// QuickSaved sits under a task that a typed line has just become (Denis,
+// 23.09: a line without a command is a task at once). Undo, edit, or «I meant
+// an event / a note» — the choice the old «Что создать?» asked up front, now
+// offered after the fact, when it is needed at all.
+//
+// qs_ is its own prefix: these act on a saved task id, qa_ on a line in flight.
+func QuickSaved(lang i18n.Lang, taskID string) tgbotapi.InlineKeyboardMarkup {
+	return tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "↩️ Отменить", "↩️ Undo"), "qs_undo_"+taskID),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "✏️ Изменить", "✏️ Edit"), "task_action_"+taskID),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "📅 → Событие", "📅 → Event"), "qs_event_"+taskID),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "📝 → Заметка", "📝 → Note"), "qs_note_"+taskID),
+		),
+		tgbotapi.NewInlineKeyboardRow(HelpButton(lang, HelpQuick)),
+	)
+}
+
 // OnboardNext is where onboarding hands over: the three places a new user goes
 // first, as buttons.
 func OnboardNext(lang i18n.Lang) tgbotapi.InlineKeyboardMarkup {

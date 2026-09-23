@@ -95,7 +95,9 @@ func TestQuickAddEventOverridesTheTaskWord(t *testing.T) {
 // Cancel leaves nothing running: the next line is a fresh quick add.
 func TestQuickAddCancelClearsTheFlow(t *testing.T) {
 	h, _, chat := quickHandler(t)
-	say(h, chat, "стоматолог")
+	// A line with a clock time still asks (task or event is a real choice
+	// there); a plain one is saved at once and leaves nothing to cancel.
+	say(h, chat, "стоматолог завтра в 15")
 	if flow := h.store.GetOrCreate(chat).CurrentFlow; flow == "" {
 		t.Fatalf("no question is pending — cancelling it would prove nothing")
 	}

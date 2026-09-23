@@ -25,6 +25,15 @@ const quickFlow = "quick"
 func (h *Handler) handleQuickAdd(chatID int64, text string) {
 	us := h.store.GetOrCreate(chatID)
 
+	// 🔴 Denis, 23.09: «seamless task creation» — a line without a command IS
+	// a task, saved at once; the kind question moves to buttons under the
+	// saved task (quicksave.go). Only lines where a question is genuinely
+	// needed go on to the older path below.
+	if r, ok := h.plainTaskLine(chatID, text); ok {
+		h.quickSaveTask(chatID, text, r)
+		return
+	}
+
 	// 🔴 Denis, 17.09 (second pass): «надо чтобы слово задача сделала на одно
 	// действие меньше, то есть бот воспринял как задачу, но уточнил, а не
 	// заставлял выбирать задачу еще раз». The word answers the question; the

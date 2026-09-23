@@ -18,9 +18,11 @@ import (
 
 // 🔴 «надо чтобы слово задача сделала на одно действие меньше, то есть бот
 // воспринял как задачу, но уточнил, а не заставлял выбирать задачу еще раз».
-// So: straight to the task card, with the other types offered ON it.
+// 23.09 took it one step further: no card, the task is saved at once
+// (quicksave.go). What this test still guards: no «Что создать?», and
+// changing your mind stays possible — now under the saved task.
 func TestTaskWordGoesStraightToTheTaskCard(t *testing.T) {
-	h, fake, chat := quickHandler(t)
+	h, fake, _, chat := quickSaveHandler(t)
 	say(h, chat, "задача на завтра умыться")
 
 	got := fake.last(t)
@@ -28,12 +30,11 @@ func TestTaskWordGoesStraightToTheTaskCard(t *testing.T) {
 		t.Fatalf("«задача» still asks first: %q", got.Text)
 	}
 	if !strings.Contains(got.Text, "умыться") {
-		t.Errorf("no task card: %q", got.Text)
+		t.Errorf("the saved task is not shown: %q", got.Text)
 	}
-	// Changing your mind stays possible, from the card itself.
-	for _, want := range []string{"qa_event", "qa_note"} {
+	for _, want := range []string{"qs_event_", "qs_note_"} {
 		if !strings.Contains(got.Markup, want) {
-			t.Errorf("the task card offers no way to make it %s: %s", want, got.Markup)
+			t.Errorf("no way to make it %s under the saved task: %s", want, got.Markup)
 		}
 	}
 }

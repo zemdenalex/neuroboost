@@ -76,6 +76,10 @@ func helpText(lang i18n.Lang, screen string) string {
 		return i18n.T(lang,
 			"ℹ️ <b>🔔 Обновления</b>\n\nРаз в релиз я присылаю, что нового в боте.\n\n🔕 значит больше не присылаю. Напоминания о задачах и событиях приходят как прежде: это другое.\n\n<b>Отменить:</b> в настройках, «🔔 Снова присылать».",
 			"ℹ️ <b>🔔 Updates</b>\n\nOnce per release I send what is new in the bot.\n\n🔕 means I stop sending them. Reminders about tasks and events keep coming: that is separate.\n\n<b>Undo:</b> in settings, «🔔 Send again».")
+	case keyboards.HelpQuick:
+		return i18n.T(lang,
+			"ℹ️ <b>Строка стала задачей</b>\n\nЧто ты пишешь без команды, я сразу сохраняю задачей. Срок, приоритет и повтор беру из самой строки.\n\n↩️ <b>Отменить</b> удаляет эту задачу.\n✏️ <b>Изменить</b> открывает её карточку.\n📅 и 📝 делают из той же строки событие или заметку, а задачу удаляют.\n\nСтрока со временем, список и «повтор» без частоты по-прежнему сначала спрашивают.",
+			"ℹ️ <b>A line became a task</b>\n\nWhat you type without a command I save as a task right away. Due date, priority and repeat come from the line itself.\n\n↩️ <b>Undo</b> deletes this task.\n✏️ <b>Edit</b> opens its card.\n📅 and 📝 turn the same line into an event or a note, and delete the task.\n\nA line with a time, a list, or «repeat» with no frequency still asks first.")
 	}
 	return ""
 }

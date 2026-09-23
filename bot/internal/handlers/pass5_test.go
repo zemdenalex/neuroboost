@@ -18,6 +18,11 @@ import (
 // act there is.
 func TestASecondTaskLineReplacesTheFirst(t *testing.T) {
 	h, fake, chat := quickHandler(t)
+	// 🔴 23.09: a line typed from nowhere is now saved at once (quicksave.go),
+	// so the card this test is about is reached the way it still appears —
+	// through «➕ Задача». Without this the test would pass on the instant
+	// save and prove nothing about the card.
+	h.startNewTaskFlow(chat)
 
 	say(h, chat, "задача на завтра помыться")
 	if got := fake.last(t); !strings.Contains(got.Text, "помыться") {
@@ -38,6 +43,11 @@ func TestASecondTaskLineReplacesTheFirst(t *testing.T) {
 // the literal reproduction from the log.
 func TestTheSameTaskLineTwiceDoesNotApologise(t *testing.T) {
 	h, fake, chat := quickHandler(t)
+	// 🔴 23.09: a line typed from nowhere is now saved at once (quicksave.go),
+	// so the card this test is about is reached the way it still appears —
+	// through «➕ Задача». Without this the test would pass on the instant
+	// save and prove nothing about the card.
+	h.startNewTaskFlow(chat)
 
 	say(h, chat, "задача на завтра помыться")
 	say(h, chat, "задача на завтра помыться")
@@ -53,6 +63,11 @@ func TestTheSameTaskLineTwiceDoesNotApologise(t *testing.T) {
 // question that was no longer on screen.
 func TestCancelReallyClearsTheFlow(t *testing.T) {
 	h, fake, chat := quickHandler(t)
+	// 🔴 23.09: a line typed from nowhere is now saved at once (quicksave.go),
+	// so the card this test is about is reached the way it still appears —
+	// through «➕ Задача». Without this the test would pass on the instant
+	// save and prove nothing about the card.
+	h.startNewTaskFlow(chat)
 
 	say(h, chat, "задача на завтра помыться")
 	press(h, chat, "main_menu")
@@ -149,6 +164,11 @@ func TestCardNamesThePersonalCalendarByDefault(t *testing.T) {
 // defect the event card had just been cured of, living one file away.
 func TestTaskCardNamesEveryField(t *testing.T) {
 	h, fake, chat := quickHandler(t)
+	// 🔴 23.09: a line typed from nowhere is now saved at once (quicksave.go),
+	// so the card this test is about is reached the way it still appears —
+	// through «➕ Задача». Without this the test would pass on the instant
+	// save and prove nothing about the card.
+	h.startNewTaskFlow(chat)
 	say(h, chat, "задача на завтра доделать сайт")
 
 	got := fake.last(t)

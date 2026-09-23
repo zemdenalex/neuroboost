@@ -41,6 +41,14 @@ type UserState struct {
 	PersonalCalendar      string
 	PersonalCalendarKnown bool
 
+	// QuickTaskID and QuickRaw are the last task a typed line became, and
+	// that line. «📅 → Событие» / «📝 → Заметка» under it re-read the LINE,
+	// not the saved title: «купить молоко завтра» lost «завтра» to the due
+	// date, and an event needs it back. Kept outside FlowData on purpose —
+	// saving clears the flow, and these must outlive it.
+	QuickTaskID string
+	QuickRaw    string
+
 	// Calendars is the last list read from the API, with the moment it was
 	// read. Reused for a few seconds so one button press costs one request
 	// instead of three (see calendarListTTL).
