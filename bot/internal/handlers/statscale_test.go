@@ -100,3 +100,25 @@ func TestScaleButtonsFitAndParse(t *testing.T) {
 		})
 	}
 }
+
+// Denis, 23.09 (pass 3): «изменение шкалы должно быть возможным и из
+// календаря, а то непонятно». The month grid shows the same fill bars, so its
+// scale is changed from there too — the same screen, returning to the calendar.
+func TestTheScaleIsChangedFromTheCalendarToo(t *testing.T) {
+	h, fake, patched := scaleAPI(t)
+	const chat = 953
+	h.store.SetAuth(chat, "jwt", 1<<40)
+	h.showMonth(chat, 0, 2026, 9)
+	if grid := fake.last(t); !strings.Contains(grid.Markup, `"cal_scale"`) {
+		t.Fatalf("the month grid has no 📏 button: %s", grid.Markup)
+	}
+	press(h, chat, "cal_scale")
+	got := fake.last(t)
+	if !strings.Contains(got.Markup, `"cal_sc_work"`) || !strings.Contains(got.Markup, `"cal_open"`) {
+		t.Fatalf("the picker from the calendar does not lead back to it: %s", got.Markup)
+	}
+	press(h, chat, "cal_sc_work")
+	if !strings.Contains(*patched, `"stats_scale":"work"`) {
+		t.Errorf("choosing from the calendar did not save: %s", *patched)
+	}
+}

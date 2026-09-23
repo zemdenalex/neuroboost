@@ -156,7 +156,7 @@ func TestMonthGridButtonsAreRoutedAndFit(t *testing.T) {
 	// The calendars screen deliberately avoids the «cal_» prefix this grid owns,
 	// and the day of the collision is recorded in
 	// TestCalendarScreenDoesNotSwallowTheMonthGrid.
-	routed := []string{"cal_prev_", "cal_next_", "cal_day_", "cal_back_", "noop", "main_menu", "cls"}
+	routed := []string{"cal_prev_", "cal_next_", "cal_day_", "cal_back_", "noop", "main_menu", "cls", "cal_scale"}
 	var seen int
 	for _, row := range kb.InlineKeyboard {
 		for _, b := range row {
@@ -180,9 +180,9 @@ func TestMonthGridButtonsAreRoutedAndFit(t *testing.T) {
 			}
 		}
 	}
-	// 3 header + 7 weekday + 42 days + 3 footer (today, calendars, menu).
-	if seen != 55 {
-		t.Errorf("grid has %d buttons, want 55", seen)
+	// 3 header + 7 weekday + 42 days + 4 footer (today, scale; calendars, menu).
+	if seen != 56 {
+		t.Errorf("grid has %d buttons, want 56", seen)
 	}
 }
 
@@ -197,8 +197,10 @@ func TestMonthGridRowsAreSevenWide(t *testing.T) {
 
 	// Rows 2..7 are the weeks. Telegram renders whatever it is given, so a row
 	// of six and a row of eight would simply look wrong and never error.
-	if len(kb.InlineKeyboard) != 9 {
-		t.Fatalf("got %d rows, want 9 (nav + weekdays + 6 weeks + menu)", len(kb.InlineKeyboard))
+	// The footer is two rows since 23.09: four buttons in one row get cut
+	// on a phone.
+	if len(kb.InlineKeyboard) != 10 {
+		t.Fatalf("got %d rows, want 10 (nav + weekdays + 6 weeks + 2 footer)", len(kb.InlineKeyboard))
 	}
 	for i := 2; i <= 7; i++ {
 		if got := len(kb.InlineKeyboard[i]); got != 7 {
@@ -211,8 +213,8 @@ func TestMonthGridIgnoresAShortLabelSlice(t *testing.T) {
 	// Defensive: a truncated slice must not panic mid-render and leave the user
 	// with no keyboard at all. Fewer weeks is a visible bug; a crash is a dead bot.
 	kb := keyboards.MonthGrid(i18n.RU, 2026, 8, "Август", []string{"1", "2"}, []string{"a", "b"}, "2026-08-18")
-	if len(kb.InlineKeyboard) != 3 {
-		t.Errorf("got %d rows, want 3 (nav + weekdays + menu)", len(kb.InlineKeyboard))
+	if len(kb.InlineKeyboard) != 4 {
+		t.Errorf("got %d rows, want 4 (nav + weekdays + 2 footer)", len(kb.InlineKeyboard))
 	}
 }
 

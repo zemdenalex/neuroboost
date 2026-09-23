@@ -387,6 +387,10 @@ func MonthGrid(lang i18n.Lang, year, month int, monthName string, labels, dates 
 
 	rows = append(rows, tgbotapi.NewInlineKeyboardRow(
 		tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "📅 Сегодня", "📅 Today"), "cal_day_"+todayISO),
+		// Denis, 23.09: the fill bars are here, so their scale is changed
+		// from here too — «а то непонятно».
+		tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "📏 Шкала", "📏 Scale"), "cal_scale"),
+	), tgbotapi.NewInlineKeyboardRow(
 		// 🔴 Denis, 18.09, asked for this in the MAIN menu. It is here instead
 		// because the main menu is a fixed [3][2] reply keyboard (menu.go:56)
 		// and a seventh button breaks both MainMenu and the guard that tells a

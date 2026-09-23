@@ -538,6 +538,10 @@ func (h *Handler) HandleCallback(cb *tgbotapi.CallbackQuery) {
 		h.showPriorityUnderBroadcast(chatID)
 	case strings.HasPrefix(data, "prq_"):
 		h.handlePriorityPick(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "prq_"), "prq_")
+	case data == "cal_scale":
+		h.handleScalePickFrom(chatID, cb.Message.MessageID, "", scaleFromCalendar)
+	case strings.HasPrefix(data, "cal_sc_"):
+		h.handleScalePickFrom(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "cal_sc_"), scaleFromCalendar)
 	case data == "settings_stscale":
 		h.handleScalePick(chatID, cb.Message.MessageID, "", false)
 	case strings.HasPrefix(data, "scl_"):

@@ -105,6 +105,22 @@ var scaleKinds = map[string]bool{scaleDay24: true, scaleWork: true, scalePeak: t
 // handleScalePick is the scale screen, from ⚙️ Settings or from onboarding
 // (spec §3). kind == "" only shows it; a known kind is saved first.
 func (h *Handler) handleScalePick(chatID int64, messageID int, kind string, onboarding bool) {
+	origin := scaleFromSettings
+	if onboarding {
+		origin = scaleFromOnboarding
+	}
+	h.handleScalePickFrom(chatID, messageID, kind, origin)
+}
+
+// Where the scale picker was opened from: its buttons carry that place's
+// prefix and its last button leads back there. One screen, three doors.
+const (
+	scaleFromSettings   = "settings"
+	scaleFromOnboarding = "onboarding"
+	scaleFromCalendar   = "calendar"
+)
+
+func (h *Handler) handleScalePickFrom(chatID int64, messageID int, kind, origin string) {
 	us := h.store.GetOrCreate(chatID)
 	lang := h.lang(chatID)
 	if kind != "" {
@@ -134,8 +150,11 @@ func (h *Handler) handleScalePick(chatID int64, messageID int, kind string, onbo
 		statgrid.Glyph(statgrid.Level(six, time.Duration(we-ws)*time.Hour)))
 
 	prefix, backData, backLabel := "scl_", "settings_menu", h.t(chatID, "« Настройки", "« Settings")
-	if onboarding {
+	switch origin {
+	case scaleFromOnboarding:
 		prefix, backData, backLabel = "ob_sc_", "ob_finish", h.t(chatID, "Дальше →", "Next →")
+	case scaleFromCalendar:
+		prefix, backData, backLabel = "cal_sc_", "cal_open", h.t(chatID, "« Календарь", "« Calendar")
 	}
 	h.editOrSend(chatID, messageID, text, keyboards.StatsScale(lang, current, prefix, backData, backLabel))
 }
