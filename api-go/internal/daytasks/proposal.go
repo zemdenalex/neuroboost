@@ -30,20 +30,45 @@ func Propose(ctx context.Context, userID string, day time.Time) ([]Item, error) 
 	d := day.Format(dateFmt)
 	y := day.AddDate(0, 0, -1).Format(dateFmt)
 
+	// The user's own promises for this day and the day before — a personal
+	// table, read by user_id. Tasks below are read through calendars only, as
+	// in List.
+	pinnedIDs, yesterdayIDs := map[string]bool{}, map[string]bool{}
+	prom, err := db.Pool.Query(ctx, `
+		SELECT task_id::text, day = $2::date FROM day_commitment
+		 WHERE user_id = $1 AND day IN ($2::date, $3::date) AND removed_at IS NULL`,
+		userID, d, y)
+	if err != nil {
+		return nil, err
+	}
+	for prom.Next() {
+		var id string
+		var onDay bool
+		if err := prom.Scan(&id, &onDay); err != nil {
+			prom.Close()
+			return nil, err
+		}
+		if onDay {
+			pinnedIDs[id] = true
+		} else {
+			yesterdayIDs[id] = true
+		}
+	}
+	prom.Close()
+	if err := prom.Err(); err != nil {
+		return nil, err
+	}
+
 	rows, err := db.Pool.Query(ctx, `
-		-- $1 calendars · $2 day · $3 zone · $4 user · $5 yesterday
+		-- $1 calendars · $2 day · $3 zone
 		SELECT t.id::text, t.title, COALESCE(t.priority, 0), t.created_at,
 		       COALESCE(t.rrule, ''), t.repeat_anchor,
-		       (t.due_date AT TIME ZONE $3)::date <= $2::date AS due,
-		       EXISTS (SELECT 1 FROM day_commitment c WHERE c.user_id = $4 AND c.task_id = t.id
-		                 AND c.day = $2::date AND c.removed_at IS NULL) AS pinned,
-		       EXISTS (SELECT 1 FROM day_commitment c WHERE c.user_id = $4 AND c.task_id = t.id
-		                 AND c.day = $5::date AND c.removed_at IS NULL) AS yesterday
+		       (t.due_date AT TIME ZONE $3)::date <= $2::date AS due
 		  FROM task t
 		 WHERE t.calendar_id = ANY($1)
 		   AND NOT (`+replaceAll(doneOnDay, "$DAY", "$2::date", "$TZ", "$3")+`)
 		   AND NOT (COALESCE(t.rrule, '') = '' AND t.status = 'DONE')`,
-		calIDs, d, tz, userID, y)
+		calIDs, d, tz)
 	if err != nil {
 		return nil, err
 	}
@@ -55,11 +80,11 @@ func Propose(ctx context.Context, userID string, day time.Time) ([]Item, error) 
 		var rrule string
 		var anchor *time.Time
 		var due *bool
-		var pinned, yesterday bool
 		if err := rows.Scan(&c.TaskID, &c.Title, &c.priority, &c.created, &rrule, &anchor,
-			&due, &pinned, &yesterday); err != nil {
+			&due); err != nil {
 			return nil, err
 		}
+		pinned, yesterday := pinnedIDs[c.TaskID], yesterdayIDs[c.TaskID]
 		series := rrule != ""
 		switch {
 		case pinned:

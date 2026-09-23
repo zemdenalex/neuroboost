@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 
 	"neuroboost/api-go/internal/calendars"
 	"neuroboost/api-go/internal/database"
@@ -104,16 +105,51 @@ func List(ctx context.Context, userID string, from, to time.Time) ([]Day, error)
 	}
 	confirmed.Close()
 
+	// Two reads, on purpose. The promises are the user's own rows and are read
+	// by user_id; the tasks behind them are read only through the calendars the
+	// user can see now (calendars.CalendarIDsFor), like every other task read.
+	// A task from a calendar the user has since left drops out of the day
+	// instead of showing its title to someone who no longer has it.
+	prom, err := db.Pool.Query(ctx, `
+		SELECT to_char(day, 'YYYY-MM-DD'), task_id::text FROM day_commitment
+		 WHERE user_id = $1 AND day BETWEEN $2 AND $3 AND removed_at IS NULL
+		 ORDER BY day, added_at`,
+		userID, from.Format(dateFmt), to.Format(dateFmt))
+	if err != nil {
+		return nil, err
+	}
+	var promDays, promTasks []string
+	for prom.Next() {
+		var d, id string
+		if err := prom.Scan(&d, &id); err != nil {
+			prom.Close()
+			return nil, err
+		}
+		promDays = append(promDays, d)
+		promTasks = append(promTasks, id)
+	}
+	prom.Close()
+	if err := prom.Err(); err != nil {
+		return nil, err
+	}
+	if len(promTasks) == 0 {
+		return out, nil
+	}
+	calIDs, err := calendars.CalendarIDsFor(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
 	// $DAY is the row's own day, $TZ the user's zone: substituted by hand into
 	// the shared fragment, parameters stay parameters.
 	q := `
-		SELECT to_char(c.day, 'YYYY-MM-DD'), t.id::text, t.title,
-		       ` + replaceAll(doneOnDay, "$DAY", "c.day", "$TZ", "$4") + `
-		  FROM day_commitment c
-		  JOIN task t ON t.id = c.task_id
-		 WHERE c.user_id = $1 AND c.day BETWEEN $2 AND $3 AND c.removed_at IS NULL
-		 ORDER BY c.day, c.added_at`
-	rows, err := db.Pool.Query(ctx, q, userID, from.Format(dateFmt), to.Format(dateFmt), tz)
+		SELECT x.day, t.id::text, t.title,
+		       ` + replaceAll(doneOnDay, "$DAY", "x.day::date", "$TZ", "$4") + `
+		  FROM unnest($1::text[], $2::text[]) WITH ORDINALITY AS x(day, task_id, n)
+		  JOIN task t ON t.id = x.task_id::uuid
+		 WHERE t.calendar_id = ANY($3)
+		 ORDER BY x.n`
+	rows, err := db.Pool.Query(ctx, q, promDays, promTasks, calIDs, tz)
 	if err != nil {
 		return nil, err
 	}
@@ -159,7 +195,9 @@ func Add(ctx context.Context, userID string, day time.Time, taskID string) error
 		       OR (COALESCE(t.rrule, '') = '' AND t.status = 'DONE')
 		  FROM task t WHERE t.id = $1 AND t.calendar_id = ANY($2)`,
 		taskID, calIDs, day.Format(dateFmt), tz).Scan(&done)
-	if errors.Is(err, pgx.ErrNoRows) {
+	// A task_id that is not a UUID fails the cast inside Postgres (22P02). To
+	// the caller that is the same answer as a UUID nobody owns: no such task.
+	if errors.Is(err, pgx.ErrNoRows) || pgErrCode(err, "22P02") {
 		return ErrTaskNotFound
 	}
 	if err != nil {
@@ -203,6 +241,11 @@ func Confirm(ctx context.Context, userID string, day time.Time, taskIDs []string
 		INSERT INTO day_commitment_day (user_id, day) VALUES ($1, $2)
 		ON CONFLICT (user_id, day) DO NOTHING`, userID, day.Format(dateFmt))
 	return err
+}
+
+func pgErrCode(err error, code string) bool {
+	var pgErr *pgconn.PgError
+	return errors.As(err, &pgErr) && pgErr.Code == code
 }
 
 func replaceAll(s string, pairs ...string) string {
