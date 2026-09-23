@@ -53,6 +53,8 @@ func (h *Handler) handleFlowInput(chatID int64, text string) {
 		h.handleQuickAdd(chatID, text)
 	case "note":
 		h.handleNoteFlow(chatID, text)
+	case dayTaskDateFlow:
+		h.handleDayTaskDate(chatID, text)
 	case "new_task":
 		h.handleNewTaskFlow(chatID, text)
 	case "new_event":

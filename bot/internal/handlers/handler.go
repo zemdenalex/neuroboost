@@ -323,6 +323,9 @@ func (h *Handler) HandleCallback(cb *tgbotapi.CallbackQuery) {
 	}
 
 	// Quick add's question owns qa_; it hands over to the card's flows.
+	if h.handleDayTasksCallback(chatID, cb.Message.MessageID, data) {
+		return
+	}
 	if h.handleQuickSavedCallback(chatID, cb.Message.MessageID, data) {
 		return
 	}
