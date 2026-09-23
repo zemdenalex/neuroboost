@@ -47,6 +47,7 @@ func dayKeyboards() map[string]tgbotapi.InlineKeyboardMarkup {
 		"pin":          DayPinPick(i18n.RU, dtID, "2026-09-23", "2026-09-24"),
 		"pinned":       DayPinned(i18n.RU, dtID, "2026-09-23"),
 		"target":       DayTarget(i18n.RU, 5),
+		"date-cancel":  DayDateCancel(i18n.RU, dtID),
 	}
 }
 
@@ -70,7 +71,7 @@ func TestDayKeyboardsHaveHelpAndFit(t *testing.T) {
 func TestTodaysTasksAreTickedByAPress(t *testing.T) {
 	kb := dayKeyboards()["screen-taken"]
 	ds := strings.Join(datas(kb), " ")
-	if !strings.Contains(ds, "dt_ok_"+dtID) || !strings.Contains(ds, "task_action_"+dtID) {
+	if !strings.Contains(ds, "dt_ok_2026-09-23_"+dtID) || !strings.Contains(ds, "task_action_"+dtID) {
 		t.Errorf("today's buttons: %s", ds)
 	}
 	var labels []string

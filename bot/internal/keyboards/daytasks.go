@@ -39,7 +39,9 @@ func DayScreen(lang i18n.Lang, v DayView) tgbotapi.InlineKeyboardMarkup {
 			if it.Done {
 				label = "✅ " + it.Title
 			} else if v.Today {
-				data = "dt_ok_" + it.ID
+				// The day travels with the press (review I1): an old message
+				// must not close a later day.
+				data = "dt_ok_" + v.Day + "_" + it.ID
 			}
 			rows = append(rows, tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData(label, data)))
 		}
@@ -121,6 +123,13 @@ func DayPinned(lang i18n.Lang, taskID, day string) tgbotapi.InlineKeyboardMarkup
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "📌 Задачи дня", "📌 Day tasks"), "dt_d_"+day),
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "« К задаче", "« To the task"), "task_action_"+taskID)),
 		tgbotapi.NewInlineKeyboardRow(HelpButton(lang, HelpDayTasks)))
+}
+
+// DayDateCancel sits under «✏️ Дата»: the way out of the typed-date step.
+func DayDateCancel(lang i18n.Lang, taskID string) tgbotapi.InlineKeyboardMarkup {
+	return tgbotapi.NewInlineKeyboardMarkup(tgbotapi.NewInlineKeyboardRow(
+		HelpButton(lang, HelpDayTasks),
+		tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "❌ Отмена", "❌ Cancel"), "dt_pin_"+taskID)))
 }
 
 // DayTarget is ⚙️ → 🎯 Задач в день: 3…7, the current one ticked.

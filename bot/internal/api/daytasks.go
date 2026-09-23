@@ -69,6 +69,12 @@ func (c *Client) AddDayTask(token, day, taskID string) (Day, error) {
 	return resp.Data, err
 }
 
+// MarkOccurrenceOn closes a NAMED day of a series (the API's «date»), not the
+// day a bare press resolves to: day tasks know exactly which day was ticked.
+func (c *Client) MarkOccurrenceOn(token, taskID, state, day string) error {
+	return c.post("/api/tasks/"+taskID+"/occurrences", token, map[string]any{"state": state, "date": day}, nil)
+}
+
 // RemoveDayTask takes a task out of a day. After 12:00 today, or on a past
 // day, the server refuses with TOO_LATE.
 func (c *Client) RemoveDayTask(token, day, taskID string) error {

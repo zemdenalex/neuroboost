@@ -128,13 +128,19 @@ func TestTakeConfirmsTheOffer(t *testing.T) {
 // Review focus 3: ✅ today on a series closes the series' day, on a one-off
 // closes the task.
 func TestTickingClosesTheRightWay(t *testing.T) {
-	a := &dayAPI{confirmed: true}
+	a := &dayAPI{confirmed: true, items: []map[string]any{
+		{"task_id": dtSeries, "title": "таблетки", "done": false},
+		{"task_id": dtOne, "title": "отчёт", "done": false}}}
 	h, _, chat := dayHandler(t, a)
-	press(h, chat, "dt_ok_"+dtSeries)
+	press(h, chat, "dt_ok_"+moscowToday()+"_"+dtSeries)
 	if !a.called("POST /api/tasks/" + dtSeries + "/occurrences") {
 		t.Errorf("a series was not closed through its day: %v", a.calls)
 	}
-	press(h, chat, "dt_ok_"+dtOne)
+	// Review I1: the day is named, so an old press cannot close a later day.
+	if body := a.bodies["POST /api/tasks/"+dtSeries+"/occurrences"]; !strings.Contains(body, `"date":"`+moscowToday()+`"`) {
+		t.Errorf("the series day was not named: %s", body)
+	}
+	press(h, chat, "dt_ok_"+moscowToday()+"_"+dtOne)
 	if !a.called("PATCH /api/tasks/"+dtOne) || !strings.Contains(a.bodies["PATCH /api/tasks/"+dtOne], "DONE") {
 		t.Errorf("a one-off was not closed: %v", a.calls)
 	}
@@ -214,5 +220,85 @@ func TestLongTitlesAreShortened(t *testing.T) {
 	press(h, chat, "dt_d_today")
 	if got := fake.last(t).Markup; strings.Contains(got, long) || !strings.Contains(got, "…") {
 		t.Errorf("the title went into the button whole: %s", got)
+	}
+}
+
+// Review I1: ✅ on a screen that is no longer today's writes nothing.
+func TestAnOldTickWritesNothing(t *testing.T) {
+	a := &dayAPI{confirmed: true, items: []map[string]any{{"task_id": dtOne, "title": "отчёт", "done": false}}}
+	h, fake, chat := dayHandler(t, a)
+	loc, _ := time.LoadLocation("Europe/Moscow")
+	yesterday := time.Now().In(loc).AddDate(0, 0, -1).Format("2006-01-02")
+	press(h, chat, "dt_ok_"+yesterday+"_"+dtOne)
+	if a.called("PATCH /api/tasks/" + dtOne) {
+		t.Errorf("an old ✅ closed the task: %v", a.calls)
+	}
+	if got := fake.sent(); len(got) == 0 || !strings.Contains(got[0].Text, "уже не сегодняшний") {
+		t.Errorf("an old ✅ did not say why: %v", got)
+	}
+}
+
+// Review I1: a task already done is not closed again (that would move its
+// completed_at to now, and its day's colour with it).
+func TestTickingADoneTaskWritesNothing(t *testing.T) {
+	a := &dayAPI{confirmed: true, items: []map[string]any{{"task_id": dtOne, "title": "отчёт", "done": true}}}
+	h, _, chat := dayHandler(t, a)
+	press(h, chat, "dt_ok_"+moscowToday()+"_"+dtOne)
+	if a.called("PATCH /api/tasks/" + dtOne) {
+		t.Errorf("a done task was closed again: %v", a.calls)
+	}
+}
+
+// Review I2: a past day's write is refused by the bot with a sentence that fits,
+// before the server is asked.
+func TestPastDayWritesAreRefusedWithAFittingSentence(t *testing.T) {
+	loc, _ := time.LoadLocation("Europe/Moscow")
+	yesterday := time.Now().In(loc).AddDate(0, 0, -1).Format("2006-01-02")
+	for _, data := range []string{"dt_take_" + yesterday, "dt_takeset_" + yesterday,
+		"dt_put_" + yesterday + "_" + dtOne, "dt_pd_" + yesterday + "_" + dtOne} {
+		a := &dayAPI{proposal: []map[string]any{{"task_id": dtOne, "title": "отчёт"}}}
+		h, fake, chat := dayHandler(t, a)
+		press(h, chat, data)
+		if a.called("POST /api/day-tasks/confirm") || a.called("POST /api/day-tasks") {
+			t.Errorf("%s wrote to a past day: %v", data, a.calls)
+		}
+		all := ""
+		for _, m := range fake.sent() {
+			all += m.Text + " | "
+		}
+		if !strings.Contains(all, "уже прошёл") || strings.Contains(all, "Убрать") {
+			t.Errorf("%s answered: %s", data, all)
+		}
+	}
+}
+
+// Review I2: TOO_LATE on an ADD is not a sentence about removing.
+func TestTooLateOnAddIsNotAboutRemoving(t *testing.T) {
+	a := &dayAPI{refuse: "TOO_LATE"}
+	h, fake, chat := dayHandler(t, a)
+	press(h, chat, "dt_put_"+moscowToday()+"_"+dtOne)
+	if got := fake.last(t).Text; strings.Contains(got, "Убрать") {
+		t.Errorf("TOO_LATE on add answered %q", got)
+	}
+}
+
+// Review I3: the date step has a way out, and a new line is a new thing, not
+// a date for the old task (Denis 18.09: the latest line is what the user wants).
+func TestTheDateStepHasAWayOut(t *testing.T) {
+	a := &dayAPI{}
+	h, fake, chat := dayHandler(t, a)
+	press(h, chat, "dt_pdt_"+dtOne)
+	if got := fake.last(t).Markup; !strings.Contains(got, "dt_pin_"+dtOne) {
+		t.Errorf("the date step has no ❌ Отмена: %s", got)
+	}
+	say(h, chat, "купить хлеб завтра")
+	if a.called("POST /api/day-tasks") {
+		t.Errorf("a new line pinned the old task: %v", a.calls)
+	}
+	if !a.called("POST /api/tasks") {
+		t.Errorf("the new line did not become a task: %v", a.calls)
+	}
+	if flow := h.store.GetOrCreate(chat).CurrentFlow; flow == dayTaskDateFlow {
+		t.Errorf("still in the date step")
 	}
 }

@@ -48,8 +48,17 @@ func splitDayID(rest string) (string, string, bool) {
 // before the general errorText. 🔴 NOT_AN_OCCURRENCE means «the series skips
 // that day» here, while errorText reads the same code as «the series ended».
 func (h *Handler) dayTasksErrorText(chatID int64, err error) string {
+	return h.dayTasksErrorTextFor(chatID, err, false)
+}
+
+// dayTasksErrorTextFor reads TOO_LATE by what was pressed (review I2): only a
+// removal meets the noon line; anything else is a day that has passed.
+func (h *Handler) dayTasksErrorTextFor(chatID int64, err error, removing bool) string {
 	switch api.CodeOf(err) {
 	case "TOO_LATE":
+		if !removing {
+			return h.pastDayText(chatID)
+		}
 		return h.t(chatID,
 			"Убрать из сегодняшнего дня можно только до 12:00, а прошедший день уже не меняется.",
 			"A task can leave today only until 12:00, and a past day no longer changes.")
@@ -69,6 +78,20 @@ func (h *Handler) dayTasksErrorText(chatID int64, err error) string {
 	return h.errorText(chatID, err)
 }
 
+func (h *Handler) pastDayText(chatID int64) string {
+	return h.t(chatID, "Этот день уже прошёл, его не поменять.", "That day has passed; it no longer changes.")
+}
+
+// refusePast answers a write aimed at a past day before the server is asked
+// (review I2): an old «Беру» or «Сегодня» pressed after midnight.
+func (h *Handler) refusePast(chatID int64, day time.Time) bool {
+	if !day.Before(h.userToday(chatID)) {
+		return false
+	}
+	h.sendText(chatID, "❌ "+h.pastDayText(chatID))
+	return true
+}
+
 // handleDayTasksCallback answers every dt_ button. Returns false for anything
 // else.
 func (h *Handler) handleDayTasksCallback(chatID int64, messageID int, data string) bool {
@@ -76,6 +99,10 @@ func (h *Handler) handleDayTasksCallback(chatID int64, messageID int, data strin
 		return false
 	}
 	us := h.store.GetOrCreate(chatID)
+	// Any other day-tasks press leaves the typed-date step (review I3).
+	if us.CurrentFlow == dayTaskDateFlow && !strings.HasPrefix(data, "dt_pdt_") {
+		h.store.ClearFlow(chatID)
+	}
 	withDay := func(prefix string, then func(time.Time)) {
 		if day, ok := h.parseDay(chatID, strings.TrimPrefix(data, prefix)); ok {
 			then(day)
@@ -95,18 +122,26 @@ func (h *Handler) handleDayTasksCallback(chatID int64, messageID int, data strin
 	case strings.HasPrefix(data, "dt_d_"):
 		withDay("dt_d_", func(day time.Time) { h.showDay(chatID, messageID, day) })
 	case strings.HasPrefix(data, "dt_ok_"):
-		h.tickDayTask(chatID, messageID, strings.TrimPrefix(data, "dt_ok_"))
+		withDayID("dt_ok_", func(day time.Time, id string) { h.tickDayTask(chatID, messageID, day, id) })
 	case strings.HasPrefix(data, "dt_takeset_"):
-		withDay("dt_takeset_", func(day time.Time) { h.takeDay(chatID, messageID, day, false) })
+		withDay("dt_takeset_", func(day time.Time) {
+			if !h.refusePast(chatID, day) {
+				h.takeDay(chatID, messageID, day, false)
+			}
+		})
 	case strings.HasPrefix(data, "dt_take_"):
-		withDay("dt_take_", func(day time.Time) { h.takeDay(chatID, messageID, day, true) })
+		withDay("dt_take_", func(day time.Time) {
+			if !h.refusePast(chatID, day) {
+				h.takeDay(chatID, messageID, day, true)
+			}
+		})
 	case strings.HasPrefix(data, "dt_edit_"):
 		withDay("dt_edit_", func(day time.Time) { h.showDayEdit(chatID, messageID, day, "") })
 	case strings.HasPrefix(data, "dt_rm_"):
 		withDayID("dt_rm_", func(day time.Time, id string) {
 			note := ""
 			if err := h.api.RemoveDayTask(us.AuthToken, day.Format("2006-01-02"), id); err != nil {
-				note = "❌ " + h.dayTasksErrorText(chatID, err)
+				note = "❌ " + h.dayTasksErrorTextFor(chatID, err, true)
 			}
 			h.showDayEdit(chatID, messageID, day, note)
 		})
@@ -114,6 +149,9 @@ func (h *Handler) handleDayTasksCallback(chatID int64, messageID int, data strin
 		withDay("dt_add_", func(day time.Time) { h.showDayAddList(chatID, messageID, day) })
 	case strings.HasPrefix(data, "dt_put_"):
 		withDayID("dt_put_", func(day time.Time, id string) {
+			if h.refusePast(chatID, day) {
+				return
+			}
 			note := ""
 			if _, err := h.api.AddDayTask(us.AuthToken, day.Format("2006-01-02"), id); err != nil {
 				note = "❌ " + h.dayTasksErrorText(chatID, err)
@@ -128,9 +166,14 @@ func (h *Handler) handleDayTasksCallback(chatID int64, messageID int, data strin
 		us.FlowData = map[string]any{"task": strings.TrimPrefix(data, "dt_pdt_")}
 		h.editOrSend(chatID, messageID, h.t(chatID,
 			"📌 На какой день? Напиши дату, например «пятница» или «25.09».",
-			"📌 Which day? Write a date, «friday» or «25.09» for instance."), keyboards.None())
+			"📌 Which day? Write a date, «friday» or «25.09» for instance."),
+			keyboards.DayDateCancel(h.lang(chatID), strings.TrimPrefix(data, "dt_pdt_")))
 	case strings.HasPrefix(data, "dt_pd_"):
-		withDayID("dt_pd_", func(day time.Time, id string) { h.pinTask(chatID, messageID, day, id) })
+		withDayID("dt_pd_", func(day time.Time, id string) {
+			if !h.refusePast(chatID, day) {
+				h.pinTask(chatID, messageID, day, id)
+			}
+		})
 	}
 	return true
 }
@@ -174,20 +217,49 @@ func dayButtons(items []api.DayItem) []keyboards.DayButton {
 	return out
 }
 
-// tickDayTask is ⬜ → ✅ on today's screen (Denis, 23.09). A series closes its
-// day through the series door; a one-off closes the task.
-func (h *Handler) tickDayTask(chatID int64, messageID int, taskID string) {
+// tickDayTask is ⬜ → ✅ on today's screen (Denis, 23.09).
+//
+// Review I1: the press carries its day. A screen that is no longer today's
+// writes nothing — for a series a bare press would close the NEXT day of the
+// series, for a one-off a second DONE would move completed_at to now. A task
+// already done is not closed again. A series closes the named day.
+func (h *Handler) tickDayTask(chatID int64, messageID int, day time.Time, taskID string) {
 	us := h.store.GetOrCreate(chatID)
-	var err error
-	if h.taskRepeats(chatID, taskID) {
-		_, err = h.api.MarkOccurrence(us.AuthToken, taskID, "done", 0)
-	} else {
+	today := h.userToday(chatID)
+	if !day.Equal(today) {
+		h.sendText(chatID, h.t(chatID,
+			"Этот экран уже не сегодняшний, открываю сегодняшний.",
+			"This screen is no longer today's; here is today."))
+		h.showDay(chatID, messageID, today)
+		return
+	}
+	iso := day.Format("2006-01-02")
+	days, err := h.api.DayTasks(us.AuthToken, iso, iso)
+	if err != nil || len(days) == 0 {
+		h.sendText(chatID, "❌ "+h.dayTasksErrorText(chatID, err))
+		return
+	}
+	var item *api.DayItem
+	for i := range days[0].Items {
+		if days[0].Items[i].TaskID == taskID {
+			item = &days[0].Items[i]
+		}
+	}
+	switch {
+	case item == nil:
+		h.sendText(chatID, h.t(chatID,
+			"Этой задачи уже нет в сегодняшнем дне.", "This task is no longer in today's set."))
+	case item.Done:
+		// Already closed: redraw only.
+	case h.taskRepeats(chatID, taskID):
+		err = h.api.MarkOccurrenceOn(us.AuthToken, taskID, "done", iso)
+	default:
 		err = h.api.UpdateTask(us.AuthToken, taskID, map[string]any{"status": "DONE"})
 	}
 	if err != nil {
 		h.sendText(chatID, "❌ "+h.dayTasksErrorText(chatID, err))
 	}
-	h.showDay(chatID, messageID, h.userToday(chatID))
+	h.showDay(chatID, messageID, today)
 }
 
 // takeDay confirms the day: with the offer as it is at the press (offer), or
@@ -319,7 +391,15 @@ func (h *Handler) handleDayTaskDate(chatID int64, text string) {
 	us := h.store.GetOrCreate(chatID)
 	taskID, _ := us.FlowData["task"].(string)
 	now := time.Now().In(h.location(chatID))
-	d := parse.ParseLine(text, now).Draft
+	parsed := parse.ParseLine(text, now)
+	d := parsed.Draft
+	// Review I3: a line that says more than a date is a new thing, not the
+	// old task's day (Denis 18.09: the latest line is what the user wants).
+	if strings.TrimSpace(parsed.Title) != "" {
+		h.store.ClearFlow(chatID)
+		h.handleQuickAdd(chatID, text)
+		return
+	}
 	if !d.HasDay {
 		h.sendText(chatID, h.t(chatID,
 			"Не понял дату. Напиши, например, «пятница» или «25.09».",
