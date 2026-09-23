@@ -10,12 +10,12 @@ import (
 // кнопка кроме отмены/возврата ещё и объяснение, потому что очень сложная
 // система».
 //
-// The explanation arrives as its own message under the screen, and its «« Назад»
-// deletes it. The screen itself is never touched, so «back» lands on exactly
-// the screen that was open — with its task, its step and its caller — without
-// this code having to know how to redraw any of them. Redrawing would have
-// needed per-screen state: the priority picker alone has three callers, and a
-// help screen that returned onboarding into Settings would be worse than none.
+// Since 23.09 (Denis, pass 3, F7: «Смениться объяснением») the explanation
+// takes the screen's place and «« Назад» puts the screen back. No screen has
+// to know how to redraw itself: the handler saves the pressed message as
+// Telegram showed it — text, formatting, buttons — and restores that
+// (handlers/help.go). Before, the explanation came as a separate message,
+// precisely to avoid per-screen redraw state; the snapshot removes the need.
 
 // Help screens. The callback is "help_" + screen; the text lives in
 // handlers.helpText, one case per screen.

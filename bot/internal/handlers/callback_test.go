@@ -33,6 +33,9 @@ type sentText struct {
 	Method string
 	Text   string
 	Markup string
+	// Entities is the formatting sent with the text as entities (not HTML) —
+	// how a restored screen keeps its bold.
+	Entities string
 }
 
 func newFakeTelegram(t *testing.T) (*tgbotapi.BotAPI, *fakeTelegram) {
@@ -66,7 +69,8 @@ func newFakeTelegram(t *testing.T) (*tgbotapi.BotAPI, *fakeTelegram) {
 		// Recorded only once accepted: a message Telegram refused was never read.
 		if text := r.Form.Get("text"); text != "" {
 			f.mu.Lock()
-			f.texts = append(f.texts, sentText{Method: method, Text: text, Markup: r.Form.Get("reply_markup")})
+			f.texts = append(f.texts, sentText{Method: method, Text: text, Markup: r.Form.Get("reply_markup"),
+				Entities: r.Form.Get("entities")})
 			f.mu.Unlock()
 		}
 		switch method {
@@ -75,6 +79,15 @@ func newFakeTelegram(t *testing.T) (*tgbotapi.BotAPI, *fakeTelegram) {
 				"ok":     true,
 				"result": map[string]any{"id": 1, "is_bot": true, "username": "test_bot"},
 			})
+		case "sendMessage", "editMessageText":
+			// 🔴 23.09: these answered «result: true» like every other method,
+			// but real Telegram returns the Message. The library failed to
+			// decode «true» into a Message, so every edit looked failed and
+			// editOrSend fell back to a new message — an in-place edit could
+			// not be observed as one in any test. A fake that cannot say what
+			// Telegram says is not a control.
+			_ = json.NewEncoder(w).Encode(map[string]any{"ok": true, "result": map[string]any{
+				"message_id": 1, "date": 0, "chat": map[string]any{"id": 1, "type": "private"}}})
 		default:
 			_ = json.NewEncoder(w).Encode(map[string]any{"ok": true, "result": true})
 		}

@@ -102,6 +102,11 @@ type Handler struct {
 	// quickKind is the kind a qa_ button chose, consumed by the next parse.
 	// One update is handled at a time, so it needs no lock.
 	quickKind string
+
+	// helpSaved holds the screens an «ℹ️ Что это?» has replaced, keyed by
+	// chat and message, until their «« Назад» (help.go). Same single-update
+	// rule, no lock. In memory: after a restart «Назад» deletes instead.
+	helpSaved map[helpKey]savedScreen
 }
 
 func New(bot *tgbotapi.BotAPI, apiClient *api.Client, store *state.Store, cfg config.Config) *Handler {
@@ -304,7 +309,7 @@ func (h *Handler) HandleCallback(cb *tgbotapi.CallbackQuery) {
 	// «ℹ️ Что это?» can sit on any screen, onboarding and the card included,
 	// so it is asked before any of them claims its prefix.
 	if strings.HasPrefix(data, "help_") {
-		h.handleHelp(chatID, cb.Message.MessageID, data)
+		h.handleHelp(chatID, cb.Message.MessageID, data, cb.Message)
 		return
 	}
 

@@ -11,13 +11,32 @@ import (
 	"github.com/zemdenalex/neuroboost-bot/internal/logsafe"
 )
 
-// handleHelp answers «ℹ️ Что это?» and its «« Назад» (spec 21.09 §C). Why the
-// explanation is a message of its own rather than an edit: keyboards/help.go.
+// handleHelp answers «ℹ️ Что это?» and its «« Назад» (spec 21.09 §C).
+//
+// 🔴 Denis, 23.09 (pass 3, F7): the explanation REPLACES the screen — «Смениться
+// объяснением» — and «« Назад» brings the screen back. Until then it came as a
+// separate message, because putting a screen back seemed to need every screen
+// to know how to redraw itself. It does not: Telegram hands over the pressed
+// message whole (text, formatting as entities, buttons), so the screen is
+// saved as it stands and restored as it was, whatever drew it.
 //
 // It touches no flow. A help press in the middle of a path is a question about
 // the path, not a step out of it.
-func (h *Handler) handleHelp(chatID int64, messageID int, data string) {
+func (h *Handler) handleHelp(chatID int64, messageID int, data string, msg *tgbotapi.Message) {
+	key := helpKey{chat: chatID, message: messageID}
 	if data == "help_x" {
+		if saved, ok := h.helpSaved[key]; ok {
+			delete(h.helpSaved, key)
+			edit := tgbotapi.NewEditMessageText(chatID, messageID, saved.text)
+			edit.Entities = saved.entities
+			edit.ReplyMarkup = saved.markup
+			if _, err := h.bot.Send(edit); err != nil {
+				log.Printf("help in chat %d: could not restore the screen: %s", chatID, logsafe.Redact(err))
+			}
+			return
+		}
+		// No screen saved: an explanation from before 23.09 (its own message),
+		// or one whose screen was lost to a restart. Removing it is the answer.
 		// ⚠ Knowingly inert past 48 hours: Telegram refuses to delete an older
 		// bot message, and the edit fallback editOrSend uses is bound by the same
 		// window. Posting a new message instead would answer «Назад» with more
@@ -32,7 +51,30 @@ func (h *Handler) handleHelp(chatID int64, messageID int, data string) {
 	if text == "" {
 		text = h.t(chatID, "Это объяснение устарело, открой экран заново.", "This explanation is out of date. Open the screen again.")
 	}
-	h.sendHTMLWithKeyboard(chatID, text, keyboards.HelpBack(h.lang(chatID)))
+	if msg == nil || msg.Text == "" {
+		// Nothing to put back later (a photo, a message Telegram no longer
+		// sends): the explanation goes below, the way it used to.
+		h.sendHTMLWithKeyboard(chatID, text, keyboards.HelpBack(h.lang(chatID)))
+		return
+	}
+	if h.helpSaved == nil || len(h.helpSaved) > 500 {
+		h.helpSaved = map[helpKey]savedScreen{}
+	}
+	h.helpSaved[key] = savedScreen{text: msg.Text, entities: msg.Entities, markup: msg.ReplyMarkup}
+	h.editOrSend(chatID, messageID, text, keyboards.HelpBack(h.lang(chatID)))
+}
+
+type helpKey struct {
+	chat    int64
+	message int
+}
+
+// savedScreen is a screen as Telegram showed it: plain text plus its
+// formatting as entities, so it comes back with its bold without re-rendering.
+type savedScreen struct {
+	text     string
+	entities []tgbotapi.MessageEntity
+	markup   *tgbotapi.InlineKeyboardMarkup
 }
 
 // helpText is the one registry of screen explanations. Each answers three
