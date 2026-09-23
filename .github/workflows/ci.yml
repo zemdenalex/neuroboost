@@ -304,12 +304,12 @@ jobs:
             git checkout develop
             retry git pull origin develop
 
-            # Sync production DB → dev DB (both containers must be running)
-            echo "Syncing production database to dev..."
-            docker compose -f /root/neuroboost/docker-compose.yml exec -T db \
-              pg_dump -U neuroboost -c --if-exists neuroboost 2>/dev/null | \
-              docker compose -f /root/neuroboost-dev/docker-compose.dev.yml exec -T db \
-              psql -U neuroboost -d neuroboost 2>/dev/null || echo "DB sync failed, continuing with existing data"
+            # 🔴 No prod → dev copy (removed 23.09, Denis). The step that stood here
+            # wrote into database «neuroboost» inside the dev container, but dev
+            # lives in «neuroboost_dev»; psql failed on every push, its error went
+            # to /dev/null and «|| echo … continuing» kept the job green. Dev has
+            # never been a copy of prod — it keeps its own data, including the e2e
+            # account the e2e job signs in with.
 
             # Build and restart
             docker compose -f docker-compose.dev.yml build --pull
