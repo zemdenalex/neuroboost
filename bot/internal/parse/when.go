@@ -74,6 +74,27 @@ var (
 // range is written with spaces on both sides: "14:00 - 15:00".
 var dashSeparators = map[string]bool{"-": true, "–": true, "—": true}
 
+// A range written in words (Denis, 23.09): «с 01:00 до 22:00», «from 10 to
+// 12». The date span (span.go) has run already and taken «с 14.10 до 16.10»,
+// so what reaches these is a clock range or nothing.
+var (
+	rangeOpeners = map[string]bool{"с": true, "со": true, "from": true}
+	rangeClosers = map[string]bool{"до": true, "to": true, "till": true, "until": true}
+)
+
+// clockOrBare reads «22:00» (strict) or «22» (loose) from one token.
+func clockOrBare(norm string) (time.Duration, bool, bool) {
+	if m := clockRe.FindStringSubmatch(norm); m != nil {
+		v, ok := clockValue(m[1], m[3])
+		return v, !strictClock(m[2], m[3]), ok
+	}
+	if m := bareNumRe.FindStringSubmatch(norm); m != nil {
+		v, ok := clockValue(m[1], "")
+		return v, true, ok
+	}
+	return 0, false, false
+}
+
 func recogniseRelativeDay(toks []Token, now time.Time, d *Draft) bool {
 	for i, t := range toks {
 		if t.Field != FieldNone {
@@ -265,6 +286,24 @@ func recogniseTimeRange(toks []Token, d *Draft) bool {
 			continue
 		}
 
+		// «с 01:00 до 22:00» — four tokens, both ends required. «с» alone is
+		// not a time word: «встреча с 2 друзьями» has no «до» and stays a title.
+		if rangeOpeners[t.Norm] && i+3 < len(toks) && rangeClosers[toks[i+2].Norm] &&
+			toks[i+1].Field == FieldNone && toks[i+2].Field == FieldNone && toks[i+3].Field == FieldNone {
+			start, startLoose, okStart := clockOrBare(toks[i+1].Norm)
+			end, endLoose, okEnd := clockOrBare(toks[i+3].Norm)
+			if okStart && okEnd {
+				setTime(d, start, end, true)
+				if startLoose || endLoose {
+					d.MarkUncertain(FieldTime)
+				}
+				for k := i; k <= i+3; k++ {
+					toks[k].Field = FieldTime
+				}
+				return true
+			}
+		}
+
 		start, sep, mm, width, ok := readStart(toks, i)
 		if !ok {
 			continue
@@ -381,6 +420,13 @@ func readEnd(toks []Token, last int, dashTaken bool) (dur time.Duration, width i
 			return v, 1, true, true
 		}
 		return 0, 0, false, false
+	}
+
+	// «15:00 до 16:00» — the end after a word instead of a dash.
+	if rangeClosers[toks[next].Norm] && next+1 < len(toks) && toks[next+1].Field == FieldNone {
+		if v, loose, good := clockOrBare(toks[next+1].Norm); good {
+			return v, 2, loose, true
+		}
 	}
 
 	// «- 15:00» — the dash stands alone.
