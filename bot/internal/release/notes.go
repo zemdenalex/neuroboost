@@ -38,19 +38,19 @@ var notes = []Note{
 		// onboarding are offered it under this release's broadcast (spec 21.09 §B2).
 		OfferPriority: true,
 		RU: "• 🔁 Повторяющиеся задачи: создать словом или кнопкой, отметить день, отложить, выключить повтор\n" +
-			"• 📅 Задачу — в календарь, событие — в задачу: связать или перенести, и заранее видно, что чем станет\n" +
-			"• 📊 Статистика — экран с кнопками: неделя, месяц, год, всё время; занятость по часам, задачи, рефлексии\n" +
+			"• 📅 Задачу можно поставить в календарь, а событие сделать задачей. Перед этим бот покажет, что получится\n" +
+			"• 📊 Статистика с кнопками: неделя, месяц, год или всё время. Видно, сколько часов занято, что сделано и когда писал рефлексию\n" +
 			"• 🗓 В месячном календаре видно, насколько заполнен каждый день\n" +
 			"• 🔔 «Долбить»: напоминание повторяется, пока не ответишь\n" +
-			"• 🔘 Символ приоритета на выбор — кружки, точки или тире\n" +
+			"• 🔘 Символ приоритета можно выбрать: кружки, точки или тире\n" +
 			"• ℹ️ «Что это?» на новых экранах\n" +
 			"• 🔗 Аккаунт на сайте прямо из бота: ссылка для входа или код привязки",
 		EN: "• 🔁 Repeating tasks: create by word or button, tick a day, postpone, switch the repeat off\n" +
-			"• 📅 A task onto the calendar, an event into a task: link or move, and see first what becomes what\n" +
-			"• 📊 Statistics is a screen with buttons: week, month, year, all time; busy hours, tasks, reflections\n" +
+			"• 📅 Put a task on the calendar or turn an event into a task. The bot shows what you will get first\n" +
+			"• 📊 Statistics with buttons: week, month, year or all time. See busy hours, what got done and when you wrote reflections\n" +
 			"• 🗓 The month calendar shows how full each day is\n" +
 			"• 🔔 «Nag»: a reminder repeats until you answer it\n" +
-			"• 🔘 Choose the priority symbol — circles, dots or dashes\n" +
+			"• 🔘 Choose the priority symbol: circles, dots or dashes\n" +
 			"• ℹ️ «What is this?» on the new screens\n" +
 			"• 🔗 Your website account from inside the bot: a sign-in link or a linking code",
 	},
