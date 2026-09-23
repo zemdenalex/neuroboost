@@ -298,3 +298,113 @@ func TestProposalOrder(t *testing.T) {
 		t.Errorf("proposal wrote something: %+v", days[0])
 	}
 }
+
+func callDay(t *testing.T, h http.HandlerFunc, userID, method, target string, body any, params map[string]string) *httptest.ResponseRecorder {
+	t.Helper()
+	var rd *bytes.Reader
+	if body != nil {
+		b, _ := json.Marshal(body)
+		rd = bytes.NewReader(b)
+	} else {
+		rd = bytes.NewReader(nil)
+	}
+	req := asUser(httptest.NewRequest(method, target, rd), userID)
+	if params != nil {
+		rctx := chi.NewRouteContext()
+		for k, v := range params {
+			rctx.URLParams.Add(k, v)
+		}
+		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+	}
+	rec := httptest.NewRecorder()
+	h(rec, req)
+	return rec
+}
+
+// The bot's whole path through HTTP: propose → confirm → close → read the colour.
+func TestTheDayThroughHTTP(t *testing.T) {
+	_, _, user := dayDB(t)
+	today := Today(time.Now(), ny).Format("2006-01-02")
+	id := newTask(t, user, map[string]any{"title": "одно дело", "priority": 1})
+
+	rec := callDay(t, ProposalHandler, user, http.MethodGet, "/api/day-tasks/proposal?day="+today, nil, nil)
+	if rec.Code != http.StatusOK || !bytes.Contains(rec.Body.Bytes(), []byte(id)) {
+		t.Fatalf("proposal: %d %s", rec.Code, rec.Body.String())
+	}
+	rec = callDay(t, ConfirmHandler, user, http.MethodPost, "/api/day-tasks/confirm",
+		map[string]any{"day": today, "task_ids": []string{id}}, nil)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("confirm: %d %s", rec.Code, rec.Body.String())
+	}
+	closeTask(t, user, id)
+	rec = callDay(t, ListHandler, user, http.MethodGet, "/api/day-tasks?from="+today+"&to="+today, nil, nil)
+	var got struct {
+		Data []Day `json:"data"`
+	}
+	_ = json.Unmarshal(rec.Body.Bytes(), &got)
+	if rec.Code != http.StatusOK || len(got.Data) != 1 || got.Data[0].Done != 1 || got.Data[0].Level != 1 {
+		t.Errorf("list: %d %+v — want 1 of 5 done, level 1 (🟫)", rec.Code, got.Data)
+	}
+}
+
+func TestHTTPErrorsHaveTheirCodes(t *testing.T) {
+	_, ctx, user := dayDB(t)
+	today := Today(time.Now(), ny)
+	yesterday := today.AddDate(0, 0, -1).Format("2006-01-02")
+	id := newTask(t, user, map[string]any{"title": "x"})
+	if err := Add(ctx, user, today.AddDate(0, 0, -1), id); err != nil {
+		t.Fatal(err)
+	}
+	done := newTask(t, user, map[string]any{"title": "done"})
+	closeTask(t, user, done)
+
+	cases := []struct {
+		name string
+		rec  *httptest.ResponseRecorder
+		code int
+		err  string
+	}{
+		{"remove from yesterday", callDay(t, RemoveHandler, user, http.MethodDelete, "/", nil,
+			map[string]string{"day": yesterday, "task_id": id}), 409, "TOO_LATE"},
+		{"add done", callDay(t, AddHandler, user, http.MethodPost, "/",
+			map[string]any{"day": today.Format("2006-01-02"), "task_id": done}, nil), 409, "NOT_OPEN"},
+		{"bad day", callDay(t, AddHandler, user, http.MethodPost, "/",
+			map[string]any{"day": "22.09.2026", "task_id": id}, nil), 400, "INVALID_DAY"},
+		{"huge range", callDay(t, ListHandler, user, http.MethodGet,
+			"/?from=2026-01-01&to=2026-12-31", nil, nil), 400, "RANGE_TOO_LARGE"},
+		// Not a UUID: the cast fails inside Postgres, which must still read as
+		// «no such task», not as a server error.
+		{"bad task id", callDay(t, AddHandler, user, http.MethodPost, "/",
+			map[string]any{"day": today.Format("2006-01-02"), "task_id": "abc"}, nil), 404, "TASK_NOT_FOUND"},
+		{"no user", callDay(t, ListHandler, "", http.MethodGet, "/?from=2026-01-01&to=2026-01-02", nil, nil), 401, "NOT_AUTHENTICATED"},
+	}
+	for _, c := range cases {
+		if c.rec.Code != c.code || !bytes.Contains(c.rec.Body.Bytes(), []byte(c.err)) {
+			t.Errorf("%s: %d %s — want %d %s", c.name, c.rec.Code, c.rec.Body.String(), c.code, c.err)
+		}
+	}
+}
+
+// A promised task whose calendar the user can no longer see (left a shared
+// calendar, the task moved) leaves the day: its title is no longer theirs to
+// read. The row stays — access may come back — but List does not show it.
+func TestListShowsOnlyTasksStillVisible(t *testing.T) {
+	d, ctx, user := dayDB(t)
+	_, _, other := dayDB(t)
+	today := Today(time.Now(), ny)
+	theirs := newTask(t, other, map[string]any{"title": "больше не моё"})
+	// The row as it would be after access was lost: written directly, because
+	// Add rightly refuses a task the user cannot see.
+	if _, err := d.Pool.Exec(ctx,
+		`INSERT INTO day_commitment (user_id, day, task_id) VALUES ($1, $2, $3)`,
+		user, today.Format(dateFmt), theirs); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+	days, err := List(ctx, user, today, today)
+	if err != nil {
+		t.Fatalf("list: %v", err)
+	}
+	if len(days[0].Items) != 0 {
+		t.Errorf("a task from a calendar the user cannot see is listed: %+v", days[0].Items)
+	}
+}

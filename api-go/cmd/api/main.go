@@ -14,6 +14,7 @@ import (
 	"neuroboost/api-go/internal/broadcast"
 	"neuroboost/api-go/internal/config"
 	"neuroboost/api-go/internal/database"
+	"neuroboost/api-go/internal/daytasks"
 	"neuroboost/api-go/internal/logger"
 	"neuroboost/api-go/internal/middleware"
 	"neuroboost/api-go/internal/status"
@@ -60,6 +61,7 @@ func main() {
 	usersettings.InitDB(db)
 	rem.InitDB(db)
 	broadcast.InitDB(db)
+	daytasks.InitDB(db)
 	rem.InitService(log)
 
 	// The reminder worker runs for the life of the process: it needs both the
@@ -165,6 +167,14 @@ func main() {
 		r.Post("/api/events/{id}/exceptions", e.AddExceptionHandler)
 		r.Post("/api/events/{id}/to-task", e.ToTaskHandler)
 		r.Post("/api/events/{id}/reflection", rfl.CreateForEventHandler)
+
+		// «Задачи дня» (spec 2026-09-22). The fixed paths are listed before
+		// the {day} pattern so a reader sees them first; chi does not care.
+		r.Get("/api/day-tasks", daytasks.ListHandler)
+		r.Get("/api/day-tasks/proposal", daytasks.ProposalHandler)
+		r.Post("/api/day-tasks/confirm", daytasks.ConfirmHandler)
+		r.Post("/api/day-tasks", daytasks.AddHandler)
+		r.Delete("/api/day-tasks/{day}/{task_id}", daytasks.RemoveHandler)
 
 		// Tasks
 		r.Get("/api/tasks", t.ListHandler)
