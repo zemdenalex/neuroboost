@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-08-14
 tags: [neuroboost, ui, reminders, data-integrity]
-weight: { importance: 5, connectivity: 4, access: 1, last_accessed: 2026-08-14 }
+weight: { importance: 5, connectivity: 3, access: 1, last_accessed: 2026-09-23 }
 sources:
   - command: "psql staging → {\"без\": [1440,60], \"важное\": [1440,60], \"обычное\": [1440,60]}"
   - file: "web/src/components/ReminderOffsets/ReminderOffsets.tsx (showPresetPicker)"

@@ -6,7 +6,7 @@ status: verified
 verified_by: session-01VRP8SC
 verified_at: 2026-09-18
 tags: [neuroboost, web, css, method, measurement]
-weight: { importance: 5, connectivity: 3, access: 1, last_accessed: 2026-09-21 }
+weight: { importance: 5, connectivity: 3, access: 1, last_accessed: 2026-09-23 }
 sources:
   - file: "web/src/components/Calendar/WeekGrid/EventBlock.tsx"
   - file: "web/e2e/overlap-overflow.spec.ts"

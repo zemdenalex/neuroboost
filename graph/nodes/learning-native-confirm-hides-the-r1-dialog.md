@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-08-10
 tags: [neuroboost, e2e, playwright, calendar, r1]
-weight: { importance: 4, connectivity: 4, access: 1, last_accessed: 2026-08-10 }
+weight: { importance: 5, connectivity: 4, access: 1, last_accessed: 2026-09-23 }
 sources:
   - command: "web/src/components/Calendar/EventEditor/useEditorForm.ts:231 — if (!draft || !confirm(...)) return"
   - command: "cd web && corepack pnpm exec playwright test recurring-scope  # 2 passed после page.on('dialog', d => d.accept())"

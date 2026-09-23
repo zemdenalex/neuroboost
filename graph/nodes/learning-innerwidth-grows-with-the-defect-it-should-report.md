@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-08-12
 tags: [neuroboost, testing, responsive, method]
-weight: { importance: 4, connectivity: 5, access: 1, last_accessed: 2026-08-12 }
+weight: { importance: 5, connectivity: 4, access: 1, last_accessed: 2026-09-23 }
 sources:
   - command: "/admin на устройстве 375: innerWidth=693, docScroll=693 → horizontalOverflow=false. После починки 375/375"
   - file: "web/src/pages/Admin/Admin.tsx"

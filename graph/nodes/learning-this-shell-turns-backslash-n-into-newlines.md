@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-09-22
 tags: [tooling, claude-code, editing, method]
-weight: { importance: 4, connectivity: 1, access: 1, last_accessed: 2026-09-22 }
+weight: { importance: 4, connectivity: 2, access: 2, last_accessed: 2026-09-23 }
 sources:
   - file: "bot/internal/handlers/statsview.go"
 stakes: low

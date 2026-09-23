@@ -6,11 +6,12 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-09-21
 tags: [neuroboost, product, concept, statistics]
-weight: { importance: 4, connectivity: 3, access: 1, last_accessed: 2026-09-21 }
+weight: { importance: 5, connectivity: 3, access: 2, last_accessed: 2026-09-23 }
 sources:
   - file: "ref/feedback/bot-proverka-v04114-prohod2-otvet-denisa-2026-09-21.md"
 stakes: medium
 links:
+  - relates-to: "[[decision-day-tasks-details-22-09]]"
   - relates-to: "[[decision-statistics-is-a-screen-you-browse-20-09]]"
   - relates-to: "[[decision-release-small-and-in-his-order-21-09]]"
 ---

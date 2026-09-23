@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-08-15
 tags: [neuroboost, calendars, p3, security]
-weight: { importance: 5, connectivity: 8, access: 1, last_accessed: 2026-08-17 }
+weight: { importance: 5, connectivity: 9, access: 1, last_accessed: 2026-09-23 }
 sources:
   - file: "api-go/internal/calendars/store.go — WritableIDFor + writable_test.go"
   - file: "web/src/components/Calendar/EventEditor/CalendarField.tsx"

@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-09-21
 tags: [neuroboost, ops, incident, method]
-weight: { importance: 4, connectivity: 2, access: 1, last_accessed: 2026-09-21 }
+weight: { importance: 5, connectivity: 2, access: 1, last_accessed: 2026-09-23 }
 sources:
   - file: "docs/incident-2026-09-21-host-nedostupen.md"
 stakes: high

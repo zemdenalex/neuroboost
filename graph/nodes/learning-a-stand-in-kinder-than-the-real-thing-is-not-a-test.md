@@ -6,7 +6,7 @@ status: verified
 verified_by: session-e49293fc
 verified_at: 2026-08-16
 tags: [neuroboost, testing, method, self-review]
-weight: { importance: 5, connectivity: 3, access: 1, last_accessed: 2026-08-17 }
+weight: { importance: 5, connectivity: 4, access: 1, last_accessed: 2026-09-23 }
 sources:
   - command: "presetLabel('toString') с реалистичным t → \"function toString() { [native code] }\""
   - file: "web/src/lib/reminders/presetLabel.test.ts (translator: dict[key] ?? key → ?? String(key))"

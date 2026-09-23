@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-08-12
 tags: [neuroboost, testing, architecture, review]
-weight: { importance: 4, connectivity: 4, access: 1, last_accessed: 2026-08-12 }
+weight: { importance: 5, connectivity: 4, access: 1, last_accessed: 2026-09-23 }
 sources:
   - command: "minSQLBlocksScanned=9999 → 'only scanned 76 SQL blocks'; порог поднят 60 → 68"
   - file: "api-go/internal/calendars/scoping_test.go"

@@ -1206,3 +1206,27 @@ CI/CD: `concurrency` в `ci.yml` (два push'а подряд ломают e2e �
 **Читать первым:** `decision-task-event-and-statistics-details-22-09`, `learning-a-fix-to-linked-state-is-measured-at-its-consumer`, `learning-e2e-fixture-time-in-runner-zone-fails-nightly` (обновлён 22.09), `learning-this-shell-turns-backslash-n-into-newlines`.
 
 **Навыки на следующую сессию:** `superpowers:writing-plans` для куска C; `superpowers:executing-plans`; правка текстов с переводами строк — только Edit/Write.
+
+## [2026-09-22 02:40] consolidate | PRESERVED — transcript-20260922-023956.jsonl, 91 MB → .oversize/ (too large for one pass, kept for chunked consolidation)
+
+## [2026-09-23] recall | decision-day-commitments-concept-21-09, decision-release-small-and-in-his-order-21-09, decision-statistics-is-a-screen-you-browse-20-09, learning-parallel-e2e-specs-share-one-calendar, learning-e2e-fixture-time-in-runner-zone-fails-nightly, entity-bot-deploys-by-hand-not-by-ci, learning-this-shell-turns-backslash-n-into-newlines, decision-priority-style-is-a-choice-21-09
+
+## [2026-09-23] continuation | 22–23.09: кусок C, заметки 11.4, вкладка Tasks, спека и план «задач дня»
+
+**Сделано (22.09 вечер → 23.09 утро):**
+- 11.4 C «ℹ️ Что это?» — на dev (`e2fb37f`); заметки 11.4 + кнопка «🔘 Выбрать символ» под рассылкой (`fa7eeb4`); вкладка «Tasks (0)» больше не закрывает понедельник (`1e79ec8`, e2e `sidebar-tab-overlap.spec.ts`). CI зелёный на `9e5bdf3`/`09ff74d`, e2e 55.
+- Скрипты: `web/scripts/e2e-local.sh`, `scripts/deploy-dev-bot.sh`; противоречие `CLAUDE.md:454` убрано (`0ce9009`).
+- Спека «задачи дня» одобрена — `docs/superpowers/specs/2026-09-22-day-tasks-design.md`; план D1 (API) — `docs/superpowers/plans/2026-09-22-day-tasks-d1-api.md`.
+- Разбор harness'ов — `E:/Projects/100 - Research/metod-ii/harness-engineering-2026-09-22.md` (§3 — что делать корневой сессии).
+- 23.09: заметки 11.4 и тексты «ℹ️» переписаны по правилу клиентских текстов (без «—»): `d58ec3e`, `1493eac`.
+- Handoff 22.09 оборвался (RAM, потом батарея) — дописан 23.09.
+
+**Открыто:** 7 коммитов НЕ запушены (push = сброс dev-базы). Хуки корня в сессиях проектов не работают — чинит корень.
+
+**План следующей сессии (слова Дениса, handoff 22.09):**
+- 🎯 Цель: D1 «задачи дня» — API, inline, по плану.
+- 1️⃣ Первый шаг: открыть `docs/proverka-bota-v0.4.11.4-prohod3-2026-09-21.md` — если Денис вписал результаты A–F, сначала чинить сломанное; нет — D1 Task 1.
+- 🚀 Push: вместе с D1, **после** его прохода.
+- ⏳ Ждёт Дениса: проход A–F, «да» на срез 11.4 в прод, 2 proposal'а (оставлены ждать).
+- Узлы читать первыми: `decision-day-tasks-details-22-09`, `learning-root-hooks-never-reach-project-sessions`, `preference-test-a-tool-on-a-real-file-before-recommending`.
+- Скиллы: `superpowers:executing-plans` (D1), `superpowers:verification-before-completion`.

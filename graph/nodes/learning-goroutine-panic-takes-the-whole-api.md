@@ -4,7 +4,7 @@ title: Паника в фоновой горутине роняет весь Go-
 type: learning
 status: verified
 tags: [neuroboost, go, reminders, recurrence, reliability]
-weight: { importance: 5, connectivity: 2, access: 1, last_accessed: 2026-08-10 }
+weight: { importance: 5, connectivity: 2, access: 1, last_accessed: 2026-09-23 }
 created: 2026-08-10
 sources:
   - file: "api-go/internal/events/recurrence.go — expandRecurrence, разыменование *event.Rrule"

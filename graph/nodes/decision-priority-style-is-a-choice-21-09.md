@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-09-21
 tags: [neuroboost, bot, product, design]
-weight: { importance: 3, connectivity: 5, access: 2, last_accessed: 2026-09-22 }
+weight: { importance: 3, connectivity: 6, access: 3, last_accessed: 2026-09-23 }
 sources:
   - file: "ref/feedback/bot-proverka-v04114-prohod2-otvet-denisa-2026-09-21.md"
   - file: "docs/superpowers/plans/2026-09-21-v04114-release-plan.md"

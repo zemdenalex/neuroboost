@@ -6,7 +6,7 @@ status: verified
 verified_by: session-e49293fc
 verified_at: 2026-08-16
 tags: [neuroboost, method, denis, staging]
-weight: { importance: 5, connectivity: 2, access: 1, last_accessed: 2026-08-17 }
+weight: { importance: 5, connectivity: 3, access: 1, last_accessed: 2026-09-23 }
 sources:
   - quote: "Ты можешь сделать всё сам, скажи только что визуально проверить"
   - quote: "Пусть луп идёт"

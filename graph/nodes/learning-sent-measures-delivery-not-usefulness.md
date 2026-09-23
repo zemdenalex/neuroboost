@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-08-13
 tags: [neuroboost, reminders, testing, method, ux]
-weight: { importance: 5, connectivity: 5, access: 1, last_accessed: 2026-08-13 }
+weight: { importance: 5, connectivity: 7, access: 1, last_accessed: 2026-09-23 }
 sources:
   - command: "staging: SELECT message FROM reminder → 'YIIIIPIIIIEEEEEE' (только заголовок), status SENT"
   - file: "api-go/internal/reminders/scan.go:163 — insertReminder(..., c.ev.Title)"

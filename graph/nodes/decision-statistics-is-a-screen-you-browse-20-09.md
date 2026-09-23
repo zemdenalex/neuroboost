@@ -6,7 +6,7 @@ status: verified
 verified_by: session-01WFKD2A
 verified_at: 2026-09-20
 tags: [neuroboost, bot, product, statistics]
-weight: { importance: 5, connectivity: 6, access: 3, last_accessed: 2026-09-22 }
+weight: { importance: 5, connectivity: 7, access: 4, last_accessed: 2026-09-23 }
 sources:
   - file: "ref/feedback/bot-proverka-v04114-otvet-denisa-2026-09-20.md"
   - file: "bot/internal/handlers/stats.go"

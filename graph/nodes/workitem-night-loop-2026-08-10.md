@@ -5,7 +5,7 @@ type: work-item
 status: verified
 verified_at: 2026-08-10
 tags: [neuroboost, loop, telegram, p3, release]
-weight: { importance: 5, connectivity: 7, access: 1, last_accessed: 2026-08-15 }
+weight: { importance: 5, connectivity: 7, access: 1, last_accessed: 2026-09-23 }
 sources:
   - file: ".remember/night-loop-2026-08-10.md (542 строки)"
 stakes: high

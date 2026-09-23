@@ -6,7 +6,7 @@ status: verified
 verified_by: session-01VRP8SC
 verified_at: 2026-09-16
 tags: [neuroboost, bot, deploy, docker, infra]
-weight: { importance: 5, connectivity: 3, access: 2, last_accessed: 2026-09-21 }
+weight: { importance: 5, connectivity: 3, access: 2, last_accessed: 2026-09-23 }
 sources:
   - file: "docs/relizy/v0.4.11.1.md"
 stakes: medium

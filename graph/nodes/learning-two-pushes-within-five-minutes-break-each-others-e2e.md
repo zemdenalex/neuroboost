@@ -6,7 +6,7 @@ status: verified
 verified_by: session-01VRP8SC
 verified_at: 2026-09-18
 tags: [neuroboost, ci, e2e, staging]
-weight: { importance: 4, connectivity: 3, access: 1, last_accessed: 2026-09-21 }
+weight: { importance: 5, connectivity: 3, access: 1, last_accessed: 2026-09-23 }
 sources:
   - file: ".github/workflows/ci.yml"
 stakes: medium

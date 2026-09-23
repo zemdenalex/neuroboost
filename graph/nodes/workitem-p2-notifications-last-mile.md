@@ -4,7 +4,7 @@ title: P2 «уведомления приходят» — упирается в 
 type: work-item
 status: open
 tags: [neuroboost, notifications, telegram, deploy, blocked]
-weight: { importance: 5, connectivity: 21, access: 3, last_accessed: 2026-08-15 }
+weight: { importance: 5, connectivity: 21, access: 3, last_accessed: 2026-09-23 }
 created: 2026-08-10
 sources:
   - file: "docs/ROADMAP.md — секция «P2 — что построено»"

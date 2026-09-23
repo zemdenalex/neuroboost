@@ -1,3 +1,5 @@
+<!-- паспорт: тип=план | статус=действует | строк=1425 | ~токенов=11832 | обновлён=по git -->
+
 # «Задачи дня» D1 — API Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.

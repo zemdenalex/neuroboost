@@ -6,7 +6,7 @@ status: verified
 verified_by: session-e49293fc
 verified_at: 2026-08-16
 tags: [neuroboost, reminders, testing, method, staging]
-weight: { importance: 5, connectivity: 5, access: 1, last_accessed: 2026-08-17 }
+weight: { importance: 5, connectivity: 5, access: 1, last_accessed: 2026-09-23 }
 sources:
   - command: "создал событие через интерфейс staging → reminder_offsets = []"
   - command: "создал задачу quick-add'ом → reminder_offsets = [1440, 60]"

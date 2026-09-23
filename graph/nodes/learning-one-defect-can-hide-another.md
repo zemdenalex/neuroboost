@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-09-21
 tags: [neuroboost, method, parser, bot]
-weight: { importance: 4, connectivity: 3, access: 1, last_accessed: 2026-09-21 }
+weight: { importance: 5, connectivity: 3, access: 1, last_accessed: 2026-09-23 }
 sources:
   - file: "bot/internal/parse/list.go"
   - file: "bot/internal/parse/comma_list_test.go"

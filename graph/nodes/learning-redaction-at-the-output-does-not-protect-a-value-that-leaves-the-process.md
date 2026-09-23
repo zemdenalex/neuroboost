@@ -6,7 +6,7 @@ status: verified
 verified_by: session-e49293fc
 verified_at: 2026-08-16
 tags: [neuroboost, security, logging, bot, method]
-weight: { importance: 5, connectivity: 4, access: 1, last_accessed: 2026-08-17 }
+weight: { importance: 5, connectivity: 5, access: 1, last_accessed: 2026-09-23 }
 sources:
   - file: "bot/internal/notifier/notifier.go (reason = sendErr.Error() — сырое, строкой выше редактированного лога)"
   - file: "api-go/internal/reminders/service.go:247 (svcLog.Warn с req.Error)"

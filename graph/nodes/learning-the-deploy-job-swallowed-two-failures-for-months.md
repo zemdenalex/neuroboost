@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-08-14
 tags: [neuroboost, ci, deploy, backups, staging, ops]
-weight: { importance: 5, connectivity: 5, access: 1, last_accessed: 2026-08-14 }
+weight: { importance: 5, connectivity: 6, access: 1, last_accessed: 2026-09-23 }
 sources:
   - command: "ls -la /root/backups/ → единственный архив от 2026-04-23"
   - command: "git ls-files -s scripts/backup.sh → 100644, бита исполнения не было никогда"

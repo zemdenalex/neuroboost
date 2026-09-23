@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-08-15
 tags: [neuroboost, product, method, denis]
-weight: { importance: 5, connectivity: 3, access: 2, last_accessed: 2026-08-17 }
+weight: { importance: 5, connectivity: 7, access: 2, last_accessed: 2026-09-23 }
 sources:
   - quote: "Bruh you just removed the infinite color range to make the picker, create the rule to never remove working function to replace it with simpler one"
 stakes: high

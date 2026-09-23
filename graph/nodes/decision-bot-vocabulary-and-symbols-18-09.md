@@ -6,7 +6,7 @@ status: verified
 verified_by: session-01VRP8SC
 verified_at: 2026-09-18
 tags: [neuroboost, bot, decision, ux, language]
-weight: { importance: 5, connectivity: 6, access: 2, last_accessed: 2026-09-21 }
+weight: { importance: 5, connectivity: 6, access: 2, last_accessed: 2026-09-23 }
 sources:
   - file: "ref/feedback/bot-proverka-v04113-otvet-denisa-2026-09-18.md"
 stakes: medium

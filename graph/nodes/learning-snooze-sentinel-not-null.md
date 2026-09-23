@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-08-11
 tags: [neuroboost, telegram, notifications, postgres, p2]
-weight: { importance: 4, connectivity: 4, access: 1, last_accessed: 2026-08-11 }
+weight: { importance: 5, connectivity: 4, access: 1, last_accessed: 2026-09-23 }
 sources:
   - command: "curl -X POST .../api/svc/notifications/action -d '{\"action\":\"snooze\"}'  # 200, строка -1 PENDING с будущим remind_at"
   - command: "повторный snooze на 30 мин → select count(*) where minutes_before=-1 → 1, remind_at сдвинут 07:34 → 07:55"

@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-08-10
 tags: [neuroboost, telegram, reminders, silent-failure]
-weight: { importance: 5, connectivity: 5, access: 1, last_accessed: 2026-08-10 }
+weight: { importance: 5, connectivity: 6, access: 1, last_accessed: 2026-09-23 }
 sources:
   - command: "docker exec neuroboost-dev-db psql -d neuroboost_dev -c 'select email, tg_id from \"user\"'  # → tg_id пустой"
   - command: "api-go/internal/reminders/scan.go:38 — WHERE tg_id IS NOT NULL"

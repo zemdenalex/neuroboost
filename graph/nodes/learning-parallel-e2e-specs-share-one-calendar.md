@@ -6,12 +6,13 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-09-22
 tags: [neuroboost, e2e, ci, flaky, testing]
-weight: { importance: 4, connectivity: 3, access: 1, last_accessed: 2026-09-22 }
+weight: { importance: 4, connectivity: 4, access: 2, last_accessed: 2026-09-23 }
 sources:
   - file: "web/e2e/fixtures/localTime.ts"
   - file: "web/e2e/crossday-resize.spec.ts"
 stakes: medium
 links:
+  - relates-to: "[[learning-a-css-class-defined-nowhere-fails-silently]]"
   - relates-to: "[[learning-e2e-fixture-time-in-runner-zone-fails-nightly]]"
   - relates-to: "[[learning-e2e-baseline-recorded-on-a-monday]]"
   - relates-to: "[[entity-e2e-playwright-harness]]"

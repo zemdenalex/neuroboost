@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-08-19
 tags: [neuroboost, bot, ux, denis]
-weight: { importance: 5, connectivity: 3, access: 2, last_accessed: 2026-09-21 }
+weight: { importance: 5, connectivity: 3, access: 2, last_accessed: 2026-09-23 }
 sources:
   - file: "docs/proverka-bota-2026-08-19.md"
 links:

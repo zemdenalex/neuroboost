@@ -6,7 +6,7 @@ status: verified
 verified_by: session-01VRP8SC
 verified_at: 2026-09-16
 tags: [neuroboost, api, events, recurrence, bot]
-weight: { importance: 5, connectivity: 3, access: 2, last_accessed: 2026-09-21 }
+weight: { importance: 5, connectivity: 3, access: 2, last_accessed: 2026-09-23 }
 sources:
   - file: "api-go/internal/events/instanceid.go"
   - file: "api-go/internal/events/handlers.go"

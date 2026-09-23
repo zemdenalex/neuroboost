@@ -6,7 +6,7 @@ status: verified
 verified_by: session-01VRP8SC
 verified_at: 2026-09-16
 tags: [neuroboost, e2e, ci, timezone, testing]
-weight: { importance: 5, connectivity: 9, access: 3, last_accessed: 2026-09-22 }
+weight: { importance: 5, connectivity: 9, access: 4, last_accessed: 2026-09-23 }
 sources:
   - file: "web/e2e/shared-badge-mobile.spec.ts"
   - file: "web/e2e/fixtures/localTime.ts"

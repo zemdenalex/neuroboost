@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-08-17
 tags: [neuroboost, bot, ux, telegram, evidence]
-weight: { importance: 5, connectivity: 4, access: 5, last_accessed: 2026-08-17 }
+weight: { importance: 5, connectivity: 4, access: 5, last_accessed: 2026-09-23 }
 sources:
   - command: "docker logs neuroboost-dev-api | grep 'svc/notifications/action' — семь строк, все status 200"
   - file: "bot/internal/notifier/callback.go → ActionReply"
