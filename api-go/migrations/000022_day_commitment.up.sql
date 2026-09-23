@@ -17,6 +17,9 @@ CREATE INDEX IF NOT EXISTS idx_day_commitment_task ON day_commitment(task_id);
 CREATE TABLE IF NOT EXISTS day_commitment_day (
     user_id      UUID NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
     day          DATE NOT NULL,
+    -- The N the day was taken with. Read from here, not from settings: a
+    -- setting changed later must not recolour the day (review I1, 23.09).
+    target       SMALLINT NOT NULL CHECK (target BETWEEN 3 AND 7),
     confirmed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     PRIMARY KEY (user_id, day)
 );

@@ -181,13 +181,12 @@ func TestASeriesDayCountsWhenThatDayIsDone(t *testing.T) {
 
 // Spec §5: yesterday cannot be edited; tomorrow can.
 func TestRemovingFollowsTheNoonRule(t *testing.T) {
-	_, ctx, user := dayDB(t)
+	d, ctx, user := dayDB(t)
 	today := Today(time.Now(), ny)
 	id := newTask(t, user, map[string]any{"title": "убрать"})
-	for _, d := range []time.Time{today.AddDate(0, 0, -1), today.AddDate(0, 0, 1)} {
-		if err := Add(ctx, user, d, id); err != nil {
-			t.Fatalf("add %s: %v", d.Format("2006-01-02"), err)
-		}
+	seedPromise(t, d, user, today.AddDate(0, 0, -1), id)
+	if err := Add(ctx, user, today.AddDate(0, 0, 1), id); err != nil {
+		t.Fatalf("add tomorrow: %v", err)
 	}
 	if err := Remove(ctx, user, today.AddDate(0, 0, -1), id, time.Now()); err != ErrTooLate {
 		t.Errorf("remove from yesterday: err = %v, want ErrTooLate", err)
@@ -257,7 +256,7 @@ func TestADayIsTheUsersDateNotUTCs(t *testing.T) {
 // Spec §4: already-promised first, then yesterday's undone, then due, then
 // priority; never a done task, never more than N.
 func TestProposalOrder(t *testing.T) {
-	_, ctx, user := dayDB(t)
+	d, ctx, user := dayDB(t)
 	today := Today(time.Now(), ny)
 	yesterday := today.AddDate(0, 0, -1)
 
@@ -274,9 +273,7 @@ func TestProposalOrder(t *testing.T) {
 	if err := Add(ctx, user, today, pinned); err != nil {
 		t.Fatal(err)
 	}
-	if err := Confirm(ctx, user, yesterday, []string{carried}); err != nil {
-		t.Fatal(err)
-	}
+	seedPromise(t, d, user, yesterday, carried)
 
 	got, err := Propose(ctx, user, today)
 	if err != nil {
@@ -348,13 +345,11 @@ func TestTheDayThroughHTTP(t *testing.T) {
 }
 
 func TestHTTPErrorsHaveTheirCodes(t *testing.T) {
-	_, ctx, user := dayDB(t)
+	d, _, user := dayDB(t)
 	today := Today(time.Now(), ny)
 	yesterday := today.AddDate(0, 0, -1).Format("2006-01-02")
 	id := newTask(t, user, map[string]any{"title": "x"})
-	if err := Add(ctx, user, today.AddDate(0, 0, -1), id); err != nil {
-		t.Fatal(err)
-	}
+	seedPromise(t, d, user, today.AddDate(0, 0, -1), id)
 	done := newTask(t, user, map[string]any{"title": "done"})
 	closeTask(t, user, done)
 

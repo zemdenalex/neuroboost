@@ -40,6 +40,8 @@ func respondErr(w http.ResponseWriter, err error) {
 		util.RespondError(w, http.StatusConflict, "TOO_LATE", err.Error())
 	case errors.Is(err, ErrNotOpen):
 		util.RespondError(w, http.StatusConflict, "NOT_OPEN", err.Error())
+	case errors.Is(err, ErrNotAnOccurrence):
+		util.RespondError(w, http.StatusConflict, "NOT_AN_OCCURRENCE", err.Error())
 	case errors.Is(err, ErrTaskNotFound):
 		util.RespondError(w, http.StatusNotFound, "TASK_NOT_FOUND", err.Error())
 	case errors.Is(err, ErrRangeTooLarge):

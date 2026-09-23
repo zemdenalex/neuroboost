@@ -19,11 +19,12 @@ var db *database.DB
 func InitDB(d *database.DB) { db = d }
 
 var (
-	ErrTooLate       = errors.New("today's tasks can only be removed before noon; past days not at all")
-	ErrNotOpen       = errors.New("only an open task can be promised for a day")
-	ErrTaskNotFound  = errors.New("task not found")
-	ErrRangeTooLarge = errors.New("range must be at most 62 days")
-	ErrInvalidRange  = errors.New("from must be a date not after to")
+	ErrTooLate         = errors.New("today's tasks can only be removed before noon; past days not at all")
+	ErrNotOpen         = errors.New("only an open task can be promised for a day")
+	ErrTaskNotFound    = errors.New("task not found")
+	ErrRangeTooLarge   = errors.New("range must be at most 62 days")
+	ErrInvalidRange    = errors.New("from must be a date not after to")
+	ErrNotAnOccurrence = errors.New("this series does not occur on that day")
 )
 
 type Item struct {
@@ -57,11 +58,16 @@ func userZoneAndTarget(ctx context.Context, userID string) (string, int, error) 
 //
 //	one-off: completed_at falls on the day in the user's zone
 //	series:  that day of the series is answered «done»
+//
+// Total: it is TRUE or FALSE, never NULL. A DONE row without completed_at
+// (written by a door that did not stamp it) reads as not done on any day;
+// before this it read NULL, and List's bool scan answered 500 (review C1).
 const doneOnDay = `
 	CASE WHEN COALESCE(t.rrule, '') <> ''
 	     THEN EXISTS (SELECT 1 FROM task_occurrence o
 	                   WHERE o.task_id = t.id AND o.occurrence = $DAY AND o.state = 'done')
-	     ELSE t.status = 'DONE' AND (t.completed_at AT TIME ZONE $TZ)::date = $DAY
+	     ELSE t.status = 'DONE' AND t.completed_at IS NOT NULL
+	          AND (t.completed_at AT TIME ZONE $TZ)::date = $DAY
 	END`
 
 // List returns every day of [from, to], empty ones included.
@@ -87,7 +93,7 @@ func List(ctx context.Context, userID string, from, to time.Time) ([]Day, error)
 	}
 
 	confirmed, err := db.Pool.Query(ctx, `
-		SELECT to_char(day, 'YYYY-MM-DD') FROM day_commitment_day
+		SELECT to_char(day, 'YYYY-MM-DD'), target FROM day_commitment_day
 		 WHERE user_id = $1 AND day BETWEEN $2 AND $3`,
 		userID, from.Format(dateFmt), to.Format(dateFmt))
 	if err != nil {
@@ -95,15 +101,22 @@ func List(ctx context.Context, userID string, from, to time.Time) ([]Day, error)
 	}
 	for confirmed.Next() {
 		var d string
-		if err := confirmed.Scan(&d); err != nil {
+		var n int
+		if err := confirmed.Scan(&d, &n); err != nil {
 			confirmed.Close()
 			return nil, err
 		}
+		// A taken day keeps the target it was taken with: changing the
+		// setting later neither turns today green nor recolours the past.
 		if day := byDay[d]; day != nil {
 			day.Confirmed = true
+			day.Target = n
 		}
 	}
 	confirmed.Close()
+	if err := confirmed.Err(); err != nil {
+		return nil, err
+	}
 
 	// Two reads, on purpose. The promises are the user's own rows and are read
 	// by user_id; the tasks behind them are read only through the calendars the
@@ -178,23 +191,33 @@ func List(ctx context.Context, userID string, from, to time.Time) ([]Day, error)
 	return out, nil
 }
 
-// Add promises an OPEN task, visible to the caller, for a day. Adding again
-// what was removed brings it back.
-func Add(ctx context.Context, userID string, day time.Time, taskID string) error {
-	tz, _, err := userZoneAndTarget(ctx, userID)
-	if err != nil {
-		return err
-	}
-	calIDs, err := calendars.CalendarIDsFor(ctx, userID)
-	if err != nil {
-		return err
-	}
-	var done bool
-	err = db.Pool.QueryRow(ctx, `
-		SELECT `+replaceAll(doneOnDay, "$DAY", "$3::date", "$TZ", "$4")+`
+// querier is what Add and Confirm write through: the pool, or Confirm's
+// transaction.
+type querier interface {
+	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+	Exec(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error)
+}
+
+// isPast: a past day is closed to every edit, not only to removal — else an
+// untaken ⬛ day could be taken the next morning (review I3).
+func isPast(day time.Time, tz string) bool {
+	return ymd(day) < ymd(Today(time.Now(), tz))
+}
+
+// checkOpen is the one «can this task be promised for that day» (spec §2):
+// visible to the user, not closed (a one-off DONE, anything CANCELLED), not
+// already done that day, and — for a series — a day the series occurs on.
+func checkOpen(ctx context.Context, q querier, calIDs []string, day time.Time, tz, taskID string) error {
+	var rrule string
+	var anchor *time.Time
+	var closed bool
+	err := q.QueryRow(ctx, `
+		SELECT COALESCE(t.rrule, ''), t.repeat_anchor,
+		       `+replaceAll(doneOnDay, "$DAY", "$3::date", "$TZ", "$4")+`
 		       OR (COALESCE(t.rrule, '') = '' AND t.status = 'DONE')
+		       OR t.status = 'CANCELLED'
 		  FROM task t WHERE t.id = $1 AND t.calendar_id = ANY($2)`,
-		taskID, calIDs, day.Format(dateFmt), tz).Scan(&done)
+		taskID, calIDs, day.Format(dateFmt), tz).Scan(&rrule, &anchor, &closed)
 	// A task_id that is not a UUID fails the cast inside Postgres (22P02). To
 	// the caller that is the same answer as a UUID nobody owns: no such task.
 	if errors.Is(err, pgx.ErrNoRows) || pgErrCode(err, "22P02") {
@@ -203,14 +226,41 @@ func Add(ctx context.Context, userID string, day time.Time, taskID string) error
 	if err != nil {
 		return err
 	}
-	if done {
+	if closed {
 		return ErrNotOpen
 	}
-	_, err = db.Pool.Exec(ctx, `
+	if rrule != "" && (anchor == nil || !occursOn(rrule, *anchor, day)) {
+		return ErrNotAnOccurrence
+	}
+	return nil
+}
+
+func promise(ctx context.Context, q querier, userID string, day time.Time, taskID string) error {
+	_, err := q.Exec(ctx, `
 		INSERT INTO day_commitment (user_id, day, task_id) VALUES ($1, $2, $3)
 		ON CONFLICT (user_id, day, task_id) DO UPDATE SET removed_at = NULL`,
 		userID, day.Format(dateFmt), taskID)
 	return err
+}
+
+// Add promises an OPEN task, visible to the caller, for today or a future
+// day. Adding again what was removed brings it back.
+func Add(ctx context.Context, userID string, day time.Time, taskID string) error {
+	tz, _, err := userZoneAndTarget(ctx, userID)
+	if err != nil {
+		return err
+	}
+	if isPast(day, tz) {
+		return ErrTooLate
+	}
+	calIDs, err := calendars.CalendarIDsFor(ctx, userID)
+	if err != nil {
+		return err
+	}
+	if err := checkOpen(ctx, db.Pool, calIDs, day, tz, taskID); err != nil {
+		return err
+	}
+	return promise(ctx, db.Pool, userID, day, taskID)
 }
 
 // Remove is spec §5: refused after noon today and on any past day.
@@ -231,16 +281,68 @@ func Remove(ctx context.Context, userID string, day time.Time, taskID string, no
 
 // Confirm takes the day with these tasks. It only ADDS: removing goes through
 // Remove and its noon rule, or «confirm» would be a way around it.
+//
+// One transaction: a refused task refuses the whole press, nothing is left
+// half-written (review I2). A task already promised for the day is kept
+// without the open check — «✅ Беру» on a proposal whose pinned task was done
+// in the meantime takes the day instead of failing on the finished task.
+// The day keeps the target it was taken with (review I1).
 func Confirm(ctx context.Context, userID string, day time.Time, taskIDs []string) error {
+	tz, target, err := userZoneAndTarget(ctx, userID)
+	if err != nil {
+		return err
+	}
+	if isPast(day, tz) {
+		return ErrTooLate
+	}
+	calIDs, err := calendars.CalendarIDsFor(ctx, userID)
+	if err != nil {
+		return err
+	}
+
+	kept := map[string]bool{}
+	rows, err := db.Pool.Query(ctx, `
+		SELECT task_id::text FROM day_commitment
+		 WHERE user_id = $1 AND day = $2 AND removed_at IS NULL`,
+		userID, day.Format(dateFmt))
+	if err != nil {
+		return err
+	}
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			rows.Close()
+			return err
+		}
+		kept[id] = true
+	}
+	rows.Close()
+	if err := rows.Err(); err != nil {
+		return err
+	}
+
+	tx, err := db.Pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
 	for _, id := range taskIDs {
-		if err := Add(ctx, userID, day, id); err != nil {
+		if kept[id] {
+			continue
+		}
+		if err := checkOpen(ctx, tx, calIDs, day, tz, id); err != nil {
+			return err
+		}
+		if err := promise(ctx, tx, userID, day, id); err != nil {
 			return err
 		}
 	}
-	_, err := db.Pool.Exec(ctx, `
-		INSERT INTO day_commitment_day (user_id, day) VALUES ($1, $2)
-		ON CONFLICT (user_id, day) DO NOTHING`, userID, day.Format(dateFmt))
-	return err
+	if _, err := tx.Exec(ctx, `
+		INSERT INTO day_commitment_day (user_id, day, target) VALUES ($1, $2, $3)
+		ON CONFLICT (user_id, day) DO NOTHING`, userID, day.Format(dateFmt), target); err != nil {
+		return err
+	}
+	return tx.Commit(ctx)
 }
 
 func pgErrCode(err error, code string) bool {

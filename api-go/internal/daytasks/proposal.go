@@ -60,15 +60,17 @@ func Propose(ctx context.Context, userID string, day time.Time) ([]Item, error) 
 	}
 
 	rows, err := db.Pool.Query(ctx, `
-		-- $1 calendars · $2 day · $3 zone
+		-- $1 calendars · $2 day · $3 zone · $4 yesterday
 		SELECT t.id::text, t.title, COALESCE(t.priority, 0), t.created_at,
 		       COALESCE(t.rrule, ''), t.repeat_anchor,
-		       (t.due_date AT TIME ZONE $3)::date <= $2::date AS due
+		       (t.due_date AT TIME ZONE $3)::date <= $2::date AS due,
+		       `+replaceAll(doneOnDay, "$DAY", "$4::date", "$TZ", "$3")+` AS done_yesterday
 		  FROM task t
 		 WHERE t.calendar_id = ANY($1)
 		   AND NOT (`+replaceAll(doneOnDay, "$DAY", "$2::date", "$TZ", "$3")+`)
-		   AND NOT (COALESCE(t.rrule, '') = '' AND t.status = 'DONE')`,
-		calIDs, d, tz)
+		   AND NOT (COALESCE(t.rrule, '') = '' AND t.status = 'DONE')
+		   AND t.status <> 'CANCELLED'`,
+		calIDs, d, tz, y)
 	if err != nil {
 		return nil, err
 	}
@@ -80,23 +82,29 @@ func Propose(ctx context.Context, userID string, day time.Time) ([]Item, error) 
 		var rrule string
 		var anchor *time.Time
 		var due *bool
+		var doneYesterday bool
 		if err := rows.Scan(&c.TaskID, &c.Title, &c.priority, &c.created, &rrule, &anchor,
-			&due); err != nil {
+			&due, &doneYesterday); err != nil {
 			return nil, err
 		}
 		pinned, yesterday := pinnedIDs[c.TaskID], yesterdayIDs[c.TaskID]
 		series := rrule != ""
+		// A series not occurring on the day is not the day's task, whatever
+		// else holds: pinned or carried, it could never be done there (I5).
+		if series && (anchor == nil || !occursOn(rrule, *anchor, day)) {
+			continue
+		}
 		switch {
 		case pinned:
 			c.rank = 1
-		case yesterday:
+		// «Yesterday's UNDONE» (spec §4.2): a series done yesterday is not
+		// carried; it comes back by its own rank (review I5).
+		case yesterday && !doneYesterday:
 			c.rank = 2
 		case !series && due != nil && *due:
 			c.rank = 3
-		case series && anchor != nil && occursOn(rrule, *anchor, day):
-			c.rank = 4
 		case series:
-			continue // a series not due today is not today's task
+			c.rank = 4
 		default:
 			c.rank = 5
 		}

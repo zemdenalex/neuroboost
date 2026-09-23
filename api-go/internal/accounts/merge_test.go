@@ -427,9 +427,9 @@ func TestMergeKeepsDayTasksOfBothAccounts(t *testing.T) {
 		{`INSERT INTO day_commitment (user_id, day, task_id) VALUES ($1, '2026-09-22', $2)`, []any{site, task}},
 		{`INSERT INTO day_commitment (user_id, day, task_id) VALUES ($1, '2026-09-22', $2)`, []any{tg, task}},
 		{`INSERT INTO day_commitment (user_id, day, task_id) VALUES ($1, '2026-09-23', $2)`, []any{tg, task}},
-		{`INSERT INTO day_commitment_day (user_id, day) VALUES ($1, '2026-09-22')`, []any{site}},
-		{`INSERT INTO day_commitment_day (user_id, day) VALUES ($1, '2026-09-22')`, []any{tg}},
-		{`INSERT INTO day_commitment_day (user_id, day) VALUES ($1, '2026-09-21')`, []any{tg}},
+		{`INSERT INTO day_commitment_day (user_id, day, target) VALUES ($1, '2026-09-22', 5)`, []any{site}},
+		{`INSERT INTO day_commitment_day (user_id, day, target) VALUES ($1, '2026-09-22', 5)`, []any{tg}},
+		{`INSERT INTO day_commitment_day (user_id, day, target) VALUES ($1, '2026-09-21', 5)`, []any{tg}},
 	} {
 		if _, err := d.Pool.Exec(ctx, q.sql, q.args...); err != nil {
 			t.Fatalf("seed: %v", err)
