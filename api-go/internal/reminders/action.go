@@ -261,7 +261,7 @@ func ActionHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		tag, err := db.Pool.Exec(ctx,
-			`UPDATE task SET status = 'DONE', updated_at = NOW() WHERE id = $1 AND calendar_id = ANY($2)`,
+			`UPDATE task SET status = 'DONE', completed_at = NOW(), updated_at = NOW() WHERE id = $1 AND calendar_id = ANY($2)`,
 			*taskID, calIDs)
 		if err != nil {
 			util.RespondError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to complete task")
