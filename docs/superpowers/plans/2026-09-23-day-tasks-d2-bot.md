@@ -1,3 +1,5 @@
+<!-- паспорт: тип=план | статус=действует | строк=130 | ~токенов=1877 | обновлён=по git -->
+
 # «Задачи дня» D2 — бот: план
 
 > **For agentic workers:** REQUIRED SUB-SKILL: superpowers:executing-plans. Шаги — `- [ ]`.

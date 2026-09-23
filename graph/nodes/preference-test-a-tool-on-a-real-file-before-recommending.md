@@ -6,13 +6,14 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-09-22
 tags: [method, tooling, meta]
-weight: { importance: 4, connectivity: 2, access: 1, last_accessed: 2026-09-22 }
+weight: { importance: 5, connectivity: 5, access: 2, last_accessed: 2026-09-23 }
 sources:
   - file: "E:/Projects/CLAUDE.md"
 stakes: medium
 links:
   - relates-to: "[[learning-a-test-that-cannot-fail-guards-nothing]]"
   - relates-to: "[[preference-never-replace-a-working-capability-with-a-simpler-one]]"
+  - relates-to: "[[learning-shell-heredoc-scripts-break-escapes]]"
 ---
 Выбрано Денисом на handoff 22.09 как то, что поменять в моей работе: **«Test a tool on a real file
 before recommending it»**.

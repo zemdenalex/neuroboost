@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-08-12
 tags: [neuroboost, testing, review, method]
-weight: { importance: 5, connectivity: 38, access: 12, last_accessed: 2026-09-23 }
+weight: { importance: 5, connectivity: 42, access: 13, last_accessed: 2026-09-23 }
 sources:
   - command: "swap ErrCalendarNotFound/ErrNotCalendarOwner arms → FAIL ровно 2 теста; restore → ok"
   - file: "api-go/internal/calendars/handlers_test.go"
@@ -22,6 +22,8 @@ links:
   - relates-to: "[[learning-a-handler-test-says-nothing-about-a-control]]"
   - relates-to: "[[learning-a-warning-counted-is-not-a-warning-read]]"
   - relates-to: "[[learning-a-cached-test-result-is-a-test-that-did-not-run]]"
+  - relates-to: "[[learning-a-step-that-swallows-its-error-never-ran]]"
+  - relates-to: "[[learning-a-fake-that-cannot-say-yes]]"
 ---
 **Правило.** Прежде чем засчитать тест как охрану, ответь: **что я должен сломать, чтобы он
 покраснел?** Если ответа нет — тест ничего не измеряет, а его зелёный цвет читается как

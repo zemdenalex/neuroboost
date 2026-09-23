@@ -1230,3 +1230,30 @@ CI/CD: `concurrency` в `ci.yml` (два push'а подряд ломают e2e �
 - ⏳ Ждёт Дениса: проход A–F, «да» на срез 11.4 в прод, 2 proposal'а (оставлены ждать).
 - Узлы читать первыми: `decision-day-tasks-details-22-09`, `learning-root-hooks-never-reach-project-sessions`, `preference-test-a-tool-on-a-real-file-before-recommending`.
 - Скиллы: `superpowers:executing-plans` (D1), `superpowers:verification-before-completion`.
+
+## [2026-09-23 06:57] consolidate | PRESERVED — transcript-20260923-065631.jsonl, 99 MB → .oversize/ (too large for one pass, kept for chunked consolidation)
+
+## [2026-09-23] recall | decision-day-tasks-details-22-09, learning-a-test-that-cannot-fail-guards-nothing, learning-a-control-nobody-runs-hides-a-control-that-cannot-work, decision-release-small-and-in-his-order-21-09, preference-test-a-tool-on-a-real-file-before-recommending
+
+## [2026-09-23] handoff | v0.4.11.4 в проде · D1 API + D2 бот «задачи дня» на dev · проход 3 закрыт
+
+**Сделано 23.09:**
+- 🟢 **v0.4.11.4 выпущен в прод** (`3f0425d`, тег `v0.4.11.4`): CI deploy success, health 200, миграции 22/clean, прод-бот на `3f0425d` («Bot started»). Релиз = ровно проверенный `165c335` + одна строка даты в заметках (ветка `release-11.4`, влита обратно в develop).
+- D1 — API «задач дня» (`api-go/internal/daytasks`, миграция 000022 с `target`), свежий ревьюер нашёл 1 Critical (✅ из напоминания ломал экран дня) + 5 Important — всё починено с тестами. Итоги и все Ruling — `docs/d1-zadachi-dnya-itogi-2026-09-23.md`.
+- «Строка = задача сразу» (`quicksave.go`) — в проде.
+- Проход 3 (`ref/feedback/bot-proverka-v04114-prohod3-otvet-denisa-2026-09-23.md`): P1–P5 починены и проверены Денисом (все 13 ✅), P6 → копия прод→dev не работала никогда, шаг убран; Денис админ на dev.
+- D2 — бот «📌 Задачи дня» (экран, ✅ нажатием, Беру / Выбрать самому, 📌 на карточке, ✏️ дата, 🎯 N в настройках) + ревью (3 Important починены) + две его правки (подвал календаря, «с–до» в списке событий) — **на dev `ea4a6af`, CI green, не в проде**.
+- Фейк Telegram в тестах теперь отвечает на edit как Telegram (раньше любая правка на месте «падала»).
+
+**Открыто:**
+- Сабботажи правок ревью D2 прогнаны не полностью: прогон убит системой (мало памяти) после второго случая — перепрогнать `scratchpad`-скрипт заново не удалось; тесты RED→GREEN есть. Ledger D2 — `.superpowers/sdd/2026-09-23-day-tasks-d2-bot/progress.md` (там же final-review.md, 9 Minor отложены).
+- `docs/tasks-prohod3-2026-09-23.md`: N1 (онбординг объясняет всё меню, ℹ️ на шагах онбординга), N2 (веб, мини-апп) — не начаты.
+- Бэклог — `docs/plan-3-dnya-zhizn-v-neuroboost-2026-09-23.md` (MCP/API для агентов, веб).
+
+**План следующей сессии (слова Дениса 23.09: «Deploy and review, improve what we did then subtasks»):**
+- Цель: прочитать его отметки D2 → починить → отдать D2 в прод по его «да» → потом подзадачи в боте (день 2 плана).
+- Первый шаг: `docs/proverka-bota-2026-09-23-zadachi-dnya.md` — его отметки (12 пунктов).
+- Ждёт Дениса: этот чеклист на dev · `/broadcast` на прод-боте (пробный прогон, потом 📣) — обещал сделать до следующей сессии.
+- Узлы читать первыми: `decision-3-day-plan-answers-23-09`, `decision-day-target-fixed-when-taken-23-09`, `decision-help-replaces-the-screen-23-09`, `learning-a-step-that-swallows-its-error-never-ran`, `learning-shell-heredoc-scripts-break-escapes`.
+- Скиллы: `superpowers:executing-plans` / `writing-plans` (подзадачи), свежий ревьюер (opus) после каждой сборки — Денис: «keep».
+- ⚠ Скрипты правок с `\n` в строках — только файлом через Write, не heredoc'ом.

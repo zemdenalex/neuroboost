@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-09-22
 tags: [neuroboost, bot, product, day-tasks]
-weight: { importance: 5, connectivity: 3, access: 1, last_accessed: 2026-09-22 }
+weight: { importance: 5, connectivity: 9, access: 2, last_accessed: 2026-09-23 }
 sources:
   - file: "docs/superpowers/specs/2026-09-22-day-tasks-design.md"
   - file: "docs/superpowers/plans/2026-09-22-day-tasks-d1-api.md"
@@ -16,6 +16,8 @@ links:
   - relates-to: "[[decision-release-small-and-in-his-order-21-09]]"
   - relates-to: "[[decision-statistics-is-a-screen-you-browse-20-09]]"
   - relates-to: "[[decision-priority-style-is-a-choice-21-09]]"
+  - refined-by: "[[decision-day-target-fixed-when-taken-23-09]]"
+  - relates-to: "[[decision-3-day-plan-answers-23-09]]"
 ---
 Ответы Дениса вариантами (AskUserQuestion), 22.09 вечер. Концепт 21.09 стал спекой.
 
