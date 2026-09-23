@@ -32,6 +32,22 @@ type Note struct {
 // report said «выкачено».
 var notes = []Note{
 	{
+		Version:  "v0.4.11.5",
+		Released: "24.09.2026 · в проде",
+		RU: "• 📌 Задачи дня: бот предлагает набор на день, «✅ Беру» его берёт, ⬜ отмечает сделанное, а цвет дня показывает, сколько сделано\n" +
+			"• ✏️ Набор можно поменять: убрать задачу до 12:00 или добавить другую\n" +
+			"• 📌 С карточки задачи: в задачи дня на сегодня, завтра или любую дату\n" +
+			"• 🎯 В настройках: сколько задач брать на день, от 3 до 7\n" +
+			"• 📅 В списке событий видно время с и до, дни подписаны по-русски\n" +
+			"• 🗓 Под календарём кнопки: шкала, сегодня, календари, а ниже меню",
+		EN: "• 📌 Day tasks: the bot offers a set for the day, «✅ Take it» takes it, ⬜ ticks what is done, and the day's colour shows how much is done\n" +
+			"• ✏️ Change the set: take a task out before 12:00 or add another\n" +
+			"• 📌 From a task card: into day tasks for today, tomorrow or any date\n" +
+			"• 🎯 In Settings: how many tasks to take a day, 3 to 7\n" +
+			"• 📅 The events list shows start and end times\n" +
+			"• 🗓 Under the calendar: scale, today, calendars, and the menu below",
+	},
+	{
 		Version:  "v0.4.11.4",
 		Released: "23.09.2026 · в проде",
 		// The priority symbol is a choice from this release on; people past
