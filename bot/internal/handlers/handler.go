@@ -322,13 +322,14 @@ func (h *Handler) HandleCallback(cb *tgbotapi.CallbackQuery) {
 		return
 	}
 
-	// Quick add's question owns qa_; it hands over to the card's flows.
+	// «Задачи дня» owns dt_.
 	if h.handleDayTasksCallback(chatID, cb.Message.MessageID, data) {
 		return
 	}
 	if h.handleQuickSavedCallback(chatID, cb.Message.MessageID, data) {
 		return
 	}
+	// Quick add's question owns qa_; it hands over to the card's flows.
 	if h.handleQuickCallback(chatID, cb.Message.MessageID, data) {
 		return
 	}

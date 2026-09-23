@@ -41,21 +41,21 @@ func (h *Handler) errorText(chatID int64, err error) string {
 		// resolves to the next day of the series. What is left is a series that
 		// has genuinely run out, and that is what this says.
 		return h.t(chatID,
-			"Эта серия уже закончилась — закрывать в ней нечего.",
-			"This series has already ended — there is no day left to close.")
+			"Эта серия уже закончилась, закрывать в ней нечего.",
+			"This series has already ended; there is no day left to close.")
 	// Task ↔ event (21.09): the codes the bot's own full path can still meet.
 	case "REPEAT_CHOICE_REQUIRED":
 		return h.t(chatID,
-			"Это повторяется — выбери «вся серия» или «только этот раз».",
-			"This repeats — choose «whole series» or «just this once».")
+			"Это повторяется: выбери «вся серия» или «только этот раз».",
+			"This repeats: choose «whole series» or «just this once».")
 	case "OCCURRENCE_REQUIRED":
 		return h.t(chatID,
 			"Не знаю, какой именно день. Открой событие из дня календаря.",
 			"I don't know which day. Open the event from a calendar day.")
 	case "REPEAT_UNSUPPORTED":
 		return h.t(chatID,
-			"Этот повтор перенести не получится — у него старое правило. Выбери «только этот раз».",
-			"This repeat cannot be carried over — its rule is an old one. Choose «just this once».")
+			"Этот повтор перенести не получится: у него старое правило. Выбери «только этот раз».",
+			"This repeat cannot be carried over: its rule is an old one. Choose «just this once».")
 	case "NEEDS_TIME":
 		return h.t(chatID,
 			"Для календаря нужно время начала.",
@@ -66,26 +66,26 @@ func (h *Handler) errorText(chatID int64, err error) string {
 			"This task does not repeat, so there is no single day to close.")
 	case "NOT_FOUND":
 		return h.t(chatID,
-			"Не нашёл — возможно, это уже удалено.",
-			"Not found — it may already be gone.")
+			"Не нашёл. Возможно, это уже удалено.",
+			"Not found. It may already be gone.")
 	case "NOT_AUTHENTICATED", "INVALID_TOKEN":
 		return h.t(chatID,
-			"Сессия истекла. Нажми /start — я войду заново.",
+			"Сессия истекла. Нажми /start, и я войду заново.",
 			"The session expired. Press /start and I'll sign in again.")
 	case "VALIDATION_ERROR", "INVALID_REQUEST", "INVALID_DATE", "INVALID_REPEAT":
 		return h.t(chatID,
-			"Так не получится — проверь, что написано.",
-			"That didn't parse — check what you wrote.")
+			"Так не получится. Проверь, что написано.",
+			"That didn't parse. Check what you wrote.")
 	case "FORBIDDEN", "NO_ACCESS":
 		return h.t(chatID,
-			"Сюда нет доступа — календарь чужой и только для чтения.",
-			"No access here — that calendar is somebody else's, read-only.")
+			"Сюда нет доступа: календарь чужой и только для чтения.",
+			"No access here: that calendar is somebody else's, read-only.")
 	}
 
 	// Not one of ours: a timeout, a dead host, a proxy page. On 21.09 this was
 	// the whole machine being cut off for 75 minutes, and the chat said
 	// «context deadline exceeded» five times in a row.
 	return h.t(chatID,
-		"Сервер не ответил. Ничего не потеряно — попробуй ещё раз через минуту.",
-		"The server didn't answer. Nothing is lost — try again in a minute.")
+		"Сервер не ответил. Ничего не потеряно, попробуй ещё раз через минуту.",
+		"The server didn't answer. Nothing is lost; try again in a minute.")
 }

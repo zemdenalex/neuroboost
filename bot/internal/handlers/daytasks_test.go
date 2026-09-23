@@ -28,8 +28,11 @@ type dayAPI struct {
 	items     []map[string]any
 	proposal  []map[string]any
 	refuse    string // an error code the next write answers with
-	calls     []string
-	bodies    map[string]string
+	// proposalDown makes /proposal answer 500; noDay makes /day-tasks answer
+	// an empty list; meDownAfterWrite fails every settings read after a PATCH.
+	proposalDown, noDay, meDownAfterWrite, meWritten bool
+	calls                                            []string
+	bodies                                           map[string]string
 }
 
 func (a *dayAPI) handler(t *testing.T) http.HandlerFunc {
@@ -52,7 +55,19 @@ func (a *dayAPI) handler(t *testing.T) http.HandlerFunc {
 			_ = json.NewEncoder(w).Encode(map[string]any{"error": map[string]any{"code": a.refuse, "message": "refused"}})
 			return
 		}
+		down := (r.URL.Path == "/api/day-tasks/proposal" && a.proposalDown) ||
+			(r.URL.Path == "/api/auth/me" && r.Method == http.MethodGet && a.meDownAfterWrite && a.meWritten)
+		if r.URL.Path == "/api/auth/me" && r.Method != http.MethodGet {
+			a.meWritten = true
+		}
+		if down {
+			w.WriteHeader(http.StatusInternalServerError)
+			_ = json.NewEncoder(w).Encode(map[string]any{"error": map[string]any{"code": "INTERNAL", "message": "down"}})
+			return
+		}
 		switch {
+		case r.URL.Path == "/api/day-tasks" && r.Method == http.MethodGet && a.noDay:
+			_ = json.NewEncoder(w).Encode(map[string]any{"data": []any{}})
 		case r.URL.Path == "/api/auth/me":
 			_ = json.NewEncoder(w).Encode(map[string]any{"data": map[string]any{"timezone": "Europe/Moscow",
 				"settings": map[string]any{"bot": map[string]any{"onboarded": true, "lang": "ru"}}}})
@@ -300,5 +315,50 @@ func TestTheDateStepHasAWayOut(t *testing.T) {
 	}
 	if flow := h.store.GetOrCreate(chat).CurrentFlow; flow == dayTaskDateFlow {
 		t.Errorf("still in the date step")
+	}
+}
+
+// Review M1: an offer that could not be read is not «nothing to take».
+func TestAFailedOfferIsNotAnEmptyOne(t *testing.T) {
+	a := &dayAPI{proposalDown: true}
+	h, fake, chat := dayHandler(t, a)
+	press(h, chat, "dt_d_today")
+	got := fake.last(t).Text
+	if strings.Contains(got, "Взять нечего") || !strings.Contains(got, "❌") {
+		t.Errorf("a failed offer read as %q", got)
+	}
+}
+
+// Review M2: a read that brought back no day still says something.
+func TestAnEmptyReadSaysSomething(t *testing.T) {
+	a := &dayAPI{noDay: true}
+	h, fake, chat := dayHandler(t, a)
+	press(h, chat, "dt_d_today")
+	if got := strings.TrimSpace(strings.TrimPrefix(fake.last(t).Text, "❌")); got == "" {
+		t.Errorf("an empty read printed a bare ❌")
+	}
+}
+
+// Review M3: «Поменять» on a past day opens the day itself, which is read-only,
+// rather than ❌/➕ buttons that every press would refuse.
+func TestEditingAPastDayShowsTheDay(t *testing.T) {
+	loc, _ := time.LoadLocation("Europe/Moscow")
+	yesterday := time.Now().In(loc).AddDate(0, 0, -1).Format("2006-01-02")
+	a := &dayAPI{confirmed: true, items: []map[string]any{{"task_id": dtOne, "title": "отчёт", "done": false}}}
+	h, fake, chat := dayHandler(t, a)
+	press(h, chat, "dt_edit_"+yesterday)
+	if got := fake.last(t).Markup; strings.Contains(got, "dt_rm_") || strings.Contains(got, "dt_add_") {
+		t.Errorf("a past day opened for editing: %s", got)
+	}
+}
+
+// Review M5: the tick marks what was saved, even when the read after the write
+// fails.
+func TestTheSavedTargetIsTickedWhenTheReReadFails(t *testing.T) {
+	a := &dayAPI{meDownAfterWrite: true}
+	h, fake, chat := dayHandler(t, a)
+	h.handleDayTarget(chat, 0, "4")
+	if got := fake.last(t).Markup; !strings.Contains(got, "✓ 4") {
+		t.Errorf("saved 4, ticked: %s", got)
 	}
 }

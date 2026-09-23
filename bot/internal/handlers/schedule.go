@@ -172,7 +172,7 @@ func (h *Handler) taskTitle(chatID int64, taskID string) (string, bool) {
 			return t.Title, true
 		}
 	}
-	h.sendText(chatID, h.t(chatID, "Задача не найдена — возможно, она уже удалена.", "Task not found — it may already be deleted."))
+	h.sendText(chatID, h.t(chatID, "Задача не найдена. Возможно, она уже удалена.", "Task not found. It may already be deleted."))
 	return "", false
 }
 

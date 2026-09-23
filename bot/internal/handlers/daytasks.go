@@ -78,6 +78,16 @@ func (h *Handler) dayTasksErrorTextFor(chatID int64, err error, removing bool) s
 	return h.errorText(chatID, err)
 }
 
+// dayReadError is the line for a day that could not be read. A read that came
+// back without a day and without an error still says something (review M2).
+func (h *Handler) dayReadError(chatID int64, err error) string {
+	if err == nil {
+		return "❌ " + h.t(chatID, "Не получилось открыть этот день. Попробуй ещё раз.",
+			"Could not open this day. Try again.")
+	}
+	return "❌ " + h.dayTasksErrorText(chatID, err)
+}
+
 func (h *Handler) pastDayText(chatID int64) string {
 	return h.t(chatID, "Этот день уже прошёл, его не поменять.", "That day has passed; it no longer changes.")
 }
@@ -136,7 +146,14 @@ func (h *Handler) handleDayTasksCallback(chatID int64, messageID int, data strin
 			}
 		})
 	case strings.HasPrefix(data, "dt_edit_"):
-		withDay("dt_edit_", func(day time.Time) { h.showDayEdit(chatID, messageID, day, "") })
+		withDay("dt_edit_", func(day time.Time) {
+			// Review M3: a past day is read-only, so an old «Поменять» opens the day.
+			if day.Before(h.userToday(chatID)) {
+				h.showDay(chatID, messageID, day)
+				return
+			}
+			h.showDayEdit(chatID, messageID, day, "")
+		})
 	case strings.HasPrefix(data, "dt_rm_"):
 		withDayID("dt_rm_", func(day time.Time, id string) {
 			note := ""
@@ -184,7 +201,7 @@ func (h *Handler) showDay(chatID int64, messageID int, day time.Time) {
 	iso := day.Format("2006-01-02")
 	days, err := h.api.DayTasks(us.AuthToken, iso, iso)
 	if err != nil || len(days) == 0 {
-		h.editOrSend(chatID, messageID, "❌ "+h.dayTasksErrorText(chatID, err), keyboards.HomeInline(h.lang(chatID)))
+		h.editOrSend(chatID, messageID, h.dayReadError(chatID, err), keyboards.HomeInline(h.lang(chatID)))
 		return
 	}
 	d := days[0]
@@ -192,8 +209,9 @@ func (h *Handler) showDay(chatID int64, messageID int, day time.Time) {
 	past := day.Before(today)
 
 	var proposal []api.DayItem
+	var offerErr error
 	if !d.Confirmed && !past {
-		proposal, _ = h.api.DayProposal(us.AuthToken, iso)
+		proposal, offerErr = h.api.DayProposal(us.AuthToken, iso)
 	}
 	view := keyboards.DayView{
 		Day:     iso,
@@ -205,8 +223,12 @@ func (h *Handler) showDay(chatID int64, messageID int, day time.Time) {
 		Past:    past,
 		CanTake: len(proposal) > 0,
 	}
-	h.editOrSend(chatID, messageID, renderDayScreen(h.lang(chatID), d, proposal, day, today),
-		keyboards.DayScreen(h.lang(chatID), view))
+	text := renderDayScreen(h.lang(chatID), d, proposal, day, today)
+	if offerErr != nil {
+		// Review M1: an offer that failed to load is not «nothing to take».
+		text = dayTitle(h.lang(chatID), day) + "\n\n" + h.dayReadError(chatID, offerErr)
+	}
+	h.editOrSend(chatID, messageID, text, keyboards.DayScreen(h.lang(chatID), view))
 }
 
 func dayButtons(items []api.DayItem) []keyboards.DayButton {
@@ -236,7 +258,7 @@ func (h *Handler) tickDayTask(chatID int64, messageID int, day time.Time, taskID
 	iso := day.Format("2006-01-02")
 	days, err := h.api.DayTasks(us.AuthToken, iso, iso)
 	if err != nil || len(days) == 0 {
-		h.sendText(chatID, "❌ "+h.dayTasksErrorText(chatID, err))
+		h.sendText(chatID, h.dayReadError(chatID, err))
 		return
 	}
 	var item *api.DayItem
@@ -280,7 +302,7 @@ func (h *Handler) takeDay(chatID int64, messageID int, day time.Time, offer bool
 	} else {
 		days, err := h.api.DayTasks(us.AuthToken, iso, iso)
 		if err != nil || len(days) == 0 {
-			h.sendText(chatID, "❌ "+h.dayTasksErrorText(chatID, err))
+			h.sendText(chatID, h.dayReadError(chatID, err))
 			return
 		}
 		for _, it := range days[0].Items {
@@ -300,7 +322,7 @@ func (h *Handler) showDayEdit(chatID int64, messageID int, day time.Time, note s
 	iso := day.Format("2006-01-02")
 	days, err := h.api.DayTasks(us.AuthToken, iso, iso)
 	if err != nil || len(days) == 0 {
-		h.editOrSend(chatID, messageID, "❌ "+h.dayTasksErrorText(chatID, err), keyboards.HomeInline(h.lang(chatID)))
+		h.editOrSend(chatID, messageID, h.dayReadError(chatID, err), keyboards.HomeInline(h.lang(chatID)))
 		return
 	}
 	text := dayTitle(h.lang(chatID), day) + "\n\n" +
@@ -422,6 +444,7 @@ func (h *Handler) handleDayTaskDate(chatID int64, text string) {
 // level. A day already taken keeps the target it was taken with (Denis 23.09).
 func (h *Handler) handleDayTarget(chatID int64, messageID int, raw string) {
 	us := h.store.GetOrCreate(chatID)
+	current := 5
 	if raw != "" {
 		n, err := strconv.Atoi(raw)
 		if err != nil || n < 3 || n > 7 {
@@ -431,9 +454,9 @@ func (h *Handler) handleDayTarget(chatID int64, messageID int, raw string) {
 			h.sendText(chatID, h.t(chatID, "❌ Не сохранилось: ", "❌ Not saved: ")+h.errorText(chatID, err))
 			return
 		}
-	}
-	current := 5
-	if s, err := h.api.MySettings(us.AuthToken); err == nil {
+		// Review M5: tick what was written, not what a second read says.
+		current = n
+	} else if s, err := h.api.MySettings(us.AuthToken); err == nil {
 		if v, ok := s["day_tasks_target"].(float64); ok && v >= 3 && v <= 7 {
 			current = int(v)
 		}
