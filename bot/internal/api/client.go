@@ -207,9 +207,12 @@ func (c *Client) del(path string, token string) error {
 	if err != nil {
 		return err
 	}
-	resp.Body.Close()
+	defer resp.Body.Close()
 	if resp.StatusCode >= 400 {
-		return errorFromBody(resp.StatusCode, nil)
+		// The body carries the code — TOO_LATE, NOT_FOUND — and a caller that
+		// answers the user by code cannot do without it (day-tasks, 23.09).
+		body, _ := io.ReadAll(resp.Body)
+		return errorFromBody(resp.StatusCode, body)
 	}
 	return nil
 }
