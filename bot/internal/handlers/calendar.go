@@ -73,7 +73,9 @@ func cellLabel(c dayCell) string {
 	case !c.InMonth:
 		return "·" + n
 	case c.Level > 0:
-		return n + statgrid.Glyph(c.Level)
+		// A space between the number and the bar (Denis, 23.09): «20▄» read
+		// as one glyph.
+		return n + " " + statgrid.Glyph(c.Level)
 	default:
 		return n
 	}

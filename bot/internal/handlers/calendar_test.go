@@ -126,7 +126,8 @@ func TestCellLabelSaysWhichDayIsWhich(t *testing.T) {
 		want string
 	}{
 		{dayCell{Date: d(18), InMonth: true, IsToday: true}, "🔸18"},
-		{dayCell{Date: d(20), InMonth: true, Level: 4}, "20▄"},
+		// Denis, 23.09 (pass 3): «давай сделаем пробел между числом и индикатором».
+		{dayCell{Date: d(20), InMonth: true, Level: 4}, "20 ▄"},
 		{dayCell{Date: d(20), InMonth: true}, "20"},
 		{dayCell{Date: d(2), InMonth: false}, "·2"},
 		// Today wins over busy: one square, and "where am I" beats "what is here".
