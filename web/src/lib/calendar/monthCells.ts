@@ -12,6 +12,8 @@ import { localDayKey } from './agenda'
 export interface MonthItem {
   event: NbEvent
   first: boolean
+  /** The day it ends on (for a multi-day event, where its end time shows). */
+  last: boolean
 }
 
 const MINUTE_MS = 60 * 1000
@@ -33,7 +35,7 @@ export function eventsByDay(events: NbEvent[], days: string[], timezone: string)
     const endDay = localDayKey(new Date(endIncl), timezone)
     if (endDay < first || startDay > last) continue
     for (const d of days) {
-      if (d >= startDay && d <= endDay) out[d].push({ event, first: d === startDay })
+      if (d >= startDay && d <= endDay) out[d].push({ event, first: d === startDay, last: d === endDay })
     }
   }
 

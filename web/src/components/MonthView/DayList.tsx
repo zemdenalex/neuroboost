@@ -45,10 +45,16 @@ export function DayList({ day, locale, items, square, dayTasks, timeFormat, cale
       </div>
       {items.length === 0 && <p className="text-xs text-zinc-500">{t('month.free')}</p>}
       <ul className="flex flex-col">
-        {items.map(({ event, first }) => (
+        {items.map(({ event, first, last }) => (
           <li key={event.id} className="flex gap-3 py-1.5 border-b border-zinc-800 text-sm">
             <span className="w-20 shrink-0 whitespace-nowrap text-zinc-500 tabular-nums">
-              {event.allDay || !first ? t('allDay') : timeFormat.format(new Date(event.startsAt))}
+              {event.allDay
+                ? t('allDay')
+                : first
+                  ? timeFormat.format(new Date(event.startsAt))
+                  : last
+                    ? `→ ${timeFormat.format(new Date(event.endsAt))}`
+                    : '…'}
             </span>
             <span
               className="pl-2 border-l-[3px] truncate"

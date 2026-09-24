@@ -7,7 +7,7 @@ import { WeekGrid } from '../../components/Calendar/WeekGrid';
 import { MonthView } from '../../components/MonthView';
 import { ViewSwitch } from '../../components/MonthView/ViewSwitch';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
-import { monthGrid, shiftMonth, weekOffset } from '../../lib/calendar/monthGrid';
+import { monthGrid, monthOfWeek, shiftMonth, weekOffset } from '../../lib/calendar/monthGrid';
 import { daysBetween, localTimeOn, shiftByDays } from '../../lib/calendar/shiftDays';
 import { readClickWait } from '../../lib/calendar/monthClick';
 import {
@@ -72,6 +72,8 @@ export function Calendar() {
   // re-render per load would be pure noise.
   const lastLoadedAtRef = useRef(0);
   const [currentWeekOffset, setCurrentWeekOffset] = useState(0);
+  const currentWeekOffsetRef = useRef(0);
+  currentWeekOffsetRef.current = currentWeekOffset;
   const [latestEvents] = useState(createLatestOnly);
 
   // Week or month (spec V003-20260924-arc-web-month-view). The choice is kept
@@ -82,7 +84,9 @@ export function Calendar() {
   const changeView = useCallback((next: CalendarView) => {
     saveCalendarView(next);
     setSavedView(next);
-  }, []);
+    // Week → Month opens the month of the week being looked at, not today's.
+    if (next === 'month') setMonthCursor(monthOfWeek(todayInZone(new Date(), timezone), currentWeekOffsetRef.current));
+  }, [timezone]);
   const monthVariant = readMonthVariant(user?.settings);
   const clickWaitMs = readClickWait(user?.settings);
   const [monthCursor, setMonthCursor] = useState(() => {
@@ -530,7 +534,9 @@ export function Calendar() {
       {editorOpen && (
         <div
           className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-          onClick={handleEditorClose}
+          // detail > 1: the third click of a triple click on a month day lands
+          // here, on a backdrop that appeared under the second one.
+          onClick={e => { if (e.detail <= 1) handleEditorClose(); }}
         >
           <EventEditor
             range={editorRange}

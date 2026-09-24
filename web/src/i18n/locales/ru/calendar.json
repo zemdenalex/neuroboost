@@ -91,7 +91,8 @@
   "taskShort": "Задача",
   "view": {
     "week": "Неделя",
-    "month": "Месяц"
+    "month": "Месяц",
+    "label": "Вид календаря"
   },
   "month": {
     "more": "+{{count}} ещё",

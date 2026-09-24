@@ -37,3 +37,13 @@ function mondayOf(day: string): number {
 export function weekOffset(today: string, day: string): number {
   return Math.round((mondayOf(day) - mondayOf(today)) / (7 * DAY_MS))
 }
+
+/**
+ * The month to open for the week the week view shows (`offset` weeks from
+ * today's). A week belongs to the month of its Thursday, as ISO weeks do, so
+ * switching Week → Month lands where you were paging, not on today's month.
+ */
+export function monthOfWeek(today: string, offset: number): { year: number; month: number } {
+  const thursday = new Date(mondayOf(today) + (offset * 7 + 3) * DAY_MS)
+  return { year: thursday.getUTCFullYear(), month: thursday.getUTCMonth() + 1 }
+}

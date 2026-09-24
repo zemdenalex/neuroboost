@@ -5,7 +5,7 @@ import type { CalendarView } from '../../lib/calendar/monthVariant'
 export function ViewSwitch({ view, onChange }: { view: CalendarView; onChange: (v: CalendarView) => void }) {
   const { t } = useTranslation('calendar')
   return (
-    <div role="tablist" aria-label={t('view.month')} className="flex rounded border border-zinc-700 overflow-hidden text-xs">
+    <div role="tablist" aria-label={t('view.label')} className="flex rounded border border-zinc-700 overflow-hidden text-xs">
       {(['week', 'month'] as const).map((v) => (
         <button
           key={v}

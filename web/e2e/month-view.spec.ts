@@ -76,6 +76,21 @@ test('a click on a day opens its week; a double click opens a new event', async 
   await expect(authedPage.locator(`[data-testid="week-day-header"][data-day="${clicked}"]`)).toBeVisible()
 })
 
+test('Enter on a day opens its week, and Month then opens the month of that week', async ({ authedPage }) => {
+  await authedPage.goto('/calendar')
+  await authedPage.getByTestId('view-month').click({ timeout: 15_000 })
+  // The last row is always next month's days.
+  const cell = authedPage.getByTestId('month-day').nth(38)
+  const day = await cell.getAttribute('data-day')
+  const title = await authedPage.getByTestId('month-title').textContent()
+  await cell.focus()
+  await authedPage.keyboard.press('Enter')
+  await expect(authedPage.locator(`[data-testid="week-day-header"][data-day="${day}"]`)).toBeVisible()
+  await authedPage.getByTestId('view-month').click()
+  await expect(authedPage.getByTestId('month-title')).not.toHaveText(title ?? '')
+  await expect(authedPage.locator(`[data-testid="month-day"][data-day="${day}"]`)).toBeVisible()
+})
+
 test.describe('dragging in the month', () => {
   let cleanup: (() => Promise<void>) | undefined
 

@@ -19,9 +19,9 @@ describe('eventsByDay', () => {
 
   it('draws a multi-day event on every one of its days, the time only on the first', () => {
     const got = eventsByDay([ev('trip', '2026-09-24T07:00:00Z', '2026-09-26T09:00:00Z')], days, TZ)
-    expect(got['2026-09-24'][0]).toMatchObject({ first: true })
-    expect(got['2026-09-25'][0]).toMatchObject({ first: false })
-    expect(got['2026-09-26'][0]).toMatchObject({ first: false })
+    expect(got['2026-09-24'][0]).toMatchObject({ first: true, last: false })
+    expect(got['2026-09-25'][0]).toMatchObject({ first: false, last: false })
+    expect(got['2026-09-26'][0]).toMatchObject({ first: false, last: true })
     expect(got['2026-09-23']).toEqual([])
   })
 

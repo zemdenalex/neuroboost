@@ -91,7 +91,8 @@
   "taskShort": "Task",
   "view": {
     "week": "Week",
-    "month": "Month"
+    "month": "Month",
+    "label": "Calendar view"
   },
   "month": {
     "more": "+{{count}} more",

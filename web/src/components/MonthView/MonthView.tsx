@@ -182,8 +182,19 @@ export function MonthView(props: MonthViewProps) {
               data-day={day}
               data-testid="month-day"
               onClick={(e) => onCellClick(day, e)}
+              role="button"
+              tabIndex={0}
+              aria-label={new Date(day + 'T12:00:00Z').toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })}
+              onKeyDown={(e) => {
+                // Enter opens the day (chooses it in D); Shift+Enter creates an event there.
+                if (e.key !== 'Enter' && e.key !== ' ') return
+                e.preventDefault()
+                if (e.shiftKey) onCreateOnDay(day)
+                else if (variant === 'split') setChosen(day)
+                else onOpenDay(day)
+              }}
               className={[
-                'border-r border-b border-zinc-800 p-1 min-h-0 overflow-hidden flex flex-col gap-0.5 cursor-pointer select-none',
+                'border-r border-b border-zinc-800 p-1 min-h-0 overflow-hidden flex flex-col gap-0.5 cursor-pointer select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-400',
                 inMonth ? 'bg-black' : 'bg-zinc-950 opacity-50',
                 drag.over === day ? 'ring-2 ring-inset ring-blue-500' : '',
                 variant === 'split' && day === chosenDay ? 'ring-2 ring-inset ring-zinc-400' : '',

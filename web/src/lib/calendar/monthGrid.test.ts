@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { monthGrid, shiftMonth, weekOffset } from './monthGrid'
+import { monthGrid, shiftMonth, weekOffset, monthOfWeek } from './monthGrid'
 
 describe('monthGrid', () => {
   it('is always 42 days starting on a Monday', () => {
@@ -62,5 +62,17 @@ describe('weekOffset', () => {
     expect(weekOffset('2026-09-24', '2026-09-28')).toBe(1)
     expect(weekOffset('2026-09-24', '2026-09-20')).toBe(-1)
     expect(weekOffset('2026-09-27', '2026-10-11')).toBe(2)
+  })
+})
+
+describe('monthOfWeek', () => {
+  it('is the month of the shown week, judged by its Thursday', () => {
+    // Today Thu 24 Sep 2026. Offset 0 → September.
+    expect(monthOfWeek('2026-09-24', 0)).toEqual({ year: 2026, month: 9 })
+    // Offset 1: 28 Sep – 4 Oct, Thursday 1 Oct → October.
+    expect(monthOfWeek('2026-09-24', 1)).toEqual({ year: 2026, month: 10 })
+    // Across the year: 28 Dec 2026 – 3 Jan 2027, Thursday 31 Dec → December.
+    expect(monthOfWeek('2026-12-28', 0)).toEqual({ year: 2026, month: 12 })
+    expect(monthOfWeek('2026-09-24', -3)).toEqual({ year: 2026, month: 9 })
   })
 })
