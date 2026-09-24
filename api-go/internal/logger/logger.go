@@ -70,6 +70,11 @@ func (m *multiHandler) Enabled(ctx context.Context, level slog.Level) bool {
 
 func (m *multiHandler) Handle(ctx context.Context, r slog.Record) error {
 	for _, h := range m.handlers {
+		// Each handler keeps its own level: the buffer takes everything,
+		// stdout only what its level allows.
+		if !h.Enabled(ctx, r.Level) {
+			continue
+		}
 		if err := h.Handle(ctx, r); err != nil {
 			return err
 		}
