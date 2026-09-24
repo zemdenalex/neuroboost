@@ -12,10 +12,15 @@
 - [x] чеклист `docs/proverka-bota-2026-09-24-zadachi-dnya-d3.md` (спека §11 + ширина клетки), открыть в Obsidian
 
 ## Веб — задачи дня
-- [ ] разведка: что в вебе есть по задачам дня (ничего?), месячный вид, настройки
-- [ ] спека `docs/superpowers/specs/2026-09-24-web-day-tasks-design.md`
-- [ ] план `docs/superpowers/plans/…`
-- [ ] TDD по плану; `pnpm typecheck && pnpm test --run && pnpm build`
+- [x] разведка: в вебе задач дня ноль; месячного вида нет (`MonthView` — заглушка) → цвет в шапке недели
+- [x] спека `docs/superpowers/specs/2026-09-24-web-day-tasks-design.md` (🟡 без твоего review, вкус — §7)
+- [x] план `docs/superpowers/plans/2026-09-24-web-day-tasks.md`
+- [x] TDD по плану: 657 → 684 тестов, typecheck/build/lint зелёные, 9 сабботажей красные
+  - `00eaaa8` сохранение настроек читает сервер перед записью и идёт по одному (иначе веб откатывал ключи бота)
+  - `9160597` страница `/day-tasks`, секция в ⚙️, пункт в навигации (скрыт при выключенных), квадраты в шапке недели
+  - e2e `day-tasks.spec.ts`: красный на staging до push, зелёный локально; `settings-race` поправлен под очередь сохранений
+- [ ] push, CI (e2e на staging) зелёный
+- [ ] чеклист прохода веба для Дениса
 
 ## Если веб упёрся
 - [ ] разведка Telegram mini-app / Android — спека без кода
