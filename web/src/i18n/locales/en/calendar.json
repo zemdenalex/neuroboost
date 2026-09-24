@@ -88,5 +88,16 @@
     "hideManage": "Hide management",
     "empty": "No calendars yet."
   },
-  "taskShort": "Task"
+  "taskShort": "Task",
+  "view": {
+    "week": "Week",
+    "month": "Month"
+  },
+  "month": {
+    "more": "+{{count}} more",
+    "prev": "Previous month",
+    "next": "Next month",
+    "dayTasksOff": "Day tasks are off",
+    "openSettings": "Turn on in settings"
+  }
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { monthGrid, shiftMonth } from './monthGrid'
+import { monthGrid, shiftMonth, weekOffset } from './monthGrid'
 
 describe('monthGrid', () => {
   it('is always 42 days starting on a Monday', () => {
@@ -48,5 +48,19 @@ describe('shiftMonth', () => {
     expect(shiftMonth(2026, 1, -1)).toEqual({ year: 2025, month: 12 })
     expect(shiftMonth(2026, 9, 0)).toEqual({ year: 2026, month: 9 })
     expect(shiftMonth(2026, 9, -21)).toEqual({ year: 2024, month: 12 })
+  })
+})
+
+describe('weekOffset', () => {
+  it('is 0 inside the current week, Sunday included', () => {
+    // Thursday 24 Sep 2026; its week is Mon 21 – Sun 27.
+    expect(weekOffset('2026-09-24', '2026-09-21')).toBe(0)
+    expect(weekOffset('2026-09-24', '2026-09-27')).toBe(0)
+  })
+
+  it('counts whole weeks both ways', () => {
+    expect(weekOffset('2026-09-24', '2026-09-28')).toBe(1)
+    expect(weekOffset('2026-09-24', '2026-09-20')).toBe(-1)
+    expect(weekOffset('2026-09-27', '2026-10-11')).toBe(2)
   })
 })

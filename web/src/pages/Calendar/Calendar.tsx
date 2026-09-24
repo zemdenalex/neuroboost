@@ -4,6 +4,19 @@ import { useNavigate } from 'react-router-dom';
 import { taskDeepLinkTo } from '../../lib/tasks/taskDeepLink';
 import { ListTodo } from 'lucide-react';
 import { WeekGrid } from '../../components/Calendar/WeekGrid';
+import { MonthView } from '../../components/MonthView';
+import { ViewSwitch } from '../../components/MonthView/ViewSwitch';
+import { useMediaQuery } from '../../hooks/useMediaQuery';
+import { monthGrid, shiftMonth, weekOffset } from '../../lib/calendar/monthGrid';
+import { daysBetween, localTimeOn, shiftByDays } from '../../lib/calendar/shiftDays';
+import {
+  effectiveView,
+  readCalendarView,
+  readMonthVariant,
+  saveCalendarView,
+  type CalendarView,
+} from '../../lib/calendar/monthVariant';
+import { todayInZone } from '../../lib/dayTasks/dayColour';
 import { TaskSidebar } from '../../components/TaskSidebar';
 import { MobileTaskPanel } from '../../components/TaskSidebar/MobileTaskPanel';
 import { EventEditor } from '../../components/Calendar/EventEditor';
@@ -57,6 +70,21 @@ export function Calendar() {
   // re-render per load would be pure noise.
   const lastLoadedAtRef = useRef(0);
   const [currentWeekOffset, setCurrentWeekOffset] = useState(0);
+
+  // Week or month (spec V003-20260924-arc-web-month-view). The choice is kept
+  // on this device; a phone has no month in v1 and always gets the week.
+  const isMobile = useMediaQuery('(max-width: 767px)');
+  const [savedView, setSavedView] = useState<CalendarView>(readCalendarView);
+  const view = effectiveView(savedView, isMobile);
+  const changeView = useCallback((next: CalendarView) => {
+    saveCalendarView(next);
+    setSavedView(next);
+  }, []);
+  const monthVariant = readMonthVariant(user?.settings);
+  const [monthCursor, setMonthCursor] = useState(() => {
+    const today = todayInZone(new Date(), timezone);
+    return { year: Number(today.slice(0, 4)), month: Number(today.slice(5, 7)) };
+  });
   const [editorOpen, setEditorOpen] = useState(false);
   const [editorRange, setEditorRange] = useState<{ start: Date; end: Date; allDay?: boolean } | null>(null);
   const [editorDraft, setEditorDraft] = useState<NbEvent | null>(null);
@@ -134,14 +162,22 @@ export function Calendar() {
 
   // Load events for current week
   const loadEvents = useCallback(async () => {
-    const { start, end } = getWeekRange(currentWeekOffset);
+    let { start, end } = getWeekRange(currentWeekOffset);
+    if (view === 'month') {
+      // The 42 grid days, padded by 14 hours each side so that whatever the
+      // zone, its first and last local day are whole; cells file by local day.
+      const days = monthGrid(monthCursor.year, monthCursor.month);
+      const PAD = 14 * 60 * 60 * 1000;
+      start = new Date(Date.parse(days[0] + 'T00:00:00Z') - PAD);
+      end = new Date(Date.parse(days[days.length - 1] + 'T00:00:00Z') + 24 * 60 * 60 * 1000 + PAD);
+    }
     try {
       const data = await getEvents(start.toISOString(), end.toISOString());
       setEvents(data);
     } catch (error) {
       console.error('Failed to load events:', error);
     }
-  }, [currentWeekOffset, getWeekRange]);
+  }, [currentWeekOffset, getWeekRange, view, monthCursor]);
 
   // Load tasks
   const loadTasks = useCallback(async () => {
@@ -262,6 +298,35 @@ export function Calendar() {
     setCurrentWeekOffset(offset);
   }, []);
 
+  // Month: a click opens that day's week, a double click creates an event
+  // there at the start of the working day, a drop moves by calendar days.
+  const handleOpenDay = useCallback((day: string) => {
+    setCurrentWeekOffset(weekOffset(todayInZone(new Date(), timezone), day));
+    // Not saved: a look at one week keeps "month" as the view to come back to.
+    setSavedView('week');
+  }, [timezone]);
+
+  const handleCreateOnDay = useCallback((day: string) => {
+    const start = new Date(localTimeOn(day, user?.settings?.work_start ?? '09:00', timezone));
+    setEditorRange({ start, end: new Date(start.getTime() + 60 * 60 * 1000), allDay: false });
+    setEditorDraft(null);
+    setEditorOpen(true);
+  }, [timezone, user?.settings?.work_start]);
+
+  const handleMoveToDay = useCallback((event: NbEvent, fromDay: string, toDay: string) => {
+    const moved = shiftByDays(event.startsAt, event.endsAt, daysBetween(fromDay, toDay), timezone);
+    void handleMoveOrResize({ id: event.id, ...moved });
+  }, [timezone, handleMoveOrResize]);
+
+  const handleMonthShift = useCallback((by: number) => {
+    setMonthCursor(c => shiftMonth(c.year, c.month, by));
+  }, []);
+
+  const handleMonthToday = useCallback(() => {
+    const today = todayInZone(new Date(), timezone);
+    setMonthCursor({ year: Number(today.slice(0, 4)), month: Number(today.slice(5, 7)) });
+  }, [timezone]);
+
   const handleEditorClose = useCallback(() => {
     setEditorOpen(false);
     setEditorRange(null);
@@ -366,6 +431,33 @@ export function Calendar() {
 
       {/* Main calendar area */}
       <div data-testid="calendar-main" className="flex-1 flex flex-col min-w-0">
+        {view === 'month' ? (
+          <MonthView
+            year={monthCursor.year}
+            month={monthCursor.month}
+            variant={monthVariant}
+            events={shownEvents}
+            timezone={timezone}
+            calendarColors={calendarColors}
+            onPrev={() => handleMonthShift(-1)}
+            onNext={() => handleMonthShift(1)}
+            onToday={handleMonthToday}
+            onOpenDay={handleOpenDay}
+            onCreateOnDay={handleCreateOnDay}
+            onMoveToDay={handleMoveToDay}
+            headerExtra={
+              <>
+                <ViewSwitch view={view} onChange={changeView} />
+                <CalendarFilter
+                  calendars={calendars}
+                  hidden={hiddenCalendars}
+                  onToggle={handleToggleCalendar}
+                  onCalendarsChanged={setCalendars}
+                />
+              </>
+            }
+          />
+        ) : (
         <WeekGrid
           events={shownEvents}
           currentWeekOffset={currentWeekOffset}
@@ -373,6 +465,7 @@ export function Calendar() {
           calendarColors={calendarColors}
           headerExtra={
             <>
+              {!isMobile && <ViewSwitch view={view} onChange={changeView} />}
               {/* 🔴 Creating a task from the calendar used to live ONLY in the
                   task sidebar's header — and the sidebar is collapsed by
                   default, so on a first visit it was two clicks behind an
@@ -402,6 +495,7 @@ export function Calendar() {
           onTaskDrop={handleTaskDrop}
           onWeekChange={handleWeekChange}
         />
+        )}
       </div>
 
       {/* Mobile task toggle */}

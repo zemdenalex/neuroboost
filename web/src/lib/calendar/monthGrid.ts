@@ -26,3 +26,14 @@ export function shiftMonth(year: number, month: number, by: number): { year: num
   const index = year * 12 + (month - 1) + by
   return { year: Math.floor(index / 12), month: (((index % 12) + 12) % 12) + 1 }
 }
+
+/** The Monday (YYYY-MM-DD) of a day's ISO week. */
+function mondayOf(day: string): number {
+  const ms = Date.parse(day + 'T00:00:00Z')
+  return ms - ((new Date(ms).getUTCDay() + 6) % 7) * DAY_MS
+}
+
+/** How many weeks from today's week to the day's week: the week view's offset. */
+export function weekOffset(today: string, day: string): number {
+  return Math.round((mondayOf(day) - mondayOf(today)) / (7 * DAY_MS))
+}
