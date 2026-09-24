@@ -36,15 +36,16 @@ test('day tasks have a way in from the header while they are on', async ({ authe
   // The account may have them switched off (it is a real person's staging
   // account): then the entrance must be gone, not present.
   const ctx = await playwrightRequest.newContext()
-  let off = false
-  try {
-    const res = await ctx.get(`${API_BASE}/api/auth/me`, { headers: { Authorization: `Bearer ${session.token}` } })
-    expect(res.ok()).toBe(true)
-    const body = await res.json()
-    off = (body.data ?? body).settings?.day_tasks_enabled === false
-  } finally {
-    await ctx.dispose()
-  }
+  const off = await (async () => {
+    try {
+      const res = await ctx.get(`${API_BASE}/api/auth/me`, { headers: { Authorization: `Bearer ${session.token}` } })
+      expect(res.ok()).toBe(true)
+      const body = await res.json()
+      return (body.data ?? body).settings?.day_tasks_enabled === false
+    } finally {
+      await ctx.dispose()
+    }
+  })()
   await authedPage.goto('/home')
   const link = authedPage.getByRole('link', { name: /Day tasks/ })
   if (off) await expect(link).toHaveCount(0)
