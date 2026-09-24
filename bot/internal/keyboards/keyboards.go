@@ -257,11 +257,15 @@ func BackToTasks(lang i18n.Lang) tgbotapi.InlineKeyboardMarkup {
 // rule against pointing at those (TestNoScreenPointsAtAReplyButton). Prose
 // that names a button is a button the user has to go and find; this is the
 // button.
-func TodayScreen(lang i18n.Lang) tgbotapi.InlineKeyboardMarkup {
+func TodayScreen(lang i18n.Lang, dayTasks bool) tgbotapi.InlineKeyboardMarkup {
+	first := tgbotapi.NewInlineKeyboardRow(
+		tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "📋 Задачи", "📋 Tasks"), "top_tasks"))
+	if dayTasks {
+		first = append(first,
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "📌 Задачи дня", "📌 Day tasks"), "dt_d_today"))
+	}
 	return tgbotapi.NewInlineKeyboardMarkup(
-		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "📋 Задачи", "📋 Tasks"), "top_tasks"),
-		),
+		first,
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "« Меню", "« Menu"), "main_menu"),
 		),

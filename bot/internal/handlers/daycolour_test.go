@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/zemdenalex/neuroboost-bot/internal/api"
+	"github.com/zemdenalex/neuroboost-bot/internal/i18n"
 	"github.com/zemdenalex/neuroboost-bot/internal/statgrid"
 )
 
@@ -70,5 +71,33 @@ func TestTheMonthShowsTheDayColour(t *testing.T) {
 	h.handleCalendar(chat, 0, time.Now())
 	if got := fake.last(t).Markup; strings.Contains(got, "🟧") {
 		t.Errorf("switched off, and a square is drawn: %s", got)
+	}
+}
+
+// Spec §11: the Today line under the title.
+func TestTodayLine(t *testing.T) {
+	taken := api.Day{Confirmed: true, Done: 3, Target: 5, Level: 3}
+	if got := todayDayLine(i18n.RU, taken); got != "📌 🟧 3 из 5" {
+		t.Errorf("taken = %q", got)
+	}
+	if got := todayDayLine(i18n.RU, api.Day{Target: 5}); got != "📌 День ещё не взят" {
+		t.Errorf("not taken = %q", got)
+	}
+}
+
+// Through the handler: on, the line and the button are there; off, neither.
+func TestTodayShowsTheDayOnlyWhenOn(t *testing.T) {
+	taken := []map[string]any{{"day": moscowToday(), "target": 5, "confirmed": true, "items": []any{}, "done": 3, "level": 3}}
+	a := &dayAPI{days: taken}
+	h, fake, chat := dayHandler(t, a)
+	h.handleToday(chat, 0)
+	if got := fake.last(t); !strings.Contains(got.Text, "📌 🟧 3 из 5") || !strings.Contains(got.Markup, "dt_d_today") {
+		t.Errorf("on: %q / %s", got.Text, got.Markup)
+	}
+	a = &dayAPI{days: taken, settings: map[string]any{"day_tasks_enabled": false}}
+	h, fake, chat = dayHandler(t, a)
+	h.handleToday(chat, 0)
+	if got := fake.last(t); strings.Contains(got.Text, "📌") || strings.Contains(got.Markup, "dt_d_today") {
+		t.Errorf("off: %q / %s", got.Text, got.Markup)
 	}
 }

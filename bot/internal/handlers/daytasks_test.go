@@ -71,6 +71,8 @@ func (a *dayAPI) handler(t *testing.T) http.HandlerFunc {
 			return
 		}
 		switch {
+		case r.URL.Path == "/api/events":
+			_ = json.NewEncoder(w).Encode(map[string]any{"data": []any{}})
 		case r.URL.Path == "/api/day-tasks" && r.Method == http.MethodGet && a.days != nil:
 			_ = json.NewEncoder(w).Encode(map[string]any{"data": a.days})
 		case r.URL.Path == "/api/day-tasks" && r.Method == http.MethodGet && a.noDay:
