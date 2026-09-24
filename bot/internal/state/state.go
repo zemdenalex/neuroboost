@@ -64,6 +64,9 @@ type UserState struct {
 	// home keyboard draws it on every screen, so it is not read each time.
 	DayTasksOn    bool
 	DayTasksKnown bool
+	// DayPrefsFailedAt is when the last settings read failed: for a short
+	// while after it the default is used without asking again (review I3).
+	DayPrefsFailedAt time.Time
 	// DayTasksAskDone: the one-time day-tasks question needs no more reads.
 	DayTasksAskDone bool
 

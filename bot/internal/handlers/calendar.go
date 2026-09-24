@@ -125,13 +125,16 @@ func (h *Handler) showMonth(chatID int64, messageID, year int, month time.Month)
 	// the month is still navigable, and the marks are an aid, not the content.
 
 	// The day-tasks colour: one read for the whole grid (42 days), the same
-	// rule for a failed read as the bars.
+	// rule for a failed read as the bars. When the events read failed the API
+	// is most likely down, and two more reads would only wait on it again.
 	var colours map[string]string
-	if p := h.dayPrefs(chatID); p.On {
-		days, err := h.api.DayTasks(us.AuthToken,
-			gridStart.Format("2006-01-02"), gridStart.AddDate(0, 0, 41).Format("2006-01-02"))
-		if err == nil {
-			colours = dayColours(days, now, p.PaintBefore)
+	if err == nil {
+		if p := h.dayPrefs(chatID); p.On {
+			days, err := h.api.DayTasks(us.AuthToken,
+				gridStart.Format("2006-01-02"), gridStart.AddDate(0, 0, 41).Format("2006-01-02"))
+			if err == nil {
+				colours = dayColours(days, now, p.PaintBefore)
+			}
 		}
 	}
 

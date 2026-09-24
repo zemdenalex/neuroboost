@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"time"
+
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 
 	"github.com/zemdenalex/neuroboost-bot/internal/keyboards"
@@ -32,14 +34,24 @@ func readDayPrefs(s map[string]any) dayPrefs {
 	return p
 }
 
+// dayPrefsRetry is how long a failed settings read is not repeated. Every
+// error screen draws the home keyboard; without it each one would wait on the
+// same outage again.
+const dayPrefsRetry = 30 * time.Second
+
 // dayPrefs reads the settings now. A failed read hides nothing: day tasks are
 // taken as on, so a network blip does not make buttons vanish.
 func (h *Handler) dayPrefs(chatID int64) dayPrefs {
 	us := h.store.GetOrCreate(chatID)
-	s, err := h.api.MySettings(us.AuthToken)
-	if err != nil {
+	if time.Since(us.DayPrefsFailedAt) < dayPrefsRetry {
 		return dayPrefs{On: true, Target: 5}
 	}
+	s, err := h.api.MySettings(us.AuthToken)
+	if err != nil {
+		us.DayPrefsFailedAt = time.Now()
+		return dayPrefs{On: true, Target: 5}
+	}
+	us.DayPrefsFailedAt = time.Time{}
 	p := readDayPrefs(s)
 	us.DayTasksOn, us.DayTasksKnown = p.On, true
 	return p

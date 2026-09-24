@@ -36,8 +36,10 @@ type dayAPI struct {
 	// days, when set, is what GET /api/day-tasks answers, whatever the range.
 	days   []map[string]any
 	meDown bool
-	calls  []string
-	bodies map[string]string
+	// eventsDown fails GET /api/events: the API is unreachable.
+	eventsDown bool
+	calls      []string
+	bodies     map[string]string
 }
 
 func (a *dayAPI) handler(t *testing.T) http.HandlerFunc {
@@ -61,6 +63,7 @@ func (a *dayAPI) handler(t *testing.T) http.HandlerFunc {
 			return
 		}
 		down := (r.URL.Path == "/api/day-tasks/proposal" && a.proposalDown) ||
+			(r.URL.Path == "/api/events" && a.eventsDown) ||
 			(r.URL.Path == "/api/auth/me" && r.Method == http.MethodGet && (a.meDown || (a.meDownAfterWrite && a.meWritten)))
 		if r.URL.Path == "/api/auth/me" && r.Method != http.MethodGet {
 			a.meWritten = true
