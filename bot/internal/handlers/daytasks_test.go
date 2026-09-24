@@ -33,9 +33,11 @@ type dayAPI struct {
 	proposalDown, noDay, meDownAfterWrite, meWritten bool
 	// settings adds top-level keys to /api/auth/me; meDown fails every read of it.
 	settings map[string]any
-	meDown   bool
-	calls    []string
-	bodies   map[string]string
+	// days, when set, is what GET /api/day-tasks answers, whatever the range.
+	days   []map[string]any
+	meDown bool
+	calls  []string
+	bodies map[string]string
 }
 
 func (a *dayAPI) handler(t *testing.T) http.HandlerFunc {
@@ -69,6 +71,8 @@ func (a *dayAPI) handler(t *testing.T) http.HandlerFunc {
 			return
 		}
 		switch {
+		case r.URL.Path == "/api/day-tasks" && r.Method == http.MethodGet && a.days != nil:
+			_ = json.NewEncoder(w).Encode(map[string]any{"data": a.days})
 		case r.URL.Path == "/api/day-tasks" && r.Method == http.MethodGet && a.noDay:
 			_ = json.NewEncoder(w).Encode(map[string]any{"data": []any{}})
 		case r.URL.Path == "/api/auth/me":
