@@ -179,3 +179,14 @@ func DayTargetPick(lang i18n.Lang, current int, prefix, nextData, nextLabel stri
 			HelpButton(lang, HelpDayTasks),
 			tgbotapi.NewInlineKeyboardButtonData(nextLabel, nextData)))
 }
+
+// DayTasksOff answers an old 📌 button while day tasks are switched off: the
+// way back on, and the menu (spec §11).
+func DayTasksOff(lang i18n.Lang) tgbotapi.InlineKeyboardMarkup {
+	return tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "✅ Включить", "✅ Switch on"), "dts_on")),
+		tgbotapi.NewInlineKeyboardRow(
+			HelpButton(lang, HelpDayTasks),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "« Меню", "« Menu"), "main_menu")))
+}

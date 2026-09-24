@@ -108,6 +108,14 @@ func (h *Handler) handleDayTasksCallback(chatID int64, messageID int, data strin
 	if !strings.HasPrefix(data, "dt_") {
 		return false
 	}
+	// Switched off (spec §11): an old button says so and offers the way back
+	// on. No screen, no write.
+	if !h.dayTasksOn(chatID) {
+		h.editOrSend(chatID, messageID, h.t(chatID,
+			"📌 Задачи дня выключены. Включить можно кнопкой ниже.",
+			"📌 Day tasks are off. The button below switches them on."), keyboards.DayTasksOff(h.lang(chatID)))
+		return true
+	}
 	us := h.store.GetOrCreate(chatID)
 	// Any other day-tasks press leaves the typed-date step (review I3).
 	if us.CurrentFlow == dayTaskDateFlow && !strings.HasPrefix(data, "dt_pdt_") {

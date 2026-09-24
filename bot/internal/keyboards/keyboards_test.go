@@ -22,7 +22,7 @@ func TestDayActionsFitTheCallbackBudget(t *testing.T) {
 
 func TestTaskActionsOfferTheOptionalFields(t *testing.T) {
 	id := "11111111-2222-3333-4444-555555555555" // 36 chars, a real UUID length
-	kb := TaskActions(i18n.RU, id, false, id+":2026-10-22")
+	kb := TaskActions(i18n.RU, id, false, id+":2026-10-22", true)
 	want := map[string]bool{
 		"task_sched_" + id: false,
 		"task_due_" + id:   false,

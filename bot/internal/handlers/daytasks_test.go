@@ -375,3 +375,17 @@ func TestTheSavedTargetIsTickedWhenTheReReadFails(t *testing.T) {
 		t.Errorf("saved 4, ticked: %s", got)
 	}
 }
+
+// Review Focus 2: an old 📌 button, day tasks off → a sentence and the way back
+// on; no screen, no write.
+func TestAnOldDayTasksButtonWhenOff(t *testing.T) {
+	a := &dayAPI{settings: map[string]any{"day_tasks_enabled": false}}
+	h, fake, chat := dayHandler(t, a)
+	press(h, chat, "dt_put_"+moscowToday()+"_"+dtOne)
+	if a.called("POST /api/day-tasks") {
+		t.Errorf("wrote while off: %v", a.calls)
+	}
+	if got := fake.last(t); !strings.Contains(got.Text, "выключены") || !strings.Contains(got.Markup, "dts_on") {
+		t.Errorf("off answered %q / %s", got.Text, got.Markup)
+	}
+}

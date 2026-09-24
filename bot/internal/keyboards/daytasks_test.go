@@ -50,6 +50,7 @@ func dayKeyboards() map[string]tgbotapi.InlineKeyboardMarkup {
 		"settings-off": DaySettings(i18n.RU, DaySettingsView{}),
 		"target-pick":  DayTargetPick(i18n.RU, 5, "ob_dtn_", "ob_finish", "Дальше →"),
 		"date-cancel":  DayDateCancel(i18n.RU, dtID),
+		"off":          DayTasksOff(i18n.RU),
 	}
 }
 
@@ -171,8 +172,12 @@ func TestDayTasksCanBeReached(t *testing.T) {
 	if !has(HomeInlineFor(i18n.RU, true), "dt_d_today") {
 		t.Errorf("the menu has no 📌 Задачи дня")
 	}
-	if !has(TaskActions(i18n.RU, dtID, false, ""), "dt_pin_"+dtID) {
+	if !has(TaskActions(i18n.RU, dtID, false, "", true), "dt_pin_"+dtID) {
 		t.Errorf("the task card has no 📌 В задачи дня")
+	}
+	// Spec §11: switched off, the card has no 📌.
+	if has(TaskActions(i18n.RU, dtID, false, "", false), "dt_pin_"+dtID) {
+		t.Errorf("day tasks off, and the card still has 📌")
 	}
 	if !has(SettingsMenu(i18n.RU), "settings_dtn") {
 		t.Errorf("Settings has no 🎯 Задач в день")

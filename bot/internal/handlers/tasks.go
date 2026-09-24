@@ -156,7 +156,7 @@ func (h *Handler) handleTaskAction(chatID int64, messageID int, taskID string) {
 		}
 	}
 
-	h.editOrSend(chatID, messageID, text, keyboards.TaskActions(h.lang(chatID), taskID, repeats, linkedID))
+	h.editOrSend(chatID, messageID, text, keyboards.TaskActions(h.lang(chatID), taskID, repeats, linkedID, h.dayTasksOn(chatID)))
 }
 
 // handleTaskDone ticks a task off — for today if it is a series, for good if it
