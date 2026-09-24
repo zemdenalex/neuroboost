@@ -24,7 +24,7 @@
 
 ## Если веб упёрся
 - [x] разведка Telegram mini-app / Android — `docs/superpowers/specs/2026-09-24-mini-app-and-android-razvedka.md`, без кода. Рекомендация: Mini App раньше Android; для Android сначала PWA
-- [x] внешние факты (схема initData) → `E:\Projects@ - Research\prochee	elegram-mini-app-initdata-2026-09-24.md`
+- [x] внешние факты (схема initData) → `E:/Projects/100 - Research/prochee/telegram-mini-app-initdata-2026-09-24.md`
 
 ## Решения D3, которые я принял за тебя (из ledger'а, полностью)
 
