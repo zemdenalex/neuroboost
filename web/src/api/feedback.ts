@@ -38,15 +38,6 @@ export interface ListFeedbackParams {
   sort_dir?: 'asc' | 'desc'
 }
 
-export interface ImportItem {
-  title: string
-  description: string
-  type: FeedbackType
-  priority: FeedbackPriority
-  status: FeedbackStatus
-  tags: string[]
-  source: string
-}
 
 export async function createFeedback(data: CreateFeedbackRequest): Promise<Feedback> {
   return api.post<Feedback>('/feedback', {
@@ -81,6 +72,3 @@ export async function updateFeedback(
   return api.patch<Feedback>(`/feedback/${id}`, data)
 }
 
-export async function importFeedback(items: ImportItem[]): Promise<{ count: number }> {
-  return api.post<{ count: number }>('/feedback/import', { items })
-}

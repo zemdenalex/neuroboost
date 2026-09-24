@@ -149,7 +149,6 @@ func main() {
 		// Feedback - list, update, and import require auth (admin check inside handlers)
 		r.Get("/api/feedback", feedbackHandler.List)
 		r.Patch("/api/feedback/{id}", feedbackHandler.Update)
-		r.Post("/api/feedback/import", feedbackHandler.Import)
 
 		// Admin endpoints (admin check inside handlers)
 		adminHandler := admin.NewHandler(db)
