@@ -64,6 +64,8 @@ type UserState struct {
 	// home keyboard draws it on every screen, so it is not read each time.
 	DayTasksOn    bool
 	DayTasksKnown bool
+	// DayTasksAt is when DayTasksOn was read: the web switches it too.
+	DayTasksAt time.Time
 	// CalendarCell caches settings.bot.calendar_cell (spec §6): what a month
 	// cell shows, "both" / "colour" / "bar". Read on every month page.
 	CalendarCell      string

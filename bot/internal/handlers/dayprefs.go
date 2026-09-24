@@ -53,14 +53,18 @@ func (h *Handler) dayPrefs(chatID int64) dayPrefs {
 	}
 	us.DayPrefsFailedAt = time.Time{}
 	p := readDayPrefs(s)
-	us.DayTasksOn, us.DayTasksKnown = p.On, true
+	us.DayTasksOn, us.DayTasksKnown, us.DayTasksAt = p.On, true, time.Now()
 	return p
 }
 
-// dayTasksOn is the cached switch, read once per chat.
+// dayTasksTTL is how long the cached switch is trusted. The web writes it
+// too since 24.09, and the bot would otherwise see that only after a restart.
+const dayTasksTTL = 5 * time.Minute
+
+// dayTasksOn is the cached switch, read again after dayTasksTTL.
 func (h *Handler) dayTasksOn(chatID int64) bool {
 	us := h.store.GetOrCreate(chatID)
-	if us.DayTasksKnown {
+	if us.DayTasksKnown && time.Since(us.DayTasksAt) < dayTasksTTL {
 		return us.DayTasksOn
 	}
 	return h.dayPrefs(chatID).On
@@ -74,7 +78,7 @@ func (h *Handler) setDayPref(chatID int64, key string, v any) error {
 		return err
 	}
 	if on, ok := v.(bool); ok && key == "day_tasks_enabled" {
-		us.DayTasksOn, us.DayTasksKnown = on, true
+		us.DayTasksOn, us.DayTasksKnown, us.DayTasksAt = on, true, time.Now()
 	}
 	return nil
 }

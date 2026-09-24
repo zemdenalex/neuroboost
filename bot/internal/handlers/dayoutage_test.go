@@ -95,3 +95,19 @@ func TestATypedDateWhileDayTasksAreOffPinsNothing(t *testing.T) {
 		t.Errorf("flow left open: %q", us.CurrentFlow)
 	}
 }
+
+// Final review M7: the web now switches day tasks too (24.09). A cached
+// answer older than the TTL is read again; a fresh one is not.
+func TestTheDayTasksSwitchCacheExpires(t *testing.T) {
+	a := &dayAPI{settings: map[string]any{"day_tasks_enabled": false}}
+	h, _, chat := dayHandler(t, a)
+	us := h.store.GetOrCreate(chat)
+	us.DayTasksOn, us.DayTasksKnown, us.DayTasksAt = true, true, time.Now()
+	if !h.dayTasksOn(chat) {
+		t.Fatal("a fresh cache was read again")
+	}
+	us.DayTasksAt = time.Now().Add(-dayTasksTTL - time.Second)
+	if h.dayTasksOn(chat) {
+		t.Error("a stale cache was trusted: the web switched day tasks off")
+	}
+}
