@@ -128,12 +128,13 @@ func (h *Handler) showMonth(chatID int64, messageID, year int, month time.Month)
 	// rule for a failed read as the bars. When the events read failed the API
 	// is most likely down, and two more reads would only wait on it again.
 	var colours map[string]string
-	cell := cellBoth
+	cell, dayOn := cellBoth, false
 	if err == nil {
 		cell = h.calendarCell(chatID)
 	}
 	if err == nil && cell != cellBar {
 		if p := h.dayPrefs(chatID); p.On {
+			dayOn = true
 			days, err := h.api.DayTasks(us.AuthToken,
 				gridStart.Format("2006-01-02"), gridStart.AddDate(0, 0, 41).Format("2006-01-02"))
 			if err == nil {
@@ -142,7 +143,7 @@ func (h *Handler) showMonth(chatID int64, messageID, year int, month time.Month)
 		}
 	}
 
-	levels, colours = applyCell(cell, levels, colours)
+	levels, colours = applyCell(cell, dayOn, levels, colours)
 	cells := buildMonth(year, month, now, levels, colours, loc)
 	labels := make([]string, len(cells))
 	dates := make([]string, len(cells))

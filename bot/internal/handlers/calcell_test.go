@@ -44,7 +44,7 @@ func TestApplyCell(t *testing.T) {
 		{cellColour, false, true},
 		{cellBar, true, false},
 	} {
-		l, col := applyCell(c.cell, levels, colours)
+		l, col := applyCell(c.cell, true, levels, colours)
 		if (l != nil) != c.wantLevel || (col != nil) != c.wantCol {
 			t.Errorf("%q: levels %v colours %v", c.cell, l, col)
 		}
@@ -73,5 +73,35 @@ func TestABarOnlyMonthDoesNotReadDayTasks(t *testing.T) {
 		if read != c.want {
 			t.Errorf("%s: day tasks read = %v, want %v (%v)", c.cell, read, c.want, a.calls)
 		}
+	}
+}
+
+// Advisor 24.09: colour only, then day tasks switched off: the choice row is
+// hidden, so a bare calendar would have no way back. Off draws the bar.
+func TestColourOnlyWithDayTasksOffKeepsTheBar(t *testing.T) {
+	levels := map[string]int{"2026-09-21": 3}
+	if l, _ := applyCell(cellColour, false, levels, nil); l == nil {
+		t.Error("day tasks off + colour only dropped the bar")
+	}
+}
+
+// The same through showMonth: colour only, day tasks off, a busy day: the
+// month still draws its bar.
+func TestAColourOnlyMonthWithDayTasksOffDrawsBars(t *testing.T) {
+	loc, _ := time.LoadLocation("Europe/Moscow")
+	now := time.Now().In(loc)
+	// Tomorrow: today's cell draws 🔸 instead of a bar, and tomorrow is
+	// always inside the 42-day grid.
+	start := time.Date(now.Year(), now.Month(), now.Day()+1, 9, 0, 0, 0, loc)
+	a := &dayAPI{settings: map[string]any{"day_tasks_enabled": false},
+		events: []map[string]any{{"id": "e1", "title": "работа",
+			"starts_at": start.UTC().Format(time.RFC3339), "ends_at": start.Add(8 * time.Hour).UTC().Format(time.RFC3339)}}}
+	h, fake, chat := dayHandler(t, a)
+	us := h.store.GetOrCreate(chat)
+	us.CalendarCell, us.CalendarCellKnown = cellColour, true
+	h.showMonth(chat, 0, now.Year(), now.Month())
+	m := fake.last(t).Markup
+	if !strings.ContainsAny(m, "▁▂▃▄▅▆▇█") {
+		t.Errorf("no bar in the month: %s", m)
 	}
 }

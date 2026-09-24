@@ -38,8 +38,13 @@ func (h *Handler) setCalendarCell(chatID int64, v string) error {
 	return nil
 }
 
-// applyCell drops what the choice hides.
-func applyCell(cell string, levels map[string]int, colours map[string]string) (map[string]int, map[string]string) {
+// applyCell drops what the choice hides. With day tasks off there is no
+// colour, and the choice row is hidden too: the bar stays whatever was chosen,
+// or «colour only» would leave a bare calendar with no way back.
+func applyCell(cell string, dayOn bool, levels map[string]int, colours map[string]string) (map[string]int, map[string]string) {
+	if !dayOn {
+		return levels, nil
+	}
 	switch cell {
 	case cellColour:
 		return nil, colours

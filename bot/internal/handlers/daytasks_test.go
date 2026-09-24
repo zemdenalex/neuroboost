@@ -36,6 +36,8 @@ type dayAPI struct {
 	// days, when set, is what GET /api/day-tasks answers, whatever the range.
 	days   []map[string]any
 	meDown bool
+	// events, when set, is what GET /api/events answers.
+	events []map[string]any
 	// eventsDown fails GET /api/events: the API is unreachable.
 	eventsDown bool
 	calls      []string
@@ -74,6 +76,8 @@ func (a *dayAPI) handler(t *testing.T) http.HandlerFunc {
 			return
 		}
 		switch {
+		case r.URL.Path == "/api/events" && a.events != nil:
+			_ = json.NewEncoder(w).Encode(map[string]any{"data": a.events})
 		case r.URL.Path == "/api/events":
 			_ = json.NewEncoder(w).Encode(map[string]any{"data": []any{}})
 		case r.URL.Path == "/api/day-tasks" && r.Method == http.MethodGet && a.days != nil:
