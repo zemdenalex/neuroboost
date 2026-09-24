@@ -31,7 +31,7 @@
 ## Новые направления (словами Дениса, с датой)
 
 - 24.09: *«telegram miniapp or android app»* — есть разведка-спека `docs/superpowers/specs/2026-09-24-mini-app-and-android-razvedka.md` — первый шаг без Дениса: тест проверки `initData` (HMAC `WebAppData`) + `POST /api/auth/telegram-webapp` в `api-go/internal/auth/`, по TDD
-- 24.09: *«start building the web version, now it's far behind»* — задачи дня в вебе сделаны (`9160597`) — первый шаг без Дениса: месячный вид вместо заглушки `web/src/components/MonthView/`, с цветом дня (`lib/dayTasks/loadDayColours.ts`)
+- 24.09: *«start building the web version, now it's far behind»* + *«let's build all of them, make a default and other to choose in settings»* — месячный вид, 5 вариантов: чек-лист `docs/tasks-web-month.md`, спека `docs/team/architecture/V003-20260924-arc-web-month-view.md`; ветка `feat/web-month`
 - 24.09: *«What about the docs or other problems, admin, tools, etc.»* — первый шаг без Дениса: аудит `pages/Admin` и `pages/Tools` (что живо, что заглушка), список в `docs/team/research/`
 - 23.09: *«then subtasks»* — сделано в боте (`6891e72`); в вебе дерево уже есть — первый шаг: сверить, что подзадача, созданная в боте, видна деревом в вебе
 
