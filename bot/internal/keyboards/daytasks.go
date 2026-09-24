@@ -136,6 +136,20 @@ func DayDateCancel(lang i18n.Lang, taskID string) tgbotapi.InlineKeyboardMarkup 
 type DaySettingsView struct {
 	On, PaintBefore bool
 	Target          int
+	// Cell is what a month cell shows: "both" (or ""), "colour", "bar".
+	Cell string
+}
+
+// cellRow is the choice of what a month cell shows (spec §6), current ticked.
+func cellRow(current string) []tgbotapi.InlineKeyboardButton {
+	if current == "" {
+		current = "both"
+	}
+	var row []tgbotapi.InlineKeyboardButton
+	for _, c := range []struct{ key, label string }{{"both", "🟩 ▅"}, {"colour", "🟩"}, {"bar", "▅"}} {
+		row = append(row, tgbotapi.NewInlineKeyboardButtonData(tick(c.key == current)+c.label, "dts_cell_"+c.key))
+	}
+	return row
 }
 
 // targetRow is 3…7 with the current one ticked, under a callback prefix.
@@ -164,6 +178,7 @@ func DaySettings(lang i18n.Lang, v DaySettingsView) tgbotapi.InlineKeyboardMarku
 			paint = tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🎨 Дни до начала: ⬛", "🎨 Days before the start: ⬛"), "dts_pb_off")
 		}
 		rows = append(rows, tgbotapi.NewInlineKeyboardRow(paint))
+		rows = append(rows, cellRow(v.Cell))
 	}
 	rows = append(rows, tgbotapi.NewInlineKeyboardRow(
 		HelpButton(lang, HelpDayTasks),

@@ -466,6 +466,15 @@ func (h *Handler) handleDaySettings(chatID int64, messageID int, action string) 
 		key, val = "day_tasks_enabled", action == "on"
 	case action == "pb_on" || action == "pb_off":
 		key, val = "day_tasks_paint_before", action == "pb_on"
+	case strings.HasPrefix(action, "cell_"):
+		c := strings.TrimPrefix(action, "cell_")
+		if !cellKinds[c] {
+			return
+		}
+		if err := h.setCalendarCell(chatID, c); err != nil {
+			h.sendText(chatID, h.t(chatID, "❌ Не сохранилось: ", "❌ Not saved: ")+h.errorText(chatID, err))
+			return
+		}
 	default:
 		return
 	}
@@ -486,7 +495,7 @@ func (h *Handler) handleDaySettings(chatID int64, messageID int, action string) 
 		p.PaintBefore = val.(bool)
 	}
 	h.editOrSend(chatID, messageID, h.t(chatID,
-		"📌 <b>Задачи дня</b>\n\nКаждый день берёшь несколько дел, и день красится по сделанному. Цвет виден на экране задач дня, в календаре и на «Сегодня».\n\n🎯 Сколько дел в день. Новое число действует со следующего взятого дня.\n\n🎨 «Дни до начала»: красить ли дни до первого взятого. Не красить: они остаются как были.",
-		"📌 <b>Day tasks</b>\n\nEach day you take a few things, and the day is coloured by what got done. The colour shows on the day-tasks screen, in the calendar and on «Today».\n\n🎯 How many things a day. A new number applies from the next day you take.\n\n🎨 «Days before the start»: whether days before the first one taken get a colour. No colour: they stay as they were."),
-		keyboards.DaySettings(h.lang(chatID), keyboards.DaySettingsView{On: p.On, PaintBefore: p.PaintBefore, Target: p.Target}))
+		"📌 <b>Задачи дня</b>\n\nКаждый день берёшь несколько дел, и день красится по сделанному. Цвет виден на экране задач дня, в календаре и на «Сегодня».\n\n🎯 Сколько дел в день. Новое число действует со следующего взятого дня.\n\n🎨 «Дни до начала»: красить ли дни до первого взятого. Не красить: они остаются как были.\n\n🗓 Что видно в клетке календаря: 🟩 цвет дня, ▅ занятость или оба. Число есть всегда.",
+		"📌 <b>Day tasks</b>\n\nEach day you take a few things, and the day is coloured by what got done. The colour shows on the day-tasks screen, in the calendar and on «Today».\n\n🎯 How many things a day. A new number applies from the next day you take.\n\n🎨 «Days before the start»: whether days before the first one taken get a colour. No colour: they stay as they were.\n\n🗓 What a calendar cell shows: 🟩 the day's colour, ▅ how full it is, or both. The date is always there."),
+		keyboards.DaySettings(h.lang(chatID), keyboards.DaySettingsView{On: p.On, PaintBefore: p.PaintBefore, Target: p.Target, Cell: h.calendarCell(chatID)}))
 }

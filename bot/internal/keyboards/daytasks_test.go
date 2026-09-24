@@ -184,3 +184,28 @@ func TestDayTasksCanBeReached(t *testing.T) {
 		t.Errorf("Settings has no 🎯 Задач в день")
 	}
 }
+
+// Spec §6: the cell choice sits on the day-tasks screen while they are on,
+// the current one ticked; off has no colour to choose.
+func TestDaySettingsOffersTheCellChoice(t *testing.T) {
+	kb := DaySettings(i18n.RU, DaySettingsView{On: true, Target: 5, Cell: "colour"})
+	for _, want := range []string{"dts_cell_both", "dts_cell_colour", "dts_cell_bar"} {
+		if !has(kb, want) {
+			t.Errorf("no %s: %v", want, datas(kb))
+		}
+	}
+	ticked := false
+	for _, row := range kb.InlineKeyboard {
+		for _, b := range row {
+			if b.Text == "✓ 🟩" {
+				ticked = true
+			}
+		}
+	}
+	if !ticked {
+		t.Errorf("colour only is not ticked: %v", kb.InlineKeyboard)
+	}
+	if off := DaySettings(i18n.RU, DaySettingsView{}); has(off, "dts_cell_bar") {
+		t.Error("the cell choice shows while day tasks are off")
+	}
+}

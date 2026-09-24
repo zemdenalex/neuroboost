@@ -64,6 +64,10 @@ type UserState struct {
 	// home keyboard draws it on every screen, so it is not read each time.
 	DayTasksOn    bool
 	DayTasksKnown bool
+	// CalendarCell caches settings.bot.calendar_cell (spec §6): what a month
+	// cell shows, "both" / "colour" / "bar". Read on every month page.
+	CalendarCell      string
+	CalendarCellKnown bool
 	// DayPrefsFailedAt is when the last settings read failed: for a short
 	// while after it the default is used without asking again (review I3).
 	DayPrefsFailedAt time.Time
