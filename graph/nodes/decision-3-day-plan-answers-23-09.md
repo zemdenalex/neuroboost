@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-09-23
 tags: [neuroboost, product, roadmap]
-weight: { importance: 5, connectivity: 3, access: 1, last_accessed: 2026-09-23 }
+weight: { importance: 5, connectivity: 6, access: 2, last_accessed: 2026-09-24 }
 sources:
   - file: "docs/plan-3-dnya-zhizn-v-neuroboost-2026-09-23.md («Решения Дениса 23.09»)"
 stakes: high
