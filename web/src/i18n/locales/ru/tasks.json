@@ -1,7 +1,7 @@
 {
   "title": "Задачи",
   "quickAdd": {
-    "placeholder": "Новая задача — введи и нажми Enter",
+    "placeholder": "Новая задача: введи и нажми Enter",
     "full": "Полная задача",
     "expand": "Больше полей (Ctrl+E)",
     "tags": "Теги",
