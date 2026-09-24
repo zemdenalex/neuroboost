@@ -30,5 +30,12 @@
   "badge.nightOwl.name": "Полуночник",
   "badge.nightOwl.description": "Выполнить задачу после 22:00",
   "activity.title": "Активность",
-  "activity.placeholder": "Тепловая карта активности скоро появится..."
+  "activity.placeholder": "Тепловая карта активности скоро появится...",
+  "real": {
+    "streak": "Дни задач дня подряд",
+    "streakNote": "взятые дни до сегодня",
+    "thisWeek": "{{count}} на этой неделе",
+    "fullDays": "Полные дни",
+    "taken": "из {{count}} взятых за 2 месяца"
+  }
 }
