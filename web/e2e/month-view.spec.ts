@@ -1,6 +1,7 @@
 import { test, expect } from './fixtures/auth'
 import { request as playwrightRequest, type APIRequestContext } from '@playwright/test'
-import { DAY_MS, localMidnightUtc } from './fixtures/localTime'
+import { localMidnightUtc } from './fixtures/localTime'
+import { shiftByDays } from '../src/lib/calendar/shiftDays'
 
 /**
  * The web month (spec docs/team/architecture/V003-20260924-arc-web-month-view.md §4).
@@ -49,16 +50,21 @@ test('a click on a day opens its week; a double click opens a new event', async 
   await expect(cells).toHaveCount(42)
 
   await cells.nth(20).dblclick()
+  // Past the single-click wait (CLICK_WAIT_MS = 250): a double click that
+  // also let its first click through would have left the month by now.
+  await authedPage.waitForTimeout(400)
   await expect(authedPage.getByText(/^(New Event|Новое событие)$/)).toBeVisible()
-  // The double click must not also have left the month.
   await expect(authedPage.getByTestId('month-view')).toBeVisible()
   // The editor does not close on Escape (a separate defect, docs/tasks-web-month.md); the backdrop does.
   await authedPage.mouse.click(5, 5)
   await expect(authedPage.getByText(/^(New Event|Новое событие)$/)).toHaveCount(0)
 
+  const clicked = await cells.nth(20).getAttribute('data-day')
   await cells.nth(20).click()
   await expect(authedPage.getByTestId('month-view')).toHaveCount(0, { timeout: 5_000 })
   await expect(authedPage.getByTestId('view-week')).toHaveAttribute('aria-selected', 'true')
+  // And it is THAT day's week, not this week.
+  await expect(authedPage.locator(`[data-testid="week-day-header"][data-day="${clicked}"]`)).toBeVisible()
 })
 
 test.describe('dragging in the month', () => {
@@ -90,8 +96,10 @@ test.describe('dragging in the month', () => {
       await ctx.dispose()
     }
 
+    // One calendar day in the account's zone, not 24 h (R8).
+    const moved = shiftByDays(start.toISOString(), end.toISOString(), 1, timeZone)
     const fromDay = localDay(start.getTime(), timeZone)
-    const toDay = localDay(start.getTime() + DAY_MS, timeZone)
+    const toDay = localDay(Date.parse(moved.startsAt), timeZone)
 
     await authedPage.goto('/calendar')
     await authedPage.getByTestId('view-month').click({ timeout: 15_000 })
@@ -101,10 +109,23 @@ test.describe('dragging in the month', () => {
     const from = await item.boundingBox()
     const to = await authedPage.locator(`[data-day="${toDay}"]`).boundingBox()
     expect(from && to).toBeTruthy()
+    // First a drag that ends on its own day: nothing moves, and the click the
+    // browser fires after the drop must not open the week.
+    await authedPage.mouse.move(from!.x + 5, from!.y + from!.height / 2)
+    await authedPage.mouse.down()
+    await authedPage.mouse.move(from!.x + 40, from!.y + from!.height / 2 + 20, { steps: 6 })
+    await authedPage.mouse.up()
+    await authedPage.waitForTimeout(400)
+    await expect(authedPage.getByTestId('month-view')).toBeVisible()
+    const still = (await (await ctx.get(`/api/events/${event.id}`)).json()).data as { starts_at: string }
+    expect(new Date(still.starts_at).toISOString()).toBe(start.toISOString())
+
     await authedPage.mouse.move(from!.x + 5, from!.y + from!.height / 2)
     await authedPage.mouse.down()
     await authedPage.mouse.move(to!.x + to!.width / 2, to!.y + to!.height / 2, { steps: 12 })
     await authedPage.mouse.up()
+    await authedPage.waitForTimeout(400)
+    await expect(authedPage.getByTestId('month-view'), 'the drop opened a week').toBeVisible()
 
     await expect
       .poll(
@@ -115,7 +136,7 @@ test.describe('dragging in the month', () => {
         },
         { timeout: 15_000, message: 'the event was not moved one day on' },
       )
-      .toEqual([new Date(start.getTime() + DAY_MS).toISOString(), new Date(end.getTime() + DAY_MS).toISOString()])
+      .toEqual([moved.startsAt, moved.endsAt])
   })
 })
 
@@ -125,22 +146,54 @@ test.describe('dragging in the month', () => {
  * writes the same blob in parallel. /auth/me is answered with the variant
  * patched in, and the settings PATCH is caught and inspected, not sent.
  */
-async function withVariant(page: import('@playwright/test').Page, variant: string) {
-  await page.addInitScript((v) => {
-    const orig = window.fetch.bind(window)
-    window.fetch = async (input, init) => {
-      const res = await orig(input, init)
-      const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url
-      if (!url.includes('/api/auth/me') || (init?.method && init.method !== 'GET')) return res
-      const body = await res.clone().json()
-      const user = body.data ?? body
-      user.settings = { ...(user.settings ?? {}), month_view_variant: v }
-      return new Response(JSON.stringify(body.data ? { ...body, data: user } : user), {
-        status: res.status,
-        headers: { 'Content-Type': 'application/json' },
-      })
-    }
-  }, variant)
+async function withVariant(
+  page: import('@playwright/test').Page,
+  variant: string,
+  opts: { settings?: Record<string, unknown>; today?: string } = {},
+) {
+  // A settings write from these tests would carry the fake variant into the
+  // real account: block it.
+  await page.route('**/api/auth/me', (route) =>
+    route.request().method() === 'PATCH' ? route.abort() : route.fallback(),
+  )
+  await page.addInitScript(
+    ({ v, settings, today }) => {
+      const orig = window.fetch.bind(window)
+      const json = (data: unknown, status = 200) =>
+        new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } })
+      window.fetch = async (input, init) => {
+        const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url
+        const get = !init?.method || init.method === 'GET'
+        // One taken day today, 2 of 5 done: what the day-tasks month draws.
+        if (today && get && url.includes('/api/day-tasks?')) {
+          return json({
+            data: [
+              {
+                day: today,
+                target: 5,
+                confirmed: true,
+                done: 2,
+                level: 2,
+                before_start: false,
+                items: [
+                  { task_id: 'a', title: 'e2e one', done: true },
+                  { task_id: 'b', title: 'e2e two', done: true },
+                  { task_id: 'c', title: 'e2e three', done: false },
+                ],
+              },
+            ],
+          })
+        }
+        const res = await orig(input, init)
+        if (!url.includes('/api/auth/me') || !get) return res
+        const body = await res.clone().json()
+        const user = body.data ?? body
+        user.settings = { ...(user.settings ?? {}), ...settings, month_view_variant: v }
+        return json(body.data ? { ...body, data: user } : user, res.status)
+      }
+    },
+    { v: variant, settings: opts.settings ?? {}, today: opts.today ?? '' },
+  )
 }
 
 const VARIANT_MARK: Record<string, string> = {
@@ -148,7 +201,6 @@ const VARIANT_MARK: Record<string, string> = {
   classic: 'month-item',
   heat: 'month-heat',
   split: 'month-dots',
-  commit: 'month-grid',
 }
 
 for (const variant of Object.keys(VARIANT_MARK)) {
@@ -158,19 +210,48 @@ for (const variant of Object.keys(VARIANT_MARK)) {
     await authedPage.getByTestId('view-month').click({ timeout: 30_000 })
     await expect(authedPage.getByTestId('month-view')).toHaveAttribute('data-variant', variant)
     await expect(authedPage.getByTestId(VARIANT_MARK[variant]).first()).toBeAttached({ timeout: 15_000 })
-    // The day-tasks month draws day tasks, never events.
-    if (variant === 'commit') await expect(authedPage.getByTestId('month-item')).toHaveCount(0)
     if (variant === 'split') await expect(authedPage.getByTestId('month-day-list')).toBeVisible()
   })
 }
 
+test('the day-tasks variant draws the taken day, and says when day tasks are off', async ({ authedPage, session }) => {
+  const ctx = await apiContext(session.token)
+  const me = (await (await ctx.get('/api/auth/me')).json()).data
+  await ctx.dispose()
+  const today = localDay(Date.now(), me.timezone || 'Europe/Moscow')
+
+  await withVariant(authedPage, 'commit', { settings: { day_tasks_enabled: true }, today })
+  await authedPage.goto('/calendar')
+  await authedPage.getByTestId('view-month').click({ timeout: 30_000 })
+  const cell = authedPage.locator(`[data-day="${today}"] [data-testid="month-commit"]`)
+  await expect(cell).toBeVisible({ timeout: 15_000 })
+  await expect(cell).toContainText('2/5')
+  await expect(cell).toContainText('e2e three')
+  // It draws day tasks, never events.
+  await expect(authedPage.getByTestId('month-item')).toHaveCount(0)
+})
+
+test('the day-tasks variant with day tasks off shows the way to turn them on', async ({ authedPage }) => {
+  await withVariant(authedPage, 'commit', { settings: { day_tasks_enabled: false } })
+  await authedPage.goto('/calendar')
+  await authedPage.getByTestId('view-month').click({ timeout: 30_000 })
+  await expect(authedPage.getByText(/Day tasks are off|Задачи дня выключены/)).toBeVisible()
+  await expect(authedPage.getByRole('link', { name: /Turn on in settings|Включить в настройках/ })).toHaveAttribute('href', '/settings')
+})
+
 test('choosing a variant in settings saves month_view_variant', async ({ authedPage }) => {
-  const sent: unknown[] = []
+  const sent: Array<{ settings?: Record<string, unknown> }> = []
   await authedPage.route('**/api/auth/me', async (route) => {
     if (route.request().method() === 'PATCH') {
-      sent.push(route.request().postDataJSON())
-      // Not sent on: the account is shared. The saver re-reads /auth/me next.
-      return route.fulfill({ status: 200, json: { data: {} } })
+      const body = route.request().postDataJSON() as { settings?: Record<string, unknown> }
+      sent.push(body)
+      // Not sent on: the account is shared. Answered the way the server
+      // would, the real user with the sent settings, so the page stays in a
+      // state that can happen.
+      const res = await route.fetch({ method: 'GET', postData: undefined })
+      const got = await res.json()
+      const user = { ...(got.data ?? got), settings: body.settings }
+      return route.fulfill({ status: 200, json: got.data ? { ...got, data: user } : user })
     }
     return route.fallback()
   })
@@ -178,6 +259,7 @@ test('choosing a variant in settings saves month_view_variant', async ({ authedP
   await authedPage.getByTestId('month-variant-heat').click({ timeout: 30_000 })
   await expect(authedPage.getByTestId('month-variant-heat')).toHaveAttribute('aria-checked', 'true')
   await expect.poll(() => sent.length, { timeout: 10_000 }).toBeGreaterThan(0)
-  const last = sent[sent.length - 1] as { settings?: Record<string, unknown> }
-  expect(last.settings?.month_view_variant).toBe('heat')
+  expect(sent[sent.length - 1].settings?.month_view_variant).toBe('heat')
+  // Still chosen after the save came back.
+  await expect(authedPage.getByTestId('month-variant-heat')).toHaveAttribute('aria-checked', 'true')
 })

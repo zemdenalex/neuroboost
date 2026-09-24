@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { createDayClick, CLICK_WAIT_MS } from './monthClick'
+import { createDayClick, routeCellClick, CLICK_WAIT_MS } from './monthClick'
 
 beforeEach(() => vi.useFakeTimers())
 afterEach(() => vi.useRealTimers())
@@ -46,5 +46,41 @@ describe('createDayClick', () => {
     click.cancel()
     vi.advanceTimersByTime(CLICK_WAIT_MS)
     expect(open).not.toHaveBeenCalled()
+  })
+})
+
+describe('routeCellClick', () => {
+  function actions() {
+    const click = Object.assign(vi.fn(), { cancel: vi.fn() })
+    const splitClick = Object.assign(vi.fn(), { cancel: vi.fn() })
+    return { click, splitClick, choose: vi.fn() }
+  }
+
+  it('ignores the click that follows a drop', () => {
+    const a = actions()
+    routeCellClick(false, '2026-09-24', 1, true, a)
+    routeCellClick(true, '2026-09-24', 1, true, a)
+    expect(a.click).not.toHaveBeenCalled()
+    expect(a.splitClick).not.toHaveBeenCalled()
+    expect(a.choose).not.toHaveBeenCalled()
+  })
+
+  it('sends an ordinary click to the open-week / create handler', () => {
+    const a = actions()
+    routeCellClick(false, '2026-09-24', 2, false, a)
+    expect(a.click).toHaveBeenCalledWith('2026-09-24', 2)
+    expect(a.choose).not.toHaveBeenCalled()
+  })
+
+  it('in variant D chooses at once on a click, and not again on the second click', () => {
+    const a = actions()
+    routeCellClick(true, '2026-09-24', 1, false, a)
+    routeCellClick(true, '2026-09-24', 2, false, a)
+    expect(a.choose).toHaveBeenCalledTimes(1)
+    expect(a.splitClick.mock.calls).toEqual([
+      ['2026-09-24', 1],
+      ['2026-09-24', 2],
+    ])
+    expect(a.click).not.toHaveBeenCalled()
   })
 })

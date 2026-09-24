@@ -42,3 +42,12 @@ describe('busyShare', () => {
     expect(busyShare([ev('2026-09-23T21:00:00Z', '2026-09-24T20:00:00Z')], '2026-09-24', TZ)).toBe(1)
   })
 })
+
+describe('busyShare across a DST change', () => {
+  it('uses the real 25-hour day in Berlin on 25 October 2026', () => {
+    // 22:30–23:30 local on the 25th (CET, UTC+1) = 21:30Z–22:30Z. A day end
+    // computed as start + 24h (22:00Z) would cut it to 30 minutes.
+    const late = [ev('2026-10-25T21:30:00Z', '2026-10-25T22:30:00Z')]
+    expect(busyShare(late, '2026-10-25', 'Europe/Berlin')).toBe(60 / 960)
+  })
+})

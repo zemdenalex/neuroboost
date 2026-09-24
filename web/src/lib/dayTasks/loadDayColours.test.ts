@@ -50,7 +50,12 @@ describe('loadDays', () => {
 })
 
 describe('dayKey', () => {
-  it('turns a column midnight (UTC) into its date', () => {
-    expect(dayKey(Date.UTC(2026, 8, 24))).toBe('2026-09-24')
+  // The week grid's columns are LOCAL midnights as UTC instants
+  // (getMidnightUtcMs): Moscow's 24 September starts at 23 Sep 21:00Z. Slicing
+  // the UTC date put every square one day early in any zone east of UTC.
+  it('turns a column midnight into its date in the user zone', () => {
+    expect(dayKey(Date.UTC(2026, 8, 23, 21), 'Europe/Moscow')).toBe('2026-09-24')
+    expect(dayKey(Date.UTC(2026, 8, 24, 4), 'America/Los_Angeles')).toBe('2026-09-24')
+    expect(dayKey(Date.UTC(2026, 8, 24), 'UTC')).toBe('2026-09-24')
   })
 })

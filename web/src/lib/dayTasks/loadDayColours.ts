@@ -3,6 +3,7 @@ import { useAuthContext } from '../../contexts/AuthContext'
 import { listDays } from '../../api/dayTasks'
 import { dayColours, todayInZone, type Day } from './dayColour'
 import { readDayPrefs, type DayPrefs } from './dayView'
+import { localDayKey } from '../calendar/agenda'
 
 /**
  * The days of a range as the server has them: one request. Off asks nothing;
@@ -34,9 +35,13 @@ export async function loadDayColours(
   return dayColours(await loadDays(prefs, from, to, list), today, prefs.paintBefore)
 }
 
-/** A week column's midnight (UTC timestamp) as its YYYY-MM-DD. */
-export function dayKey(dayUtc0: number): string {
-  return new Date(dayUtc0).toISOString().slice(0, 10)
+/**
+ * A week column's day as YYYY-MM-DD. The column holds a LOCAL midnight as a
+ * UTC instant (getMidnightUtcMs), so its date is read in the user's zone, not
+ * sliced from the ISO string: east of UTC that slice is the day before.
+ */
+export function dayKey(dayUtc0: number, timeZone: string): string {
+  return localDayKey(new Date(dayUtc0 + 12 * 60 * 60 * 1000), timeZone)
 }
 
 const NO_DAYS: Day[] = []

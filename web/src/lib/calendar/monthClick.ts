@@ -37,3 +37,27 @@ export function createDayClick(onOpen: (day: string) => void, onCreate: (day: st
   click.cancel = cancel
   return click
 }
+
+export interface CellClickActions {
+  /** The shared click / double click (open week / create). */
+  click: DayClick
+  /** Variant D: its own click / double click (choose / create). */
+  splitClick: DayClick
+  /** Variant D: choose the day at once, before the double-click wait. */
+  choose: (day: string) => void
+}
+
+/**
+ * A click on a month cell. The click the browser fires right after a drop is
+ * not a click. In variant D a click chooses the day at once (spec R10); a
+ * second click still creates.
+ */
+export function routeCellClick(split: boolean, day: string, detail: number, wasDrag: boolean, a: CellClickActions): void {
+  if (wasDrag) return
+  if (split) {
+    if (detail < 2) a.choose(day)
+    a.splitClick(day, detail)
+    return
+  }
+  a.click(day, detail)
+}

@@ -17,6 +17,7 @@ import {
   type CalendarView,
 } from '../../lib/calendar/monthVariant';
 import { todayInZone } from '../../lib/dayTasks/dayColour';
+import { createLatestOnly } from '../../lib/async/latestOnly';
 import { TaskSidebar } from '../../components/TaskSidebar';
 import { MobileTaskPanel } from '../../components/TaskSidebar/MobileTaskPanel';
 import { EventEditor } from '../../components/Calendar/EventEditor';
@@ -70,6 +71,7 @@ export function Calendar() {
   // re-render per load would be pure noise.
   const lastLoadedAtRef = useRef(0);
   const [currentWeekOffset, setCurrentWeekOffset] = useState(0);
+  const [latestEvents] = useState(createLatestOnly);
 
   // Week or month (spec V003-20260924-arc-web-month-view). The choice is kept
   // on this device; a phone has no month in v1 and always gets the week.
@@ -172,12 +174,14 @@ export function Calendar() {
       end = new Date(Date.parse(days[days.length - 1] + 'T00:00:00Z') + 24 * 60 * 60 * 1000 + PAD);
     }
     try {
-      const data = await getEvents(start.toISOString(), end.toISOString());
-      setEvents(data);
+      // Latest request wins: paging months fast, or month → week, must not
+      // let an older, slower answer repaint the newer range.
+      const data = await latestEvents(getEvents(start.toISOString(), end.toISOString()));
+      if (data) setEvents(data);
     } catch (error) {
       console.error('Failed to load events:', error);
     }
-  }, [currentWeekOffset, getWeekRange, view, monthCursor]);
+  }, [currentWeekOffset, getWeekRange, view, monthCursor, latestEvents]);
 
   // Load tasks
   const loadTasks = useCallback(async () => {

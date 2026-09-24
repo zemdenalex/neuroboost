@@ -1,14 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
 import type { NbEvent } from '../../types'
 import { DRAG_THRESHOLD_PX } from '../Calendar/WeekGrid/weekgrid.constants'
-
-interface Pending {
-  event: NbEvent
-  fromDay: string
-  x: number
-  y: number
-  moved: boolean
-}
+import { createMonthDrag } from '../../lib/calendar/monthDrag'
 
 /** The day cell under a screen point, read from its data-day attribute. */
 function dayAt(x: number, y: number): string | null {
@@ -18,67 +11,51 @@ function dayAt(x: number, y: number): string | null {
 }
 
 /**
- * Dragging an event to another day of the month (spec R8).
- *
- * Pointer events with the week grid's threshold, not HTML5 drag-and-drop: a
- * press that never moves DRAG_THRESHOLD_PX stays a click. `wasDrag()` lets the
- * cell's click handler ignore the click the browser fires after a drop.
+ * Window pointer events wired to the month's drag machine (lib/calendar/monthDrag.ts).
+ * `onPress` runs when a drag may start: the month cancels a pending
+ * single click there, or its timer would switch to the week mid-drag.
  */
-export function useMonthDrag(onMoveToDay: (event: NbEvent, fromDay: string, toDay: string) => void) {
-  const pending = useRef<Pending | null>(null)
-  const justDropped = useRef(false)
+export function useMonthDrag(onMoveToDay: (event: NbEvent, fromDay: string, toDay: string) => void, onPress: () => void) {
   const [over, setOver] = useState<string | null>(null)
   const [draggingId, setDraggingId] = useState<string | null>(null)
+  const moveRef = useRef(onMoveToDay)
+  moveRef.current = onMoveToDay
 
-  const onItemPointerDown = useCallback((event: NbEvent, e: ReactPointerEvent) => {
-    if (e.button !== 0 || e.pointerType === 'touch') return
-    const fromDay = (e.currentTarget as Element).closest('[data-day]')?.getAttribute('data-day')
-    if (!fromDay) return
-    pending.current = { event, fromDay, x: e.clientX, y: e.clientY, moved: false }
-  }, [])
+  const [machine] = useState(() =>
+    createMonthDrag<NbEvent>({
+      threshold: DRAG_THRESHOLD_PX,
+      dayAt,
+      onMove: (event, from, to) => moveRef.current(event, from, to),
+      onOver: setOver,
+      onDragging: (event) => setDraggingId(event?.id ?? null),
+      defer: (fn) => setTimeout(fn, 0),
+    }),
+  )
+
+  const onItemPointerDown = useCallback(
+    (event: NbEvent, e: ReactPointerEvent) => {
+      if (e.button !== 0 || e.pointerType === 'touch') return
+      const fromDay = (e.currentTarget as Element).closest('[data-day]')?.getAttribute('data-day')
+      if (!fromDay) return
+      onPress()
+      machine.down(event, fromDay, e.clientX, e.clientY)
+    },
+    [machine, onPress],
+  )
 
   useEffect(() => {
-    const move = (e: PointerEvent) => {
-      const p = pending.current
-      if (!p) return
-      if (!p.moved && Math.hypot(e.clientX - p.x, e.clientY - p.y) < DRAG_THRESHOLD_PX) return
-      if (!p.moved) {
-        p.moved = true
-        setDraggingId(p.event.id)
-      }
-      setOver(dayAt(e.clientX, e.clientY))
-    }
-    const up = (e: PointerEvent) => {
-      const p = pending.current
-      pending.current = null
-      if (!p) return
-      setOver(null)
-      setDraggingId(null)
-      if (!p.moved) return
-      // The browser fires its click right after pointerup, in the same task;
-      // clear the flag after that, or a drop that lands on no cell would eat
-      // the next real click.
-      justDropped.current = true
-      setTimeout(() => {
-        justDropped.current = false
-      }, 0)
-      const to = dayAt(e.clientX, e.clientY)
-      if (to && to !== p.fromDay) onMoveToDay(p.event, p.fromDay, to)
-    }
+    const move = (e: PointerEvent) => machine.move(e.clientX, e.clientY)
+    const up = (e: PointerEvent) => machine.up(e.clientX, e.clientY)
+    const cancel = () => machine.cancel()
     window.addEventListener('pointermove', move)
     window.addEventListener('pointerup', up)
+    window.addEventListener('pointercancel', cancel)
     return () => {
       window.removeEventListener('pointermove', move)
       window.removeEventListener('pointerup', up)
+      window.removeEventListener('pointercancel', cancel)
     }
-  }, [onMoveToDay])
+  }, [machine])
 
-  /** True once, right after a drop: the click that follows it is not a click. */
-  const wasDrag = useCallback(() => {
-    const was = justDropped.current
-    justDropped.current = false
-    return was
-  }, [])
-
-  return { onItemPointerDown, over, draggingId, wasDrag }
+  return { onItemPointerDown, over, draggingId, wasDrag: machine.wasDrag }
 }

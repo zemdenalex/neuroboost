@@ -8,6 +8,7 @@ import { TimeIndicator } from './TimeIndicator';
 import { EventBlock } from './EventBlock';
 import { GhostPreview, MultiDayTimedGhost } from './GhostPreview';
 import { dateLocale } from '../../../utils/date';
+import { dayKey } from '../../../lib/dayTasks/loadDayColours';
 
 interface DayColumnProps {
   day: DayInfo;
@@ -196,7 +197,11 @@ export const DayColumn = memo(function DayColumn({
         className={`bg-zinc-900 border-b border-zinc-700 sticky ${isToday ? 'bg-zinc-800' : ''}`}
         style={{ top: ALL_DAY_HEIGHT, zIndex: 25, height: DAY_HEADER_HEIGHT }}
       >
-        <div className={`text-xs px-2 py-1 font-medium ${isToday ? 'text-blue-400' : 'text-zinc-300'}`}>
+        <div
+          data-testid="week-day-header"
+          data-day={dayKey(dayUtc0, timezone)}
+          className={`text-xs px-2 py-1 font-medium ${isToday ? 'text-blue-400' : 'text-zinc-300'}`}
+        >
           {dayColour && <span className="mr-1" data-testid="day-colour">{dayColour}</span>}
           {dayLabel}
         </div>

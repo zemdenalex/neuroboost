@@ -73,3 +73,14 @@ describe('cellRows', () => {
     expect(cellRows([1], 3)).toEqual({ shown: [1], more: 0 })
   })
 })
+
+describe('eventsByDay across a DST change', () => {
+  it('files 23:30 on the 25-hour day under that day (Berlin, 25 October 2026)', () => {
+    // 23:30 CET = 22:30Z. Counting the day as 24 h from 00:00 CEST (22:00Z on the 24th)
+    // would push it to the 26th.
+    const berlinDays = ['2026-10-25', '2026-10-26']
+    const got = eventsByDay([ev('late', '2026-10-25T22:30:00Z', '2026-10-25T22:45:00Z')], berlinDays, 'Europe/Berlin')
+    expect(got['2026-10-25'].map((e) => e.event.id)).toEqual(['late'])
+    expect(got['2026-10-26']).toEqual([])
+  })
+})

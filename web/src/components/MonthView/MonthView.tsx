@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState, type ComponentType, type MouseEvent } from 'react'
+import { useCallback, useEffect, useMemo, useState, type ComponentType, type MouseEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { dateLocale } from '../../utils/date'
 import { monthGrid } from '../../lib/calendar/monthGrid'
 import { eventsByDay } from '../../lib/calendar/monthCells'
-import { createDayClick } from '../../lib/calendar/monthClick'
+import { createDayClick, routeCellClick } from '../../lib/calendar/monthClick'
 import { todayInZone } from '../../lib/dayTasks/dayColour'
 import { useDayTasks } from '../../lib/dayTasks/loadDayColours'
 import { ListCell } from './cells/ListCell'
@@ -76,7 +76,6 @@ export function MonthView(props: MonthViewProps) {
 
   const dayClick = useMemo(() => createDayClick(onOpenDay, onCreateOnDay), [onOpenDay, onCreateOnDay])
   useEffect(() => () => dayClick.cancel(), [dayClick])
-  const drag = useMonthDrag(onMoveToDay)
 
   // Variant D: a click chooses the day for the list below (it has its own
   // "open week"); a double click still creates. Ruling, spec §5 R10.
@@ -85,16 +84,14 @@ export function MonthView(props: MonthViewProps) {
   const splitClick = useMemo(() => createDayClick(setChosen, onCreateOnDay), [onCreateOnDay])
   useEffect(() => () => splitClick.cancel(), [splitClick])
 
-  const onCellClick = (day: string, e: MouseEvent) => {
-    if (drag.wasDrag()) return
-    if (variant === 'split') {
-      // Choosing is instant; only the create waits for a second click.
-      if (e.detail < 2) setChosen(day)
-      splitClick(day, e.detail)
-      return
-    }
-    dayClick(day, e.detail)
-  }
+  const cancelClicks = useCallback(() => {
+    dayClick.cancel()
+    splitClick.cancel()
+  }, [dayClick, splitClick])
+  const drag = useMonthDrag(onMoveToDay, cancelClicks)
+
+  const onCellClick = (day: string, e: MouseEvent) =>
+    routeCellClick(variant === 'split', day, e.detail, drag.wasDrag(), { click: dayClick, splitClick, choose: setChosen })
 
   const Cell = CELLS[variant]
   const drags = variant === 'list' || variant === 'classic'
@@ -174,7 +171,8 @@ export function MonthView(props: MonthViewProps) {
             calendarColors,
             onItemPointerDown: drags ? drag.onItemPointerDown : undefined,
           }
-          const tint = !SQUARE_IN_CORNER[variant] && variant !== 'heat' ? squareColour(cellProps.square) : undefined
+          // Only the classic month tints the whole cell (R11); E tints its own block.
+          const tint = variant === 'classic' ? squareColour(cellProps.square) : undefined
           return (
             <div
               key={day}

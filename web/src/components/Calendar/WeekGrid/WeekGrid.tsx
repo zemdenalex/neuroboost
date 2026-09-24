@@ -83,8 +83,8 @@ export function WeekGrid({
   );
   // Day tasks: one square per day header, one request for the visible days.
   const dayColours = useDayColours(
-    dayKey(days[0]?.dayUtc0 ?? adjustedStart),
-    dayKey(days[days.length - 1]?.dayUtc0 ?? adjustedStart)
+    dayKey(days[0]?.dayUtc0 ?? adjustedStart, timezone),
+    dayKey(days[days.length - 1]?.dayUtc0 ?? adjustedStart, timezone)
   );
 
   // Process events for rendering
@@ -302,7 +302,7 @@ export function WeekGrid({
             <DayColumn
               key={day.i}
               day={day}
-              dayColour={dayColours[dayKey(day.dayUtc0)]}
+              dayColour={dayColours[dayKey(day.dayUtc0, timezone)]}
               events={timedPerDay.get(day.dayUtc0) || []}
               selectedId={selectedId}
               currentDayUtc0={nowInfo.dayUtc0}
