@@ -31,6 +31,8 @@
  *                viewports' eight events each share one lane
  *   13:40–14:30  crossday-resize       (end dragged to the next day, same hour;
  *                desktop shows ~00:00–15:00)
+ *   21:00–21:30  month-view            (today+2, dragged to today+3 in the month;
+ *                other days so today's crowd cannot push it under «+N more»)
  *
  * A new spec takes a free band and adds a line here.
  */
