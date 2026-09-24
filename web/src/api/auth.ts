@@ -35,6 +35,13 @@ export interface UserSettings {
    * only the type system was unaware; naming it removes both casts.
    */
   recurring_scope?: 'ask' | 'occurrence' | 'series'
+  /**
+   * Day tasks (spec 2026-09-22 §11). Top-level, written by the bot and the
+   * web alike. No key = on, 5 a day, days before the start not coloured.
+   */
+  day_tasks_enabled?: boolean
+  day_tasks_target?: number
+  day_tasks_paint_before?: boolean
   quiet_hours_start?: string
   quiet_hours_end?: string
   quick_task?: {
