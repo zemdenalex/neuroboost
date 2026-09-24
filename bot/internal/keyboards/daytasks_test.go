@@ -46,7 +46,9 @@ func dayKeyboards() map[string]tgbotapi.InlineKeyboardMarkup {
 		"add":          DayAddList(i18n.RU, "2026-09-23", items),
 		"pin":          DayPinPick(i18n.RU, dtID, "2026-09-23", "2026-09-24"),
 		"pinned":       DayPinned(i18n.RU, dtID, "2026-09-23"),
-		"target":       DayTarget(i18n.RU, 5),
+		"settings-on":  DaySettings(i18n.RU, DaySettingsView{On: true, Target: 5}),
+		"settings-off": DaySettings(i18n.RU, DaySettingsView{}),
+		"target-pick":  DayTargetPick(i18n.RU, 5, "ob_dtn_", "ob_finish", "Дальше →"),
 		"date-cancel":  DayDateCancel(i18n.RU, dtID),
 	}
 }
@@ -145,7 +147,7 @@ func TestPinOffersTodayTomorrowAndADate(t *testing.T) {
 }
 
 func TestTargetOffersThreeToSevenAndTicksTheCurrent(t *testing.T) {
-	kb := DayTarget(i18n.RU, 5)
+	kb := DaySettings(i18n.RU, DaySettingsView{On: true, Target: 5})
 	for n := 3; n <= 7; n++ {
 		if !has(kb, "dtn_"+string(rune('0'+n))) {
 			t.Errorf("no dtn_%d", n)

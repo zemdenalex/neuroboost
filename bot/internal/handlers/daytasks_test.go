@@ -370,7 +370,7 @@ func TestEditingAPastDayShowsTheDay(t *testing.T) {
 func TestTheSavedTargetIsTickedWhenTheReReadFails(t *testing.T) {
 	a := &dayAPI{meDownAfterWrite: true}
 	h, fake, chat := dayHandler(t, a)
-	h.handleDayTarget(chat, 0, "4")
+	h.handleDaySettings(chat, 0, "n:4")
 	if got := fake.last(t).Markup; !strings.Contains(got, "✓ 4") {
 		t.Errorf("saved 4, ticked: %s", got)
 	}

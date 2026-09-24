@@ -439,30 +439,46 @@ func (h *Handler) handleDayTaskDate(chatID int64, text string) {
 	h.pinTask(chatID, 0, day, taskID)
 }
 
-// handleDayTarget is ⚙️ → 🎯 Задач в день: N, 3…7 (spec §1, Denis 22.09). It
-// is written top level, not under bot.*, because the server reads it for the
-// level. A day already taken keeps the target it was taken with (Denis 23.09).
-func (h *Handler) handleDayTarget(chatID int64, messageID int, raw string) {
-	us := h.store.GetOrCreate(chatID)
-	current := 5
-	if raw != "" {
-		n, err := strconv.Atoi(raw)
+// handleDaySettings is ⚙️ → 📌 Задачи дня (spec 2026-09-22 §11): the switch,
+// the target N (3…7, spec §1) and whether days before the start are coloured.
+// action is "" (show), "n:<3…7>", "on", "off", "pb_on" or "pb_off". All three
+// are top-level settings: the server reads the target for the level, and the
+// web will read the rest. A day already taken keeps its target (Denis 23.09).
+func (h *Handler) handleDaySettings(chatID int64, messageID int, action string) {
+	key, val := "", any(nil)
+	switch {
+	case action == "":
+	case strings.HasPrefix(action, "n:"):
+		n, err := strconv.Atoi(strings.TrimPrefix(action, "n:"))
 		if err != nil || n < 3 || n > 7 {
 			return
 		}
-		if _, err := h.api.PatchSettings(us.AuthToken, map[string]any{"day_tasks_target": n}); err != nil {
+		key, val = "day_tasks_target", n
+	case action == "on" || action == "off":
+		key, val = "day_tasks_enabled", action == "on"
+	case action == "pb_on" || action == "pb_off":
+		key, val = "day_tasks_paint_before", action == "pb_on"
+	default:
+		return
+	}
+	if key != "" {
+		if err := h.setDayPref(chatID, key, val); err != nil {
 			h.sendText(chatID, h.t(chatID, "❌ Не сохранилось: ", "❌ Not saved: ")+h.errorText(chatID, err))
 			return
 		}
-		// Review M5: tick what was written, not what a second read says.
-		current = n
-	} else if s, err := h.api.MySettings(us.AuthToken); err == nil {
-		if v, ok := s["day_tasks_target"].(float64); ok && v >= 3 && v <= 7 {
-			current = int(v)
-		}
+	}
+	p := h.dayPrefs(chatID)
+	// Review M5 (23.09): tick what was written, not what a second read says.
+	switch key {
+	case "day_tasks_target":
+		p.Target = val.(int)
+	case "day_tasks_enabled":
+		p.On = val.(bool)
+	case "day_tasks_paint_before":
+		p.PaintBefore = val.(bool)
 	}
 	h.editOrSend(chatID, messageID, h.t(chatID,
-		"🎯 <b>Задач в день</b>\n\nСколько дел ты берёшь на день. Цвет дня считается от этого числа.\n\nНовое число действует со следующего взятого дня: уже взятый день остаётся со своим.",
-		"🎯 <b>Tasks per day</b>\n\nHow many things you take on for a day. The day's colour is counted against this number.\n\nA new number applies from the next day you take: a day already taken keeps its own."),
-		keyboards.DayTarget(h.lang(chatID), current))
+		"📌 <b>Задачи дня</b>\n\nКаждый день берёшь несколько дел, и день красится по сделанному. Цвет виден на экране задач дня, в календаре и на «Сегодня».\n\n🎯 Сколько дел в день. Новое число действует со следующего взятого дня.\n\n🎨 «Дни до начала»: красить ли дни до первого взятого. Не красить: они остаются как были.",
+		"📌 <b>Day tasks</b>\n\nEach day you take a few things, and the day is coloured by what got done. The colour shows on the day-tasks screen, in the calendar and on «Today».\n\n🎯 How many things a day. A new number applies from the next day you take.\n\n🎨 «Days before the start»: whether days before the first one taken get a colour. No colour: they stay as they were."),
+		keyboards.DaySettings(h.lang(chatID), keyboards.DaySettingsView{On: p.On, PaintBefore: p.PaintBefore, Target: p.Target}))
 }

@@ -287,7 +287,7 @@ func SettingsMenu(lang i18n.Lang) tgbotapi.InlineKeyboardMarkup {
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "📏 Шкала статистики", "📏 Statistics scale"), "settings_stscale"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🎯 Задач в день", "🎯 Tasks per day"), "settings_dtn"),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "📌 Задачи дня", "📌 Day tasks"), "settings_dtn"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🔤 Ключевые слова", "🔤 Keywords"), "settings_keywords"),
