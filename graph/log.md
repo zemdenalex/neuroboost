@@ -1267,14 +1267,14 @@ CI/CD: `concurrency` в `ci.yml` (два push'а подряд ломают e2e �
 ## [2026-09-24 05:20] handoff-auto (loop, ночь) | D3 закрыт, веб задач дня собран, мелочи M1/M2/M4/M7
 
 **Сделано за ночь 24.09** (всё на `develop`, в проде ничего нового; прод = `v0.4.11.5`):
-- D3 бот: финальный фикс-проход I3/I4 (`e52dc18`), `calendar_cell` цвет/полоска/оба (`ed6746d`), фикс «только 🟩 + выключены = голый календарь» (нашёл advisor), M1/M7/M4/M2 (`0197111` … последний коммит M2). Dev-бот на `0125ac7` (без M2 — M2 закоммичен, push ждёт конца e2e).
+- D3 бот: финальный фикс-проход I3/I4 (`e52dc18`), `calendar_cell` цвет/полоска/оба (`ed6746d`), фикс «только 🟩 + выключены = голый календарь» (нашёл advisor), M1/M7/M4/M2 (`0197111` … последний коммит M2). Dev-бот на `4e673ae` (с M2).
 - Веб задачи дня: спека `docs/superpowers/specs/2026-09-24-web-day-tasks-design.md`, план `docs/superpowers/plans/2026-09-24-web-day-tasks.md`; `00eaaa8` сохранение настроек читает сервер и идёт очередью; `9160597` страница `/day-tasks`, секция ⚙️, пункт навигации, квадраты в шапке недели. 657 → 684 тестов, e2e `day-tasks.spec.ts` красный на staging до push, CI `791251a` весь зелёный вместе с e2e.
 - Разведка Mini App / Android — `docs/superpowers/specs/2026-09-24-mini-app-and-android-razvedka.md` (без кода; рекомендация: Mini App раньше, Android — сначала PWA).
 - Все Ruling D3 и отложенные мелочи — `docs/tasks-nochnoy-2026-09-24.md` (один живой файл).
 
 **План следующей сессии (auto, loop):**
 - Цель: (1) если Денис проснулся — его отметки двух чеклистов важнее всего; (2) иначе подзадачи в боте.
-- Первый шаг: `git log origin/develop..develop --oneline` → если M2 не запушен и Денис не проходит чеклист — `git push origin develop` + `scripts/deploy-dev-bot.sh develop`; затем `docs/tasks-podzadachi-bot.md` шаг 0.
+- Первый шаг: M2 уже запушен, dev-бот на `4e673ae`. Проверить CI `4e673ae` (`gh run list --repo zemdenalex/neuroboost --branch develop --limit 1`), затем `docs/tasks-podzadachi-bot.md` шаг 0.
 - Разогрев (читать первым):
   - `docs/tasks-podzadachi-bot.md` — шаги подзадач и уже выясненное (календарь НЕ наследуется от родителя, callback ≤ 64 байт)
   - `docs/tasks-nochnoy-2026-09-24.md` — что сделано ночью, Ruling, отложенное
