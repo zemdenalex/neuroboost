@@ -42,6 +42,11 @@ export interface UserSettings {
   day_tasks_enabled?: boolean
   day_tasks_target?: number
   day_tasks_paint_before?: boolean
+  /**
+   * Web month view variant (spec V003-20260924-arc-web-month-view): list,
+   * classic, heat, split or commit. Unknown or missing = list.
+   */
+  month_view_variant?: string
   quiet_hours_start?: string
   quiet_hours_end?: string
   quick_task?: {
