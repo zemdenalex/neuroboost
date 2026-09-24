@@ -1285,3 +1285,26 @@ CI/CD: `concurrency` в `ci.yml` (два push'а подряд ломают e2e �
 - Риски: push пересобирает staging посреди его прохода — не пушить, если он на чеклисте; `api-go` без его слова не трогать (подзадачи могут упереться в `listTasks` без DONE → вопрос ему).
 - Следующие итерации: подзадачи шаги 0–8 → чеклист подзадач → стоп и итог.
 - Незакрытое: `docs/tasks-podzadachi-bot.md` (всё), `docs/tasks-nochnoy-2026-09-24.md` (перенос фактов initData в `100 - Research` на /handoff).
+
+## [2026-09-24] recall | preference-do-the-work-hand-over-only-what-eyes-must-settle, workitem-night-loop-2026-08-10, learning-a-test-that-cannot-fail-guards-nothing, decision-3-day-plan-answers-23-09
+
+## [2026-09-24 11:15] handoff | ночь 24.09 разобрана с Денисом; план — его три прохода, потом релиз v0.4.11.6
+
+**Сделано за 24.09** (всё на `develop`, dev-бот на `6891e72`, CI зелёный с e2e; прод = `v0.4.11.5`):
+- D3 бот (calendar_cell, фиксы ревью I3/I4/M1/M2/M4/M7), веб задачи дня (`/day-tasks`, секция ⚙️, квадраты в неделе, сохранение настроек читает сервер перед записью и идёт очередью), подзадачи в боте (`6891e72`), разведка-спека Mini App/Android.
+- 🔴 Луп остановлен мной в 05:47 при полном бэклоге (~3 ч 50 мин простоя) — разбор `docs/razbor-ostanovki-lupa-2026-09-24.md`; корень закрепил хуком и правилом, заведена очередь `docs/agents/queue.md`.
+
+**Решения Дениса в /handoff 24.09:**
+- Хуже всего — все четыре: ранний стоп, сужение его слов, мало сделано, итог скрывал разрыв → `preference-a-loop-does-not-stop-itself`.
+- Keep: сабботаж, advisor, e2e красный→зелёный, чеклисты в Obsidian → `preference-keep-sabotage-advisor-e2e-obsidian`.
+- Дальше: *«Now the web and final bot checks and improvements first»* — Mini App/Android после.
+- M3 и M5 из ревью D3 — **делать**.
+- Релиз v0.4.11.6 — в той же сессии, после его проходов, по его «да».
+
+**План следующей сессии:**
+- Цель: его отметки трёх чеклистов → починить → M3/M5 → веб (месячный вид, аудит admin/tools) → релиз v0.4.11.6 по «да».
+- Первый шаг: открыть его отметки — `docs/proverka-bota-2026-09-24-zadachi-dnya-d3.md`, `docs/proverka-veba-2026-09-24-zadachi-dnya.md`, `docs/proverka-bota-2026-09-24-podzadachi.md` (он проходит их первым делом).
+- Разогрев: `docs/agents/queue.md` (очередь, по ней же луп) · `docs/tasks-nochnoy-2026-09-24.md` (Ruling и отложенное) · узлы `preference-a-loop-does-not-stop-itself`, `preference-keep-sabotage-advisor-e2e-obsidian`, `learning-second-writer-breaks-whole-blob-save`, `learning-a-hidden-choice-must-stop-acting`.
+- Ждёт Дениса: три прохода · релиз · сферы жизни · модуль долгов · вкус веба (спека §7). Факты initData уже в `E:/Projects/100 - Research/prochee/telegram-mini-app-initdata-2026-09-24.md`.
+- Незакрытое: `docs/tasks-nochnoy-2026-09-24.md`.
+- Скиллы: `superpowers:test-driven-development`, advisor перед крупным шагом, свежий ревьюер после сборки; релиз — как v0.4.11.5 (заметки `bot/internal/release/notes.go`, мерж, прод-бот руками, `/broadcast`).

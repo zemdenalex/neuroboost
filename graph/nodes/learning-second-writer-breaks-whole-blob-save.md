@@ -2,7 +2,7 @@
 id: learning-second-writer-breaks-whole-blob-save
 title: "Второй писатель превращает сохранение «весь blob из памяти» в откат: бот начал писать day_tasks_*, и открытая вкладка веба откатывала их любым сохранением"
 type: learning
-status: proposed
+status: verified
 verified_by: session-04e1a014
 verified_at: 2026-09-24
 tags: [neuroboost, web, settings, gotcha-21]

@@ -2,7 +2,7 @@
 id: learning-a-hidden-choice-must-stop-acting
 title: "Выбор, который прячется вместе со своим контекстом, обязан перестать действовать: «только 🟩» при выключенных задачах дня оставлял голый календарь без пути назад"
 type: learning
-status: proposed
+status: verified
 verified_by: session-04e1a014
 verified_at: 2026-09-24
 tags: [neuroboost, bot, settings, ux]
@@ -12,6 +12,7 @@ sources:
   - command: "TestAColourOnlyMonthWithDayTasksOffDrawsBars + сабботаж dayOn=true → красный"
 stakes: medium
 links:
+  - relates-to: "[[learning-second-writer-breaks-whole-blob-save]]"
   - relates-to: "[[learning-a-test-that-cannot-fail-guards-nothing]]"
 ---
 `calendar_cell = colour` прячет полоску занятости. Ряд выбора виден только при включённых задачах дня.

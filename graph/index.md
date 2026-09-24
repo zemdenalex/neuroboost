@@ -7,6 +7,7 @@
 - [[decision-sharing-shape-and-colour-defaults]] — "Денис: приглашение в приложении + ссылка на 2 часа; цвет личного календаря не навязывать, но дать менять"
 - [[decision-bot-patch-v04111-before-mobile]] — "Денис 15.09: сначала патч по боту v0.4.11.1, и только потом v0.4.12 с мобилкой — порядок работ изменён"
 - [[decision-v0412-focus-is-the-event-window]] — "Денис 11.09: фокус v0.4.12 — модель загрузки, окно ±1 видимого промежутка; десктоп тоже; скелет в колонке; позиция живёт в хуке"
+- [[decision-3-day-plan-answers-23-09]] — "Денис 23.09, план «жизнь в NeuroBoost за 3 дня»: строка без команды = задача сразу; сферы жизни — начать с меток, потом выделить; деньги — модуль долгов; релиз — когда версия чистая"
 - [[decision-safety-wave-before-any-release]] — "Денис 23.08: сначала безопасность (бэкап, ротация, сухой прогон миграций), потом фичи; тач-драг отдельным релизом"
 - [[decision-brainstorm-the-bot-before-building-more]] — "Денис 19.08: сначала спланировать, каким бот должен быть, и только потом строить дальше"
 - [[decision-bot-nl-creation-rules-15-09]] — "Денис 15–16.09: как бот понимает ввод — ближайший день включая сегодня, «следующая» +7, сокращения ru/en, слова-триггеры с выбором характеристики, язык всего интерфейса, всё в v0.4.11.1"
@@ -15,7 +16,6 @@
 - [[decision-day-commitments-concept-21-09]] — "Денис 21.09: «задачи дня» по мотивам календаря Atrioc — 5 дел на день, день красится по выполненному (5 зелёный · 3 оранжевый · 1–0 красный), в боте и в вебе"
 - [[decision-bot-token-rotation-dropped]] — "Денис 10.09: ротацию токена бота не делать — принятый риск, не забытый долг"
 - [[decision-bot-fixes-from-four-passes-17-09]] — "Денис 17.09, четыре прохода за вечер: слово «задача» экономит действие, а не добавляет; счётчик списка = что создастся; даты спрашивать, а не угадывать; редактирование в один экран"
-- [[decision-3-day-plan-answers-23-09]] — "Денис 23.09, план «жизнь в NeuroBoost за 3 дня»: строка без команды = задача сразу; сферы жизни — начать с меток, потом выделить; деньги — модуль долгов; релиз — когда версия чистая"
 - [[decision-onboarding-is-the-first-minute-17-09]] — "Денис 17.09 после первых внешних тестеров: главное — онбординг и быстрое добавление; человек должен писать боту, а не искать кнопки"
 - [[decision-task-event-and-statistics-details-22-09]] — "Денис 21–22.09: задача↔событие (SCHEDULED остаётся у быстрой кнопки, перенос одного дня серии = skipped) и статистика (год/всё, 24 ч везде, время задач, дни серий из API)"
 - [[decision-graph-now-enabled]] — `CLAUDE.md` is being rewritten to reflect that NeuroBoost now maintains a `graph/` directory (same as other ventures: V001, V004). Prior guidance stated deliberately no graph.
@@ -82,6 +82,7 @@
 - [[learning-redaction-at-the-output-does-not-protect-a-value-that-leaves-the-process]] — "Редакция на выводе защищает читателя, а не значение: токен уехал в лог второго процесса через переменную строкой выше"
 - [[learning-tg-id-null-kills-reminders-silently]] — "У пользователя staging был tg_id = NULL — скан молча пропускал его, и вся цепочка выглядела зелёной"
 - [[learning-two-neighbouring-paths-one-broken-reading-finds-neither]] — "Задачи получали пресет по умолчанию, события — нет: два соседних пути, и чтением кода это не находится"
+- [[learning-second-writer-breaks-whole-blob-save]] — "Второй писатель превращает сохранение «весь blob из памяти» в откат: бот начал писать day_tasks_*, и открытая вкладка веба откатывала их любым сохранением"
 - [[learning-two-pushes-within-five-minutes-break-each-others-e2e]] — "Красный e2e на develop дважды за вечер — не дефект: прогон одного push'а идёт, пока деплой следующего перезапускает staging, и логин отвечает 502"
 - [[learning-a-check-outside-the-checklist-never-runs]] — "Проверка, описанная в разделе, но отсутствующая в исполняемом чек-листе, не выполняется никогда"
 - [[learning-a-step-that-swallows-its-error-never-ran]] — "Шаг CI с `2>/dev/null || echo continuing` не работал ни разу: копия прод→dev писала в чужую базу, а документы месяц говорили «dev = копия прода»"
@@ -105,6 +106,7 @@
 - [[learning-parallel-e2e-specs-share-one-calendar]] — "e2e: параллельные спеки под одним аккаунтом делят один календарь — четыре спеки в 03–05 сжали блоки вдвое, и по понедельникам ручку ресайза закрывала вкладка «Tasks (0)»"
 - [[learning-this-shell-turns-backslash-n-into-newlines]] — "В Bash-инструменте Claude Code обратный слэш с n внутри heredoc (даже в кавычках) доходит до Python настоящим переводом строки — правки Go-строк ломали исходник"
 - [[learning-shell-heredoc-scripts-break-escapes]] — "Правки через python-heredoc в Bash превращали \\n в настоящие переводы строк внутри Go-строк — трижды за 23.09; скрипты правок писать файлом через Write"
+- [[learning-a-hidden-choice-must-stop-acting]] — "Выбор, который прячется вместе со своим контекстом, обязан перестать действовать: «только 🟩» при выключенных задачах дня оставлял голый календарь без пути назад"
 - [[learning-a-fake-that-cannot-say-yes]] — "Тестовый фейк Telegram отвечал на edit «true» вместо Message — каждое редактирование «падало», editOrSend слал новое сообщение, и ни один тест не мог увидеть правку на месте"
 - [[learning-a-css-class-defined-nowhere-fails-silently]] — "Класс CSS, которого нет нигде, молчит: «вертикальная» вкладка Tasks была горизонтальной 92px и закрывала понедельник; поймала только геометрия"
 - [[learning-all-day-events-are-local-midnight-instants]] — "Событие «на весь день» хранится МОМЕНТОМ локальной полуночи (21:00Z для Москвы), иногда в странный час — дата из строки starts_at[:10] даёт день ДО праздника"
@@ -129,16 +131,13 @@
 - [[workitem-p2-notifications-last-mile]] — Собрано 8 шагов из 10 (не 9, как говорил ROADMAP до 10.08), staging обновлён; но
 - [[workitem-bot-authtoken-never-set]] — "ЗАКРЫТО: бот не аутентифицировался — AuthToken читался 7 раз и не присваивался; починено 11.08 и подтверждено живым прогоном"
 - [[workitem-bot-what-denis-called-bad]] — "Претензии Дениса к боту 19.08 — что из них про невыкаченный код, а что настоящее"
-- [[workitem-release-v0410-gated-by-denis-report]] — PR #9 (`develop` → `main`, **124** коммитов на 10.08 08:00 — пересчитывать `git rev-list --count main..develop`, число росло всю ночь) открыт и НЕ смёржен; мерж и
 - [[workitem-night-loop-2026-08-10]] — "Ночной автономный луп: промпт готов и не запущен; цель — пользоваться приложением утром"
+- [[workitem-release-v0410-gated-by-denis-report]] — PR #9 (`develop` → `main`, **124** коммитов на 10.08 08:00 — пересчитывать `git rev-list --count main..develop`, число росло всю ночь) открыт и НЕ смёржен; мерж и
 
 ## Other
 - [[preference-rotate-after-it-works]] — "Предпочтение Дениса: ротировать утёкший секрет ПОСЛЕ того, как починка заработала, а не до"
 - [[preference-never-replace-a-working-capability-with-a-simpler-one]] — "Правило Дениса: не убирать работающую возможность ради более простой замены — новое добавляется рядом со старым"
-- [[preference-test-a-tool-on-a-real-file-before-recommending]] — "Денис 22.09: прежде чем советовать инструмент — прогнать его на настоящем файле и посмотреть diff"
 - [[preference-do-the-work-hand-over-only-what-eyes-must-settle]] — "Правило Дениса: делай всё, что вообще делается машиной, и отдавай мне только то, что нельзя решить не глядя"
-
-## Proposed (unconfirmed)
-_Auto-captured; not yet trusted. Promote with `promote.py`._
-- [[learning-second-writer-breaks-whole-blob-save]] — "Второй писатель превращает сохранение «весь blob из памяти» в откат: бот начал писать day_tasks_*, и открытая вкладка веба откатывала их любым сохранением"
-- [[learning-a-hidden-choice-must-stop-acting]] — "Выбор, который прячется вместе со своим контекстом, обязан перестать действовать: «только 🟩» при выключенных задачах дня оставлял голый календарь без пути назад"
+- [[preference-test-a-tool-on-a-real-file-before-recommending]] — "Денис 22.09: прежде чем советовать инструмент — прогнать его на настоящем файле и посмотреть diff"
+- [[preference-a-loop-does-not-stop-itself]] — "Денис 24.09: ночной луп не останавливает себя сам, не сужает его слова и не выдумывает выходов — «just don't stop and don't wait for me»"
+- [[preference-keep-sabotage-advisor-e2e-obsidian]] — "Денис 24.09 выбрал «keep» четырём практикам: сабботаж на каждый фикс · advisor перед большим шагом · e2e сначала красный, потом зелёный · чеклист в Obsidian"
