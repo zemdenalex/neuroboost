@@ -409,6 +409,14 @@ func (h *Handler) HandleCallback(cb *tgbotapi.CallbackQuery) {
 		h.handleToday(chatID, cb.Message.MessageID)
 	case data == "top_tasks":
 		h.handleTasks(chatID, cb.Message.MessageID)
+	case strings.HasPrefix(data, "sb_d_"):
+		h.handleSubtaskDone(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "sb_d_"))
+	case strings.HasPrefix(data, "sb_add_"):
+		h.handleSubtaskAdd(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "sb_add_"))
+	case strings.HasPrefix(data, "sb_x_"):
+		// Cancel ends the question, or the next line would still become a subtask.
+		h.store.ClearFlow(chatID)
+		h.handleTaskAction(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "sb_x_"))
 	case strings.HasPrefix(data, "task_action_"):
 		h.handleTaskAction(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "task_action_"))
 	// The three scheduling steps, in the order they fire. They sit above

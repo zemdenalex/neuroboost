@@ -108,6 +108,10 @@ type Task struct {
 	// RepeatAnchor is the first day of a series (RFC3339), from which its days
 	// are counted.
 	RepeatAnchor string `json:"repeat_anchor,omitempty"`
+	// ParentID is set on a subtask: the task it belongs to.
+	ParentID string `json:"parent_id,omitempty"`
+	// CalendarID is the calendar the task lives in.
+	CalendarID string `json:"calendar_id,omitempty"`
 }
 
 // Repeats reports whether this task is a series.
@@ -140,6 +144,11 @@ type CreateTaskReq struct {
 	Rrule *string `json:"rrule,omitempty"`
 	// NagMinutes repeats an unanswered reminder every N minutes.
 	NagMinutes *int `json:"nag_minutes,omitempty"`
+	// ParentID makes the task a subtask.
+	ParentID *string `json:"parent_id,omitempty"`
+	// CalendarID picks the calendar. 🔴 Without it the API files the task in
+	// the author's personal calendar: a subtask must send its task's.
+	CalendarID *string `json:"calendar_id,omitempty"`
 }
 
 type CreateFeedbackReq struct {

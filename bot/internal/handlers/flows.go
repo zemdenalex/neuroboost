@@ -55,6 +55,8 @@ func (h *Handler) handleFlowInput(chatID int64, text string) {
 		h.handleNoteFlow(chatID, text)
 	case dayTaskDateFlow:
 		h.handleDayTaskDate(chatID, text)
+	case subtaskFlow:
+		h.handleSubtaskText(chatID, text)
 	case "new_task":
 		h.handleNewTaskFlow(chatID, text)
 	case "new_event":

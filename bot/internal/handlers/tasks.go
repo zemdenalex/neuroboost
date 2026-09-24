@@ -156,7 +156,10 @@ func (h *Handler) handleTaskAction(chatID int64, messageID int, taskID string) {
 		}
 	}
 
-	h.editOrSend(chatID, messageID, text, keyboards.TaskActions(h.lang(chatID), taskID, repeats, linkedID, h.dayTasksOn(chatID)))
+	sub, subLine := h.subtaskView(chatID, tasks, taskID)
+	text += subLine
+	kb := keyboards.TaskActions(h.lang(chatID), taskID, repeats, linkedID, h.dayTasksOn(chatID))
+	h.editOrSend(chatID, messageID, text, keyboards.WithSubtasks(kb, h.lang(chatID), taskID, sub))
 }
 
 // handleTaskDone ticks a task off — for today if it is a series, for good if it
@@ -168,24 +171,25 @@ func (h *Handler) handleTaskAction(chatID int64, messageID int, taskID string) {
 // ended it permanently. The endpoint that closes a single day had existed since
 // 18.09 with no caller at all.
 func (h *Handler) handleTaskDone(chatID int64, messageID int, taskID string) {
-	us := h.store.GetOrCreate(chatID)
-
-	var err error
-	var msg string
-	if h.taskRepeats(chatID, taskID) {
-		var res api.OccurrenceResult
-		res, err = h.api.MarkOccurrence(us.AuthToken, taskID, "done", 0)
-		msg = h.closedDayText(chatID, res.Occurrence)
-	} else {
-		err = h.api.UpdateTask(us.AuthToken, taskID, map[string]any{"status": "DONE"})
-		msg = h.t(chatID, "✅ Задача выполнена.", "✅ Task done.")
-	}
+	msg, err := h.closeTask(chatID, taskID)
 	if err != nil {
 		h.sendText(chatID, h.t(chatID, "❌ Не получилось: ", "❌ That didn't work: ")+h.errorText(chatID, err))
 		return
 	}
 	h.sendText(chatID, msg)
 	h.handleTasks(chatID, messageID)
+}
+
+// closeTask is the one done path: a series closes for a day, anything else
+// for good. Subtasks tick through here too.
+func (h *Handler) closeTask(chatID int64, taskID string) (string, error) {
+	us := h.store.GetOrCreate(chatID)
+	if h.taskRepeats(chatID, taskID) {
+		res, err := h.api.MarkOccurrence(us.AuthToken, taskID, "done", 0)
+		return h.closedDayText(chatID, res.Occurrence), err
+	}
+	err := h.api.UpdateTask(us.AuthToken, taskID, map[string]any{"status": "DONE"})
+	return h.t(chatID, "✅ Задача выполнена.", "✅ Task done."), err
 }
 
 // closedDayText names the day that was actually closed.
