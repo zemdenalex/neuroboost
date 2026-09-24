@@ -26,6 +26,8 @@ export interface MonthViewProps {
   year: number
   month: number
   variant: MonthVariant
+  /** How long a click waits for a second one before it opens the week. */
+  clickWaitMs: number
   events: NbEvent[]
   timezone: string
   calendarColors: Record<string, string | null>

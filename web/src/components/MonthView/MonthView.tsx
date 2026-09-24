@@ -44,7 +44,7 @@ const WEEKDAYS = [0, 1, 2, 3, 4, 5, 6]
  * header, click and double click, dragging. Only the cell differs.
  */
 export function MonthView(props: MonthViewProps) {
-  const { year, month, variant, events, timezone, calendarColors, headerExtra } = props
+  const { year, month, variant, clickWaitMs, events, timezone, calendarColors, headerExtra } = props
   const { onPrev, onNext, onToday, onOpenDay, onCreateOnDay, onMoveToDay } = props
   const { t, i18n } = useTranslation('calendar')
   const locale = dateLocale(i18n.language)
@@ -74,14 +74,17 @@ export function MonthView(props: MonthViewProps) {
     [locale],
   )
 
-  const dayClick = useMemo(() => createDayClick(onOpenDay, onCreateOnDay), [onOpenDay, onCreateOnDay])
+  const dayClick = useMemo(
+    () => createDayClick(onOpenDay, onCreateOnDay, clickWaitMs),
+    [onOpenDay, onCreateOnDay, clickWaitMs],
+  )
   useEffect(() => () => dayClick.cancel(), [dayClick])
 
   // Variant D: a click chooses the day for the list below (it has its own
   // "open week"); a double click still creates. Ruling, spec §5 R10.
   const [chosen, setChosen] = useState<string | null>(null)
   const chosenDay = chosen && days.includes(chosen) ? chosen : days.includes(today) ? today : `${monthPrefix}-01`
-  const splitClick = useMemo(() => createDayClick(setChosen, onCreateOnDay), [onCreateOnDay])
+  const splitClick = useMemo(() => createDayClick(setChosen, onCreateOnDay, clickWaitMs), [onCreateOnDay, clickWaitMs])
   useEffect(() => () => splitClick.cancel(), [splitClick])
 
   const cancelClicks = useCallback(() => {

@@ -55,9 +55,18 @@ test('a click on a day opens its week; a double click opens a new event', async 
   await authedPage.waitForTimeout(400)
   await expect(authedPage.getByText(/^(New Event|Новое событие)$/)).toBeVisible()
   await expect(authedPage.getByTestId('month-view')).toBeVisible()
-  // The editor does not close on Escape (a separate defect, docs/tasks-web-month.md); the backdrop does.
-  await authedPage.mouse.click(5, 5)
-  await expect(authedPage.getByText(/^(New Event|Новое событие)$/)).toHaveCount(0)
+  // Escape (Denis 24.09): untouched closes at once; after typing, the first
+  // press warns and the second closes.
+  await authedPage.keyboard.press('Escape')
+  await expect(authedPage.getByTestId('event-editor')).toHaveCount(0)
+  await cells.nth(20).dblclick()
+  await expect(authedPage.getByTestId('event-editor')).toBeVisible()
+  await authedPage.keyboard.type('e2e escape draft')
+  await authedPage.keyboard.press('Escape')
+  await expect(authedPage.getByTestId('escape-hint')).toBeVisible()
+  await expect(authedPage.getByTestId('event-editor')).toBeVisible()
+  await authedPage.keyboard.press('Escape')
+  await expect(authedPage.getByTestId('event-editor')).toHaveCount(0)
 
   const clicked = await cells.nth(20).getAttribute('data-day')
   await cells.nth(20).click()

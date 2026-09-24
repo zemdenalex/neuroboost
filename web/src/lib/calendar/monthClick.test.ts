@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { createDayClick, routeCellClick, CLICK_WAIT_MS } from './monthClick'
+import { createDayClick, routeCellClick, readClickWait, CLICK_WAIT_MS } from './monthClick'
 
 beforeEach(() => vi.useFakeTimers())
 afterEach(() => vi.useRealTimers())
@@ -82,5 +82,31 @@ describe('routeCellClick', () => {
       ['2026-09-24', 2],
     ])
     expect(a.click).not.toHaveBeenCalled()
+  })
+})
+
+describe('the click wait', () => {
+  it('is 300 ms by default (Denis, 24.09)', () => {
+    expect(CLICK_WAIT_MS).toBe(300)
+  })
+
+  it('uses the wait it is given', () => {
+    const open = vi.fn()
+    const click = createDayClick(open, vi.fn(), 500)
+    click('2026-09-24', 1)
+    vi.advanceTimersByTime(499)
+    expect(open).not.toHaveBeenCalled()
+    vi.advanceTimersByTime(1)
+    expect(open).toHaveBeenCalledWith('2026-09-24')
+  })
+})
+
+describe('readClickWait', () => {
+  it('reads the setting, clamps it to 150–800 and falls back to 300', () => {
+    expect(readClickWait(undefined)).toBe(300)
+    expect(readClickWait({ month_click_wait_ms: 450 })).toBe(450)
+    expect(readClickWait({ month_click_wait_ms: 20 })).toBe(150)
+    expect(readClickWait({ month_click_wait_ms: 5000 })).toBe(800)
+    expect(readClickWait({ month_click_wait_ms: 'x' })).toBe(300)
   })
 })

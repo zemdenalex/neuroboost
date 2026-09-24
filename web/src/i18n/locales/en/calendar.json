@@ -101,5 +101,6 @@
     "openSettings": "Turn on in settings",
     "openWeek": "Open week",
     "free": "Free"
-  }
+  },
+  "escapeAgain": "Changes are not saved. Press Escape again to close without saving"
 }

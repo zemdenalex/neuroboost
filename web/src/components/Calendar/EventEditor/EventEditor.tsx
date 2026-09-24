@@ -1,4 +1,6 @@
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { escapeStep } from './escapeStep';
 import { DateTimeFields } from './DateTimeFields';
 import { BasicFields } from './BasicFields';
 import { CalendarField } from './CalendarField';
@@ -29,11 +31,44 @@ export function EventEditor({
     reminderSettings.presets[reminderSettings.default_event_preset] ?? []
   );
 
+  // Escape: close, but after typing the first press only warns (escapeStep).
+  // "Dirty" is any change the person made inside the editor, not a diff of
+  // the form: the form fills itself from the draft after mount, and that
+  // must not count as typing.
+  const dirtyRef = useRef(false);
+  const [armed, setArmed] = useState(false);
+  const onUserChange = () => {
+    dirtyRef.current = true;
+    setArmed(false);
+  };
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      const action = escapeStep({
+        dirty: dirtyRef.current,
+        armed,
+        otherModalOpen: document.querySelector('[role="dialog"][aria-modal="true"]') !== null,
+      });
+      if (action === 'close') onClose();
+      else if (action === 'arm') setArmed(true);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [armed, onClose]);
+
   return (
     <div 
+      data-testid="event-editor"
       className="bg-zinc-900 border border-zinc-700 rounded-lg p-4 sm:p-6 w-[95vw] sm:w-full max-w-md max-h-[85vh] overflow-y-auto"
       onClick={(e) => e.stopPropagation()}
+      onInputCapture={onUserChange}
+      onChangeCapture={onUserChange}
     >
+      {armed && (
+        <p role="status" data-testid="escape-hint" className="mb-3 px-2 py-1 text-xs rounded bg-amber-900/40 border border-amber-800 text-amber-200">
+          {t('escapeAgain')}
+        </p>
+      )}
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-semibold text-white">

@@ -7,7 +7,17 @@
  * leave the month on its first click and create nothing.
  */
 
-export const CLICK_WAIT_MS = 250
+/** Denis, 24.09: 300 ms, and adjustable in settings (month_click_wait_ms). */
+export const CLICK_WAIT_MS = 300
+export const CLICK_WAIT_MIN = 150
+export const CLICK_WAIT_MAX = 800
+
+/** The wait from settings, clamped; 300 when unset or not a number. */
+export function readClickWait(settings: { month_click_wait_ms?: unknown } | undefined): number {
+  const v = settings?.month_click_wait_ms
+  if (typeof v !== 'number' || !Number.isFinite(v)) return CLICK_WAIT_MS
+  return Math.min(CLICK_WAIT_MAX, Math.max(CLICK_WAIT_MIN, Math.round(v)))
+}
 
 export interface DayClick {
   /** `detail` is MouseEvent.detail: 1 for a click, 2 for the second click of a double click. */
@@ -15,7 +25,11 @@ export interface DayClick {
   cancel(): void
 }
 
-export function createDayClick(onOpen: (day: string) => void, onCreate: (day: string) => void): DayClick {
+export function createDayClick(
+  onOpen: (day: string) => void,
+  onCreate: (day: string) => void,
+  waitMs: number = CLICK_WAIT_MS,
+): DayClick {
   let timer: ReturnType<typeof setTimeout> | null = null
 
   const cancel = () => {
@@ -32,7 +46,7 @@ export function createDayClick(onOpen: (day: string) => void, onCreate: (day: st
     timer = setTimeout(() => {
       timer = null
       onOpen(day)
-    }, CLICK_WAIT_MS)
+    }, waitMs)
   }) as DayClick
   click.cancel = cancel
   return click

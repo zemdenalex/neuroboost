@@ -155,6 +155,8 @@
     "commit": {
       "name": "Day tasks only",
       "desc": "Cells show your day tasks, not events: ticks and a \"3 of 5\" bar, the day tinted by the result. Events are dots. Days before your first taken day stay empty"
-    }
+    },
+    "clickWait": "Wait for a second click: {{ms}} ms",
+    "clickWaitNote": "One click on a day opens its week, a double click creates an event. If your double click is slow and the week opens, raise this"
   }
 }

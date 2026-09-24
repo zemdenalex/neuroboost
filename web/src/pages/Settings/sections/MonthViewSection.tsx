@@ -4,6 +4,7 @@ import { CalendarDays } from 'lucide-react'
 import { useAuthContext } from '../../../contexts/AuthContext'
 import type { UserSettings } from '../../../api/auth'
 import { MONTH_VARIANTS, readMonthVariant, type MonthVariant } from '../../../lib/calendar/monthVariant'
+import { CLICK_WAIT_MAX, CLICK_WAIT_MIN, readClickWait } from '../../../lib/calendar/monthClick'
 
 interface Props {
   /** The page's debounced saver (see UIScaleSection for why it is passed in). */
@@ -87,10 +88,12 @@ export function MonthViewSection({ autoSave }: Props) {
   const { t } = useTranslation('settings')
   const { user } = useAuthContext()
   const [variant, setVariant] = useState<MonthVariant>(() => readMonthVariant(user?.settings))
+  const [wait, setWait] = useState(() => readClickWait(user?.settings))
 
   // Keyed on the account, not the user object: see UIScaleSection.
   useEffect(() => {
     setVariant(readMonthVariant(user?.settings))
+    setWait(readClickWait(user?.settings))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id])
 
@@ -127,6 +130,25 @@ export function MonthViewSection({ autoSave }: Props) {
           </button>
         ))}
       </div>
+      <label htmlFor="month-click-wait" className="block mt-4 text-sm text-zinc-300">
+        {t('monthView.clickWait', { ms: wait })}
+      </label>
+      <input
+        id="month-click-wait"
+        data-testid="month-click-wait"
+        type="range"
+        min={CLICK_WAIT_MIN}
+        max={CLICK_WAIT_MAX}
+        step={50}
+        value={wait}
+        onChange={(e) => {
+          const ms = Number(e.target.value)
+          setWait(ms)
+          autoSave({ month_click_wait_ms: ms })
+        }}
+        className="w-full md:w-80 accent-blue-500"
+      />
+      <p className="text-xs text-zinc-500 mt-1">{t('monthView.clickWaitNote')}</p>
     </section>
   )
 }

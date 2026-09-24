@@ -9,6 +9,7 @@ import { ViewSwitch } from '../../components/MonthView/ViewSwitch';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { monthGrid, shiftMonth, weekOffset } from '../../lib/calendar/monthGrid';
 import { daysBetween, localTimeOn, shiftByDays } from '../../lib/calendar/shiftDays';
+import { readClickWait } from '../../lib/calendar/monthClick';
 import {
   effectiveView,
   readCalendarView,
@@ -83,6 +84,7 @@ export function Calendar() {
     setSavedView(next);
   }, []);
   const monthVariant = readMonthVariant(user?.settings);
+  const clickWaitMs = readClickWait(user?.settings);
   const [monthCursor, setMonthCursor] = useState(() => {
     const today = todayInZone(new Date(), timezone);
     return { year: Number(today.slice(0, 4)), month: Number(today.slice(5, 7)) };
@@ -440,6 +442,7 @@ export function Calendar() {
             year={monthCursor.year}
             month={monthCursor.month}
             variant={monthVariant}
+            clickWaitMs={clickWaitMs}
             events={shownEvents}
             timezone={timezone}
             calendarColors={calendarColors}

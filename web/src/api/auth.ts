@@ -47,6 +47,8 @@ export interface UserSettings {
    * classic, heat, split or commit. Unknown or missing = list.
    */
   month_view_variant?: string
+  /** Month view: how long a click waits for a second click, ms (150–800, default 300). */
+  month_click_wait_ms?: number
   quiet_hours_start?: string
   quiet_hours_end?: string
   quick_task?: {
