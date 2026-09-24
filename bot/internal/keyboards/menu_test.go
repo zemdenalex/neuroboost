@@ -52,7 +52,7 @@ func TestMainMenuCarriesNoActions(t *testing.T) {
 }
 
 func TestHomeInlineCallbacksFitTelegramsBudget(t *testing.T) {
-	for _, row := range HomeInline(i18n.RU).InlineKeyboard {
+	for _, row := range HomeInlineFor(i18n.RU, true).InlineKeyboard {
 		for _, b := range row {
 			if b.CallbackData == nil {
 				continue

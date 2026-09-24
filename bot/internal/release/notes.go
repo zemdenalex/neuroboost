@@ -32,6 +32,20 @@ type Note struct {
 // report said «выкачено».
 var notes = []Note{
 	{
+		Version:  "v0.4.11.6",
+		Released: "25.09.2026 · в проде",
+		RU: "• 🗓 В месячном календаре цвет дня: 🟩🟧⬛ рядом с числом, тот же, что на экране задач дня\n" +
+			"• 📅 На «Сегодня» строка «📌 🟧 3 из 5» и кнопка задач дня\n" +
+			"• ⚙️ Задачи дня можно выключить, а в клетке календаря выбрать: цвет, занятость или оба\n" +
+			"• 🎨 Дни до первого взятого можно тоже покрасить\n" +
+			"• 📁 Подзадачи: на карточке задачи «➕ Подзадача», ⬜ отмечает сделанное",
+		EN: "• 🗓 The month calendar shows each day's colour: 🟩🟧⬛ next to the date, the same as on the day tasks screen\n" +
+			"• 📅 «Today» shows «📌 🟧 3 of 5» and a day tasks button\n" +
+			"• ⚙️ Day tasks can be turned off, and a calendar cell can show the colour, how busy the day is, or both\n" +
+			"• 🎨 Days before your first taken day can be coloured too\n" +
+			"• 📁 Subtasks: «➕ Subtask» on a task card, ⬜ ticks one off",
+	},
+	{
 		Version:  "v0.4.11.5",
 		Released: "24.09.2026 · в проде",
 		RU: "• 📌 Задачи дня: бот предлагает набор на день, «✅ Беру» его берёт, ⬜ отмечает сделанное, а цвет дня показывает, сколько сделано\n" +

@@ -71,7 +71,7 @@ func (h *Handler) handleQuickCallback(chatID int64, messageID int, data string) 
 
 	if data == "qa_cancel" {
 		h.store.ClearFlow(chatID)
-		h.editOrSend(chatID, messageID, h.t(chatID, "Отменено.", "Cancelled."), keyboards.HomeInline(h.lang(chatID)))
+		h.editOrSend(chatID, messageID, h.t(chatID, "Отменено.", "Cancelled."), h.home(chatID))
 		return true
 	}
 
@@ -81,7 +81,7 @@ func (h *Handler) handleQuickCallback(chatID int64, messageID int, data string) 
 	if raw == "" {
 		h.editOrSend(chatID, messageID,
 			h.t(chatID, "Не помню, о чём это было, напиши ещё раз.", "I no longer remember what this was about; write it again."),
-			keyboards.HomeInline(h.lang(chatID)))
+			h.home(chatID))
 		return true
 	}
 

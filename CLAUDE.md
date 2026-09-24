@@ -4,7 +4,7 @@ Calendar-first productivity app for neurodivergent users. Go backend + React/Typ
 PostgreSQL + Telegram bot. "The calendar is truth; tasks exist to support scheduling and reflection."
 
 **Live:** https://neuroboost.website · **Staging:** https://dev.neuroboost.website
-**Released:** `v0.4.11.4` (23.09.2026 — задача↔событие, статистика с кнопками, символ приоритета, ℹ️ объяснения, строка = задача, правки прохода 3, API задач дня; 22 миграции; прод-бот на `3f0425d`) · **Unreleased:**
+**Released:** `v0.4.11.5` (24.09.2026 — задачи дня в боте, правки D2, без длинных тире; только бот, API без изменений; 22 миграции; прод-бот на `3e72c4f`) · **Unreleased:**
 всё, что после, — на `develop`; план 11.4 — `docs/superpowers/specs/2026-09-21-v04114-bot-design.md`
 
 > 🟢 **Последний релиз — `v0.4.11.1` (16.09.2026), целиком ботовый.** Разбор строки
@@ -43,6 +43,10 @@ PostgreSQL + Telegram bot. "The calendar is truth; tasks exist to support schedu
 
 **Реестр внешнего материала: `docs/sources.md`** (заведён 18.08 — до него внешних источников
 у проекта не было вовсе). Источники истины из него, которые нельзя заменять своей памятью:
+- 🔴 **Задачи дня D2 (24.09) — 12 из 12 ✅, выпущено как v0.4.11.5** —
+  `ref/feedback/bot-proverka-d2-zadachi-dnya-otvet-denisa-2026-09-24.md`. Его просьба: цвет дня везде
+  (сначала клетка месячного календаря и 📅 Сегодня, веб позже); включать ли задачи дня и красить ли
+  дни до их включения — выбор пользователя, в настройках и в онбординге
 - 🔴 **Бот v0.4.11.4, проход 3 (23.09) — чеклист A–F, всё зелёное, 6 замечаний** —
   `ref/feedback/bot-proverka-v04114-prohod3-otvet-denisa-2026-09-23.md`; задачи по нему —
   `docs/tasks-prohod3-2026-09-23.md`. Решено: объяснение ℹ️ заменяет экран, а не приходит ниже

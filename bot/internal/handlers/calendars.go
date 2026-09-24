@@ -87,7 +87,7 @@ func (h *Handler) showCalendars(chatID int64, messageID int) {
 	if err != nil {
 		h.sendHTMLWithKeyboard(chatID, i18n.T(lang,
 			"Не смог получить календари. Попробуй ещё раз.",
-			"Could not load the calendars. Try again."), keyboards.HomeInline(lang))
+			"Could not load the calendars. Try again."), h.home(chatID))
 		return
 	}
 

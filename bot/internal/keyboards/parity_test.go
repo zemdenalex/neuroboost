@@ -36,7 +36,7 @@ const homeEntrance = "🏠 Меню"
 
 func TestEveryReplyEntranceHasAnInlineWayIn(t *testing.T) {
 	home := map[string]bool{}
-	for _, row := range HomeInline(i18n.RU).InlineKeyboard {
+	for _, row := range HomeInlineFor(i18n.RU, true).InlineKeyboard {
 		for _, b := range row {
 			if b.CallbackData != nil {
 				home[*b.CallbackData] = true

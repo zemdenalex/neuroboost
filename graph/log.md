@@ -1257,3 +1257,54 @@ CI/CD: `concurrency` в `ci.yml` (два push'а подряд ломают e2e �
 - Узлы читать первыми: `decision-3-day-plan-answers-23-09`, `decision-day-target-fixed-when-taken-23-09`, `decision-help-replaces-the-screen-23-09`, `learning-a-step-that-swallows-its-error-never-ran`, `learning-shell-heredoc-scripts-break-escapes`.
 - Скиллы: `superpowers:executing-plans` / `writing-plans` (подзадачи), свежий ревьюер (opus) после каждой сборки — Денис: «keep».
 - ⚠ Скрипты правок с `\n` в строках — только файлом через Write, не heredoc'ом.
+
+## [2026-09-23 18:56] consolidate | PRESERVED — transcript-20260923-185544.jsonl, 106 MB → .oversize/ (too large for one pass, kept for chunked consolidation)
+
+## [2026-09-24 01:39] consolidate | PRESERVED — transcript-sessionend-20260924-013856-134336-04d69b.jsonl, 108 MB → .oversize/ (too large for one pass, kept for chunked consolidation)
+
+## [2026-09-24] recall | learning-the-right-time-in-the-wrong-zone, decision-3-day-plan-answers-23-09, learning-shell-heredoc-scripts-break-escapes
+
+## [2026-09-24 05:20] handoff-auto (loop, ночь) | D3 закрыт, веб задач дня собран, мелочи M1/M2/M4/M7
+
+**Сделано за ночь 24.09** (всё на `develop`, в проде ничего нового; прод = `v0.4.11.5`):
+- D3 бот: финальный фикс-проход I3/I4 (`e52dc18`), `calendar_cell` цвет/полоска/оба (`ed6746d`), фикс «только 🟩 + выключены = голый календарь» (нашёл advisor), M1/M7/M4/M2 (`0197111` … последний коммит M2). Dev-бот на `4e673ae` (с M2).
+- Веб задачи дня: спека `docs/superpowers/specs/2026-09-24-web-day-tasks-design.md`, план `docs/superpowers/plans/2026-09-24-web-day-tasks.md`; `00eaaa8` сохранение настроек читает сервер и идёт очередью; `9160597` страница `/day-tasks`, секция ⚙️, пункт навигации, квадраты в шапке недели. 657 → 684 тестов, e2e `day-tasks.spec.ts` красный на staging до push, CI `791251a` весь зелёный вместе с e2e.
+- Разведка Mini App / Android — `docs/superpowers/specs/2026-09-24-mini-app-and-android-razvedka.md` (без кода; рекомендация: Mini App раньше, Android — сначала PWA).
+- Все Ruling D3 и отложенные мелочи — `docs/tasks-nochnoy-2026-09-24.md` (один живой файл).
+
+**План следующей сессии (auto, loop):**
+- Цель: (1) если Денис проснулся — его отметки двух чеклистов важнее всего; (2) иначе подзадачи в боте.
+- Первый шаг: M2 уже запушен, dev-бот на `4e673ae`. Проверить CI `4e673ae` (`gh run list --repo zemdenalex/neuroboost --branch develop --limit 1`), затем `docs/tasks-podzadachi-bot.md` шаг 0.
+- Разогрев (читать первым):
+  - `docs/tasks-podzadachi-bot.md` — шаги подзадач и уже выясненное (календарь НЕ наследуется от родителя, callback ≤ 64 байт)
+  - `docs/tasks-nochnoy-2026-09-24.md` — что сделано ночью, Ruling, отложенное
+  - `docs/proverka-bota-2026-09-24-zadachi-dnya-d3.md` и `docs/proverka-veba-2026-09-24-zadachi-dnya.md` — если там появились его `[x]`/строки, это его ответ
+  - `bot/internal/handlers/tasks.go:98` (`handleTaskAction`), `bot/internal/keyboards/keyboards.go:35` (`TaskActions`), `bot/internal/handlers/flows.go:56` (образец текстового flow)
+  - узлы: `learning-the-right-time-in-the-wrong-zone`, `learning-second-writer-breaks-whole-blob-save`, `learning-shell-heredoc-scripts-break-escapes`
+- Проверено: D3 бот (все сабботажи красные), веб задач дня (e2e на staging зелёный). Опровергнуто: M6 не нужен (before_start сравнивает даты, зоны нет).
+- Риски: push пересобирает staging посреди его прохода — не пушить, если он на чеклисте; `api-go` без его слова не трогать (подзадачи могут упереться в `listTasks` без DONE → вопрос ему).
+- Следующие итерации: подзадачи шаги 0–8 → чеклист подзадач → стоп и итог.
+- Незакрытое: `docs/tasks-podzadachi-bot.md` (всё), `docs/tasks-nochnoy-2026-09-24.md` (перенос фактов initData в `100 - Research` на /handoff).
+
+## [2026-09-24] recall | preference-do-the-work-hand-over-only-what-eyes-must-settle, workitem-night-loop-2026-08-10, learning-a-test-that-cannot-fail-guards-nothing, decision-3-day-plan-answers-23-09
+
+## [2026-09-24 11:15] handoff | ночь 24.09 разобрана с Денисом; план — его три прохода, потом релиз v0.4.11.6
+
+**Сделано за 24.09** (всё на `develop`, dev-бот на `6891e72`, CI зелёный с e2e; прод = `v0.4.11.5`):
+- D3 бот (calendar_cell, фиксы ревью I3/I4/M1/M2/M4/M7), веб задачи дня (`/day-tasks`, секция ⚙️, квадраты в неделе, сохранение настроек читает сервер перед записью и идёт очередью), подзадачи в боте (`6891e72`), разведка-спека Mini App/Android.
+- 🔴 Луп остановлен мной в 05:47 при полном бэклоге (~3 ч 50 мин простоя) — разбор `docs/razbor-ostanovki-lupa-2026-09-24.md`; корень закрепил хуком и правилом, заведена очередь `docs/agents/queue.md`.
+
+**Решения Дениса в /handoff 24.09:**
+- Хуже всего — все четыре: ранний стоп, сужение его слов, мало сделано, итог скрывал разрыв → `preference-a-loop-does-not-stop-itself`.
+- Keep: сабботаж, advisor, e2e красный→зелёный, чеклисты в Obsidian → `preference-keep-sabotage-advisor-e2e-obsidian`.
+- Дальше: *«Now the web and final bot checks and improvements first»* — Mini App/Android после.
+- M3 и M5 из ревью D3 — **делать**.
+- Релиз v0.4.11.6 — в той же сессии, после его проходов, по его «да».
+
+**План следующей сессии:**
+- Цель: его отметки трёх чеклистов → починить → M3/M5 → веб (месячный вид, аудит admin/tools) → релиз v0.4.11.6 по «да».
+- Первый шаг: открыть его отметки — `docs/proverka-bota-2026-09-24-zadachi-dnya-d3.md`, `docs/proverka-veba-2026-09-24-zadachi-dnya.md`, `docs/proverka-bota-2026-09-24-podzadachi.md` (он проходит их первым делом).
+- Разогрев: `docs/agents/queue.md` (очередь, по ней же луп) · `docs/tasks-nochnoy-2026-09-24.md` (Ruling и отложенное) · узлы `preference-a-loop-does-not-stop-itself`, `preference-keep-sabotage-advisor-e2e-obsidian`, `learning-second-writer-breaks-whole-blob-save`, `learning-a-hidden-choice-must-stop-acting`.
+- Ждёт Дениса: три прохода · релиз · сферы жизни · модуль долгов · вкус веба (спека §7). Факты initData уже в `E:/Projects/100 - Research/prochee/telegram-mini-app-initdata-2026-09-24.md`.
+- Незакрытое: `docs/tasks-nochnoy-2026-09-24.md`.
+- Скиллы: `superpowers:test-driven-development`, advisor перед крупным шагом, свежий ревьюер после сборки; релиз — как v0.4.11.5 (заметки `bot/internal/release/notes.go`, мерж, прод-бот руками, `/broadcast`).

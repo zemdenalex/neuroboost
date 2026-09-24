@@ -11,7 +11,7 @@ import (
 // Denis, 17.09: Planning is hidden until free-slot placement exists.
 func TestHomeMenuHasNoPlanningButton(t *testing.T) {
 	for _, lang := range []i18n.Lang{i18n.RU, i18n.EN} {
-		for _, row := range keyboards.HomeInline(lang).InlineKeyboard {
+		for _, row := range keyboards.HomeInlineFor(lang, true).InlineKeyboard {
 			for _, b := range row {
 				if b.CallbackData != nil && *b.CallbackData == "planning" {
 					t.Errorf("%s: the home menu still offers Planning", lang)

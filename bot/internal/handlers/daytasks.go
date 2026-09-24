@@ -108,6 +108,14 @@ func (h *Handler) handleDayTasksCallback(chatID int64, messageID int, data strin
 	if !strings.HasPrefix(data, "dt_") {
 		return false
 	}
+	// Switched off (spec §11): an old button says so and offers the way back
+	// on. No screen, no write.
+	if !h.dayTasksOn(chatID) {
+		h.editOrSend(chatID, messageID, h.t(chatID,
+			"📌 Задачи дня выключены. Включить можно кнопкой ниже.",
+			"📌 Day tasks are off. The button below switches them on."), keyboards.DayTasksOff(h.lang(chatID)))
+		return true
+	}
 	us := h.store.GetOrCreate(chatID)
 	// Any other day-tasks press leaves the typed-date step (review I3).
 	if us.CurrentFlow == dayTaskDateFlow && !strings.HasPrefix(data, "dt_pdt_") {
@@ -201,7 +209,7 @@ func (h *Handler) showDay(chatID int64, messageID int, day time.Time) {
 	iso := day.Format("2006-01-02")
 	days, err := h.api.DayTasks(us.AuthToken, iso, iso)
 	if err != nil || len(days) == 0 {
-		h.editOrSend(chatID, messageID, h.dayReadError(chatID, err), keyboards.HomeInline(h.lang(chatID)))
+		h.editOrSend(chatID, messageID, h.dayReadError(chatID, err), h.home(chatID))
 		return
 	}
 	d := days[0]
@@ -322,7 +330,7 @@ func (h *Handler) showDayEdit(chatID int64, messageID int, day time.Time, note s
 	iso := day.Format("2006-01-02")
 	days, err := h.api.DayTasks(us.AuthToken, iso, iso)
 	if err != nil || len(days) == 0 {
-		h.editOrSend(chatID, messageID, h.dayReadError(chatID, err), keyboards.HomeInline(h.lang(chatID)))
+		h.editOrSend(chatID, messageID, h.dayReadError(chatID, err), h.home(chatID))
 		return
 	}
 	text := dayTitle(h.lang(chatID), day) + "\n\n" +
@@ -344,7 +352,7 @@ func (h *Handler) showDayAddList(chatID int64, messageID int, day time.Time) {
 	iso := day.Format("2006-01-02")
 	tasks, err := h.api.GetTasks(us.AuthToken, "")
 	if err != nil {
-		h.editOrSend(chatID, messageID, "❌ "+h.dayTasksErrorText(chatID, err), keyboards.HomeInline(h.lang(chatID)))
+		h.editOrSend(chatID, messageID, "❌ "+h.dayTasksErrorText(chatID, err), h.home(chatID))
 		return
 	}
 	in := map[string]bool{}
@@ -422,6 +430,15 @@ func (h *Handler) handleDayTaskDate(chatID int64, text string) {
 		h.handleQuickAdd(chatID, text)
 		return
 	}
+	// Review M1: switched off after «✏️ Дата» was pressed. Off wins, as for
+	// an old dt_ button: the same sentence, no write.
+	if !h.dayTasksOn(chatID) {
+		h.store.ClearFlow(chatID)
+		h.editOrSend(chatID, 0, h.t(chatID,
+			"📌 Задачи дня выключены. Включить можно кнопкой ниже.",
+			"📌 Day tasks are off. Switch them on with the button below."), keyboards.DayTasksOff(h.lang(chatID)))
+		return
+	}
 	if !d.HasDay {
 		h.sendText(chatID, h.t(chatID,
 			"Не понял дату. Напиши, например, «пятница» или «25.09».",
@@ -439,30 +456,63 @@ func (h *Handler) handleDayTaskDate(chatID int64, text string) {
 	h.pinTask(chatID, 0, day, taskID)
 }
 
-// handleDayTarget is ⚙️ → 🎯 Задач в день: N, 3…7 (spec §1, Denis 22.09). It
-// is written top level, not under bot.*, because the server reads it for the
-// level. A day already taken keeps the target it was taken with (Denis 23.09).
-func (h *Handler) handleDayTarget(chatID int64, messageID int, raw string) {
-	us := h.store.GetOrCreate(chatID)
-	current := 5
-	if raw != "" {
-		n, err := strconv.Atoi(raw)
+// handleDaySettings is ⚙️ → 📌 Задачи дня (spec 2026-09-22 §11): the switch,
+// the target N (3…7, spec §1) and whether days before the start are coloured.
+// action is "" (show), "n:<3…7>", "on", "off", "pb_on" or "pb_off". All three
+// are top-level settings: the server reads the target for the level, and the
+// web will read the rest. A day already taken keeps its target (Denis 23.09).
+func (h *Handler) handleDaySettings(chatID int64, messageID int, action string) {
+	key, val := "", any(nil)
+	switch {
+	case action == "":
+	case strings.HasPrefix(action, "n:"):
+		n, err := strconv.Atoi(strings.TrimPrefix(action, "n:"))
 		if err != nil || n < 3 || n > 7 {
 			return
 		}
-		if _, err := h.api.PatchSettings(us.AuthToken, map[string]any{"day_tasks_target": n}); err != nil {
+		key, val = "day_tasks_target", n
+	case action == "on" || action == "off":
+		key, val = "day_tasks_enabled", action == "on"
+	case action == "pb_on" || action == "pb_off":
+		key, val = "day_tasks_paint_before", action == "pb_on"
+	case strings.HasPrefix(action, "cell_"):
+		c := strings.TrimPrefix(action, "cell_")
+		if !cellKinds[c] {
+			return
+		}
+		if err := h.setCalendarCell(chatID, c); err != nil {
 			h.sendText(chatID, h.t(chatID, "❌ Не сохранилось: ", "❌ Not saved: ")+h.errorText(chatID, err))
 			return
 		}
-		// Review M5: tick what was written, not what a second read says.
-		current = n
-	} else if s, err := h.api.MySettings(us.AuthToken); err == nil {
-		if v, ok := s["day_tasks_target"].(float64); ok && v >= 3 && v <= 7 {
-			current = int(v)
+	default:
+		return
+	}
+	if key != "" {
+		if err := h.setDayPref(chatID, key, val); err != nil {
+			h.sendText(chatID, h.t(chatID, "❌ Не сохранилось: ", "❌ Not saved: ")+h.errorText(chatID, err))
+			return
 		}
 	}
+	p, ok := h.dayPrefsRead(chatID)
+	// Only when nothing was written: after a write the written value is
+	// known, and M5 (23.09) ticks it even if the re-read fails.
+	if !ok && key == "" {
+		h.editOrSend(chatID, messageID, h.t(chatID,
+			"📌 Не получилось прочитать настройки задач дня. Попробуй ещё раз через минуту.",
+			"📌 Could not read the day-tasks settings. Try again in a minute."), keyboards.DaySettingsRetry(h.lang(chatID)))
+		return
+	}
+	// Review M5 (23.09): tick what was written, not what a second read says.
+	switch key {
+	case "day_tasks_target":
+		p.Target = val.(int)
+	case "day_tasks_enabled":
+		p.On = val.(bool)
+	case "day_tasks_paint_before":
+		p.PaintBefore = val.(bool)
+	}
 	h.editOrSend(chatID, messageID, h.t(chatID,
-		"🎯 <b>Задач в день</b>\n\nСколько дел ты берёшь на день. Цвет дня считается от этого числа.\n\nНовое число действует со следующего взятого дня: уже взятый день остаётся со своим.",
-		"🎯 <b>Tasks per day</b>\n\nHow many things you take on for a day. The day's colour is counted against this number.\n\nA new number applies from the next day you take: a day already taken keeps its own."),
-		keyboards.DayTarget(h.lang(chatID), current))
+		"📌 <b>Задачи дня</b>\n\nКаждый день берёшь несколько дел, и день красится по сделанному. Цвет виден на экране задач дня, в календаре и на «Сегодня».\n\n🎯 Сколько дел в день. Новое число действует со следующего взятого дня.\n\n🎨 «Дни до начала»: красить ли дни до первого взятого. Не красить: они остаются как были.\n\n🗓 Что видно в клетке календаря: 🟩 цвет дня, ▅ занятость или оба. Число есть всегда.",
+		"📌 <b>Day tasks</b>\n\nEach day you take a few things, and the day is coloured by what got done. The colour shows on the day-tasks screen, in the calendar and on «Today».\n\n🎯 How many things a day. A new number applies from the next day you take.\n\n🎨 «Days before the start»: whether days before the first one taken get a colour. No colour: they stay as they were.\n\n🗓 What a calendar cell shows: 🟩 the day's colour, ▅ how full it is, or both. The date is always there."),
+		keyboards.DaySettings(h.lang(chatID), keyboards.DaySettingsView{On: p.On, PaintBefore: p.PaintBefore, Target: p.Target, Cell: h.calendarCell(chatID)}))
 }

@@ -132,14 +132,96 @@ func DayDateCancel(lang i18n.Lang, taskID string) tgbotapi.InlineKeyboardMarkup 
 		tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "❌ Отмена", "❌ Cancel"), "dt_pin_"+taskID)))
 }
 
-// DayTarget is ⚙️ → 🎯 Задач в день: 3…7, the current one ticked.
-func DayTarget(lang i18n.Lang, current int) tgbotapi.InlineKeyboardMarkup {
+// DaySettingsView is what ⚙️ → 📌 Задачи дня shows (spec 2026-09-22 §11).
+type DaySettingsView struct {
+	On, PaintBefore bool
+	Target          int
+	// Cell is what a month cell shows: "both" (or ""), "colour", "bar".
+	Cell string
+}
+
+// cellRow is the choice of what a month cell shows (spec §6), current ticked.
+func cellRow(current string) []tgbotapi.InlineKeyboardButton {
+	if current == "" {
+		current = "both"
+	}
+	var row []tgbotapi.InlineKeyboardButton
+	for _, c := range []struct{ key, label string }{{"both", "🟩 ▅"}, {"colour", "🟩"}, {"bar", "▅"}} {
+		row = append(row, tgbotapi.NewInlineKeyboardButtonData(tick(c.key == current)+c.label, "dts_cell_"+c.key))
+	}
+	return row
+}
+
+// targetRow is 3…7 with the current one ticked, under a callback prefix.
+func targetRow(current int, prefix string) []tgbotapi.InlineKeyboardButton {
 	var row []tgbotapi.InlineKeyboardButton
 	for n := 3; n <= 7; n++ {
 		s := strconv.Itoa(n)
-		row = append(row, tgbotapi.NewInlineKeyboardButtonData(tick(n == current)+s, "dtn_"+s))
+		row = append(row, tgbotapi.NewInlineKeyboardButtonData(tick(n == current)+s, prefix+s))
 	}
-	return tgbotapi.NewInlineKeyboardMarkup(row,
+	return row
+}
+
+// DaySettings is ⚙️ → 📌 Задачи дня: the switch, and when on, the target and
+// whether days before the start are coloured. Off leaves only the way back on.
+func DaySettings(lang i18n.Lang, v DaySettingsView) tgbotapi.InlineKeyboardMarkup {
+	var rows [][]tgbotapi.InlineKeyboardButton
+	if !v.On {
+		rows = append(rows, tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "❌ Выключены · включить", "❌ Off · switch on"), "dts_on")))
+	} else {
+		rows = append(rows, tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "✅ Включены", "✅ On"), "dts_off")))
+		rows = append(rows, targetRow(v.Target, "dtn_"))
+		paint := tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🎨 Дни до начала: не красить", "🎨 Days before the start: no colour"), "dts_pb_on")
+		if v.PaintBefore {
+			paint = tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🎨 Дни до начала: ⬛", "🎨 Days before the start: ⬛"), "dts_pb_off")
+		}
+		rows = append(rows, tgbotapi.NewInlineKeyboardRow(paint))
+		rows = append(rows, cellRow(v.Cell))
+	}
+	rows = append(rows, tgbotapi.NewInlineKeyboardRow(
+		HelpButton(lang, HelpDayTasks),
+		tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "« Настройки", "« Settings"), "settings_menu")))
+	return tgbotapi.NewInlineKeyboardMarkup(rows...)
+}
+
+// DayTargetPick is the 3…7 row alone, with its own prefix and a «next» button:
+// onboarding asks N right after «✅ Включить» (spec §11).
+func DayTargetPick(lang i18n.Lang, current int, prefix, nextData, nextLabel string) tgbotapi.InlineKeyboardMarkup {
+	return tgbotapi.NewInlineKeyboardMarkup(targetRow(current, prefix),
+		tgbotapi.NewInlineKeyboardRow(
+			HelpButton(lang, HelpDayTasks),
+			tgbotapi.NewInlineKeyboardButtonData(nextLabel, nextData)))
+}
+
+// DayTasksOff answers an old 📌 button while day tasks are switched off: the
+// way back on, and the menu (spec §11).
+func DayTasksOff(lang i18n.Lang) tgbotapi.InlineKeyboardMarkup {
+	return tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "✅ Включить", "✅ Switch on"), "dts_on")),
+		tgbotapi.NewInlineKeyboardRow(
+			HelpButton(lang, HelpDayTasks),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "« Меню", "« Menu"), "main_menu")))
+}
+
+// DayOnboard is the day-tasks question: in onboarding (ob_dt_on / ob_dt_off)
+// and once for people onboarded earlier (dtq_on / dtq_off), spec §11.
+func DayOnboard(lang i18n.Lang, onData, offData string) tgbotapi.InlineKeyboardMarkup {
+	return tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "✅ Включить", "✅ Switch on"), onData),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "Не сейчас", "Not now"), offData)),
+		tgbotapi.NewInlineKeyboardRow(HelpButton(lang, HelpDayTasks)))
+}
+
+// DaySettingsRetry answers ⚙️ → 📌 when the settings could not be read: try
+// again, or back to settings (review M2).
+func DaySettingsRetry(lang i18n.Lang) tgbotapi.InlineKeyboardMarkup {
+	return tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🔄 Ещё раз", "🔄 Try again"), "settings_dtn")),
 		tgbotapi.NewInlineKeyboardRow(
 			HelpButton(lang, HelpDayTasks),
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "« Настройки", "« Settings"), "settings_menu")))

@@ -44,6 +44,16 @@ func (h *Handler) handleToday(chatID int64, messageID int) {
 		h.timezone(chatID),
 	)
 
+	// Day tasks, when on: one line and a button (spec §11). A failed read
+	// leaves the line out; the rest of the screen does not depend on it.
+	dayTasks := h.dayTasksOn(chatID)
+	if dayTasks {
+		iso := h.userToday(chatID).Format("2006-01-02")
+		if days, err := h.api.DayTasks(us.AuthToken, iso, iso); err == nil && len(days) == 1 {
+			text += todayDayLine(h.lang(chatID), days[0]) + "\n\n"
+		}
+	}
+
 	// «шт» after the count, asked for by Настя on 21.09: *«визуально не сразу
 	// понятно, что значат эти цифры рядом»*. English needs no such word.
 	text += fmt.Sprintf(h.t(chatID, "📅 <b>События: %d шт</b>\n", "📅 <b>Events: %d</b>\n"), len(events))
@@ -78,7 +88,7 @@ func (h *Handler) handleToday(chatID int64, messageID int) {
 		}
 	}
 
-	h.editOrSend(chatID, messageID, text, keyboards.TodayScreen(h.lang(chatID)))
+	h.editOrSend(chatID, messageID, text, keyboards.TodayScreen(h.lang(chatID), dayTasks))
 }
 
 // dayBounds is the half-open UTC range covering one local calendar day.

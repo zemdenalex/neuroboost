@@ -152,7 +152,7 @@ func (h *Handler) handleScalePickFrom(chatID int64, messageID int, kind, origin 
 	prefix, backData, backLabel := "scl_", "settings_menu", h.t(chatID, "« Настройки", "« Settings")
 	switch origin {
 	case scaleFromOnboarding:
-		prefix, backData, backLabel = "ob_sc_", "ob_finish", h.t(chatID, "Дальше →", "Next →")
+		prefix, backData, backLabel = "ob_sc_", "ob_dt", h.t(chatID, "Дальше →", "Next →")
 	case scaleFromCalendar:
 		prefix, backData, backLabel = "cal_sc_", "cal_open", h.t(chatID, "« Календарь", "« Calendar")
 	}

@@ -403,3 +403,33 @@ func TestListShowsOnlyTasksStillVisible(t *testing.T) {
 		t.Errorf("a task from a calendar the user cannot see is listed: %+v", days[0].Items)
 	}
 }
+
+// Spec §11: the start is the first day the person took; days before it (or
+// every day, for someone who never took one) come back before_start.
+func TestBeforeStartIsTheFirstTakenDay(t *testing.T) {
+	_, _, user := dayDB(t)
+	today := Today(time.Now(), ny)
+	iso, yest := today.Format("2006-01-02"), today.AddDate(0, 0, -1).Format("2006-01-02")
+	list := func() []Day {
+		rec := callDay(t, ListHandler, user, http.MethodGet, "/api/day-tasks?from="+yest+"&to="+iso, nil, nil)
+		if rec.Code != http.StatusOK || !bytes.Contains(rec.Body.Bytes(), []byte(`"before_start"`)) {
+			t.Fatalf("list: %d %s", rec.Code, rec.Body.String())
+		}
+		var got struct {
+			Data []Day `json:"data"`
+		}
+		_ = json.Unmarshal(rec.Body.Bytes(), &got)
+		return got.Data
+	}
+	if d := list(); !d[0].BeforeStart || !d[1].BeforeStart {
+		t.Errorf("never took a day: want both before_start, got %+v", d)
+	}
+	id := newTask(t, user, map[string]any{"title": "дело", "priority": 1})
+	if rec := callDay(t, ConfirmHandler, user, http.MethodPost, "/api/day-tasks/confirm",
+		map[string]any{"day": iso, "task_ids": []string{id}}, nil); rec.Code != http.StatusOK {
+		t.Fatalf("confirm: %d %s", rec.Code, rec.Body.String())
+	}
+	if d := list(); !d[0].BeforeStart || d[1].BeforeStart {
+		t.Errorf("took today: want yesterday before, today not; got %+v", d)
+	}
+}
