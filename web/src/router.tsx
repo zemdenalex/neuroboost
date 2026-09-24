@@ -15,6 +15,7 @@ const Login = lazy(() => import('./pages/Login'))
 const Calendar = lazy(() => import('./pages/Calendar'))
 const Agenda = lazy(() => import('./pages/Agenda'))
 const Tasks = lazy(() => import('./pages/Tasks'))
+const DayTasks = lazy(() => import('./pages/DayTasks'))
 const Planning = lazy(() => import('./pages/Planning'))
 const Reflections = lazy(() => import('./pages/Reflections'))
 const Tools = lazy(() => import('./pages/Tools'))
@@ -179,6 +180,10 @@ export const router = createBrowserRouter([
           {
             path: '/tasks',
             element: <Tasks />,
+          },
+          {
+            path: '/day-tasks',
+            element: <DayTasks />,
           },
           {
             path: '/planning',

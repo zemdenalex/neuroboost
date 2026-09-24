@@ -1,7 +1,8 @@
 import { useRef, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
+import { useDayTasksEnabled } from '../../../hooks/useDayTasksEnabled'
 import { useTranslation } from 'react-i18next'
-import { LayoutGrid, Wrench, BookOpen, User } from 'lucide-react'
+import { LayoutGrid, Wrench, BookOpen, User, Pin } from 'lucide-react'
 import { useFeatureFlags } from '../../../hooks/useFeatureFlags'
 
 interface MoreMenuProps {
@@ -13,8 +14,10 @@ interface MoreMenuProps {
 export function MoreMenu({ open, onClose, anchorRef }: MoreMenuProps) {
   const { t } = useTranslation('common')
   const flags = useFeatureFlags()
+  const dayTasks = useDayTasksEnabled()
 
   const moreItems = [
+    { path: '/day-tasks', label: t('nav.dayTasks'), icon: Pin, enabled: dayTasks },
     { path: '/planning', label: t('nav.planning'), icon: LayoutGrid, enabled: true },
     { path: '/tools', label: t('nav.tools'), icon: Wrench, enabled: flags.tools },
     { path: '/reflections', label: t('nav.reflections'), icon: BookOpen, enabled: true },

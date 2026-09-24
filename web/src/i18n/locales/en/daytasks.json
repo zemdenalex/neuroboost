@@ -1,0 +1,38 @@
+{
+  "title": "Day tasks",
+  "intro": "Each day you take a few things, and the day is coloured by what got done: 🟩 all · 🟨 nearly · 🟧 over half · 🟥 a little · ⬛ nothing.",
+  "prev": "Previous day",
+  "next": "Next day",
+  "today": "Today",
+  "progress": "{{done}} of {{target}}",
+  "notTaken": "The day is not taken yet. Take this set?",
+  "notTakenPast": "This day was not taken.",
+  "take": "Take it",
+  "takeEmpty": "Take an empty day",
+  "proposalEmpty": "No open tasks. You can take an empty day and add tasks later.",
+  "edit": "Change",
+  "doneEditing": "Done",
+  "add": "Add a task",
+  "addPick": "Pick a task",
+  "remove": "Take out of the day",
+  "markDone": "Mark done",
+  "pastReadOnly": "A past day can only be viewed.",
+  "loading": "Loading…",
+  "off": "Day tasks are off.",
+  "turnOn": "Switch on",
+  "errors": {
+    "tooLate": "A task can leave today only until 12:00. A past day does not change.",
+    "notOpen": "This task is already closed.",
+    "notFound": "Task not found. Maybe it was deleted.",
+    "generic": "That did not work. Try again."
+  },
+  "settings": {
+    "title": "Day tasks",
+    "enabled": "Day tasks on",
+    "enabledHint": "Off: they leave the menu and the calendar; what was taken is kept.",
+    "target": "Things a day",
+    "targetHint": "A new number applies from the next day you take.",
+    "paintBefore": "Colour days before the first one taken",
+    "paintBeforeHint": "Off: those days stay uncoloured. On: they are ⬛."
+  }
+}

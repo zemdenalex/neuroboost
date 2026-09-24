@@ -1,4 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useDayTasksEnabled } from '../../../hooks/useDayTasksEnabled'
 import { useAuthContext } from '../../../contexts/AuthContext'
 import { HelpButton } from '../../Help/HelpButton'
 import {
@@ -12,12 +13,14 @@ import {
   Shield,
   Home,
   User,
+  Pin,
 } from 'lucide-react'
 
 const navItems = [
   { path: '/home', label: 'Home', icon: Home },
   { path: '/calendar', label: 'Calendar', icon: Calendar },
   { path: '/tasks', label: 'Tasks', icon: CheckSquare },
+  { path: '/day-tasks', label: 'Day tasks', icon: Pin },
   { path: '/planning', label: 'Planning', icon: LayoutGrid },
   { path: '/reflections', label: 'Reflections', icon: BookOpen },
   { path: '/tools', label: 'Tools', icon: Wrench },
@@ -29,6 +32,7 @@ export default function VerticalSidebar() {
   const location = useLocation()
   const navigate = useNavigate()
   const { user, logout } = useAuthContext()
+  const dayTasks = useDayTasksEnabled()
 
   const handleLogout = async () => {
     await logout()
@@ -54,7 +58,7 @@ export default function VerticalSidebar() {
       {/* Navigation */}
       <nav className="flex-1 p-3 overflow-y-auto">
         <div className="flex flex-col gap-1">
-          {navItems.map(({ path, label, icon: Icon }) => {
+          {navItems.filter((i) => dayTasks || i.path !== '/day-tasks').map(({ path, label, icon: Icon }) => {
             const isActive = location.pathname === path
             return (
               <Link

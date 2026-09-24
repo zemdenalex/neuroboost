@@ -9,6 +9,7 @@ import { useWeekGridDrag } from './useWeekGridDrag';
 import { useKeyboardNav } from './useKeyboardNav';
 import { initialMobileDayOffset } from '../../../lib/calendar/mobileDayOffset';
 import { isHorizontalSwipe } from '../../../lib/calendar/swipe';
+import { useDayColours, dayKey } from '../../../lib/dayTasks/loadDayColours';
 
 export function WeekGrid({
   events,
@@ -79,6 +80,11 @@ export function WeekGrid({
   const days = useMemo(
     () => generateDays(adjustedStart, visibleDays, timezone),
     [adjustedStart, visibleDays, timezone]
+  );
+  // Day tasks: one square per day header, one request for the visible days.
+  const dayColours = useDayColours(
+    dayKey(days[0]?.dayUtc0 ?? adjustedStart),
+    dayKey(days[days.length - 1]?.dayUtc0 ?? adjustedStart)
   );
 
   // Process events for rendering
@@ -296,6 +302,7 @@ export function WeekGrid({
             <DayColumn
               key={day.i}
               day={day}
+              dayColour={dayColours[dayKey(day.dayUtc0)]}
               events={timedPerDay.get(day.dayUtc0) || []}
               selectedId={selectedId}
               currentDayUtc0={nowInfo.dayUtc0}

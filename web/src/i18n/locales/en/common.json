@@ -3,6 +3,7 @@
   "nav.home": "Home",
   "nav.calendar": "Calendar",
   "nav.tasks": "Tasks",
+  "nav.dayTasks": "Day tasks",
   "nav.planning": "Planning",
   "nav.reflections": "Reflections",
   "nav.tools": "Tools",

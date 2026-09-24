@@ -3,6 +3,7 @@
   "nav.home": "Главная",
   "nav.calendar": "Календарь",
   "nav.tasks": "Задачи",
+  "nav.dayTasks": "Задачи дня",
   "nav.planning": "Планирование",
   "nav.reflections": "Рефлексия",
   "nav.tools": "Инструменты",

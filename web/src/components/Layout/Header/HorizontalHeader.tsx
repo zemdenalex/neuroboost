@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useDayTasksEnabled } from '../../../hooks/useDayTasksEnabled'
 import { useTranslation } from 'react-i18next'
 import { useAuthContext } from '../../../contexts/AuthContext'
 import { useFeatureFlags } from '../../../hooks/useFeatureFlags'
@@ -16,6 +17,7 @@ import {
   Shield,
   ChevronDown,
   Home,
+  Pin,
 } from 'lucide-react'
 
 export default function HorizontalHeader() {
@@ -24,6 +26,7 @@ export default function HorizontalHeader() {
   const navigate = useNavigate()
   const { user, logout } = useAuthContext()
   const flags = useFeatureFlags()
+  const dayTasks = useDayTasksEnabled()
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
@@ -31,6 +34,7 @@ export default function HorizontalHeader() {
     { path: '/home', label: t('nav.home'), icon: Home, enabled: true },
     { path: '/calendar', label: t('nav.calendar'), icon: Calendar, enabled: true },
     { path: '/tasks', label: t('nav.tasks'), icon: CheckSquare, enabled: true },
+    { path: '/day-tasks', label: t('nav.dayTasks'), icon: Pin, enabled: dayTasks },
     { path: '/planning', label: t('nav.planning'), icon: LayoutGrid, enabled: true },
     { path: '/reflections', label: t('nav.reflections'), icon: BookOpen, enabled: true },
     { path: '/tools', label: t('nav.tools'), icon: Wrench, enabled: flags.tools },

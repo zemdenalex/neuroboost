@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
+import { useDayTasksEnabled } from '../../../hooks/useDayTasksEnabled'
 import { useTranslation } from 'react-i18next'
 import {
   Plus,
@@ -11,12 +12,14 @@ import {
   Wrench,
   Settings,
   User,
+  Pin,
 } from 'lucide-react'
 
 const SWIPE_DISMISS_THRESHOLD = 80
 
 export function FabBottomSheet() {
   const { t } = useTranslation('common')
+  const dayTasks = useDayTasksEnabled()
   const [isOpen, setIsOpen] = useState(false)
   const navigate = useNavigate()
   const location = useLocation()
@@ -30,6 +33,7 @@ export function FabBottomSheet() {
     { path: '/home', label: t('nav.home'), icon: Home },
     { path: '/calendar', label: t('nav.calendar'), icon: Calendar },
     { path: '/tasks', label: t('nav.tasks'), icon: CheckSquare },
+    ...(dayTasks ? [{ path: '/day-tasks', label: t('nav.dayTasks'), icon: Pin }] : []),
     { path: '/planning', label: t('nav.planning'), icon: LayoutGrid },
     { path: '/reflections', label: t('nav.reflections'), icon: BookOpen },
     { path: '/tools', label: t('nav.tools'), icon: Wrench },

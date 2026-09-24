@@ -12,6 +12,7 @@ import { MobileNavSection } from './sections/MobileNavSection'
 import { UIScaleSection } from './sections/UIScaleSection'
 import { WorkHoursSection } from './sections/WorkHoursSection'
 import { FeatureTogglesSection } from './sections/FeatureTogglesSection'
+import { DayTasksSection } from './sections/DayTasksSection'
 import { RecurringScopeSection } from './sections/RecurringScopeSection'
 import { DataSection } from './sections/DataSection'
 import { RemindersSection } from './sections/RemindersSection'
@@ -138,6 +139,8 @@ export default function Settings() {
         <CalendarsSection />
 
         <WorkHoursSection autoSave={autoSaveSettings} />
+
+        <DayTasksSection autoSave={autoSaveSettings} />
 
         <RegionalSection autoSaveProfile={autoSaveProfile} />
 

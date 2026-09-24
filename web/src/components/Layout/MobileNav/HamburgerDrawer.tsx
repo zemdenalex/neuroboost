@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Link, useLocation } from 'react-router-dom'
+import { useDayTasksEnabled } from '../../../hooks/useDayTasksEnabled'
 import { useTranslation } from 'react-i18next'
 import {
   Home,
@@ -12,6 +13,7 @@ import {
   User,
   Menu,
   X,
+  Pin,
 } from 'lucide-react'
 import { useFeatureFlags } from '../../../hooks/useFeatureFlags'
 
@@ -23,11 +25,13 @@ export function HamburgerDrawer() {
   const [isOpen, setIsOpen] = useState(false)
   const location = useLocation()
   const flags = useFeatureFlags()
+  const dayTasks = useDayTasksEnabled()
 
   const navItems = [
     { path: '/home', label: t('nav.home'), icon: Home, enabled: true },
     { path: '/calendar', label: t('nav.calendar'), icon: Calendar, enabled: true },
     { path: '/tasks', label: t('nav.tasks'), icon: CheckSquare, enabled: true },
+    { path: '/day-tasks', label: t('nav.dayTasks'), icon: Pin, enabled: dayTasks },
     { path: '/planning', label: t('nav.planning'), icon: LayoutGrid, enabled: true },
     { path: '/reflections', label: t('nav.reflections'), icon: BookOpen, enabled: true },
     { path: '/tools', label: t('nav.tools'), icon: Wrench, enabled: flags.tools },

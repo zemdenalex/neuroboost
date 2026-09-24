@@ -11,6 +11,8 @@ import { dateLocale } from '../../../utils/date';
 
 interface DayColumnProps {
   day: DayInfo;
+  /** The day-tasks square for this day, if it has one. */
+  dayColour?: string;
   events: ProcessedEvent[];
   selectedId: string | null;
   currentDayUtc0: number | null;
@@ -42,6 +44,7 @@ interface DayColumnProps {
 
 export const DayColumn = memo(function DayColumn({
   day,
+  dayColour,
   events,
   selectedId,
   currentDayUtc0,
@@ -194,6 +197,7 @@ export const DayColumn = memo(function DayColumn({
         style={{ top: ALL_DAY_HEIGHT, zIndex: 25, height: DAY_HEADER_HEIGHT }}
       >
         <div className={`text-xs px-2 py-1 font-medium ${isToday ? 'text-blue-400' : 'text-zinc-300'}`}>
+          {dayColour && <span className="mr-1" data-testid="day-colour">{dayColour}</span>}
           {dayLabel}
         </div>
       </div>
