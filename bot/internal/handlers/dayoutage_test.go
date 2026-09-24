@@ -75,3 +75,23 @@ func TestTheDayTasksHelpMatchesD3(t *testing.T) {
 		}
 	}
 }
+
+// Final review M1: «✏️ Дата» was pressed, day tasks were then switched off,
+// and a date typed afterwards still pinned the task. Off wins; the flow ends.
+func TestATypedDateWhileDayTasksAreOffPinsNothing(t *testing.T) {
+	a := &dayAPI{settings: map[string]any{"day_tasks_enabled": false}}
+	h, fake, chat := dayHandler(t, a)
+	us := h.store.GetOrCreate(chat)
+	us.CurrentFlow, us.FlowStep = dayTaskDateFlow, "date"
+	us.FlowData = map[string]any{"task": dtOne}
+	h.handleDayTaskDate(chat, "пятница")
+	if a.called("POST /api/day-tasks") {
+		t.Fatalf("pinned while off: %v", a.calls)
+	}
+	if got := fake.last(t); !strings.Contains(got.Text, "выключены") {
+		t.Errorf("no «off» answer: %q", got.Text)
+	}
+	if us.CurrentFlow != "" {
+		t.Errorf("flow left open: %q", us.CurrentFlow)
+	}
+}

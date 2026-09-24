@@ -430,6 +430,15 @@ func (h *Handler) handleDayTaskDate(chatID int64, text string) {
 		h.handleQuickAdd(chatID, text)
 		return
 	}
+	// Review M1: switched off after «✏️ Дата» was pressed. Off wins, as for
+	// an old dt_ button: the same sentence, no write.
+	if !h.dayTasksOn(chatID) {
+		h.store.ClearFlow(chatID)
+		h.editOrSend(chatID, 0, h.t(chatID,
+			"📌 Задачи дня выключены. Включить можно кнопкой ниже.",
+			"📌 Day tasks are off. Switch them on with the button below."), keyboards.DayTasksOff(h.lang(chatID)))
+		return
+	}
 	if !d.HasDay {
 		h.sendText(chatID, h.t(chatID,
 			"Не понял дату. Напиши, например, «пятница» или «25.09».",
