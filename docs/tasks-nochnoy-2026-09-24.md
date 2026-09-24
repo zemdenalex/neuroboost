@@ -20,10 +20,11 @@
   - `9160597` страница `/day-tasks`, секция в ⚙️, пункт в навигации (скрыт при выключенных), квадраты в шапке недели
   - e2e `day-tasks.spec.ts`: красный на staging до push, зелёный локально; `settings-race` поправлен под очередь сохранений
 - [ ] push, CI (e2e на staging) зелёный
-- [ ] чеклист прохода веба для Дениса
+- [x] чеклист прохода веба для Дениса: `docs/proverka-veba-2026-09-24-zadachi-dnya.md`, открыт в Obsidian
 
 ## Если веб упёрся
-- [ ] разведка Telegram mini-app / Android — спека без кода
+- [x] разведка Telegram mini-app / Android — `docs/superpowers/specs/2026-09-24-mini-app-and-android-razvedka.md`, без кода. Рекомендация: Mini App раньше Android; для Android сначала PWA
+- [ ] ⚠ на /handoff: внешние факты (схема initData) перенести в `100 - Research`
 
 ## Решения D3, которые я принял за тебя (из ledger'а, полностью)
 
