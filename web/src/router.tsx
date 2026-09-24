@@ -5,6 +5,7 @@ import { safeNextPath } from './lib/auth/nextPath'
 import { Layout } from './components/Layout'
 import { QuickAddModal } from './components/QuickAdd/QuickAddModal'
 import { useGlobalQuickAdd } from './hooks/useGlobalQuickAdd'
+import { useFeatureFlags } from './hooks/useFeatureFlags'
 import { FeedbackButton } from './components/FeedbackButton'
 import { PomodoroWidget } from './components/Pomodoro/PomodoroWidget'
 import { PomodoroToasts } from './components/Pomodoro/PomodoroToasts'
@@ -97,6 +98,15 @@ function AppLayout() {
       <QuickAddModal open={quickAdd.open} onClose={quickAdd.close} />
     </>
   )
+}
+
+/**
+ * Tools switched off in Settings are closed by URL too, not only hidden from
+ * the menus (audit 24.09, T0c).
+ */
+function ToolsGate({ children }: { children: React.ReactNode }) {
+  const flags = useFeatureFlags()
+  return flags.tools ? <>{children}</> : <Navigate to="/home" replace />
 }
 
 export const router = createBrowserRouter([
@@ -195,23 +205,23 @@ export const router = createBrowserRouter([
           },
           {
             path: '/tools',
-            element: <Tools />,
+            element: <ToolsGate><Tools /></ToolsGate>,
           },
           {
             path: '/tools/pomodoro',
-            element: <Pomodoro />,
+            element: <ToolsGate><Pomodoro /></ToolsGate>,
           },
           {
             path: '/tools/kanban',
-            element: <Kanban />,
+            element: <ToolsGate><Kanban /></ToolsGate>,
           },
           {
             path: '/tools/eisenhower',
-            element: <Eisenhower />,
+            element: <ToolsGate><Eisenhower /></ToolsGate>,
           },
           {
             path: '/tools/time-blocking',
-            element: <TimeBlocking />,
+            element: <ToolsGate><TimeBlocking /></ToolsGate>,
           },
           {
             path: '/settings',

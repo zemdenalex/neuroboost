@@ -1,5 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useDayTasksEnabled } from '../../../hooks/useDayTasksEnabled'
+import { useFeatureFlags } from '../../../hooks/useFeatureFlags'
 import { useAuthContext } from '../../../contexts/AuthContext'
 import { HelpButton } from '../../Help/HelpButton'
 import {
@@ -33,6 +34,8 @@ export default function VerticalSidebar() {
   const navigate = useNavigate()
   const { user, logout } = useAuthContext()
   const dayTasks = useDayTasksEnabled()
+  // Tools can be switched off in Settings; every menu honours it (audit 24.09 T0c).
+  const flags = useFeatureFlags()
 
   const handleLogout = async () => {
     await logout()
@@ -58,7 +61,7 @@ export default function VerticalSidebar() {
       {/* Navigation */}
       <nav className="flex-1 p-3 overflow-y-auto">
         <div className="flex flex-col gap-1">
-          {navItems.filter((i) => dayTasks || i.path !== '/day-tasks').map(({ path, label, icon: Icon }) => {
+          {navItems.filter((i) => (dayTasks || i.path !== '/day-tasks') && (flags.tools || i.path !== '/tools')).map(({ path, label, icon: Icon }) => {
             const isActive = location.pathname === path
             return (
               <Link
