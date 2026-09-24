@@ -60,6 +60,11 @@ type UserState struct {
 	PriorityStyle      string
 	PriorityStyleKnown bool
 
+	// DayTasksOn caches settings.day_tasks_enabled (spec 2026-09-22 §11): the
+	// home keyboard draws it on every screen, so it is not read each time.
+	DayTasksOn    bool
+	DayTasksKnown bool
+
 	// Onboarded caches bot.onboarded once it is known to be true. False means
 	// "not known yet", never "known false" — that one is always re-read, so a
 	// user who finishes onboarding on the web or another device is not asked

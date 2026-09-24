@@ -89,7 +89,17 @@ func MenuScreen(text string) (string, bool) {
 // The rule this encodes, held by TestEveryReplyEntranceHasAnInlineWayIn: every
 // reply-keyboard button has an inline button leading to the same screen. 🏠 Меню
 // is the exception because it IS this screen.
-func HomeInline(lang i18n.Lang) tgbotapi.InlineKeyboardMarkup {
+// HomeInlineFor is the home keyboard with or without «📌 Задачи дня»: switched
+// off, day tasks leave no button behind (spec 2026-09-22 §11).
+func HomeInlineFor(lang i18n.Lang, dayTasks bool) tgbotapi.InlineKeyboardMarkup {
+	last := tgbotapi.NewInlineKeyboardRow(
+		tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "⚙️ Настройки", "⚙️ Settings"), "settings_menu"))
+	if dayTasks {
+		last = tgbotapi.NewInlineKeyboardRow(
+			// «Задачи дня» (spec 2026-09-22 §8): «today» resolves in the user's zone.
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "📌 Задачи дня", "📌 Day tasks"), "dt_d_today"),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "⚙️ Настройки", "⚙️ Settings"), "settings_menu"))
+	}
 	return tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🗓 Календарь", "🗓 Calendar"), "cal_open"),
@@ -107,11 +117,7 @@ func HomeInline(lang i18n.Lang) tgbotapi.InlineKeyboardMarkup {
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🎯 Сегодня", "🎯 Today"), "today_focus"),
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "📊 Статистика", "📊 Stats"), "stats"),
 		),
-		tgbotapi.NewInlineKeyboardRow(
-			// «Задачи дня» (spec 2026-09-22 §8): «today» resolves in the user's zone.
-			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "📌 Задачи дня", "📌 Day tasks"), "dt_d_today"),
-			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "⚙️ Настройки", "⚙️ Settings"), "settings_menu"),
-		),
+		last,
 	)
 }
 

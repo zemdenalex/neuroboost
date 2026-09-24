@@ -144,7 +144,7 @@ func (h *Handler) handleEventPicker(chatID int64, messageID int, page int) {
 		h.editOrSend(chatID, messageID, h.t(chatID,
 			"⚠️ Не дозвонился до сервера. Попробуй через минуту.",
 			"⚠️ Could not reach the server. Try again in a minute."),
-			keyboards.HomeInline(h.lang(chatID)))
+			h.home(chatID))
 		return
 	}
 	if len(events) == 0 {

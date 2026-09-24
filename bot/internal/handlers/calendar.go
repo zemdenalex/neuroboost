@@ -181,7 +181,7 @@ func (h *Handler) handleCalendarDay(chatID int64, messageID int, date string) {
 	loc := h.location(chatID)
 	day, err := time.ParseInLocation("2006-01-02", date, loc)
 	if err != nil {
-		h.editOrSend(chatID, messageID, h.t(chatID, "Не понял дату.", "Didn't get the date."), keyboards.HomeInline(h.lang(chatID)))
+		h.editOrSend(chatID, messageID, h.t(chatID, "Не понял дату.", "Didn't get the date."), h.home(chatID))
 		return
 	}
 
@@ -190,7 +190,7 @@ func (h *Handler) handleCalendarDay(chatID int64, messageID int, date string) {
 	if !okPrev || !okNext {
 		// Unparseable date from callback_data: say so rather than render a day
 		// that is not the one asked for.
-		h.editOrSend(chatID, messageID, h.t(chatID, "Не понял дату.", "Didn't get the date."), keyboards.HomeInline(h.lang(chatID)))
+		h.editOrSend(chatID, messageID, h.t(chatID, "Не понял дату.", "Didn't get the date."), h.home(chatID))
 		return
 	}
 
@@ -204,7 +204,7 @@ func (h *Handler) handleCalendarDay(chatID int64, messageID int, date string) {
 	us := h.store.GetOrCreate(chatID)
 	events, err := h.api.GetEvents(us.AuthToken, from, to)
 	if err != nil {
-		h.editOrSend(chatID, messageID, h.t(chatID, "❌ Не удалось загрузить день: ", "❌ Could not load the day: ")+h.errorText(chatID, err), keyboards.HomeInline(h.lang(chatID)))
+		h.editOrSend(chatID, messageID, h.t(chatID, "❌ Не удалось загрузить день: ", "❌ Could not load the day: ")+h.errorText(chatID, err), h.home(chatID))
 		return
 	}
 

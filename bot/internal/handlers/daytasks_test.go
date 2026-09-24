@@ -31,8 +31,11 @@ type dayAPI struct {
 	// proposalDown makes /proposal answer 500; noDay makes /day-tasks answer
 	// an empty list; meDownAfterWrite fails every settings read after a PATCH.
 	proposalDown, noDay, meDownAfterWrite, meWritten bool
-	calls                                            []string
-	bodies                                           map[string]string
+	// settings adds top-level keys to /api/auth/me; meDown fails every read of it.
+	settings map[string]any
+	meDown   bool
+	calls    []string
+	bodies   map[string]string
 }
 
 func (a *dayAPI) handler(t *testing.T) http.HandlerFunc {
@@ -56,7 +59,7 @@ func (a *dayAPI) handler(t *testing.T) http.HandlerFunc {
 			return
 		}
 		down := (r.URL.Path == "/api/day-tasks/proposal" && a.proposalDown) ||
-			(r.URL.Path == "/api/auth/me" && r.Method == http.MethodGet && a.meDownAfterWrite && a.meWritten)
+			(r.URL.Path == "/api/auth/me" && r.Method == http.MethodGet && (a.meDown || (a.meDownAfterWrite && a.meWritten)))
 		if r.URL.Path == "/api/auth/me" && r.Method != http.MethodGet {
 			a.meWritten = true
 		}
@@ -69,8 +72,12 @@ func (a *dayAPI) handler(t *testing.T) http.HandlerFunc {
 		case r.URL.Path == "/api/day-tasks" && r.Method == http.MethodGet && a.noDay:
 			_ = json.NewEncoder(w).Encode(map[string]any{"data": []any{}})
 		case r.URL.Path == "/api/auth/me":
+			settings := map[string]any{"bot": map[string]any{"onboarded": true, "lang": "ru"}}
+			for k, v := range a.settings {
+				settings[k] = v
+			}
 			_ = json.NewEncoder(w).Encode(map[string]any{"data": map[string]any{"timezone": "Europe/Moscow",
-				"settings": map[string]any{"bot": map[string]any{"onboarded": true, "lang": "ru"}}}})
+				"settings": settings}})
 		case r.URL.Path == "/api/day-tasks" && r.Method == http.MethodGet:
 			_ = json.NewEncoder(w).Encode(map[string]any{"data": []any{day}})
 		case r.URL.Path == "/api/day-tasks/proposal":

@@ -216,7 +216,7 @@ func (h *Handler) HandleMessage(msg *tgbotapi.Message) {
 			}
 			h.handleStart(chatID)
 		default:
-			h.sendHTMLWithKeyboard(chatID, h.t(chatID, "Неизвестная команда.", "Unknown command."), keyboards.HomeInline(h.lang(chatID)))
+			h.sendHTMLWithKeyboard(chatID, h.t(chatID, "Неизвестная команда.", "Unknown command."), h.home(chatID))
 		}
 		return
 	}
@@ -227,7 +227,7 @@ func (h *Handler) HandleMessage(msg *tgbotapi.Message) {
 		return
 	}
 
-	h.sendHTMLWithKeyboard(chatID, h.t(chatID, "Не понял. Вот меню:", "Didn't get that. Here's the menu:"), keyboards.HomeInline(h.lang(chatID)))
+	h.sendHTMLWithKeyboard(chatID, h.t(chatID, "Не понял. Вот меню:", "Didn't get that. Here's the menu:"), h.home(chatID))
 }
 
 // openScreen renders the screen a reply-keyboard button names.
@@ -251,7 +251,7 @@ func (h *Handler) openScreen(chatID int64, screen string) {
 	case keyboards.ScreenSettings:
 		h.handleSettings(chatID, 0)
 	default:
-		h.sendHTMLWithKeyboard(chatID, h.t(chatID, "Не понял. Вот меню:", "Didn't get that. Here's the menu:"), keyboards.HomeInline(h.lang(chatID)))
+		h.sendHTMLWithKeyboard(chatID, h.t(chatID, "Не понял. Вот меню:", "Didn't get that. Here's the menu:"), h.home(chatID))
 	}
 }
 

@@ -19,7 +19,7 @@ func (h *Handler) handleTasks(chatID int64, messageID int) {
 	tasks, err := h.api.GetTasks(us.AuthToken, "")
 	if err != nil {
 		h.editOrSend(chatID, messageID,
-			h.t(chatID, "⚠️ Не дозвонился до сервера. Попробуй через минуту.", "⚠️ Could not reach the server. Try again in a minute."), keyboards.HomeInline(h.lang(chatID)))
+			h.t(chatID, "⚠️ Не дозвонился до сервера. Попробуй через минуту.", "⚠️ Could not reach the server. Try again in a minute."), h.home(chatID))
 		return
 	}
 	tasks = openTasks(tasks)
@@ -403,7 +403,7 @@ func (h *Handler) handleEditTaskTags(chatID int64, text string) {
 	taskID, _ := us.FlowData["taskID"].(string)
 	h.store.ClearFlow(chatID)
 	if taskID == "" {
-		h.sendHTMLWithKeyboard(chatID, h.t(chatID, "Не помню, к какой задаче это относится.", "I've lost track of which task this is."), keyboards.HomeInline(h.lang(chatID)))
+		h.sendHTMLWithKeyboard(chatID, h.t(chatID, "Не помню, к какой задаче это относится.", "I've lost track of which task this is."), h.home(chatID))
 		return
 	}
 

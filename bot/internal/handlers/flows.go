@@ -69,7 +69,7 @@ func (h *Handler) handleFlowInput(chatID int64, text string) {
 		h.handleEditTaskTags(chatID, text)
 	default:
 		h.store.ClearFlow(chatID)
-		h.sendHTMLWithKeyboard(chatID, h.t(chatID, "Что-то пошло не так.", "Something went wrong."), keyboards.HomeInline(h.lang(chatID)))
+		h.sendHTMLWithKeyboard(chatID, h.t(chatID, "Что-то пошло не так.", "Something went wrong."), h.home(chatID))
 	}
 }
 
@@ -146,7 +146,7 @@ func (h *Handler) handleNewTaskFlow(chatID int64, text string) {
 			return
 		}
 		h.store.ClearFlow(chatID)
-		h.sendHTMLWithKeyboard(chatID, h.t(chatID, "Что-то пошло не так.", "Something went wrong."), keyboards.HomeInline(h.lang(chatID)))
+		h.sendHTMLWithKeyboard(chatID, h.t(chatID, "Что-то пошло не так.", "Something went wrong."), h.home(chatID))
 	}
 }
 
@@ -173,7 +173,7 @@ func (h *Handler) handleTaskCardSave(chatID int64, messageID int) {
 	title, _ := us.FlowData["title"].(string)
 	if title == "" {
 		h.store.ClearFlow(chatID)
-		h.sendHTMLWithKeyboard(chatID, h.t(chatID, "Не помню название.", "I've lost the title."), keyboards.HomeInline(h.lang(chatID)))
+		h.sendHTMLWithKeyboard(chatID, h.t(chatID, "Не помню название.", "I've lost the title."), h.home(chatID))
 		return
 	}
 
@@ -220,11 +220,11 @@ func (h *Handler) handleTaskCardSave(chatID int64, messageID int) {
 	task, err := h.api.CreateTask(us.AuthToken, req)
 	h.store.ClearFlow(chatID)
 	if err != nil {
-		h.editOrSend(chatID, messageID, h.t(chatID, "❌ Не удалось создать: ", "❌ Could not create: ")+h.errorText(chatID, err), keyboards.HomeInline(h.lang(chatID)))
+		h.editOrSend(chatID, messageID, h.t(chatID, "❌ Не удалось создать: ", "❌ Could not create: ")+h.errorText(chatID, err), h.home(chatID))
 		return
 	}
 
 	h.editOrSend(chatID, messageID,
 		fmt.Sprintf(h.t(chatID, "✅ <b>Задача создана</b>\n%s", "✅ <b>Task created</b>\n%s"), format.Escape(task.Title)),
-		keyboards.HomeInline(h.lang(chatID)))
+		h.home(chatID))
 }

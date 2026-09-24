@@ -166,7 +166,7 @@ func TestTargetOffersThreeToSevenAndTicksTheCurrent(t *testing.T) {
 
 // The ways in (spec §8): the menu, a task's card, and the target in Settings.
 func TestDayTasksCanBeReached(t *testing.T) {
-	if !has(HomeInline(i18n.RU), "dt_d_today") {
+	if !has(HomeInlineFor(i18n.RU, true), "dt_d_today") {
 		t.Errorf("the menu has no 📌 Задачи дня")
 	}
 	if !has(TaskActions(i18n.RU, dtID, false, ""), "dt_pin_"+dtID) {

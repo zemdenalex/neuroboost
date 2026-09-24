@@ -201,7 +201,7 @@ func (h *Handler) showDay(chatID int64, messageID int, day time.Time) {
 	iso := day.Format("2006-01-02")
 	days, err := h.api.DayTasks(us.AuthToken, iso, iso)
 	if err != nil || len(days) == 0 {
-		h.editOrSend(chatID, messageID, h.dayReadError(chatID, err), keyboards.HomeInline(h.lang(chatID)))
+		h.editOrSend(chatID, messageID, h.dayReadError(chatID, err), h.home(chatID))
 		return
 	}
 	d := days[0]
@@ -322,7 +322,7 @@ func (h *Handler) showDayEdit(chatID int64, messageID int, day time.Time, note s
 	iso := day.Format("2006-01-02")
 	days, err := h.api.DayTasks(us.AuthToken, iso, iso)
 	if err != nil || len(days) == 0 {
-		h.editOrSend(chatID, messageID, h.dayReadError(chatID, err), keyboards.HomeInline(h.lang(chatID)))
+		h.editOrSend(chatID, messageID, h.dayReadError(chatID, err), h.home(chatID))
 		return
 	}
 	text := dayTitle(h.lang(chatID), day) + "\n\n" +
@@ -344,7 +344,7 @@ func (h *Handler) showDayAddList(chatID int64, messageID int, day time.Time) {
 	iso := day.Format("2006-01-02")
 	tasks, err := h.api.GetTasks(us.AuthToken, "")
 	if err != nil {
-		h.editOrSend(chatID, messageID, "❌ "+h.dayTasksErrorText(chatID, err), keyboards.HomeInline(h.lang(chatID)))
+		h.editOrSend(chatID, messageID, "❌ "+h.dayTasksErrorText(chatID, err), h.home(chatID))
 		return
 	}
 	in := map[string]bool{}

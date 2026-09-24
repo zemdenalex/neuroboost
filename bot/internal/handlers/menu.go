@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/zemdenalex/neuroboost-bot/internal/format"
-	"github.com/zemdenalex/neuroboost-bot/internal/keyboards"
 )
 
 // handleMenu draws the home screen — state first, buttons under it.
@@ -44,5 +43,5 @@ func (h *Handler) handleMenu(chatID int64, messageID int) {
 		}
 	}
 
-	h.editOrSend(chatID, messageID, text, keyboards.HomeInline(h.lang(chatID)))
+	h.editOrSend(chatID, messageID, text, h.home(chatID))
 }

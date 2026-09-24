@@ -30,7 +30,7 @@ var screensWithoutHelp = []string{
 	"CalendarPicker", "ColourPicker", "CreateMenu", "DatePicker", "DayActions",
 	"DraftBack", "DraftCard", "DraftCardInList", "DraftDay", "DraftEditMenu",
 	"EventCard", "EventDeleteConfirm", "EventEditor", "EventPicker", "FeedbackKinds",
-	"FreqPicker", "GuideMore", "HelpBack", "HomeInline", "Linking",
+	"FreqPicker", "GuideMore", "HelpBack", "HomeInlineFor", "Linking",
 	"ListCard", "ListConfirm", "ListPick", "ManyDates", "MonthGrid",
 	"None", "OnboardNext", "QuickAddKind", "ReminderPicker", "RepeatEndPicker",
 	"RestartNewEvent", "SettingsMenu", "SpanFix", "StatsNav", "StatsScale",
