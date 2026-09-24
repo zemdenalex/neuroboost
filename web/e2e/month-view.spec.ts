@@ -101,6 +101,8 @@ test.describe('dragging in the month', () => {
     const fromDay = localDay(start.getTime(), timeZone)
     const toDay = localDay(Date.parse(moved.startsAt), timeZone)
 
+    // The account is a real person's: whatever variant they chose, drag in the list.
+    await withVariant(authedPage, 'list')
     await authedPage.goto('/calendar')
     await authedPage.getByTestId('view-month').click({ timeout: 15_000 })
     const item = authedPage.locator(`[data-day="${fromDay}"] [data-event-id="${event.id}"]`)
@@ -166,8 +168,11 @@ async function withVariant(
         const get = !init?.method || init.method === 'GET'
         // One taken day today, 2 of 5 done: what the day-tasks month draws.
         if (today && get && url.includes('/api/day-tasks?')) {
+          // The day before today: after the start, not taken, i.e. missed.
+          const y = new Date(Date.parse(today + 'T12:00:00Z') - 86_400_000).toISOString().slice(0, 10)
           return json({
             data: [
+              { day: y, target: 5, confirmed: false, done: 0, level: 0, before_start: false, items: [] },
               {
                 day: today,
                 target: 5,
@@ -227,8 +232,13 @@ test('the day-tasks variant draws the taken day, and says when day tasks are off
   await expect(cell).toBeVisible({ timeout: 15_000 })
   await expect(cell).toContainText('2/5')
   await expect(cell).toContainText('e2e three')
-  // It draws day tasks, never events.
+  // Day tasks, not event rows; events only as dots (Denis 24.09: «at least show dots for events»).
   await expect(authedPage.getByTestId('month-item')).toHaveCount(0)
+  await expect(authedPage.getByTestId('month-dots').first()).toBeAttached()
+  // A missed day after the start is an empty bar, not a blank cell.
+  const y = new Date(Date.parse(today + 'T12:00:00Z') - 86_400_000).toISOString().slice(0, 10)
+  const missed = authedPage.locator(`[data-day="${y}"] [data-testid="month-commit"]`)
+  if ((await authedPage.locator(`[data-day="${y}"]`).count()) > 0) await expect(missed).toContainText('0/5')
 })
 
 test('the day-tasks variant with day tasks off shows the way to turn them on', async ({ authedPage }) => {

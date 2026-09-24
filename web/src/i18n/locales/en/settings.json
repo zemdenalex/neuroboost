@@ -153,8 +153,8 @@
       "desc": "A compact month with the chosen day's list below"
     },
     "commit": {
-      "name": "Day tasks",
-      "desc": "Five things a day: ticks and a progress bar"
+      "name": "Day tasks only",
+      "desc": "Cells show your day tasks, not events: ticks and a \"3 of 5\" bar, the day tinted by the result. Events are dots. Days before your first taken day stay empty"
     }
   }
 }
