@@ -19,6 +19,10 @@ func (h *Handler) handleMenu(chatID int64, messageID int) {
 	if h.askPriorityOnce(chatID, messageID) {
 		return
 	}
+	// And once about day tasks (spec 2026-09-22 §11).
+	if h.askDayTasksOnce(chatID, messageID) {
+		return
+	}
 	us := h.store.GetOrCreate(chatID)
 	loc := h.location(chatID)
 	now := time.Now().In(loc)

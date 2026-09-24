@@ -555,6 +555,13 @@ func (h *Handler) HandleCallback(cb *tgbotapi.CallbackQuery) {
 		h.handleDaySettings(chatID, cb.Message.MessageID, "")
 	case strings.HasPrefix(data, "dtn_"):
 		h.handleDaySettings(chatID, cb.Message.MessageID, "n:"+strings.TrimPrefix(data, "dtn_"))
+	case data == "dtq_on" || data == "dtq_off":
+		// The one-time day-tasks question (spec §11): the answer, then the menu.
+		if err := h.setDayPref(chatID, "day_tasks_enabled", data == "dtq_on"); err != nil {
+			h.sendText(chatID, h.t(chatID, "❌ Не сохранилось: ", "❌ Not saved: ")+h.errorText(chatID, err))
+			return
+		}
+		h.handleMenu(chatID, cb.Message.MessageID)
 	case strings.HasPrefix(data, "dts_"):
 		h.handleDaySettings(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "dts_"))
 	case data == "settings_stscale":

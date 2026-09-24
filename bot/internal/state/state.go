@@ -64,6 +64,8 @@ type UserState struct {
 	// home keyboard draws it on every screen, so it is not read each time.
 	DayTasksOn    bool
 	DayTasksKnown bool
+	// DayTasksAskDone: the one-time day-tasks question needs no more reads.
+	DayTasksAskDone bool
 
 	// Onboarded caches bot.onboarded once it is known to be true. False means
 	// "not known yet", never "known false" — that one is always re-read, so a

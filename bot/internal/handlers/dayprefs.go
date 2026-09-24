@@ -72,3 +72,44 @@ func (h *Handler) setDayPref(chatID int64, key string, v any) error {
 func (h *Handler) home(chatID int64) tgbotapi.InlineKeyboardMarkup {
 	return keyboards.HomeInlineFor(h.lang(chatID), h.dayTasksOn(chatID))
 }
+
+// dayTasksIntro is the one explanation both entrances show: onboarding and
+// the one-time question.
+func (h *Handler) dayTasksIntro(chatID int64) string {
+	return h.t(chatID,
+		"📌 <b>Задачи дня</b>\n\nКаждое утро берёшь несколько дел на день. День красится по сделанному:\n🟩 всё · 🟨 почти · 🟧 больше половины · 🟥 мало · ⬛ ничего\n\nВ календаре это выглядит так: 🟩 21 ▅\n\nВключить? Поменять можно в любой момент.",
+		"📌 <b>Day tasks</b>\n\nEach morning you take a few things for the day. The day is coloured by what got done:\n🟩 all · 🟨 nearly · 🟧 over half · 🟥 a little · ⬛ nothing\n\nIn the calendar it looks like this: 🟩 21 ▅\n\nSwitch on? You can change it any time.")
+}
+
+// askDayTasksOnce is the one-time question for people onboarded before D3
+// (spec §11), shaped like askPriorityOnce: remembered as asked before it is
+// shown, never shown to someone who has already chosen.
+func (h *Handler) askDayTasksOnce(chatID int64, messageID int) bool {
+	us := h.store.GetOrCreate(chatID)
+	if !us.Onboarded || us.DayTasksAskDone {
+		return false
+	}
+	s, err := h.api.MySettings(us.AuthToken)
+	if err != nil {
+		return false
+	}
+	if _, chosen := s["day_tasks_enabled"]; chosen {
+		us.DayTasksAskDone = true
+		return false
+	}
+	asked, err := h.api.BotSetting(us.AuthToken, "day_tasks_asked")
+	if err != nil {
+		return false
+	}
+	if asked != "" {
+		us.DayTasksAskDone = true
+		return false
+	}
+	if err := h.api.SetBotSetting(us.AuthToken, "day_tasks_asked", "1"); err != nil {
+		// Not remembered = would ask on every menu. Better not to ask now.
+		return false
+	}
+	us.DayTasksAskDone = true
+	h.editOrSend(chatID, messageID, h.dayTasksIntro(chatID), keyboards.DayOnboard(h.lang(chatID), "dtq_on", "dtq_off"))
+	return true
+}

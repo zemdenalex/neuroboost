@@ -190,3 +190,13 @@ func DayTasksOff(lang i18n.Lang) tgbotapi.InlineKeyboardMarkup {
 			HelpButton(lang, HelpDayTasks),
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "« Меню", "« Menu"), "main_menu")))
 }
+
+// DayOnboard is the day-tasks question: in onboarding (ob_dt_on / ob_dt_off)
+// and once for people onboarded earlier (dtq_on / dtq_off), spec §11.
+func DayOnboard(lang i18n.Lang, onData, offData string) tgbotapi.InlineKeyboardMarkup {
+	return tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "✅ Включить", "✅ Switch on"), onData),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "Не сейчас", "Not now"), offData)),
+		tgbotapi.NewInlineKeyboardRow(HelpButton(lang, HelpDayTasks)))
+}

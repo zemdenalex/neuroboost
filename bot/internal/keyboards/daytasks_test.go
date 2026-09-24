@@ -51,6 +51,7 @@ func dayKeyboards() map[string]tgbotapi.InlineKeyboardMarkup {
 		"target-pick":  DayTargetPick(i18n.RU, 5, "ob_dtn_", "ob_finish", "Дальше →"),
 		"date-cancel":  DayDateCancel(i18n.RU, dtID),
 		"off":          DayTasksOff(i18n.RU),
+		"onboard":      DayOnboard(i18n.RU, "ob_dt_on", "ob_dt_off"),
 	}
 }
 
