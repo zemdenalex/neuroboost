@@ -80,7 +80,7 @@
     "cancel": "Отмена"
   },
   "advanced.colorNone": "Без цвета",
-  "advanced.colorInherits": "Оставь пустым — возьмётся цвет календаря",
+  "advanced.colorInherits": "Оставь пустым, и возьмётся цвет календаря",
   "filter": {
     "title": "Календари",
     "close": "Закрыть",
