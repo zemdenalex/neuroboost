@@ -493,7 +493,15 @@ func (h *Handler) handleDaySettings(chatID int64, messageID int, action string) 
 			return
 		}
 	}
-	p := h.dayPrefs(chatID)
+	p, ok := h.dayPrefsRead(chatID)
+	// Only when nothing was written: after a write the written value is
+	// known, and M5 (23.09) ticks it even if the re-read fails.
+	if !ok && key == "" {
+		h.editOrSend(chatID, messageID, h.t(chatID,
+			"📌 Не получилось прочитать настройки задач дня. Попробуй ещё раз через минуту.",
+			"📌 Could not read the day-tasks settings. Try again in a minute."), keyboards.DaySettingsRetry(h.lang(chatID)))
+		return
+	}
 	// Review M5 (23.09): tick what was written, not what a second read says.
 	switch key {
 	case "day_tasks_target":

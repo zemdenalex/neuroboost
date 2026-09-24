@@ -48,3 +48,18 @@ func TestTheDaySettingsScreen(t *testing.T) {
 		t.Errorf("on + painting: %s", m)
 	}
 }
+
+// Final review M2: with the settings unreadable the screen said «✅ Включены»
+// and ticked 5, which may be neither. It says it could not read them instead.
+func TestTheDaySettingsScreenOnAFailedReadSaysSo(t *testing.T) {
+	a := &dayAPI{meDown: true}
+	h, fake, chat := dayHandler(t, a)
+	h.handleDaySettings(chat, 0, "")
+	got := fake.last(t)
+	if strings.Contains(got.Markup, "dts_off") || strings.Contains(got.Markup, "dtn_") {
+		t.Errorf("drew switches from a failed read: %s", got.Markup)
+	}
+	if !strings.Contains(got.Text, "Не получилось") {
+		t.Errorf("no failure sentence: %q", got.Text)
+	}
+}

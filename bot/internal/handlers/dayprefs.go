@@ -42,19 +42,27 @@ const dayPrefsRetry = 30 * time.Second
 // dayPrefs reads the settings now. A failed read hides nothing: day tasks are
 // taken as on, so a network blip does not make buttons vanish.
 func (h *Handler) dayPrefs(chatID int64) dayPrefs {
+	p, _ := h.dayPrefsRead(chatID)
+	return p
+}
+
+// dayPrefsRead is dayPrefs that also says whether the settings were read.
+// The settings screen needs to know: drawing the defaults as if they were
+// the person's choice would tick values that may be neither (review M2).
+func (h *Handler) dayPrefsRead(chatID int64) (dayPrefs, bool) {
 	us := h.store.GetOrCreate(chatID)
 	if time.Since(us.DayPrefsFailedAt) < dayPrefsRetry {
-		return dayPrefs{On: true, Target: 5}
+		return dayPrefs{On: true, Target: 5}, false
 	}
 	s, err := h.api.MySettings(us.AuthToken)
 	if err != nil {
 		us.DayPrefsFailedAt = time.Now()
-		return dayPrefs{On: true, Target: 5}
+		return dayPrefs{On: true, Target: 5}, false
 	}
 	us.DayPrefsFailedAt = time.Time{}
 	p := readDayPrefs(s)
 	us.DayTasksOn, us.DayTasksKnown, us.DayTasksAt = p.On, true, time.Now()
-	return p
+	return p, true
 }
 
 // dayTasksTTL is how long the cached switch is trusted. The web writes it

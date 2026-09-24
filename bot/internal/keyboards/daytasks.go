@@ -215,3 +215,14 @@ func DayOnboard(lang i18n.Lang, onData, offData string) tgbotapi.InlineKeyboardM
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "Не сейчас", "Not now"), offData)),
 		tgbotapi.NewInlineKeyboardRow(HelpButton(lang, HelpDayTasks)))
 }
+
+// DaySettingsRetry answers ⚙️ → 📌 when the settings could not be read: try
+// again, or back to settings (review M2).
+func DaySettingsRetry(lang i18n.Lang) tgbotapi.InlineKeyboardMarkup {
+	return tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🔄 Ещё раз", "🔄 Try again"), "settings_dtn")),
+		tgbotapi.NewInlineKeyboardRow(
+			HelpButton(lang, HelpDayTasks),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "« Настройки", "« Settings"), "settings_menu")))
+}
