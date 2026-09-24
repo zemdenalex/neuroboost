@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import i18n from '../i18n'
 import { errorMessage } from '../lib/errorMessage'
+import { createSettingsSaver } from '../lib/settings/saveSettings'
 import {
   User,
   UserSettings,
@@ -43,6 +44,9 @@ export interface AuthContextValue {
   updateSettings: (settings: Partial<UserSettings>) => Promise<void>
   updateProfile: (data: { display_name?: string; timezone?: string; locale?: string }) => Promise<void>
 }
+
+// One saver for the app: its queue is what keeps two quick saves apart.
+const saveSettings = createSettingsSaver({ getMe, updateMe })
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined)
 
@@ -204,11 +208,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const updateSettings = useCallback(
     async (settings: Partial<UserSettings>) => {
       if (!user) return
-      // Fall back to an empty object if user.settings is null/undefined
-      const prevSettings = user.settings ?? {}
-      const newSettings = { ...prevSettings, ...settings }
       try {
-        const updatedUser = await updateMe({ settings: newSettings })
+        // Merged over what the server holds now, not over this tab's copy:
+        // the bot writes settings too (see saveSettings.ts).
+        const updatedUser = await saveSettings(settings)
         setUser(updatedUser)
         if (updatedUser.settings) {
           applySettingsToLocalStorage(updatedUser.settings)
