@@ -105,3 +105,23 @@ func TestAColourOnlyMonthWithDayTasksOffDrawsBars(t *testing.T) {
 		t.Errorf("no bar in the month: %s", m)
 	}
 }
+
+// Final review M4: the month legend names the squares when they can appear,
+// and says nothing about them when day tasks are off or the cell is bar only.
+func TestTheMonthLegendNamesTheSquares(t *testing.T) {
+	for _, c := range []struct {
+		on   bool
+		cell string
+		want bool
+	}{{true, cellBoth, true}, {true, cellBar, false}, {false, cellBoth, false}} {
+		a := &dayAPI{settings: map[string]any{"day_tasks_enabled": c.on}}
+		h, fake, chat := dayHandler(t, a)
+		us := h.store.GetOrCreate(chat)
+		us.CalendarCell, us.CalendarCellKnown = c.cell, true
+		now := time.Now()
+		h.showMonth(chat, 0, now.Year(), now.Month())
+		if got := strings.Contains(fake.last(t).Text, "🟩"); got != c.want {
+			t.Errorf("on=%v cell=%s: legend has squares = %v, want %v: %q", c.on, c.cell, got, c.want, fake.last(t).Text)
+		}
+	}
+}

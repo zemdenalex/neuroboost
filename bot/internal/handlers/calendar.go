@@ -155,6 +155,11 @@ func (h *Handler) showMonth(chatID int64, messageID, year int, month time.Month)
 	text := fmt.Sprintf(h.t(chatID, "🗓 <b>%s %d</b>\n\nВыбери день. 🔸 сегодня · ▁▄█: насколько занят день (шкала: %s)",
 		"🗓 <b>%s %d</b>\n\nPick a day. 🔸 today · ▁▄█: how full the day is (scale: %s)"),
 		monthNominative(h.lang(chatID), month), year, scaleLabel(h.lang(chatID), sc.Kind))
+	if dayOn {
+		// Review M4: the squares get a line of their own in the legend.
+		// dayOn is false for bar only: that choice never reads day tasks.
+		text += h.t(chatID, " · 🟩🟧⬛: задачи дня", " · 🟩🟧⬛: day tasks")
+	}
 	kb := keyboards.MonthGrid(h.lang(chatID), year, int(month), monthNominative(h.lang(chatID), month), labels, dates,
 		time.Now().In(loc).Format("2006-01-02"))
 
