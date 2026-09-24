@@ -44,7 +44,10 @@ export async function createFeedback(data: CreateFeedbackRequest): Promise<Feedb
     ...data,
     page_url: data.page_url || window.location.href,
     user_agent: navigator.userAgent,
-  }, false) // Allow anonymous feedback
+    source: 'web',
+    // The token goes along when there is one, so the feedback carries its
+    // sender (Denis 25.09). Without a token the API still takes it, anonymous.
+  })
 }
 
 export async function listFeedback(params?: ListFeedbackParams): Promise<Feedback[]> {

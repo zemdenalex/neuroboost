@@ -107,8 +107,10 @@ func main() {
 		// who has no way to sign in yet.
 		pr.Post("/api/auth/login-link/redeem", authHandler.RedeemLoginLink)
 
-		// Feedback - create is public (with optional auth)
-		pr.Post("/api/feedback", feedbackHandler.Create)
+		// Feedback: open to anyone, and a valid token attaches the sender
+		// (Denis 25.09). Before this the route never read the token, so every
+		// row was anonymous even when the bot sent one.
+		pr.With(middleware.OptionalJWTMiddleware(cfg.JWTSecret)).Post("/api/feedback", feedbackHandler.Create)
 	})
 
 	// Service endpoints for the notifier bot. Guarded by a shared secret, NOT

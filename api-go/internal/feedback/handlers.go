@@ -49,6 +49,18 @@ type CreateRequest struct {
 	Description string `json:"description"`
 	PageURL     string `json:"page_url,omitempty"`
 	UserAgent   string `json:"user_agent,omitempty"`
+	// Source is where the feedback was sent from: "web" or "bot". Anything
+	// else is stored as the old "user", so a caller cannot label its row "admin".
+	Source string `json:"source,omitempty"`
+}
+
+// sourceOf keeps the stored source to the known clients.
+func sourceOf(s string) string {
+	switch s {
+	case "web", "bot":
+		return s
+	}
+	return "user"
 }
 
 // UpdateRequest for updating feedback (admin)
@@ -146,10 +158,10 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 
 	row := h.db.Pool.QueryRow(r.Context(), `
 		INSERT INTO feedback (user_id, type, title, description, page_url, user_agent, source)
-		VALUES ($1, $2, $3, $4, $5, $6, 'user')
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
 		RETURNING `+allColumns,
 		userIDPtr, req.Type, req.Title, req.Description,
-		nullString(req.PageURL), nullString(req.UserAgent),
+		nullString(req.PageURL), nullString(req.UserAgent), sourceOf(req.Source),
 	)
 
 	feedback, err := scanFeedback(row)
