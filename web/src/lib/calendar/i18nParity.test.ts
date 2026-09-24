@@ -37,3 +37,10 @@ describe('month view settings texts', () => {
     for (const v of [...values(ruSettings.monthView), ...values(enSettings.monthView)]) expect(v).not.toContain('—')
   })
 })
+
+describe('settings texts', () => {
+  // Denis: no long dashes in what people read.
+  it('has no long dashes anywhere in the file', () => {
+    for (const v of [...values(ruSettings), ...values(enSettings)]) expect(v).not.toContain('—')
+  })
+})

@@ -96,7 +96,7 @@
     "isPersonal": "The personal calendar cannot be deleted",
     "notOwner": "Only the calendar owner can do that",
     "notFound": "This calendar no longer exists",
-    "notEmpty": "This calendar has {{events}} events and {{tasks}} tasks — move them first",
+    "notEmpty": "This calendar has {{events}} events and {{tasks}} tasks. Move them first",
     "color": "Color",
     "personalName": "My calendar"
   },
@@ -120,9 +120,9 @@
     "leave": "Leave calendar",
     "loadFailed": "Failed to load the list of people",
     "inviteFailed": "Could not invite",
-    "inviteeNotFound": "No account with that email — send them a link instead",
+    "inviteeNotFound": "No account with that email. Send them a link instead",
     "alreadyMember": "They are already in this calendar",
-    "cannotShare": "The personal calendar cannot be shared — make a shared one",
+    "cannotShare": "The personal calendar cannot be shared. Make a shared one",
     "invitationsTitle": "Invitations",
     "invitedYou": "{{name}} invited you",
     "accept": "Accept",
@@ -130,7 +130,7 @@
     "respondFailed": "Could not answer the invitation",
     "acceptingLink": "Joining the calendar…",
     "acceptedLink": "You have joined «{{name}}»",
-    "linkInvalid": "This link no longer works. It lasts 2 hours and can be used once — ask for a new one.",
+    "linkInvalid": "This link no longer works. It lasts 2 hours and can be used once. Ask for a new one.",
     "goToCalendar": "Open calendar"
   },
   "monthView": {
