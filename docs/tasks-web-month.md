@@ -9,8 +9,8 @@
 
 ## Каркас + вариант A: можно выпускать как вид по умолчанию
 
-- [ ] 0. `git switch -c feat/web-month develop` · ~1 мин
-- [ ] 1. `web/src/lib/calendar/monthGrid.ts` — `monthGrid(year, month) → string[42]` (YYYY-MM-DD, с понедельника) + `shiftMonth`. Тесты: месяц с 1-м числом в понедельник, февраль невисокосного года, декабрь→январь · ~10 мин · ~25k
+- [x] 0. `git switch -c feat/web-month develop` · ~1 мин
+- [x] 1. `web/src/lib/calendar/monthGrid.ts` — `monthGrid(year, month) → string[42]` (YYYY-MM-DD, с понедельника) + `shiftMonth`. Тесты: месяц с 1-м числом в понедельник, февраль невисокосного года, декабрь→январь · ~10 мин · ~25k
 - [ ] 2. `web/src/lib/calendar/monthCells.ts` — `eventsByDay(events, days, tz)`: многодневное в каждом своём дне (R5), целодневные первыми, потом по времени; `cellRows(items, max) → {shown, more}`. Тесты: событие через полночь в зоне пользователя, многодневное, пустой день · ~15 мин · ~40k
 - [ ] 3. `web/src/lib/calendar/monthVariant.ts` — `readMonthVariant(settings)` (`month_view_variant`, неизвестное = `list`, R2); `readCalendarView()` / `saveCalendarView()` в `localStorage` `nb-calendar-view` с try/catch; `effectiveView(saved, isMobile)` (на телефоне всегда неделя/день). Тесты: все пять ключей, мусор, сбой storage, телефон · ~10 мин · ~25k
 - [ ] 4. Данные месяца: один `getEvents` на 42 дня; вынести один `listDays` так, чтобы и квадраты (`useDayColours`), и вариант E брали один `Day[]` (`lib/dayTasks/loadDayColours.ts` → `useDays` + производные цвета). Тест: `loadDayColours` не изменил поведение (старая таблица зелёная) · ~15 мин · ~40k
