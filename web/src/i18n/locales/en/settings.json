@@ -132,5 +132,29 @@
     "acceptedLink": "You have joined «{{name}}»",
     "linkInvalid": "This link no longer works. It lasts 2 hours and can be used once — ask for a new one.",
     "goToCalendar": "Open calendar"
+  },
+  "monthView": {
+    "title": "Month view",
+    "note": "How the calendar draws a month. Applies at once, on every device.",
+    "list": {
+      "name": "List",
+      "desc": "Times and titles, up to three a day, like the week"
+    },
+    "classic": {
+      "name": "Classic",
+      "desc": "Chips in the calendar colour, like Google and Apple"
+    },
+    "heat": {
+      "name": "Heatmap",
+      "desc": "No text: how full each day was and how it went"
+    },
+    "split": {
+      "name": "Month and day",
+      "desc": "A compact month with the chosen day's list below"
+    },
+    "commit": {
+      "name": "Day tasks",
+      "desc": "Five things a day: ticks and a progress bar"
+    }
   }
 }

@@ -16,6 +16,7 @@ export interface CellProps {
   dayTasks?: Day
   dayTasksEnabled: boolean
   timeFormat: Intl.DateTimeFormat
+  timezone: string
   calendarColors: Record<string, string | null>
   /** Starts dragging an event; only the variants that draw events pass it on. */
   onItemPointerDown?: (event: NbEvent, e: ReactPointerEvent) => void

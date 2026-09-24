@@ -118,3 +118,66 @@ test.describe('dragging in the month', () => {
       .toEqual([new Date(start.getTime() + DAY_MS).toISOString(), new Date(end.getTime() + DAY_MS).toISOString()])
   })
 })
+
+/**
+ * The five variants and their setting, without writing to the account: the
+ * e2e account is a real person's staging account and settings-race.spec.ts
+ * writes the same blob in parallel. /auth/me is answered with the variant
+ * patched in, and the settings PATCH is caught and inspected, not sent.
+ */
+async function withVariant(page: import('@playwright/test').Page, variant: string) {
+  await page.addInitScript((v) => {
+    const orig = window.fetch.bind(window)
+    window.fetch = async (input, init) => {
+      const res = await orig(input, init)
+      const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url
+      if (!url.includes('/api/auth/me') || (init?.method && init.method !== 'GET')) return res
+      const body = await res.clone().json()
+      const user = body.data ?? body
+      user.settings = { ...(user.settings ?? {}), month_view_variant: v }
+      return new Response(JSON.stringify(body.data ? { ...body, data: user } : user), {
+        status: res.status,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    }
+  }, variant)
+}
+
+const VARIANT_MARK: Record<string, string> = {
+  list: 'month-item',
+  classic: 'month-item',
+  heat: 'month-heat',
+  split: 'month-dots',
+  commit: 'month-grid',
+}
+
+for (const variant of Object.keys(VARIANT_MARK)) {
+  test(`the ${variant} variant draws its own month`, async ({ authedPage }) => {
+    await withVariant(authedPage, variant)
+    await authedPage.goto('/calendar')
+    await authedPage.getByTestId('view-month').click({ timeout: 30_000 })
+    await expect(authedPage.getByTestId('month-view')).toHaveAttribute('data-variant', variant)
+    await expect(authedPage.getByTestId(VARIANT_MARK[variant]).first()).toBeAttached({ timeout: 15_000 })
+    // The day-tasks month draws day tasks, never events.
+    if (variant === 'commit') await expect(authedPage.getByTestId('month-item')).toHaveCount(0)
+    if (variant === 'split') await expect(authedPage.getByTestId('month-day-list')).toBeVisible()
+  })
+}
+
+test('choosing a variant in settings saves month_view_variant', async ({ authedPage }) => {
+  const sent: unknown[] = []
+  await authedPage.route('**/api/auth/me', async (route) => {
+    if (route.request().method() === 'PATCH') {
+      sent.push(route.request().postDataJSON())
+      // Not sent on: the account is shared. The saver re-reads /auth/me next.
+      return route.fulfill({ status: 200, json: { data: {} } })
+    }
+    return route.fallback()
+  })
+  await authedPage.goto('/settings')
+  await authedPage.getByTestId('month-variant-heat').click({ timeout: 30_000 })
+  await expect(authedPage.getByTestId('month-variant-heat')).toHaveAttribute('aria-checked', 'true')
+  await expect.poll(() => sent.length, { timeout: 10_000 }).toBeGreaterThan(0)
+  const last = sent[sent.length - 1] as { settings?: Record<string, unknown> }
+  expect(last.settings?.month_view_variant).toBe('heat')
+})

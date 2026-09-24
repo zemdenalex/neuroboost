@@ -13,6 +13,7 @@ import { UIScaleSection } from './sections/UIScaleSection'
 import { WorkHoursSection } from './sections/WorkHoursSection'
 import { FeatureTogglesSection } from './sections/FeatureTogglesSection'
 import { DayTasksSection } from './sections/DayTasksSection'
+import { MonthViewSection } from './sections/MonthViewSection'
 import { RecurringScopeSection } from './sections/RecurringScopeSection'
 import { DataSection } from './sections/DataSection'
 import { RemindersSection } from './sections/RemindersSection'
@@ -141,6 +142,9 @@ export default function Settings() {
         <WorkHoursSection autoSave={autoSaveSettings} />
 
         <DayTasksSection autoSave={autoSaveSettings} />
+
+        {/* Desktop only: the phone has no month in v1 (spec §3). */}
+        {!isMobile && <MonthViewSection autoSave={autoSaveSettings} />}
 
         <RegionalSection autoSaveProfile={autoSaveProfile} />
 

@@ -98,6 +98,8 @@
     "prev": "Previous month",
     "next": "Next month",
     "dayTasksOff": "Day tasks are off",
-    "openSettings": "Turn on in settings"
+    "openSettings": "Turn on in settings",
+    "openWeek": "Open week",
+    "free": "Free"
   }
 }

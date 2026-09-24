@@ -1,4 +1,5 @@
-import { useEffect, useMemo, type MouseEvent } from 'react'
+import { useEffect, useMemo, useState, type ComponentType, type MouseEvent } from 'react'
+import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { dateLocale } from '../../utils/date'
 import { monthGrid } from '../../lib/calendar/monthGrid'
@@ -7,8 +8,32 @@ import { createDayClick } from '../../lib/calendar/monthClick'
 import { todayInZone } from '../../lib/dayTasks/dayColour'
 import { useDayTasks } from '../../lib/dayTasks/loadDayColours'
 import { ListCell } from './cells/ListCell'
+import { ClassicCell } from './cells/ClassicCell'
+import { HeatCell } from './cells/HeatCell'
+import { DotCell } from './cells/DotCell'
+import { CommitCell } from './cells/CommitCell'
+import { DayList } from './DayList'
+import { squareColour } from './squareColour'
 import { useMonthDrag } from './useMonthDrag'
 import type { CellProps, MonthViewProps } from './monthview.types'
+import type { MonthVariant } from '../../lib/calendar/monthVariant'
+
+const CELLS: Record<MonthVariant, ComponentType<CellProps>> = {
+  list: ListCell,
+  classic: ClassicCell,
+  heat: HeatCell,
+  split: DotCell,
+  commit: CommitCell,
+}
+
+/** Where each variant shows the day-task colour: a corner square or a tint of the cell. */
+const SQUARE_IN_CORNER: Record<MonthVariant, boolean> = {
+  list: true,
+  classic: false,
+  heat: false,
+  split: true,
+  commit: false,
+}
 
 const WEEKDAYS = [0, 1, 2, 3, 4, 5, 6]
 
@@ -53,13 +78,26 @@ export function MonthView(props: MonthViewProps) {
   useEffect(() => () => dayClick.cancel(), [dayClick])
   const drag = useMonthDrag(onMoveToDay)
 
+  // Variant D: a click chooses the day for the list below (it has its own
+  // "open week"); a double click still creates. Ruling, spec §5 R10.
+  const [chosen, setChosen] = useState<string | null>(null)
+  const chosenDay = chosen && days.includes(chosen) ? chosen : days.includes(today) ? today : `${monthPrefix}-01`
+  const splitClick = useMemo(() => createDayClick(setChosen, onCreateOnDay), [onCreateOnDay])
+  useEffect(() => () => splitClick.cancel(), [splitClick])
+
   const onCellClick = (day: string, e: MouseEvent) => {
     if (drag.wasDrag()) return
+    if (variant === 'split') {
+      // Choosing is instant; only the create waits for a second click.
+      if (e.detail < 2) setChosen(day)
+      splitClick(day, e.detail)
+      return
+    }
     dayClick(day, e.detail)
   }
 
-  // Variants B–E arrive with their own cells; until then they show A.
-  const Cell = variant === 'list' ? ListCell : ListCell
+  const Cell = CELLS[variant]
+  const drags = variant === 'list' || variant === 'classic'
 
   return (
     <div data-testid="month-view" data-variant={variant} className="flex flex-col h-full min-h-0">
@@ -107,7 +145,19 @@ export function MonthView(props: MonthViewProps) {
         ))}
       </div>
 
-      <div className="grid grid-cols-7 grid-rows-6 flex-1 min-h-0" data-testid="month-grid">
+      {variant === 'commit' && !dayTasks.enabled && (
+        <div className="px-3 py-2 text-xs text-zinc-400 border-b border-zinc-800 bg-zinc-950">
+          {t('month.dayTasksOff')}.{' '}
+          <Link to="/settings" className="text-blue-400 hover:underline">
+            {t('month.openSettings')}
+          </Link>
+        </div>
+      )}
+
+      <div
+        className={`grid grid-cols-7 grid-rows-6 min-h-0 ${variant === 'split' ? 'flex-[0_0_auto] h-[45%]' : 'flex-1'}`}
+        data-testid="month-grid"
+      >
         {days.map((day) => {
           const inMonth = day.startsWith(monthPrefix)
           const isToday = day === today
@@ -120,9 +170,11 @@ export function MonthView(props: MonthViewProps) {
             dayTasks: dayRecords[day],
             dayTasksEnabled: dayTasks.enabled,
             timeFormat,
+            timezone,
             calendarColors,
-            onItemPointerDown: drag.onItemPointerDown,
+            onItemPointerDown: drags ? drag.onItemPointerDown : undefined,
           }
+          const tint = !SQUARE_IN_CORNER[variant] && variant !== 'heat' ? squareColour(cellProps.square) : undefined
           return (
             <div
               key={day}
@@ -133,7 +185,9 @@ export function MonthView(props: MonthViewProps) {
                 'border-r border-b border-zinc-800 p-1 min-h-0 overflow-hidden flex flex-col gap-0.5 cursor-pointer select-none',
                 inMonth ? 'bg-black' : 'bg-zinc-950 opacity-50',
                 drag.over === day ? 'ring-2 ring-inset ring-blue-500' : '',
+                variant === 'split' && day === chosenDay ? 'ring-2 ring-inset ring-zinc-400' : '',
               ].join(' ')}
+              style={tint ? { backgroundColor: `${tint}1f` } : undefined}
             >
               <div className="flex items-center justify-between">
                 <span
@@ -145,7 +199,7 @@ export function MonthView(props: MonthViewProps) {
                 >
                   {Number(day.slice(8))}
                 </span>
-                {cellProps.square && (
+                {cellProps.square && SQUARE_IN_CORNER[variant] && (
                   <span data-testid="month-day-square" className="text-[10px] leading-none">
                     {cellProps.square}
                   </span>
@@ -156,6 +210,19 @@ export function MonthView(props: MonthViewProps) {
           )
         })}
       </div>
+
+      {variant === 'split' && (
+        <DayList
+          day={chosenDay}
+          locale={locale}
+          items={byDay[chosenDay] ?? []}
+          square={dayTasks.colours[chosenDay]}
+          dayTasks={dayRecords[chosenDay]}
+          timeFormat={timeFormat}
+          calendarColors={calendarColors}
+          onOpenWeek={() => onOpenDay(chosenDay)}
+        />
+      )}
     </div>
   )
 }
