@@ -1,0 +1,61 @@
+package auth
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"strconv"
+	"testing"
+	"time"
+
+	"github.com/go-chi/chi/v5"
+
+	"neuroboost/api-go/internal/config"
+)
+
+// Through the door, not around it (CLAUDE.md, v0.4.11.4 lesson): the Mini App
+// sign-in is tested as an HTTP request on the route, against a real database.
+func TestMiniAppSignInCreatesThenFindsTheSameUser(t *testing.T) {
+	d := linkingDB(t)
+	ctx := context.Background()
+	tgID := time.Now().UnixNano() % 1_000_000_000_000
+	t.Cleanup(func() { _, _ = d.Pool.Exec(ctx, `DELETE FROM "user" WHERE tg_id = $1`, tgID) })
+
+	r := chi.NewRouter()
+	r.Post("/api/auth/telegram-webapp", NewHandler(d, &config.Config{TelegramBotToken: webAppToken, JWTSecret: "s"}).TelegramWebApp)
+
+	signIn := func(initData string) (int, AuthResponse) {
+		body, _ := json.Marshal(TelegramWebAppLoginRequest{InitData: initData})
+		req := httptest.NewRequest(http.MethodPost, "/api/auth/telegram-webapp", bytes.NewReader(body))
+		rec := httptest.NewRecorder()
+		r.ServeHTTP(rec, req)
+		var env struct {
+			Data AuthResponse `json:"data"`
+		}
+		_ = json.Unmarshal(rec.Body.Bytes(), &env)
+		return rec.Code, env.Data
+	}
+	fields := map[string]string{
+		"auth_date": strconv.FormatInt(time.Now().Unix(), 10),
+		"user":      `{"id":` + strconv.FormatInt(tgID, 10) + `,"first_name":"Mini"}`,
+	}
+
+	code, first := signIn(signInitData(t, webAppToken, fields))
+	if code != http.StatusOK || first.Token == "" || first.User.ID == "" {
+		t.Fatalf("first sign-in: %d %+v", code, first)
+	}
+	if first.User.TgID == nil || *first.User.TgID != tgID {
+		t.Fatal("user not tied to the Telegram id")
+	}
+	code, second := signIn(signInitData(t, webAppToken, fields))
+	if code != http.StatusOK || second.User.ID != first.User.ID {
+		t.Fatalf("second sign-in made another user: %d, %s vs %s", code, second.User.ID, first.User.ID)
+	}
+
+	// Negative control on the same route: a forged string gets 401 and no user.
+	if code, _ := signIn(signInitData(t, "999:other", fields)); code != http.StatusUnauthorized {
+		t.Fatalf("forged initData: %d, want 401", code)
+	}
+}

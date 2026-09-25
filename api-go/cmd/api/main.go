@@ -99,6 +99,8 @@ func main() {
 		pr.Use(middleware.BodyLimit(middleware.PublicBodyLimit))
 
 		pr.Post("/api/auth/telegram", authHandler.TelegramLogin)
+		// Telegram Mini App: signed initData instead of the Login Widget hash.
+		pr.Post("/api/auth/telegram-webapp", authHandler.TelegramWebApp)
 		pr.Post("/api/auth/register", authHandler.Register)
 		pr.Post("/api/auth/login", authHandler.Login)
 		pr.Post("/api/auth/logout", authHandler.Logout)
