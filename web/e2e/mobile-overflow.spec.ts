@@ -227,4 +227,25 @@ test.describe('375px layout', () => {
     const box = await xp.boundingBox()
     expect(box!.width, 'XP block width at 375px').toBeGreaterThanOrEqual(260)
   })
+
+  // Tour 25.09 (MW3): the counters broke mid-label ("To / Do:") and the
+  // focused quick-add drew a second outline inside its own focus ring.
+  test('tasks: each counter stays on one line, quick-add has one focus ring', async ({ authedPage }) => {
+    await authedPage.goto('/tasks')
+    const stats = authedPage.getByTestId('task-stats').locator(':scope > span')
+    await expect(stats.first()).toBeVisible()
+    for (const box of await stats.evaluateAll((els) => els.map((e) => e.getBoundingClientRect().height))) {
+      expect(box, 'a counter wrapped onto two lines').toBeLessThan(30)
+    }
+    const input = authedPage.getByRole('textbox', { name: /new task/i }).first()
+    await input.focus()
+    await authedPage.keyboard.press('a')
+    // Tailwind's outline-none is `2px solid transparent`, so the style alone
+    // says nothing: the question is whether a painted outline is visible.
+    const outline = await input.evaluate((e) => {
+      const cs = getComputedStyle(e)
+      return cs.outlineStyle === 'none' || cs.outlineColor === 'rgba(0, 0, 0, 0)' ? 'invisible' : cs.outlineColor
+    })
+    expect(outline, 'a second focus outline inside the row').toBe('invisible')
+  })
 })

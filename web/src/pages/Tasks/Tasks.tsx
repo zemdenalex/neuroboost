@@ -421,18 +421,18 @@ export default function Tasks() {
           </div>
 
           {/* Stats */}
-          <div className="flex items-center gap-6 text-sm">
-            <span className="text-zinc-400">
+          <div data-testid="task-stats" className="flex flex-wrap items-center gap-x-6 gap-y-1 text-sm">
+            <span className="whitespace-nowrap text-zinc-400">
               {t('stat.total')} <strong className="text-white">{stats.total}</strong>
             </span>
-            <span className="text-zinc-400">
+            <span className="whitespace-nowrap text-zinc-400">
               {t('stat.done')} <strong className="text-green-400">{stats.done}</strong>
             </span>
-            <span className="text-zinc-400">
+            <span className="whitespace-nowrap text-zinc-400">
               {t('stat.todo')} <strong className="text-blue-400">{stats.todo}</strong>
             </span>
             {stats.overdue > 0 && (
-              <span className="text-zinc-400">
+              <span className="whitespace-nowrap text-zinc-400">
                 {t('stat.overdue')} <strong className="text-red-400">{stats.overdue}</strong>
               </span>
             )}
@@ -441,7 +441,7 @@ export default function Tasks() {
                 them would make the morning's work disappear — which is the
                 opposite of the point. Denis asked for «✅ сегодня: N». */}
             {answeredCount > 0 && (
-              <span className="text-zinc-400" data-testid="answered-today">
+              <span className="whitespace-nowrap text-zinc-400" data-testid="answered-today">
                 {t('stat.answeredToday')} <strong className="text-green-400">{answeredCount}</strong>
               </span>
             )}

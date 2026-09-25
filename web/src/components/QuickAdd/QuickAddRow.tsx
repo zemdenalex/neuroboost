@@ -180,7 +180,7 @@ export function QuickAddRow({ onCreate, onCreateMany, onOpenFull, filters, autoF
           }}
           placeholder={t('quickAdd.placeholder')}
           aria-label={t('quickAdd.placeholder')}
-          className="w-full bg-transparent py-2 font-mono text-sm text-zinc-100 outline-none placeholder:text-zinc-600"
+          className="w-full bg-transparent py-2 font-mono text-sm text-zinc-100 outline-none focus-visible:outline-none placeholder:text-zinc-600"
         />
         {busy && <Loader2 className="h-4 w-4 shrink-0 animate-spin text-zinc-500" aria-hidden="true" />}
         <button
