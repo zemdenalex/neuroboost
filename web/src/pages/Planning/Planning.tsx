@@ -193,7 +193,11 @@ export default function Planning() {
       {/* Two-pane body */}
       {plan && !loading && !error && (
         <div className="flex-1 flex flex-col lg:flex-row gap-3 min-h-0">
-          <div className="lg:w-1/3 lg:min-w-[280px] max-h-[40vh] lg:max-h-none">
+          {/* flex + min-h-0: the list must shrink to the 40vh cap and scroll
+              inside it. With a plain block wrapper its h-full had no height
+              to resolve against, so it grew by content and ran on under
+              the capacity meter (mobile tour 25.09, MW1). */}
+          <div className="flex flex-col min-h-0 lg:w-1/3 lg:min-w-[280px] max-h-[40vh] lg:max-h-none">
             <UnscheduledList
               tasks={plan.unscheduledTasks}
               scheduledHours={plan.scheduledHours}

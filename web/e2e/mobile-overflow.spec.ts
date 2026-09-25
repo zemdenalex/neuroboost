@@ -203,4 +203,18 @@ test.describe('375px layout', () => {
       )
     }
   })
+
+  // Tour 25.09 (MW1): the unscheduled list ran on under the capacity meter.
+  // Its wrapper capped the height at 40vh but the list inside sized itself by
+  // content, so the meter below painted over the lower tasks.
+  test('planning: the unscheduled list ends above the capacity meter', async ({ authedPage }) => {
+    await authedPage.goto('/planning')
+    const list = authedPage.locator('[data-hint="planning.unscheduled"]')
+    const meter = authedPage.getByTestId('capacity-meter')
+    await expect(meter).toBeVisible()
+    const a = await list.boundingBox()
+    const b = await meter.boundingBox()
+    expect(a && b, 'both boxes measured').toBeTruthy()
+    expect(a!.y + a!.height, 'list bottom vs meter top').toBeLessThanOrEqual(b!.y + 1)
+  })
 })
