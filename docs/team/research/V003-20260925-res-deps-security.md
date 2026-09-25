@@ -47,7 +47,7 @@ CI — `GO_VERSION: '1.22'` (`.github/workflows/ci.yml:27`). Go 1.22 давно 
 
 ## Предложение (решает Денис)
 
-🟢 Вариант 1 собран на ветке **`chore/go-1.26`** (`c65c476`, не запушена): `golang:1.26-alpine` + `alpine:3.22` в обоих Dockerfile, `GO_VERSION: '1.26'` в CI. Оба образа собрались `docker build` локально; запуск контейнера не проверен. Решение = мерж ветки в `develop`.
+🟢 Вариант 1 собран на ветке **`chore/go-1.26`** (`c65c476`, не запушена): `golang:1.26-alpine` + `alpine:3.22` в обоих Dockerfile, `GO_VERSION: '1.26'` в CI. Оба образа собрались `docker build` локально; образ API проверен запуском 26.09: чистый Postgres 16 → миграции прошли, `/api/health` = ok; zoneinfo в образе есть (`Europe/Moscow`, `Asia/Tokyo`), Alpine 3.22.6. Бот-образ только собран. Решение = мерж ветки в `develop`.
 
 
 1. 🔴 Go 1.22 → 1.26 в двух Dockerfile и CI — `~20 мин · ~40k`, выкат вместе со следующим релизом.
