@@ -67,3 +67,36 @@ export function profileStats({ today, timeZone, tasks, days, reflections }: Inpu
     reflections,
   }
 }
+
+/** XP from real actions (Denis 25.09, «Day tasks drive it»). */
+export function xpOf(s: Pick<ProfileStats, 'tasksDone' | 'daysFull' | 'reflections'>): number {
+  return s.tasksDone * 10 + s.daysFull * 25 + s.reflections * 5
+}
+
+const XP_PER_LEVEL = 250
+
+/** Level every 250 XP, from 1; `into` of `need` toward the next. */
+export function levelOf(xp: number): { level: number; into: number; need: number } {
+  return { level: Math.floor(xp / XP_PER_LEVEL) + 1, into: xp % XP_PER_LEVEL, need: XP_PER_LEVEL }
+}
+
+const CHUNK_DAYS = 60
+const MAX_CHUNKS = 13 // about two years
+
+/**
+ * Every day-tasks day up to today. The API answers at most 62 days per call,
+ * and XP must not shrink as old days leave a window, so this reads back chunk
+ * by chunk until a chunk lies wholly before the start (or two years).
+ */
+export async function loadAllDays(today: string, list: (from: string, to: string) => Promise<Day[]>): Promise<Day[]> {
+  const out: Day[] = []
+  let to = today
+  for (let i = 0; i < MAX_CHUNKS; i++) {
+    const from = shift(to, -(CHUNK_DAYS - 1))
+    const chunk = await list(from, to)
+    out.push(...chunk)
+    if (chunk.length > 0 && chunk.every((d) => d.before_start)) break
+    to = shift(from, -1)
+  }
+  return out
+}

@@ -36,6 +36,8 @@
     "streakNote": "taken days up to today",
     "thisWeek": "{{count}} this week",
     "fullDays": "Full days",
-    "taken": "of {{count}} taken in 2 months"
+    "taken": "of {{count}} taken",
+    "xp": "{{xp}} XP · {{into}} of {{need}} to the next",
+    "xpRule": "+10 per task done, +25 per full day-task day, +5 per reflection"
   }
 }

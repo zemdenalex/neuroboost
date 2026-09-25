@@ -4,7 +4,7 @@ import { useAuthContext } from '../../contexts/AuthContext'
 import { AccountLinking } from './AccountLinking'
 import { dateLocale } from '../../utils/date'
 import { resolveDisplayName } from '../../lib/profile/resolveDisplayName'
-import { profileStats, type ProfileStats } from '../../lib/profile/profileStats'
+import { levelOf, loadAllDays, profileStats, xpOf, type ProfileStats } from '../../lib/profile/profileStats'
 import { todayInZone } from '../../lib/dayTasks/dayColour'
 import { listDays } from '../../api/dayTasks'
 import { getTasks } from '../../api'
@@ -38,10 +38,10 @@ export default function Profile() {
   useEffect(() => {
     let live = true
     const today = todayInZone(new Date(), timeZone)
-    const from = new Date(Date.parse(today + 'T00:00:00Z') - 61 * 86_400_000).toISOString().slice(0, 10)
     void Promise.all([
       getTasks().catch(() => null),
-      listDays(from, today).catch(() => null),
+      // All of it, not a window: XP must not shrink as old days leave it.
+      loadAllDays(today, listDays).catch(() => null),
       getReflections().catch(() => null),
     ]).then(([tasks, days, reflections]) => {
       if (!live || !tasks || !days || !reflections) return
@@ -162,6 +162,25 @@ export default function Profile() {
                   {t('memberSince', { date: memberSince })}
                 </span>
               </div>
+
+              {/* XP from real actions (Denis 25.09, «Day tasks drive it»):
+                  +10 a done task, +25 a full day-task day, +5 a reflection. */}
+              {stats && (() => {
+                const xp = xpOf(stats)
+                const lv = levelOf(xp)
+                return (
+                  <div className="mt-4" data-testid="profile-xp" title={t('real.xpRule')}>
+                    <div className="flex items-center justify-between text-sm mb-1">
+                      <span className="text-zinc-300">{t('level', { level: lv.level })}</span>
+                      <span className="text-zinc-400 tabular-nums">{t('real.xp', { xp, into: lv.into, need: lv.need })}</span>
+                    </div>
+                    <div className="h-2 bg-zinc-800 rounded overflow-hidden">
+                      <div className="h-full bg-blue-500" style={{ width: `${(lv.into / lv.need) * 100}%` }} />
+                    </div>
+                    <p className="text-xs text-zinc-500 mt-1">{t('real.xpRule')}</p>
+                  </div>
+                )
+              })()}
 
             </div>
           </div>
