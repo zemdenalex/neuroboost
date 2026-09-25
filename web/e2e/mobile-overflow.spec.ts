@@ -217,4 +217,14 @@ test.describe('375px layout', () => {
     expect(a && b, 'both boxes measured').toBeTruthy()
     expect(a!.y + a!.height, 'list bottom vs meter top').toBeLessThanOrEqual(b!.y + 1)
   })
+
+  // Tour 25.09 (MW2): beside a 96px avatar the XP line had ~135px and broke
+  // into four lines ("Level1" glued together). On a phone it goes under it.
+  test('profile: the XP block gets the card width, not a side column', async ({ authedPage }) => {
+    await authedPage.goto('/profile')
+    const xp = authedPage.getByTestId('profile-xp')
+    await expect(xp).toBeVisible()
+    const box = await xp.boundingBox()
+    expect(box!.width, 'XP block width at 375px').toBeGreaterThanOrEqual(260)
+  })
 })

@@ -72,20 +72,22 @@ export default function Profile() {
   }) : t('unknownDate')
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-8">
+    <div className="max-w-4xl mx-auto p-4 sm:p-6 space-y-6 sm:space-y-8">
         {/* Profile Header */}
-        <div data-hint="profile.identity" className="bg-gradient-to-r from-zinc-900 via-zinc-900 to-blue-900/20 border border-zinc-800 rounded-lg p-6">
-          <div className="flex items-start gap-6">
+        <div data-hint="profile.identity" className="bg-gradient-to-r from-zinc-900 via-zinc-900 to-blue-900/20 border border-zinc-800 rounded-lg p-4 sm:p-6">
+          {/* Column on a phone: beside a 96px avatar the text had ~135px of a
+              375px screen and the XP line broke into four (tour 25.09, MW2). */}
+          <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-6">
             {/* Avatar */}
             <div className="relative shrink-0">
               {user?.tg_photo_url ? (
                 <img
                   src={user.tg_photo_url}
                   alt={userName}
-                  className="w-24 h-24 rounded-full border-4 border-blue-600"
+                  className="w-16 h-16 sm:w-24 sm:h-24 rounded-full border-4 border-blue-600"
                 />
               ) : (
-                <div className="w-24 h-24 rounded-full bg-blue-600 flex items-center justify-center text-3xl font-mono text-white border-4 border-blue-500">
+                <div className="w-16 h-16 sm:w-24 sm:h-24 rounded-full bg-blue-600 flex items-center justify-center text-2xl sm:text-3xl font-mono text-white border-4 border-blue-500">
                   {userName.slice(0, 2).toUpperCase()}
                 </div>
               )}
@@ -100,7 +102,7 @@ export default function Profile() {
                 Found by e2e on 17.08, and only because the run used a real
                 account: the CI test account's address is short enough to fit,
                 so the same spec had been passing on the same defect. */}
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 w-full">
               <div className="flex min-w-0 items-center gap-2 mb-1">
                 {isEditingName ? (
                   <div className="flex items-center gap-2">
@@ -170,7 +172,7 @@ export default function Profile() {
                 const lv = levelOf(xp)
                 return (
                   <div className="mt-4" data-testid="profile-xp" title={t('real.xpRule')}>
-                    <div className="flex items-center justify-between text-sm mb-1">
+                    <div className="flex flex-wrap items-center justify-between gap-x-3 text-sm mb-1">
                       <span className="text-zinc-300">{t('level', { level: lv.level })}</span>
                       <span className="text-zinc-400 tabular-nums">{t('real.xp', { xp, into: lv.into, need: lv.need })}</span>
                     </div>
