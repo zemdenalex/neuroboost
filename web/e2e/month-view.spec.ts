@@ -296,4 +296,9 @@ test('choosing a variant in settings saves month_view_variant', async ({ authedP
   expect(sent[sent.length - 1].settings?.month_view_variant).toBe('heat')
   // Still chosen after the save came back.
   await expect(authedPage.getByTestId('month-variant-heat')).toHaveAttribute('aria-checked', 'true')
+  // A later PATCH (another setting saved on its own timer) can still be inside
+  // route.fetch when the test ends; closing the page disposes that response
+  // and its res.json() threw into the test: «Response has been disposed»,
+  // 1 run in 3 on 25.09. The assertions above are done; drop the handler.
+  await authedPage.unrouteAll({ behavior: 'ignoreErrors' })
 })
