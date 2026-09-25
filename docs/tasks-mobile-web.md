@@ -27,7 +27,7 @@
 ## Найдено попутно
 
 - [ ] 🟡 `e2e/month-view.spec.ts` «choosing a variant in Settings saves month_view_variant» флакает: `apiResponse.json: Response has been disposed` (1 из 3 прогонов 25.09, потом 2/2 зелёные) — гонка в собственном `route` спеки
-- [ ] `pnpm typecheck` не проверяет `web/e2e/` (ошибка `page is not defined` нашлась только прогоном) — отдельный `tsconfig` для e2e или `tsc -p e2e` в CI · ~15 мин
+- [x] (Денис 25.09: «yes, add it» → `@types/node@22` dev, `tsconfig.e2e.json`, `typecheck` проверяет и e2e; сабботаж `page` ловится) `pnpm typecheck` не проверял `web/e2e/` (ошибка `page is not defined` нашлась только прогоном) — отдельный `tsconfig` для e2e или `tsc -p e2e` в CI · ~15 мин
 
 ## Не входит
 
