@@ -1368,3 +1368,19 @@ CI/CD: `concurrency` в `ci.yml` (два push'а подряд ломают e2e �
 - **Проверено:** e2e на сборке (`web/scripts/e2e-local.sh --preview`), тур `NB_TOUR=1 [NB_TOUR_THEME=light] [NB_TOUR_DESKTOP=1]`. **Опровергнуто:** «drag-спеки сломал скролл логики» — ломалось предположение спек о первом экране; «тёмная тема изменилась» — различия были загрузкой.
 - **Ловушки:** Go/TS-строки и регэкспы — Write+python, не heredoc/sed (сегодня ещё 4 раза); lint проверять `grep -c " error "`, не `tail -1`; `pnpm add` только из `C:\E_Drive\…`.
 - **Незакрытое:** `docs/tasks-mini-app.md` (MA3b тема — сделано иначе, закрыть), `docs/tasks-mobile-web.md` (MW8 🟡, флак), `docs/tasks-light-theme.md` (LT9 потом), `docs/tasks-web-cleanup.md`.
+
+## [2026-09-25 23:05] handoff-auto (loop) | уборка веба: 4.1, 4.2, 4.9, 4.10
+
+**Сделано после прошлого handoff** (всё локально, не запушено; тест красный→зелёный + сабботаж):
+- 4.9 Eisenhower: срочность из срока (≤2 дней/просрочено), важность = приоритет 1–2, перетаскивание меняет только приоритет (`c7e3753`)
+- 4.10 «Бюджет времени»: день из рабочих часов аккаунта, разбивка в аккаунте `time_budget`, недели нет (`7e36703`)
+- 4.1/4.2 Admin: Overview по всему бэклогу, «Not saved» у строки (`ad3dc3f`)
+- Найдено: `isVisible({timeout})` в Playwright не ждёт — тест молча скипался; заменено на `waitFor`.
+
+## План следующей сессии (auto, loop)
+
+- **Цель:** оставшаяся уборка веба, потом постоянная работа по `docs/agents/queue.md`; push/релиз — только по слову Дениса.
+- **Первый шаг:** `docs/tasks-web-cleanup.md` 4.11 — галочка у повторяющейся задачи на странице Tasks закрывает всю серию (`web/src/pages/Tasks/Tasks.tsx` `handleStatusToggle`); повторить подход Kanban (`lib/tools/kanban.ts` `dropAction` + `markDayTaskDone`/occurrences API), сначала e2e-воспроизведение.
+- **Потом:** 4.8 Pomodoro (сначала воспроизвести), флак `e2e/month-view.spec.ts` «saves month_view_variant», тесты `api-go/internal/planning`/`reflections`.
+- **Ждёт Дениса:** push (документ `docs/relizy/plan-v0.4.11.6-i-v0.4.12.md`), раздел 3 + «да» PR #10, ООО или ИП-программы (`docs/team/pitch/V003-20260925-pit-investor-pack.md` §4b).
+- **Разогрев:** `docs/tasks-web-cleanup.md`, `web/src/lib/tools/kanban.ts`, узлы `learning-e2e-specs-assume-the-screen-they-were-written-on`, `learning-shell-heredoc-scripts-break-escapes`.
