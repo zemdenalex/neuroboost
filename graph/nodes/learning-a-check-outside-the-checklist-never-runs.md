@@ -11,6 +11,7 @@ sources:
   - file: "E:/Projects/.claude/rules/source-registry.md — слой 5"
 stakes: medium
 links:
+  - relates-to: "[[learning-govulncheck-measures-the-local-toolchain]]"
   - relates-to: "[[entity-e2e-playwright-harness]]"
   - relates-to: "[[learning-checkbox-in-a-plan-is-a-claim-not-evidence]]"
 ---

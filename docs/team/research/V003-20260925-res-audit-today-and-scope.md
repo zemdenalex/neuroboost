@@ -1,3 +1,5 @@
+<!-- паспорт: тип=документ | статус=действует | строк=191 | ~токенов=3361 | обновлён=по git -->
+
 # Аудит «чьё сегодня» и «чей scope» — tasks + daytasks
 
 **25.09.2026** · scope: `api-go/internal/tasks/*.go` и `api-go/internal/daytasks/*.go` (без `_test.go`),

@@ -2,16 +2,15 @@
 id: learning-theme-by-variables-verify-old-theme-pixel-identical
 title: "Светлая тема без переписывания 1529 классов: палитра Tailwind (zinc/white/black + тёмные оттенки акцентов) через CSS-переменные; доказательство — старая тема попиксельно равна себе до правки"
 type: learning
-status: proposed
+status: verified
 tags: [neuroboost, web, theme, verification]
-weight: { importance: 3, connectivity: 1, access: 1, last_accessed: 2026-09-25 }
+weight: { importance: 4, connectivity: 2, access: 1, last_accessed: 2026-09-26 }
 sources:
   - commit: "9267985, 952e04e (web/tailwind.config.js, web/src/index.css)"
   - command: "скриншот-тур 14 экранов до/после, PIL ImageChops.difference: 12 из 14 bbox=None, 2 — линия «сейчас» и недогруженная страница"
 links:
   - relates-to: "[[learning-a-test-that-cannot-fail-guards-nothing]]"
 ---
-
 `white` в проекте играет две роли: текст на тёмном фоне **и** текст на цветной кнопке. Инвертировать его
 вслепую — тёмный текст на синих кнопках. Решение: отдельные фиксированные `onaccent` (#fff) и `scrim` (#000
 для затемнения за модалкой), 42 + 13 замен по строкам, где у элемента цветной фон.

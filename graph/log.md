@@ -1384,3 +1384,33 @@ CI/CD: `concurrency` в `ci.yml` (два push'а подряд ломают e2e �
 - **Потом:** 4.8 Pomodoro (сначала воспроизвести), флак `e2e/month-view.spec.ts` «saves month_view_variant», тесты `api-go/internal/planning`/`reflections`.
 - **Ждёт Дениса:** push (документ `docs/relizy/plan-v0.4.11.6-i-v0.4.12.md`), раздел 3 + «да» PR #10, ООО или ИП-программы (`docs/team/pitch/V003-20260925-pit-investor-pack.md` §4b).
 - **Разогрев:** `docs/tasks-web-cleanup.md`, `web/src/lib/tools/kanban.ts`, узлы `learning-e2e-specs-assume-the-screen-they-were-written-on`, `learning-shell-heredoc-scripts-break-escapes`.
+
+## [2026-09-25 22:56] consolidate | PRESERVED — transcript-precompact-04e1a014-20260925-225452.jsonl, 141 MB → .oversize/ (too large for one pass, kept for chunked consolidation)
+
+## [2026-09-26] recall | learning-the-right-time-in-the-wrong-zone, learning-shell-heredoc-scripts-break-escapes, learning-a-test-fed-a-shape-the-producer-never-makes, learning-local-e2e-flakes-on-the-dev-server-not-the-code, preference-a-loop-does-not-stop-itself, learning-a-stale-local-ref-answers-confidently
+
+## [2026-09-26 02:30] handoff | ночь 25→26.09: луп Mini App + мобильный веб, аудиты, 96 коммитов не запушены
+
+**Сделано (всё на `develop`, НЕ запушено; `git rev-list --count origin/develop..develop` = 96 после handoff-коммита):**
+- Веб, дефекты: галочка серии закрывала всю серию (`731172a`, `7042f73`, API `state: "open"`) · Помодоро терял блок на задаче «только чтение» (`ede0741`) · рефлексия сбрасывала «не вовремя» (`f1e7533`) · планирование не считало повторы и резало неделю по UTC (`4097870`, `events.ListExpanded`) · главная: серия «просрочена» навсегда (`4dada35`) · подзадачи деревом в списке задач (`abfe30d`, N2) · рабочие часы «конец не позже начала» (`6472768`)
+- API из аудита «чьё сегодня» (`docs/team/research/V003-20260925-res-audit-today-and-scope.md`): I1, M1–M5 починены; M6 — вопрос Денису
+- Бот: «ℹ️ Что в меню» на последнем экране онбординга (`45d29a9`, `61def00`, N1) — на develop, не выкачено, НЕ в PR #10
+- Сборка: Go 1.26 + Alpine 3.22 в образах и CI (`66e429b`, решение Дениса 26.09 «With the next release») — образ API проверен на чистой базе
+- Тесты страниц без тестов, e2e без записей в аккаунт (`day-tasks-write`, `invite-and-link`, `work-hours`), замер `perf.spec.ts`, `e2e-local.sh` по умолчанию собирает сборку
+- Документы: `docs/relizy/plan-v0.4.11.6-i-v0.4.12.md` §3 (что меняется в API — прод-бот тоже увидит) и §8 (что проверить после push), `docs/INDEX.md`, `DOCS-MAP.md` §8, ROADMAP «Сейчас»
+
+**Не проверено:** дерево подзадач на 375px (прогон `--project mobile` прерван сессией) · запуск бот-образа на Go 1.26 (только собран)
+
+**Прочитать первым (узлы):** `preference-loop-goal-before-standing-work`, `learning-a-series-due-date-is-its-start`, `learning-a-page-showing-today-must-name-today`, `learning-checklist-lines-go-stale-check-git-first`, `learning-shell-heredoc-scripts-break-escapes`
+
+**Скиллы на следующую сессию:** `/loop` с промптом ниже · `superpowers:test-driven-development` · `pr-review-toolkit:code-reviewer` на diff перед «готово» · `/feature` для MA3b (варианты цветов Telegram)
+
+### План следующей сессии
+
+- **Цель (Денис 26.09, выбор в handoff):** *«Push and Mini App on staging»*, дальше — луп *«work in a loop to create telegram miniapp and fix mobile web»*, и по его рефлексии **больше Mini App и мобильного**, постоянная работа — только когда по цели остались одни его решения (`preference-loop-goal-before-standing-work`)
+- **Первый шаг:** проверить, что Денис закончил `docs/proverka-2026-09-24-bot-i-veb.md` (его выбор в handoff — пушить); затем шаги CI из `.github/workflows/ci.yml` локально → `git push origin develop` → дождаться CI + e2e (`gh run watch`) → `WEBAPP_URL=https://dev.neuroboost.website` в `.env` dev-бота на nl-2 + `scripts/deploy-dev-bot.sh` → отдать Денису `docs/proverka-mini-app.md` и §8 плана релиза
+- **После push:** e2e `mini-app.spec.ts` должен позеленеть (эндпоинт появится на staging); `subtasks-tree.spec.ts --project mobile`
+- **Потом по цели:** `docs/tasks-mini-app.md` MA3b (цвета из `themeParams` — варианты через `/feature`, выбор Дениса) · перенос из бота в веб остального (N2: статистика, задачи дня — что есть в боте и нет в вебе) · Android-разведка `docs/superpowers/specs/2026-09-24-mini-app-and-android-razvedka.md`
+- **Ждёт Дениса:** «да» на PR #10 (бот v0.4.11.6) · вопросы `graph/.questions-next.md` (ООО/ИП, M6 задачи дня viewer, рабочие часы через полночь, сирота графа) · веб-релиз v0.4.12 после его прохода · ⚠ корню отправлены: баг дат `docs_index.py` и его замечание про раунд подтверждений графа в `/handoff`
+- **Открытые `- [ ]`:** `docs/tasks-mini-app.md` (MA3b) · `docs/tasks-mobile-web.md` (MW8 — вкус) · `docs/tasks-light-theme.md` (LT9) · `docs/tasks-web-month.md` (19, 68) · `docs/tasks-web-cleanup.md` (4.3) · `docs/tasks-prohod3-2026-09-23.md` (N1 ℹ️ на шагах — решает он, N2) · `docs/tasks-nochnoy-2026-09-24.md` (push)
+- **Промпт лупа:** `/loop work in a loop to create telegram miniapp and fix mobile web (Denis 25.09, verbatim). Checklists: docs/tasks-mini-app.md, docs/tasks-mobile-web.md; queue: docs/agents/queue.md. Rules: E:/Projects/CLAUDE.md "Loops"; no merge to main; prod bot untouched.`
