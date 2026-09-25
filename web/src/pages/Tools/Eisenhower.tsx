@@ -6,7 +6,10 @@ import type { Task } from '../../types'
 import { PRIORITY_DOT_COLORS } from '../../lib/priority'
 // The matrix rule lives in a leaf module so it can be tested; this page
 // renders it. Do not re-declare it here — two copies would drift.
-import { priorityToQuadrant, QUADRANT_TO_PRIORITY, type QuadrantId } from '../../lib/tools/eisenhower'
+import { dropPriority, taskQuadrant, type QuadrantId } from '../../lib/tools/eisenhower'
+import { todayInZone } from '../../lib/dayTasks/dayColour'
+import { useAuthContext } from '../../contexts/AuthContext'
+import { showToast } from '../../components/ui/Toast'
 
 // ─── Priority → Quadrant mapping ─────────────────────────────────────────────
 
@@ -185,6 +188,10 @@ function AxisLabels() {
 
 export default function Eisenhower() {
   const { t } = useTranslation('tools')
+  // Urgency comes from the due date against the person's own day (4.9).
+  const { user } = useAuthContext()
+  const today = todayInZone(new Date(), user?.timezone || 'Europe/Moscow')
+  const quadrantOf = (task: Task) => taskQuadrant({ priority: task.priority, due_date: task.dueDate }, today)
 
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
@@ -214,7 +221,7 @@ export default function Eisenhower() {
 
   // ── Group tasks into quadrants ──────────────────────────────────────────────
   function getQuadrantTasks(qId: QuadrantId): Task[] {
-    return tasks.filter((t) => priorityToQuadrant(t.priority) === qId)
+    return tasks.filter((t) => quadrantOf(t) === qId)
   }
 
   // ── Drag handlers ───────────────────────────────────────────────────────────
@@ -242,9 +249,11 @@ export default function Eisenhower() {
     dragTaskRef.current = null
     if (!task) return
 
-    const newPriority = QUADRANT_TO_PRIORITY[targetQId]
-    const currentQId = priorityToQuadrant(task.priority)
-    if (currentQId === targetQId) return
+    // A drop moves importance only; urgency is the due date's (Denis 25.09, 4.9).
+    const newPriority = dropPriority(task.priority, targetQId)
+    const landsIn = taskQuadrant({ priority: newPriority, due_date: task.dueDate }, today)
+    if (landsIn !== targetQId) showToast(t('eisenhower.urgencyByDue'))
+    if (newPriority === task.priority) return
 
     // Optimistic update
     setTasks((prev) =>

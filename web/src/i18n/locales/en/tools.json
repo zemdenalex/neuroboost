@@ -63,7 +63,7 @@
   "kanban.error.load": "Failed to load tasks",
   "eisenhower.title": "Eisenhower Matrix",
   "eisenhower.refresh": "Refresh",
-  "eisenhower.dragHint": "Drag tasks between quadrants to reprioritize",
+  "eisenhower.dragHint": "Importance is the priority, urgency is the due date. Drag a task to change its importance.",
   "eisenhower.dropHere": "Drop here",
   "eisenhower.error.load": "Failed to load tasks",
   "eisenhower.q1.title": "Do First",
@@ -107,5 +107,6 @@
   "timeBlocking.days.sat": "Sat",
   "timeBlocking.days.sun": "Sun",
   "kanban.add": "Add",
-  "kanban.error.move": "Could not move the task; it stayed where it was"
+  "kanban.error.move": "Could not move the task; it stayed where it was",
+  "eisenhower.urgencyByDue": "Urgency comes from the due date: within two days or overdue. Dragging changes importance only."
 }
