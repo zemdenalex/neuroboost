@@ -9,6 +9,7 @@ import { useFeatureFlags } from './hooks/useFeatureFlags'
 import { FeedbackButton } from './components/FeedbackButton'
 import { PomodoroWidget } from './components/Pomodoro/PomodoroWidget'
 import { PomodoroToasts } from './components/Pomodoro/PomodoroToasts'
+import { useTelegramBackButton } from './lib/telegram/useTelegramBackButton'
 
 // Lazy-loaded pages
 const Home = lazy(() => import('./pages/Home'))
@@ -85,6 +86,7 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 // Layout with feedback button and Suspense
 function AppLayout() {
   const quickAdd = useGlobalQuickAdd()
+  useTelegramBackButton()
   return (
     <>
       <Layout>

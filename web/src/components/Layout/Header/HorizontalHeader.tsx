@@ -1,3 +1,4 @@
+import { launchedInTelegram } from '../../../lib/telegram/webApp'
 import { useState, useRef, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useDayTasksEnabled } from '../../../hooks/useDayTasksEnabled'
@@ -156,7 +157,9 @@ export default function HorizontalHeader() {
                 </Link>
               )}
 
-              <div className="border-t border-zinc-800 mt-1 pt-1">
+              {/* Not inside the Telegram Mini App: the next launch signs the
+                  same person straight back in, so "sign out" would do nothing. */}
+              {!launchedInTelegram() && <div className="border-t border-zinc-800 mt-1 pt-1">
                 <button
                   onClick={handleLogout}
                   className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-zinc-800 transition-colors"
@@ -164,7 +167,7 @@ export default function HorizontalHeader() {
                   <LogOut className="w-4 h-4" />
                   {t('action.signOut')}
                 </button>
-              </div>
+              </div>}
             </div>
           )}
         </div>

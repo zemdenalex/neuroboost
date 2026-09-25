@@ -63,6 +63,16 @@ export function prepareWebApp(wa: TgWebApp): void {
   if (wa.isVersionAtLeast('7.7') && wa.disableVerticalSwipes) wa.disableVerticalSwipes()
 }
 
+// The bottom-bar tabs: there Telegram's own close button is the way out, and
+// a back button would step through tab history instead.
+const ROOT_PATHS = new Set(['/', '/home', '/calendar', '/agenda', '/tasks'])
+
+/** Telegram's BackButton shows on inner pages only. */
+export function backButtonVisible(pathname: string): boolean {
+  const path = pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname
+  return !ROOT_PATHS.has(path)
+}
+
 // Read once at startup: client-side navigation drops the hash, and Telegram's
 // script reads the same hash when it loads, so nothing here rewrites it.
 const launchInitData = typeof window === 'undefined' ? null : initDataFromHash(window.location.hash)

@@ -17,13 +17,13 @@
 - [x] MA3 `lib/telegram/webApp.ts`: чистые функции — есть ли `initData`, тема из `themeParams` → CSS-переменные; тесты vitest
 - [x] MA4 ~~Скрипт в `index.html`~~ → **Ruling 25.09:** скрипт грузится динамически и только внутри Telegram (признак — `#tgWebAppData` в hash); `initData` читается из hash сам, без скрипта. Причина: telegram.org может быть заблокирован у обычных посетителей, `<script>` в `<head>` у всех повесил бы сайт. Цена ошибки: одна строка в `index.html`
 - [x] MA5 Вход: при `initData` — `POST /api/auth/telegram-webapp` до экрана логина, токен как обычно; ошибка → обычный логин с понятной строкой; тест на ветвление
-- [ ] MA6 Внутри Telegram: `ready()`, `expand()`, `disableVerticalSwipes()` (иначе перетаскивание события сворачивает Mini App), спрятать выход; `BackButton` на не-корневых страницах
+- [x] MA6 (`ready/expand/disableVerticalSwipes` в `prepareWebApp`, `BackButton` — `useTelegramBackButton` в `AppLayout`, «Выйти» скрыт в обеих шапках; вживую проверяется только в Telegram, MA10) Внутри Telegram: `ready()`, `expand()`, `disableVerticalSwipes()` (иначе перетаскивание события сворачивает Mini App), спрятать выход; `BackButton` на не-корневых страницах
 - [x] MA7 (`c3dc519`, `web/e2e/mini-app.spec.ts`; локально красный до push — на staging нет эндпоинта; проводка доказана разовой спекой с подменой ответа) e2e: страница с подменённым `window.Telegram.WebApp` (подписанный `initData` тестовым путём нельзя — токен dev-бота есть в e2e, значит, можно подписать настоящим) → попадаем в календарь без логина
 - [ ] MA8 `startapp`-параметр → глубокий переход (день `d-2026-09-25`, задача `t-<id>`)
 
 ## Бот
 
-- [ ] MA9 Кнопка меню dev-бота `web_app` → `https://dev.neuroboost.website` (после push на staging, через `setChatMenuButton` в коде бота по env `WEBAPP_URL`, пусто = не ставить)
+- [x] MA9 (`6296e40`, пакет `bot/internal/menubutton`, env `WEBAPP_URL`; на nl-2 в `.env` dev-бота вписать после push — шаг руками или мой после его «ок») Кнопка меню dev-бота `web_app` → `https://dev.neuroboost.website` (после push на staging, через `setChatMenuButton` в коде бота по env `WEBAPP_URL`, пусто = не ставить)
 - [ ] MA10 Проверка руками — чеклист Денису `docs/proverka-mini-app.md` (открыть из dev-бота, войти без логина, перетащить событие, назад)
 
 ## Не входит

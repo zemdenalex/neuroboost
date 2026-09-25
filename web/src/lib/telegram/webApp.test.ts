@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { initDataFromHash, pickStartupAuth, prepareWebApp, type TgWebApp } from './webApp'
+import { backButtonVisible, initDataFromHash, pickStartupAuth, prepareWebApp, type TgWebApp } from './webApp'
 
 // Telegram opens a Mini App with its launch data in the hash:
 // #tgWebAppData=<url-encoded initData>&tgWebAppVersion=8.0&tgWebAppPlatform=ios
@@ -53,5 +53,18 @@ describe('prepareWebApp', () => {
     const wa = fakeWebApp('7.0')
     expect(() => prepareWebApp(wa)).not.toThrow()
     expect(wa.calls).toEqual(['ready', 'expand'])
+  })
+})
+
+describe('backButtonVisible', () => {
+  it('is hidden on the bottom-bar tabs, where back would leave the app', () => {
+    for (const path of ['/', '/home', '/calendar', '/agenda', '/tasks', '/calendar/']) {
+      expect(backButtonVisible(path), path).toBe(false)
+    }
+  })
+  it('shows on every inner page', () => {
+    for (const path of ['/settings', '/tools/kanban', '/day-tasks', '/profile']) {
+      expect(backButtonVisible(path), path).toBe(true)
+    }
   })
 })

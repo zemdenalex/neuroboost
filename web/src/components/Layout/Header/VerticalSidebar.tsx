@@ -1,3 +1,4 @@
+import { launchedInTelegram } from '../../../lib/telegram/webApp'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useDayTasksEnabled } from '../../../hooks/useDayTasksEnabled'
 import { useFeatureFlags } from '../../../hooks/useFeatureFlags'
@@ -120,14 +121,15 @@ export default function VerticalSidebar() {
         {/* Contextual help for the current page */}
         <HelpButton variant="sidebar" />
 
-        {/* Logout button */}
-        <button
+        {/* Logout button; not in the Telegram Mini App, where the next
+            launch signs the same person straight back in */}
+        {!launchedInTelegram() && <button
           onClick={handleLogout}
           className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-mono text-red-400 hover:bg-zinc-800 transition-colors"
         >
           <LogOut className="w-4 h-4" />
           Sign out
-        </button>
+        </button>}
       </div>
     </aside>
   )
