@@ -49,7 +49,7 @@ statement. Сценарий: задача без срока и без повто
 
 ### ⚠ M1 · Зона, которую Go принял, Postgres может не принять: `AT TIME ZONE` → 500
 
-✅ **Починено 25.09**: `validTimezone` отклоняет `"Local"`; живьём на postgres:16 проверено — `AT TIME ZONE 'Local'` → `time zone "Local" not recognized`. Тест `TestValidTimezone`, красный до правки. ⚠ Прочие имена, известные Go и неизвестные tz-базе Postgres, не закрыты — сверка с `pg_timezone_names` не сделана.
+✅ **Починено 25.09**: `validTimezone` отклоняет `"Local"`; живьём на postgres:16 проверено — `AT TIME ZONE 'Local'` → `time zone "Local" not recognized`. Тест `TestValidTimezone`, красный до правки. ⚠ Прочие имена, известные Go и неизвестные tz-базе Postgres, не закрыты — сверка с `pg_timezone_names` не сделана. Живых жертв нет: 26.09 read-only подсчёт — зон вне `pg_timezone_names` 0 из 971 на staging и 0 из 8 на проде.
 
 
 `api-go/internal/tasks/handlers.go:424-432` и `:569-577` (`listTasks`, `getTask`):
