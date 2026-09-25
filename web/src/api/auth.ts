@@ -53,6 +53,8 @@ export interface UserSettings {
   task_row_actions?: string
   /** Web theme: 'dark' | 'light' | 'system' (lib/theme/theme, Denis 25.09). */
   theme?: string
+  /** «Бюджет времени» split (lib/tools/timeBudget, Denis 25.09); read through readBudgetCategories. */
+  time_budget?: unknown
   quiet_hours_start?: string
   quiet_hours_end?: string
   quick_task?: {

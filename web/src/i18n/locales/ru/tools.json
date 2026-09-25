@@ -8,7 +8,7 @@
   "hub.kanban.desc": "Визуализация этапов работы",
   "hub.eisenhower": "Матрица Эйзенхауэра",
   "hub.eisenhower.desc": "Приоритизация по срочности и важности",
-  "hub.timeBlocking": "Тайм-блокинг",
+  "hub.timeBlocking": "Бюджет времени",
   "hub.timeBlocking.desc": "Расчёт реалистичного бюджета времени",
   "pomodoro.title": "Таймер Помодоро",
   "pomodoro.work": "Работа",
@@ -79,7 +79,7 @@
   "eisenhower.axis.notUrgent": "Не срочно",
   "eisenhower.axis.important": "Важно",
   "eisenhower.axis.notImportant": "Не важно",
-  "timeBlocking.title": "Калькулятор тайм-блокинга",
+  "timeBlocking.title": "Бюджет времени",
   "timeBlocking.availableHours": "Доступное время",
   "timeBlocking.hoursPerDay": "Часов в день",
   "timeBlocking.workDays": "Рабочих дней в неделю",
@@ -108,5 +108,8 @@
   "timeBlocking.days.sun": "Вс",
   "kanban.add": "Добавить",
   "kanban.error.move": "Не удалось перенести задачу, она осталась на месте",
-  "eisenhower.urgencyByDue": "Срочность задаёт срок: два дня и меньше или просрочено. Перетаскивание меняет только важность."
+  "eisenhower.urgencyByDue": "Срочность задаёт срок: два дня и меньше или просрочено. Перетаскивание меняет только важность.",
+  "timeBlocking.fromWorkHours": "{{hours}} ч в день ({{start}}–{{end}}), {{days}} дн. в неделю: {{week}} ч",
+  "timeBlocking.noWorkHours": "Рабочие часы не заданы: считаю день в 8 часов.",
+  "timeBlocking.changeWorkHours": "Поменять рабочие часы в настройках"
 }

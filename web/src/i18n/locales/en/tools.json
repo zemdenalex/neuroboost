@@ -8,7 +8,7 @@
   "hub.kanban.desc": "Visualize your workflow stages",
   "hub.eisenhower": "Eisenhower Matrix",
   "hub.eisenhower.desc": "Prioritize by urgency and importance",
-  "hub.timeBlocking": "Time Blocking",
+  "hub.timeBlocking": "Time budget",
   "hub.timeBlocking.desc": "Calculate realistic time budgets",
   "pomodoro.title": "Pomodoro Timer",
   "pomodoro.work": "Work",
@@ -79,7 +79,7 @@
   "eisenhower.axis.notUrgent": "Not Urgent",
   "eisenhower.axis.important": "Important",
   "eisenhower.axis.notImportant": "Not Important",
-  "timeBlocking.title": "Time Blocking Calculator",
+  "timeBlocking.title": "Time budget",
   "timeBlocking.availableHours": "Available Hours",
   "timeBlocking.hoursPerDay": "Hours per day",
   "timeBlocking.workDays": "Work days per week",
@@ -108,5 +108,8 @@
   "timeBlocking.days.sun": "Sun",
   "kanban.add": "Add",
   "kanban.error.move": "Could not move the task; it stayed where it was",
-  "eisenhower.urgencyByDue": "Urgency comes from the due date: within two days or overdue. Dragging changes importance only."
+  "eisenhower.urgencyByDue": "Urgency comes from the due date: within two days or overdue. Dragging changes importance only.",
+  "timeBlocking.fromWorkHours": "{{hours}} h a day ({{start}}–{{end}}), {{days}} days a week: {{week}} h",
+  "timeBlocking.noWorkHours": "Work hours are not set: counting an 8-hour day.",
+  "timeBlocking.changeWorkHours": "Change work hours in Settings"
 }
