@@ -59,3 +59,25 @@ func TestMiniAppSignInCreatesThenFindsTheSameUser(t *testing.T) {
 		t.Fatalf("forged initData: %d, want 401", code)
 	}
 }
+
+// Review M3 (25.09): the bot and the Mini App can both see "no such tg_id" and
+// both INSERT; the loser hit the unique index and answered 500. Creating a
+// user who already exists must hand back that user instead.
+func TestCreatingATelegramUserWhoAlreadyExistsReturnsThem(t *testing.T) {
+	d := linkingDB(t)
+	ctx := context.Background()
+	tgID := time.Now().UnixNano()%1_000_000_000_000 + 7
+	t.Cleanup(func() { _, _ = d.Pool.Exec(ctx, `DELETE FROM "user" WHERE tg_id = $1`, tgID) })
+	var existing string
+	if err := d.Pool.QueryRow(ctx, `INSERT INTO "user" (tg_id, settings) VALUES ($1, '{}') RETURNING id`, tgID).Scan(&existing); err != nil {
+		t.Fatal(err)
+	}
+	h := NewHandler(d, &config.Config{TelegramBotToken: webAppToken, JWTSecret: "s"})
+	u, err := h.createTelegramUserOrFind(ctx, TelegramLoginRequest{ID: tgID, FirstName: "Race", AuthDate: time.Now().Unix()})
+	if err != nil {
+		t.Fatalf("lost the race with an error: %v", err)
+	}
+	if u.ID != existing {
+		t.Fatalf("got user %s, want the existing %s", u.ID, existing)
+	}
+}

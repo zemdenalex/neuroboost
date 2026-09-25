@@ -63,7 +63,7 @@ func (h *Handler) TelegramLogin(w http.ResponseWriter, r *http.Request) {
 
 	if user == nil {
 		// Create new user
-		user, err = h.createUserFromTelegram(ctx, req)
+		user, err = h.createTelegramUserOrFind(ctx, req)
 		if err != nil {
 			util.RespondError(w, http.StatusInternalServerError, "CREATE_USER_ERROR", "Failed to create user")
 			return

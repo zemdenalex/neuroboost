@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
@@ -14,6 +15,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 
 	"neuroboost/api-go/internal/util"
 )
@@ -125,7 +127,7 @@ func (h *Handler) TelegramWebApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if user == nil {
-		user, err = h.createUserFromTelegram(ctx, tg)
+		user, err = h.createTelegramUserOrFind(ctx, tg)
 		if err != nil {
 			util.RespondError(w, http.StatusInternalServerError, "CREATE_USER_ERROR", "Failed to create user")
 			return
@@ -142,4 +144,17 @@ func (h *Handler) TelegramWebApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	util.RespondJSON(w, http.StatusOK, AuthResponse{Token: token, ExpiresAt: expiresAt, User: *user})
+}
+
+// createTelegramUserOrFind creates the user for a Telegram id, or returns the
+// one that appeared in the meantime (review M3, 25.09): the bot and the Mini
+// App can both find nobody and both INSERT, and the second hit the unique
+// index on tg_id and answered 500.
+func (h *Handler) createTelegramUserOrFind(ctx context.Context, tg TelegramLoginRequest) (*User, error) {
+	user, err := h.createUserFromTelegram(ctx, tg)
+	var pgErr *pgconn.PgError
+	if err != nil && errors.As(err, &pgErr) && pgErr.Code == "23505" {
+		return h.findUserByTgID(ctx, tg.ID)
+	}
+	return user, err
 }
