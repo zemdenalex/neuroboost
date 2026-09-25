@@ -52,6 +52,17 @@ export function WeekGrid({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mount only, by design
   }, []);
 
+  // A day asked for by name that is not today (?date=, a start link, the month
+  // view) opens at the start of the working day: "now minus an hour" belongs
+  // to today (review M4, 25.09).
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el || !focusDay) return;
+    const today = new Intl.DateTimeFormat('en-CA', { timeZone: timezone }).format(new Date());
+    if (focusDay === today) return;
+    el.scrollTop = initialScrollHour({ nowHour: 0, todayVisible: false }) * HOUR_PX;
+  }, [focusDay, timezone]);
+
   // Calculate Monday timestamp
   const mondayUtc0 = useMemo(
     () => getMondayUtcMs(new Date(), currentWeekOffset, timezone),

@@ -359,6 +359,17 @@ test.describe('375px layout', () => {
     const header = authedPage.getByTestId('week-day-header').first()
     await expect(header).toHaveAttribute('data-day', target, { timeout: 15_000 })
     await expect(authedPage).not.toHaveURL(/date=/)
+    // Review M4: another day opens at the start of the working day (08:00 = 8 * 44px),
+    // not at "now minus an hour", which belongs to today.
+    await expect
+      .poll(() =>
+        authedPage.evaluate(() => {
+          let el = document.querySelector('[data-testid="week-day-header"]')?.parentElement ?? null
+          while (el && getComputedStyle(el).overflowY !== 'auto') el = el.parentElement
+          return el?.scrollTop ?? -1
+        }),
+      )
+      .toBe(8 * 44)
   })
 })
 
