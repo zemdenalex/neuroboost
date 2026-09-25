@@ -51,17 +51,38 @@ func (h *Handler) handleHelp(chatID int64, messageID int, data string, msg *tgbo
 	if text == "" {
 		text = h.t(chatID, "Это объяснение устарело, открой экран заново.", "This explanation is out of date. Open the screen again.")
 	}
+	h.explainInPlace(chatID, messageID, msg, text, keyboards.HelpBack(h.lang(chatID)))
+}
+
+// explainInPlace puts an explanation where the pressed screen was, saving the
+// screen so «« Назад» (help_x) brings it back as it stood.
+func (h *Handler) explainInPlace(chatID int64, messageID int, msg *tgbotapi.Message, text string, markup tgbotapi.InlineKeyboardMarkup) {
 	if msg == nil || msg.Text == "" {
 		// Nothing to put back later (a photo, a message Telegram no longer
 		// sends): the explanation goes below, the way it used to.
-		h.sendHTMLWithKeyboard(chatID, text, keyboards.HelpBack(h.lang(chatID)))
+		h.sendHTMLWithKeyboard(chatID, text, markup)
 		return
 	}
 	if h.helpSaved == nil || len(h.helpSaved) > 500 {
 		h.helpSaved = map[helpKey]savedScreen{}
 	}
-	h.helpSaved[key] = savedScreen{text: msg.Text, entities: msg.Entities, markup: msg.ReplyMarkup}
-	h.editOrSend(chatID, messageID, text, keyboards.HelpBack(h.lang(chatID)))
+	h.helpSaved[helpKey{chat: chatID, message: messageID}] = savedScreen{text: msg.Text, entities: msg.Entities, markup: msg.ReplyMarkup}
+	h.editOrSend(chatID, messageID, text, markup)
+}
+
+// handleMenuTour answers the menu tour (N1, pass 3): the tour in place of the
+// screen it was asked from, and each of its buttons opens that entrance.
+func (h *Handler) handleMenuTour(chatID int64, messageID int, data string, msg *tgbotapi.Message) bool {
+	switch {
+	case data == keyboards.MenuTourOpen:
+		text, kb := keyboards.MenuTour(h.lang(chatID))
+		h.explainInPlace(chatID, messageID, msg, text, kb)
+		return true
+	case strings.HasPrefix(data, keyboards.MenuTourPrefix):
+		h.openScreen(chatID, strings.TrimPrefix(data, keyboards.MenuTourPrefix))
+		return true
+	}
+	return false
 }
 
 type helpKey struct {

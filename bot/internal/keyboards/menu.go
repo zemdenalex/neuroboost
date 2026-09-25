@@ -1,6 +1,9 @@
 package keyboards
 
 import (
+	"fmt"
+	"strings"
+
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 
 	"github.com/zemdenalex/neuroboost-bot/internal/i18n"
@@ -39,6 +42,10 @@ type menuEntrance struct {
 	RU     string
 	EN     string
 	Screen string
+	// What the entrance is, one line, for the menu tour (MenuTour). Declared
+	// here so a seventh button cannot arrive without saying what it is.
+	WhatRU string
+	WhatEN string
 }
 
 func (e menuEntrance) label(lang i18n.Lang) string { return i18n.T(lang, e.RU, e.EN) }
@@ -52,9 +59,18 @@ func (e menuEntrance) label(lang i18n.Lang) string { return i18n.T(lang, e.RU, e
 // the keyboard and guarded by nobody — and the symptom would be Denis's: the
 // label becomes the title of the event he was creating.
 var menuRows = [3][2]menuEntrance{
-	{{"🏠 Меню", "🏠 Menu", ScreenMenu}, {"🗓 Календарь", "🗓 Calendar", ScreenCalendar}},
-	{{"📅 События", "📅 Events", ScreenAgenda}, {"📋 Задачи", "📋 Tasks", ScreenTasks}},
-	{{"➕ Создать", "➕ Create", ScreenCreate}, {"⚙️ Настройки", "⚙️ Settings", ScreenSettings}},
+	{
+		{"🏠 Меню", "🏠 Menu", ScreenMenu, "главный экран, отсюда всё остальное", "the home screen, everything else starts here"},
+		{"🗓 Календарь", "🗓 Calendar", ScreenCalendar, "месяц сеткой, день по нажатию", "the month as a grid, a day on tap"},
+	},
+	{
+		{"📅 События", "📅 Events", ScreenAgenda, "ближайшие события списком", "upcoming events as a list"},
+		{"📋 Задачи", "📋 Tasks", ScreenTasks, "список задач: отметить, запланировать, изменить", "your tasks: tick, schedule, edit"},
+	},
+	{
+		{"➕ Создать", "➕ Create", ScreenCreate, "задача, событие или заметка кнопками", "a task, an event or a note, with buttons"},
+		{"⚙️ Настройки", "⚙️ Settings", ScreenSettings, "язык, часовой пояс, напоминания, задачи дня", "language, time zone, reminders, day tasks"},
+	},
 }
 
 // MenuScreen reports which screen a reply-keyboard label opens.
@@ -182,4 +198,31 @@ func AgendaActions(lang i18n.Lang) tgbotapi.InlineKeyboardMarkup {
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🏠 Меню", "🏠 Menu"), "main_menu"),
 		),
 	)
+}
+
+// Menu tour callbacks (N1, pass 3): MenuTourOpen shows the tour, and each of
+// its buttons is MenuTourPrefix + the screen it opens.
+const (
+	MenuTourOpen   = "menu_tour"
+	MenuTourPrefix = "mo_"
+)
+
+// MenuTour explains the reply keyboard: a line per entrance, and a button per
+// entrance that opens it, built from menuRows so it cannot drift from the menu.
+func MenuTour(lang i18n.Lang) (string, tgbotapi.InlineKeyboardMarkup) {
+	var b strings.Builder
+	b.WriteString(i18n.T(lang, "<b>Что в меню</b>\n", "<b>What is in the menu</b>\n"))
+	var rows [][]tgbotapi.InlineKeyboardButton
+	for _, row := range menuRows {
+		var buttons []tgbotapi.InlineKeyboardButton
+		for _, e := range row {
+			fmt.Fprintf(&b, "\n%s: %s", e.label(lang), i18n.T(lang, e.WhatRU, e.WhatEN))
+			buttons = append(buttons, tgbotapi.NewInlineKeyboardButtonData(e.label(lang), MenuTourPrefix+e.Screen))
+		}
+		rows = append(rows, buttons)
+	}
+	b.WriteString(i18n.T(lang, "\n\nНажми, чтобы открыть.", "\n\nTap one to open it."))
+	rows = append(rows, tgbotapi.NewInlineKeyboardRow(
+		tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "« Назад", "« Back"), "help_x")))
+	return b.String(), tgbotapi.NewInlineKeyboardMarkup(rows...)
 }
