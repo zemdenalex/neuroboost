@@ -39,9 +39,11 @@ export function WeekHeader({
 
   const weekLabel = (() => {
     if (visibleDays === 1) {
+      // Short on a phone: beside the arrows and buttons the long form
+      // ("Friday, September 25") broke onto two lines (mobile tour 25.09, MW4).
       return startDate.toLocaleDateString(locale, {
-        weekday: 'long',
-        month: 'long',
+        weekday: isMobile ? 'short' : 'long',
+        month: isMobile ? 'short' : 'long',
         day: 'numeric'
       });
     } else if (visibleDays === 3) {
@@ -85,7 +87,7 @@ export function WeekHeader({
               </button>
             </>
           )}
-          <h2 className="font-semibold text-sm md:text-lg">{weekLabel}</h2>
+          <h2 data-testid="calendar-period-title" className="whitespace-nowrap font-semibold text-sm md:text-lg">{weekLabel}</h2>
         </div>
         
         <div className="flex items-center gap-2">

@@ -248,4 +248,14 @@ test.describe('375px layout', () => {
     })
     expect(outline, 'a second focus outline inside the row').toBe('invisible')
   })
+
+  // Tour 25.09 (MW4): "Friday, September 25" broke onto two lines beside the
+  // arrows and buttons, pushing the grid down another 30px.
+  test('calendar: the date title fits on one line', async ({ authedPage }) => {
+    await authedPage.goto('/calendar')
+    const title = authedPage.getByTestId('calendar-period-title')
+    await expect(title).toBeVisible()
+    const box = await title.boundingBox()
+    expect(box!.height, 'title wrapped').toBeLessThan(30)
+  })
 })
