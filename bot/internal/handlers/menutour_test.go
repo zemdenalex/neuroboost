@@ -30,6 +30,22 @@ func TestTheMenuTourReplacesTheScreenAndBackRestoresIt(t *testing.T) {
 	}
 }
 
+// A tour message stays in the chat, and a press of it later is a press of the
+// menu: it ends whatever was being written, as the reply keyboard does
+// (handler.go, MenuScreen), or the draft would swallow the next message.
+func TestAMenuTourButtonEndsTheFlowItIsPressedIn(t *testing.T) {
+	h, _, chat := quickHandler(t)
+	us := h.store.GetOrCreate(chat)
+	us.CurrentFlow = "new_task"
+	us.FlowData["title"] = "позвонить в банк"
+
+	pressOn(h, chat, keyboards.MenuTourPrefix+keyboards.ScreenTasks, screenUnderHelp())
+
+	if f := h.store.GetOrCreate(chat).CurrentFlow; f != "" {
+		t.Errorf("flow %q survived a menu entrance from the tour", f)
+	}
+}
+
 func TestAMenuTourButtonOpensItsEntrance(t *testing.T) {
 	h, fake, chat := quickHandler(t)
 	pressOn(h, chat, keyboards.MenuTourPrefix+keyboards.ScreenCreate, screenUnderHelp())

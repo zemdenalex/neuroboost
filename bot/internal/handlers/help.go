@@ -79,6 +79,15 @@ func (h *Handler) handleMenuTour(chatID int64, messageID int, data string, msg *
 		h.explainInPlace(chatID, messageID, msg, text, kb)
 		return true
 	case strings.HasPrefix(data, keyboards.MenuTourPrefix):
+		// A press of the menu, only from a message: it ends whatever was being
+		// written, exactly as the reply keyboard does (HandleMessage, MenuScreen).
+		us := h.store.GetOrCreate(chatID)
+		if us.CurrentFlow == onboardFlow {
+			h.finishOnboarding(chatID)
+		}
+		if us.CurrentFlow != "" {
+			h.store.ClearFlow(chatID)
+		}
 		h.openScreen(chatID, strings.TrimPrefix(data, keyboards.MenuTourPrefix))
 		return true
 	}
