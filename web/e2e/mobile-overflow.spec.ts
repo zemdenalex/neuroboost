@@ -371,6 +371,27 @@ test.describe('375px layout', () => {
       )
       .toBe(8 * 44)
   })
+
+  // Denis 25.09, variant A: on a phone the tip shows on the first three opens,
+  // and an empty all-day bar is a 20px strip. A far-future day is empty in any
+  // account, so the bar's height does not depend on whose calendar this is.
+  test('calendar: thin all-day strip on an empty day, tip only the first three times', async ({ authedPage }) => {
+    const shown: boolean[] = []
+    for (let i = 0; i < 4; i++) {
+      await authedPage.goto('/calendar?date=2031-01-15')
+      await expect(authedPage.getByTestId('week-day-header').first()).toHaveAttribute('data-day', '2031-01-15', {
+        timeout: 15_000,
+      })
+      shown.push(await authedPage.getByTestId('calendar-hint').isVisible())
+    }
+    expect(shown, 'tip on opens 1-4').toEqual([true, true, true, false])
+    const bar = authedPage.locator('[data-testid="week-day-header"]').first()
+    const top = await bar.evaluate((el) => {
+      const header = el.parentElement as HTMLElement
+      return parseFloat(getComputedStyle(header).top)
+    })
+    expect(top, 'day header sits under a 20px all-day strip').toBe(20)
+  })
 })
 
 /**

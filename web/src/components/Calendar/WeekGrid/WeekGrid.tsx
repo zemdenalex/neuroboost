@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { MOBILE_BREAKPOINT, TABLET_BREAKPOINT, ALL_DAY_HEIGHT, DAY_HEADER_HEIGHT, DAY_MS, HOUR_PX } from './weekgrid.constants';
 import { initialScrollHour } from '../../../lib/calendar/initialScroll';
+import { allDayBarHeight } from '../../../lib/calendar/calendarChrome';
 import { getMondayUtcMs, getMidnightUtcMs, utcToLocalMinutes, generateDays, processEventsForWeek } from './weekgrid.utils';
 import type { WeekGridProps, TouchStart, DayInfo, ProcessedEvent } from './weekgrid.types';
 import { WeekHeader } from './WeekHeader';
@@ -144,6 +145,7 @@ export function WeekGrid({
   }, []);
   
   // Drag handling
+  const allDayHeightRef = useRef(ALL_DAY_HEIGHT);
   const {
     drag,
     dragMeta,
@@ -156,7 +158,17 @@ export function WeekGrid({
     stopAutoScroll,
   } = useWeekGridDrag({
     mondayUtc0: adjustedStart, visibleDays, timezone, scrollRef, containerRef, callbacks: { onCreate, onMoveOrResize },
+    allDayHeightRef,
   });
+
+  // The all-day bar: a thin strip on a phone while empty (Denis 25.09, variant A).
+  // Every coordinate below the bar is measured from this one value.
+  const allDayHeight = allDayBarHeight({
+    isMobile,
+    allDayCount: allDayEvents.length,
+    creatingAllDay: drag?.kind === 'create' && drag.allDay,
+  });
+  allDayHeightRef.current = allDayHeight;
   
   // Keyboard navigation
   const { handleKeyDown } = useKeyboardNav({ events, selectedId, setSelectedId, onSelect, onDelete, onMoveOrResize, cancelDrag });
@@ -201,14 +213,14 @@ export function WeekGrid({
     dragMeta.current = {
       colTop: containerRef.current?.getBoundingClientRect().top ?? 0,
       scrollStart: scrollRef.current?.scrollTop ?? 0,
-      allDayTop: ALL_DAY_HEIGHT,
+      allDayTop: allDayHeight,
     };
 
     if (eventId) {
       const event = allDayEvents.find(e => e.id === eventId);
       if (event) startMove(day, event);
     } else startCreate(day, 0, true);
-  }, [days, allDayEvents, startCreate, startMove, dragMeta, containerRef, scrollRef]);
+  }, [days, allDayEvents, startCreate, startMove, dragMeta, containerRef, scrollRef, allDayHeight]);
   
   const handleQuickCreate = useCallback(() => {
     const start = new Date(), end = new Date(start.getTime() + 3600000);
@@ -265,7 +277,7 @@ export function WeekGrid({
       const dayIndex = Math.floor((e.clientX - rect.left) / (rect.width / visibleDays));
       const targetDay = days[Math.max(0, Math.min(days.length - 1, dayIndex))];
       if (targetDay) {
-        const yInTimeGrid = e.clientY - rect.top - ALL_DAY_HEIGHT - DAY_HEADER_HEIGHT;
+        const yInTimeGrid = e.clientY - rect.top - allDayHeight - DAY_HEADER_HEIGHT;
         const dropMin = Math.max(0, Math.round((yInTimeGrid + (scrollRef.current?.scrollTop || 0)) / 44 * 60 / 15) * 15);
         onTaskDrop(dragData.task, new Date(targetDay.dayUtc0 + dropMin * 60000));
       }
@@ -321,6 +333,7 @@ export function WeekGrid({
             onSelect={onSelect}
             onSelectId={setSelectedId}
             onDragStart={handleAllDayDragStart}
+            height={allDayHeight}
           />
 
           {days.map(day => (
@@ -328,6 +341,7 @@ export function WeekGrid({
               key={day.i}
               day={day}
               dayColour={dayColours[dayKey(day.dayUtc0, timezone)]}
+              allDayHeight={allDayHeight}
               events={timedPerDay.get(day.dayUtc0) || []}
               selectedId={selectedId}
               currentDayUtc0={nowInfo.dayUtc0}

@@ -1,8 +1,9 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getTimezoneOffsetMs } from './weekgrid.utils';
 import { DAY_MS } from './weekgrid.constants';
 import { dateLocale } from '../../../utils/date';
+import { takeCalendarHint } from '../../../lib/calendar/calendarChrome';
 
 interface WeekHeaderProps {
   mondayUtc0: number;
@@ -31,6 +32,16 @@ export function WeekHeader({
   headerExtra,
 }: WeekHeaderProps) {
   const { t, i18n } = useTranslation('calendar');
+  // On a phone the tip shows on the first three opens, then lives under «?»
+  // (Denis 25.09, variant A). Counted once per mount, not per render.
+  const [mobileHint] = useState(() =>
+    // Accessors, not window.localStorage itself: touching it can throw when
+    // storage is blocked, and the throw must land inside takeCalendarHint's try.
+    takeCalendarHint({
+      getItem: (k) => window.localStorage.getItem(k),
+      setItem: (k, v) => window.localStorage.setItem(k, v),
+    })
+  );
   const locale = dateLocale(i18n.language);
 
   const offset = getTimezoneOffsetMs(timezone);
@@ -125,9 +136,11 @@ export function WeekHeader({
         </div>
       </div>
       
-      <div className="text-xs text-zinc-400">
-        {isMobile ? t('helpMobile') : t('helpDesktop')}
-      </div>
+      {(!isMobile || mobileHint) && (
+        <div data-testid="calendar-hint" className="text-xs text-zinc-400">
+          {isMobile ? t('helpMobile') : t('helpDesktop')}
+        </div>
+      )}
     </div>
   );
 }

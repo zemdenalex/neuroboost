@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { HOUR_PX, ALL_DAY_HEIGHT, DAY_HEADER_HEIGHT } from './weekgrid.constants';
+import { HOUR_PX, DAY_HEADER_HEIGHT } from './weekgrid.constants';
 import { formatDayLabel, utcToLocalMinutes, clampMins, snapMin, topToMins } from './weekgrid.utils';
 import type { ProcessedEvent, DragState, DragMeta, NbEvent, TouchStart, DayInfo } from './weekgrid.types';
 import { HourGrid } from './HourGrid';
@@ -14,6 +14,8 @@ interface DayColumnProps {
   day: DayInfo;
   /** The day-tasks square for this day, if it has one. */
   dayColour?: string;
+  /** Height of the all-day bar above the day header (thin on a phone while empty). */
+  allDayHeight: number;
   events: ProcessedEvent[];
   selectedId: string | null;
   currentDayUtc0: number | null;
@@ -46,6 +48,7 @@ interface DayColumnProps {
 export const DayColumn = memo(function DayColumn({
   day,
   dayColour,
+  allDayHeight,
   events,
   selectedId,
   currentDayUtc0,
@@ -158,7 +161,7 @@ export const DayColumn = memo(function DayColumn({
     if (!scrollRect) return;
     
     const touchYRelative = e.touches[0].clientY - scrollRect.top;
-    const timeGridStartY = ALL_DAY_HEIGHT + DAY_HEADER_HEIGHT;
+    const timeGridStartY = allDayHeight + DAY_HEADER_HEIGHT;
     const touchYInTimeGrid = touchYRelative - timeGridStartY;
     const timeGridHeight = scrollRect.height - timeGridStartY;
     
@@ -195,7 +198,7 @@ export const DayColumn = memo(function DayColumn({
       {/* Day header */}
       <div 
         className={`bg-zinc-900 border-b border-zinc-700 sticky ${isToday ? 'bg-zinc-800' : ''}`}
-        style={{ top: ALL_DAY_HEIGHT, zIndex: 25, height: DAY_HEADER_HEIGHT }}
+        style={{ top: allDayHeight, zIndex: 25, height: DAY_HEADER_HEIGHT }}
       >
         <div
           data-testid="week-day-header"
