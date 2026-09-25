@@ -331,6 +331,24 @@ test.describe('375px layout', () => {
     await expect(row).toBeVisible({ timeout: 15_000 })
     await expect(row.locator('input[type="checkbox"]')).toBeHidden()
   })
+
+  // Tour 25.09, second pass (MW11): the day opened at 00:00, a screen of empty
+  // small hours with "00:00" half under the sticky header.
+  test('calendar: the day opens near the current hour, not at midnight', async ({ authedPage }) => {
+    const hour = Number(
+      new Intl.DateTimeFormat('en-GB', { hour: 'numeric', hourCycle: 'h23', timeZone: 'Europe/Moscow' }).format(new Date()),
+    )
+    test.skip(hour < 2, 'before 02:00 an hour before now is the top anyway')
+    await authedPage.goto('/calendar')
+    await expect(authedPage.getByTestId('week-day-header').first()).toBeVisible({ timeout: 15_000 })
+    const top = await authedPage.evaluate(() => {
+      const header = document.querySelector('[data-testid="week-day-header"]')
+      let el = header?.parentElement ?? null
+      while (el && getComputedStyle(el).overflowY !== 'auto') el = el.parentElement
+      return el?.scrollTop ?? -1
+    })
+    expect(top, 'opened at midnight').toBeGreaterThan(0)
+  })
 })
 
 /**

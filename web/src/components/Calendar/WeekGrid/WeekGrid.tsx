@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { MOBILE_BREAKPOINT, TABLET_BREAKPOINT, ALL_DAY_HEIGHT, DAY_HEADER_HEIGHT, DAY_MS } from './weekgrid.constants';
+import { MOBILE_BREAKPOINT, TABLET_BREAKPOINT, ALL_DAY_HEIGHT, DAY_HEADER_HEIGHT, DAY_MS, HOUR_PX } from './weekgrid.constants';
+import { initialScrollHour } from '../../../lib/calendar/initialScroll';
 import { getMondayUtcMs, getMidnightUtcMs, utcToLocalMinutes, generateDays, processEventsForWeek } from './weekgrid.utils';
 import type { WeekGridProps, TouchStart, DayInfo, ProcessedEvent } from './weekgrid.types';
 import { WeekHeader } from './WeekHeader';
@@ -37,6 +38,18 @@ export function WeekGrid({
     () => initialMobileDayOffset(currentWeekOffset, timezone)
   );
   const isMobile = visibleDays < 7;
+
+  // Open on the current hour, not 00:00 (mobile tour 25.09, MW11). Once, on
+  // mount: later period changes keep whatever the person scrolled to.
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const nowHour = Number(
+      new Intl.DateTimeFormat('en-GB', { hour: 'numeric', hourCycle: 'h23', timeZone: timezone }).format(new Date())
+    );
+    el.scrollTop = initialScrollHour({ nowHour, todayVisible: currentWeekOffset === 0 }) * HOUR_PX;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount only, by design
+  }, []);
 
   // Calculate Monday timestamp
   const mondayUtc0 = useMemo(
