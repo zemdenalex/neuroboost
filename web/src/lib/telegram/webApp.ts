@@ -27,6 +27,9 @@ export interface TgWebApp {
   disableVerticalSwipes?: () => void
   isVersionAtLeast: (version: string) => boolean
   BackButton: TgBackButton
+  /** Telegram's current scheme; follows the person's theme switch. */
+  colorScheme?: 'light' | 'dark'
+  onEvent?: (event: 'themeChanged', cb: () => void) => void
 }
 
 declare global {

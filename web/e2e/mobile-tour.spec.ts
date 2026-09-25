@@ -42,7 +42,12 @@ test.describe('mobile tour', () => {
       test.setTimeout(90_000)
       // Not networkidle: the vite dev server's HMR socket keeps the network
       // busy forever, and a first-compile page can take 20 s.
-      await authedPage.goto(route, { waitUntil: 'load', timeout: 60_000 })
+      // NB_TOUR_THEME=light: Telegram's theme hash alone switches the app light
+      // without starting the Mini App sign-in (docs/tasks-light-theme.md).
+      const theme = process.env.NB_TOUR_THEME === 'light'
+        ? '#tgWebAppThemeParams=' + encodeURIComponent(JSON.stringify({ bg_color: '#ffffff' }))
+        : ''
+      await authedPage.goto(route + theme, { waitUntil: 'load', timeout: 60_000 })
       await authedPage.waitForTimeout(3000)
       await authedPage.screenshot({ path: `${dir}/${name}.png` })
       await authedPage.screenshot({ path: `${dir}/${name}-full.png`, fullPage: true })

@@ -40,9 +40,9 @@
 /* Custom scrollbar styling for neurodivergent-friendly design */
 :root {
   --scrollbar-width: 8px;
-  --scrollbar-track: #18181b;
-  --scrollbar-thumb: #3f3f46;
-  --scrollbar-thumb-hover: #52525b;
+  --scrollbar-track: rgb(var(--nb-zinc-900));
+  --scrollbar-thumb: rgb(var(--nb-zinc-700));
+  --scrollbar-thumb-hover: rgb(var(--nb-zinc-600));
 }
 
 /* Webkit browsers (Chrome, Safari, Edge) */
@@ -116,7 +116,7 @@ input[type="range"] {
 }
 
 input[type="range"]::-webkit-slider-track {
-  background: #3f3f46;
+  background: rgb(var(--nb-zinc-700));
   height: 6px;
   border-radius: 3px;
 }
@@ -138,7 +138,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
 }
 
 input[type="range"]::-moz-range-track {
-  background: #3f3f46;
+  background: rgb(var(--nb-zinc-700));
   height: 6px;
   border-radius: 3px;
 }
