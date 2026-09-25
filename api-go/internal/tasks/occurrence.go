@@ -31,6 +31,9 @@ import (
 const (
 	StateDone    = "done"
 	StateSkipped = "skipped"
+	// StateOpen is not stored: it removes the day's row, putting the day
+	// back to «no answer» (the web's Undo after a tick, 4.11).
+	StateOpen = "open"
 )
 
 var (
@@ -113,7 +116,7 @@ func OccurrenceState(ctx context.Context, taskID string, day time.Time) (string,
 
 // MarkOccurrence records what happened to one day of a series.
 func MarkOccurrence(ctx context.Context, userID, taskID string, day time.Time, state string) error {
-	if state != StateDone && state != StateSkipped {
+	if state != StateDone && state != StateSkipped && state != StateOpen {
 		return fmt.Errorf("unknown occurrence state: %s", state)
 	}
 
@@ -123,6 +126,13 @@ func MarkOccurrence(ctx context.Context, userID, taskID string, day time.Time, s
 	}
 	if !recurrence.Occurs(rule, anchor, day) {
 		return ErrNotAnOccurrence
+	}
+
+	if state == StateOpen {
+		_, err = db.Pool.Exec(ctx,
+			`DELETE FROM task_occurrence WHERE task_id = $1 AND user_id = $2 AND occurrence = $3`,
+			taskID, userID, day.Format("2006-01-02"))
+		return err
 	}
 
 	_, err = db.Pool.Exec(ctx, `

@@ -31,6 +31,7 @@ import {
   createTask,
   createTasksBatch,
   updateTask,
+  markOccurrence,
   deleteTask,
   scheduleTask,
   Task,
@@ -41,6 +42,7 @@ import {
   CONTEXT_ICONS,
 } from '../../api/tasks'
 import { answeredToday } from '../../types'
+import { tickAction, tickedToday } from '../../lib/tasks/tickAction'
 import { defaultScheduleSlot } from '../../lib/schedule/defaultScheduleSlot'
 import { toDateTimeLocalValue, fromDateTimeLocalValue } from '../../lib/datetime/dateTimeLocal'
 import { ReminderOffsets } from '../../components/ReminderOffsets/ReminderOffsets'
@@ -259,9 +261,35 @@ export default function Tasks() {
     }
   }
 
+  // A running series answers today's day, not its status (4.11, lib/tasks/tickAction).
+  const setOccurrence = async (task: Task, state: 'done' | 'open', date?: string) => {
+    const previous = task.occurrence_state
+    const shown = state === 'done' ? 'done' : undefined
+    setTasks(prev => prev.map(t => (t.id === task.id ? { ...t, occurrence_state: shown } : t)))
+    try {
+      const answer = await markOccurrence(task.id, state, date)
+      return answer.occurrence
+    } catch (error) {
+      console.error('Failed to mark the day:', error)
+      setTasks(prev => prev.map(t => (t.id === task.id ? { ...t, occurrence_state: previous } : t)))
+      return null
+    }
+  }
+
   const handleStatusToggle = async (task: Task) => {
+    const action = tickAction(task)
+    if (action.kind === 'occurrence') {
+      const day = await setOccurrence(task, action.state)
+      if (day && action.state === 'done') {
+        showToast(t('toast.closedToday', { title: task.title }), {
+          label: t('toast.undo'),
+          onClick: () => void setOccurrence({ ...task, occurrence_state: 'done' }, 'open', day),
+        })
+      }
+      return
+    }
     const previous = task.status
-    const next: TaskStatus = previous === 'DONE' ? 'TODO' : 'DONE'
+    const next = action.next
     const ok = await setStatus(task, next)
     if (ok && next === 'DONE') {
       showToast(t('toast.closed', { title: task.title }), {
@@ -401,9 +429,11 @@ export default function Tasks() {
   const selectedTasks = () => tasks.filter(task => selected.has(task.id))
 
   const handleBulkClose = async () => {
-    const batch = selectedTasks().filter(task => task.status !== 'DONE')
+    const batch = selectedTasks().filter(task => !tickedToday(task))
     setSelected(new Set())
-    await Promise.all(batch.map(task => setStatus(task, 'DONE')))
+    await Promise.all(
+      batch.map(task => (tickAction(task).kind === 'occurrence' ? setOccurrence(task, 'done') : setStatus(task, 'DONE'))),
+    )
     if (batch.length > 0) showToast(t('toast.bulkClosed', { count: batch.length }))
   }
 
@@ -625,9 +655,10 @@ export default function Tasks() {
                             <button
                               data-hint="tasks.complete"
                               onClick={() => handleStatusToggle(task)}
+                              data-testid="task-tick"
                               className="shrink-0"
                             >
-                              {task.status === 'DONE' ? (
+                              {tickedToday(task) ? (
                                 <CheckCircle className="w-5 h-5 text-green-500" />
                               ) : (
                                 <Circle className="w-5 h-5 text-zinc-600 hover:text-zinc-400" />
@@ -636,7 +667,7 @@ export default function Tasks() {
 
                             {/* Task content */}
                             <div className="flex-1 min-w-0">
-                              <div className={`font-mono text-sm ${task.status === 'DONE' ? 'text-zinc-500 line-through' : 'text-white'}`}>
+                              <div className={`font-mono text-sm ${tickedToday(task) ? 'text-zinc-500 line-through' : 'text-white'}`}>
                                 {task.title}
                               </div>
                               

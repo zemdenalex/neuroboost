@@ -159,6 +159,19 @@ export async function updateTask(id: string, data: UpdateTaskRequest): Promise<T
   return api.patch<Task>(`/tasks/${id}`, data)
 }
 
+/**
+ * Answers one day of a repeating task: 'done', or 'open' to take the answer
+ * back. No date means the day the series is on for the user (the server
+ * resolves it); the answer names the day it wrote, for an Undo to reuse.
+ */
+export async function markOccurrence(
+  id: string,
+  state: 'done' | 'open',
+  date?: string,
+): Promise<{ occurrence: string; state: string }> {
+  return api.post(`/tasks/${encodeURIComponent(id)}/occurrences`, date ? { state, date } : { state })
+}
+
 export async function deleteTask(id: string): Promise<void> {
   return api.delete(`/tasks/${id}`)
 }

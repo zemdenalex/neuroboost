@@ -65,6 +65,7 @@
   "taskCount_many": "{{count}} задач",
   "toast": {
     "closed": "Закрыто «{{title}}»",
+    "closedToday": "На сегодня сделано: «{{title}}»",
     "undo": "Вернуть",
     "bulkClosed": "Закрыто: {{count}}",
     "bulkMoved": "Перенесено на завтра: {{count}}"
