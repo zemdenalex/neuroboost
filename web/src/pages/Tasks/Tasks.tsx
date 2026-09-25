@@ -584,7 +584,12 @@ export default function Tasks() {
                             onClick={(e) => handleRowSelect(task.id, e.shiftKey)}
                             aria-label={t('bulk.select', { title: task.title })}
                             className={`shrink-0 accent-blue-500 transition-opacity focus-visible:opacity-100 ${
-                              selected.size > 0 ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100'
+                              selected.size > 0
+                                ? 'opacity-100'
+                                : // A phone has no hover, so there it would be an invisible
+                                  // control taking the row's width that a tap beside the
+                                  // circle silently ticks (tour 25.09, MW10): not drawn.
+                                  'hidden md:block opacity-0 group-hover:opacity-100 group-focus-within:opacity-100'
                             }`}
                           />
                           {/* Status toggle */}

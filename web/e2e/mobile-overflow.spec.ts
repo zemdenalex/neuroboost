@@ -321,6 +321,16 @@ test.describe('375px layout', () => {
       expect(box!.x, `${route} left gutter`).toBeLessThanOrEqual(19)
     })
   }
+
+  // Tour 25.09, second pass (MW10): the bulk-select checkbox is opacity-0
+  // until hover, and a phone has no hover. It took the row's width for an
+  // invisible control that a tap left of the circle silently ticked.
+  test('tasks: no invisible select box in a phone row', async ({ authedPage }) => {
+    await authedPage.goto('/tasks')
+    const row = authedPage.locator('[id^="task-"]').first()
+    await expect(row).toBeVisible({ timeout: 15_000 })
+    await expect(row.locator('input[type="checkbox"]')).toBeHidden()
+  })
 })
 
 /**
