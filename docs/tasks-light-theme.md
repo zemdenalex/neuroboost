@@ -14,11 +14,11 @@
 
 ## Шаги
 
-- [ ] LT1 `lib/theme/theme.ts`: `resolveTheme({ telegramScheme, saved })` → `'dark' | 'light'` (в Telegram — его `colorScheme`, вне Telegram — тёмная, пока нет своего выбора); тесты
-- [ ] LT2 `tailwind.config`: `zinc`/`white`/`black` через переменные; `index.css`: значения для `:root` (тёмная = сегодняшние hex) и `[data-theme="light"]` (перевёрнутая шкала). Проверка: скриншот-тур в тёмной теме **пиксель в пиксель** как до правки (сравнение PNG), иначе переменные не равны старым цветам
-- [ ] LT3 Применение: `data-theme` на `<html>` из `resolveTheme` при старте; в Mini App — подписка на `themeChanged` (человек переключил тему Telegram)
-- [ ] LT4 Скриншот-тур в светлой теме (14 экранов, 375px + 1440px), разбор, точечные правки контраста — не меньше двух кругов (`E:/Projects/.claude/rules/visual-build-loop.md`)
-- [ ] LT5 e2e: `?theme=light`-запуск (или подменённый `colorScheme`) → фон `html` светлый, текст тёмный; тёмная по умолчанию не меняется
+- [x] LT1 (`bddb0bf`) `lib/theme/theme.ts`: `resolveTheme({ telegramScheme, saved })` → `'dark' | 'light'` (в Telegram — его `colorScheme`, вне Telegram — тёмная, пока нет своего выбора); тесты
+- [x] LT2 (`9267985`; тёмная сверена попиксельно: 12 из 14 экранов 0 px разницы, 2 — линия «сейчас» и загрузка) `tailwind.config`: `zinc`/`white`/`black` через переменные; `index.css`: значения для `:root` (тёмная = сегодняшние hex) и `[data-theme="light"]` (перевёрнутая шкала). Проверка: скриншот-тур в тёмной теме **пиксель в пиксель** как до правки (сравнение PNG), иначе переменные не равны старым цветам
+- [x] LT3 (тема из `tgWebAppThemeParams` в hash до первого кадра + `themeChanged`) Применение: `data-theme` на `<html>` из `resolveTheme` при старте; в Mini App — подписка на `themeChanged` (человек переключил тему Telegram)
+- [x] LT4 (2 круга: круг 1 — бледные акценты `*-400` и тёмные подложки `*-900/NN`; круг 2 — акценты в тех же оттенках тоже переменные, 300/400↔700/600, 800/900/950↔200/100/50; тёмная снова 0 px) Скриншот-тур в светлой теме (14 экранов, 375px + 1440px), разбор, точечные правки контраста — не меньше двух кругов (`E:/Projects/.claude/rules/visual-build-loop.md`)
+- [x] LT5 (`e2e/theme.spec.ts` + сабботаж) e2e: `?theme=light`-запуск (или подменённый `colorScheme`) → фон `html` светлый, текст тёмный; тёмная по умолчанию не меняется
 - [ ] LT6 Шапка и фон Telegram под тему (`setHeaderColor`, `setBackgroundColor`)
 - [ ] 🟡 LT7 Вопрос Денису после LT4: светлая тема и вне Telegram (переключатель в ⚙️)? — не решено
 
