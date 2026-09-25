@@ -30,6 +30,8 @@
 
 ## Новые направления (словами Дениса, с датой)
 
+- 25.09: *«work in a loop to create telegram miniapp and fix mobile web»* — луп идёт: `docs/tasks-mini-app.md`, `docs/tasks-mobile-web.md`; проверка Денису — `docs/proverka-mini-app.md` (после push)
+- 24.09 (через корень): про Jev (TypeSafe, быстрые типизированные решения) — *«for neuroboost, that's really great»*. Факты: `E:/Projects/100 - Research/ai-llm/jev-generative-ui-2026-09.md` (даты не сравнивает, русский не заявлен, регистрация на паузе с 22.09). Годится для типа сообщения, категории, энергии, следующей карточки — не для разбора времени. Первый шаг без Дениса: проверить доступ и русский на 20 реальных фразах бота
 - 24.09: *«telegram miniapp or android app»* — есть разведка-спека `docs/superpowers/specs/2026-09-24-mini-app-and-android-razvedka.md` — первый шаг без Дениса: тест проверки `initData` (HMAC `WebAppData`) + `POST /api/auth/telegram-webapp` в `api-go/internal/auth/`, по TDD
 - 24.09: *«start building the web version, now it's far behind»* + *«let's build all of them, make a default and other to choose in settings»* — месячный вид, 5 вариантов: чек-лист `docs/tasks-web-month.md`, спека `docs/team/architecture/V003-20260924-arc-web-month-view.md`; ветка `feat/web-month`
 - 24.09: *«What about the docs or other problems, admin, tools, etc.»* — первый шаг без Дениса: аудит `pages/Admin` и `pages/Tools` (что живо, что заглушка), список в `docs/team/research/`

@@ -24,6 +24,11 @@
 - [x] MW11 (день открывается на часе «сейчас − 1», другая неделя на 08:00; `lib/calendar/initialScroll.ts`; 6 drag-спек писались под `scrollTop = 0` и упали — им добавлен `e2e/fixtures/grid.ts` `scrollGridToTop`; ⚠ `pnpm typecheck` не видит `web/e2e/` — ошибка `page is not defined` нашлась только прогоном) **Calendar**: день открывается на 00:00, и подпись «00:00» срезана шапкой дня; открывать на рабочем начале или текущем часе · ~20 мин · ~40k
 - [ ] MW12 **Tasks**: название задачи переносится («позвонить в / банк») — три иконки справа всегда видны на телефоне (~110px); вариант: действия за «⋯» или свайпом — вкус, Денису
 
+## Найдено попутно
+
+- [ ] 🟡 `e2e/month-view.spec.ts` «choosing a variant in Settings saves month_view_variant» флакает: `apiResponse.json: Response has been disposed` (1 из 3 прогонов 25.09, потом 2/2 зелёные) — гонка в собственном `route` спеки
+- [ ] `pnpm typecheck` не проверяет `web/e2e/` (ошибка `page is not defined` нашлась только прогоном) — отдельный `tsconfig` для e2e или `tsc -p e2e` в CI · ~15 мин
+
 ## Не входит
 
 - Месячный вид на мобиле (решение 24.09: только десктоп, `effectiveView`)
