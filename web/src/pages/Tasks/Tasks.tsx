@@ -43,6 +43,7 @@ import {
 } from '../../api/tasks'
 import { answeredToday } from '../../types'
 import { tickAction, tickedToday, undoOccurrence } from '../../lib/tasks/tickAction'
+import { nestGroups, subtaskProgress } from '../../lib/tasks/taskTree'
 import { todayInZone } from '../../lib/dayTasks/dayColour'
 import { ApiError } from '../../api/client'
 import { defaultScheduleSlot } from '../../lib/schedule/defaultScheduleSlot'
@@ -231,8 +232,12 @@ export default function Tasks() {
       groups.set(priority, sortWithinPriority(list))
     }
 
-    return groups
+    // Subtasks under their parent, indented (lib/tasks/taskTree, N2 of pass 3).
+    return nestGroups(groups)
   }, [filteredTasks])
+
+  // «✓ 1/3» on a parent, from every task: a filter must not change the count.
+  const progress = useMemo(() => subtaskProgress(tasks), [tasks])
 
   // Handlers
   const toggleGroup = (priority: number) => {
@@ -418,7 +423,7 @@ export default function Tasks() {
   // Rows in the order they are rendered, so a Shift+click range matches what
   // is on screen rather than the order the data happens to be in.
   const visibleIds = useMemo(
-    () => Array.from(tasksByPriority.values()).flat().map(task => task.id),
+    () => Array.from(tasksByPriority.values()).flat().map(row => row.task.id),
     [tasksByPriority],
   )
 
@@ -632,12 +637,21 @@ export default function Tasks() {
                   {/* Tasks */}
                   {expandedGroups.has(priority) && (
                     <div className="border-t border-zinc-800">
-                      {priorityTasks.map(task => {
+                      {priorityTasks.map(({ task, depth }) => {
+                        const sub = progress.get(task.id)
                         const phoneVariant = isPhone ? rowActions : null
                         const rowTone =
                           highlightId === task.id ? 'bg-blue-900/30 ring-1 ring-blue-500' : selected.has(task.id) ? 'bg-blue-950/40' : 'hover:bg-zinc-800/30'
                         const body = (
                           <>
+                            {depth > 0 && (
+                              <span
+                                aria-hidden
+                                data-testid="subtask-indent"
+                                className="shrink-0 self-stretch border-l border-zinc-700"
+                                style={{ marginLeft: (depth - 1) * 20, width: 12 }}
+                              />
+                            )}
                             {/* Selection — Shift+click extends from the last plain click.
                                 Hidden at rest so the row shows ONE control and the
                                 "done" circle is unambiguous; it fades in on hover, on
@@ -679,13 +693,19 @@ export default function Tasks() {
                             <div className="flex-1 min-w-0">
                               <div className={`font-mono text-sm ${tickedToday(task) ? 'text-zinc-500 line-through' : 'text-white'}`}>
                                 {task.title}
+                                {sub && (
+                                  <span data-testid="subtask-progress" className="ml-2 text-xs text-zinc-500">
+                                    ✓ {sub.done}/{sub.total}
+                                  </span>
+                                )}
                               </div>
                               
                               {/* Meta info */}
                               <div className="flex items-center gap-3 mt-1">
                                 {task.due_date && (
                                   <span className={`flex items-center gap-1 text-xs ${
-                                    new Date(task.due_date) < new Date() && task.status !== 'DONE'
+                                    // A running series' due_date is the day it began: never «overdue».
+                                    new Date(task.due_date) < new Date() && task.status !== 'DONE' && !task.rrule
                                       ? 'text-red-400'
                                       : 'text-zinc-500'
                                   }`}>
