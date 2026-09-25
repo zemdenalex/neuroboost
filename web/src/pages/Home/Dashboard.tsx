@@ -8,6 +8,7 @@ import { getEvents, getTasks } from '../../api'
 import type { NbEvent } from '../../types'
 import type { Task } from '../../types'
 import { dateLocale } from '../../utils/date'
+import { taskCounts } from '../../lib/home/taskCounts'
 
 function formatTime(iso: string): string {
   return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -19,12 +20,6 @@ function formatDate(date: Date, locale: string): string {
     day: 'numeric',
     month: 'long',
   })
-}
-
-function isOverdue(task: Task): boolean {
-  if (!task.dueDate) return false
-  if (task.status === 'DONE' || task.status === 'CANCELLED') return false
-  return new Date(task.dueDate) < new Date()
 }
 
 export function Dashboard() {
@@ -61,9 +56,8 @@ export function Dashboard() {
     .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime())
     .slice(0, 6)
 
-  const todoCount = tasks.filter(t => t.status === 'TODO' || t.status === 'IN_PROGRESS' || t.status === 'SCHEDULED').length
-  const doneCount = tasks.filter(t => t.status === 'DONE').length
-  const overdueCount = tasks.filter(isOverdue).length
+  // Repeating tasks by their day, not their status (lib/home/taskCounts)
+  const { todo: todoCount, done: doneCount, overdue: overdueCount } = taskCounts(tasks)
 
   return (
     <div className="h-full overflow-y-auto bg-zinc-950 text-zinc-100">
