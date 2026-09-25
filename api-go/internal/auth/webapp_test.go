@@ -104,7 +104,10 @@ func TestVerifyWebAppInitDataRefuses(t *testing.T) {
 		{"one field changed", tampered, webAppToken, now},
 		{"another bot's token", good, "999:other", now},
 		{"signed with the Login Widget scheme", widget, webAppToken, now},
-		{"older than a day", good, webAppToken, now.Add(25 * time.Hour)},
+		// An hour, not a day (review M1, 25.09): the exchange happens in the first
+		// second of a launch, and a leaked string should not be a day of access.
+		{"older than an hour", good, webAppToken, now.Add(61 * time.Minute)},
+		{"signed in the future", good, webAppToken, now.Add(-6 * time.Minute)},
 		{"no hash", strings.Split(good, "&hash=")[0], webAppToken, now},
 		{"empty token on the server", good, "", now},
 		{"no user field", signInitData(t, webAppToken, noUser), webAppToken, now},

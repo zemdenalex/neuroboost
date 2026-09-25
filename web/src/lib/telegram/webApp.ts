@@ -67,6 +67,32 @@ export function startAppRoute(param: string | null): string | null {
   return null
 }
 
+/**
+ * Inside the Mini App a stored session is kept only if it belongs to the person
+ * who launched it (review I2, 25.09). A failed exchange used to fall back to
+ * whatever token the WebView held, possibly someone else's, and the Mini App
+ * hides Sign out, so there was no way to leave it. The user id is read from
+ * the launch string; the server already checked, or will check, its signature.
+ */
+export function sessionFitsLaunch(initData: string | null, sessionTgId: number | undefined): boolean {
+  if (!initData) return true
+  try {
+    const user = JSON.parse(new URLSearchParams(initData).get('user') ?? '') as { id?: unknown }
+    return typeof user.id === 'number' && user.id === sessionTgId
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Telegram's Back on a page opened first (a start link, or a redirect chain of
+ * replaces) has no history to go back to: it goes to the calendar instead of
+ * doing nothing (review I3). `idx` is React Router's index in history.state.
+ */
+export function backAction(historyIdx: number | undefined): 'back' | 'calendar' {
+  return typeof historyIdx === 'number' && historyIdx > 0 ? 'back' : 'calendar'
+}
+
 export type StartupAuth = 'webapp' | 'stored' | 'none'
 
 /** Inside Telegram the signed identity wins over whatever session storage holds. */
@@ -96,9 +122,41 @@ export function backButtonVisible(pathname: string): boolean {
   return !ROOT_PATHS.has(path)
 }
 
+/**
+ * Telegram's script reads its launch parameters (version, platform, data) from
+ * the hash when it runs. It is loaded async, and by then a redirect (/ to
+ * /home, a start link) may have replaced the URL without the hash: the script
+ * then believes it is version 6.0 and disableVerticalSwipes and BackButton
+ * quietly do nothing (review I1, 25.09). The script itself falls back to
+ * sessionStorage["__telegram__initParams"], the way it survives its own
+ * navigation, so the parameters are seeded there while the hash is intact.
+ * ⚠ That key is the script's internal detail, not a documented API.
+ */
+export function seedSdkParams(
+  storage: { getItem: (k: string) => string | null; setItem: (k: string, v: string) => void },
+  hash: string,
+): void {
+  if (!initDataFromHash(hash)) return
+  let stored: Record<string, string> = {}
+  try {
+    stored = JSON.parse(storage.getItem('__telegram__initParams') ?? '{}') as Record<string, string>
+  } catch {
+    stored = {}
+  }
+  const fresh = Object.fromEntries(new URLSearchParams(hash.slice(1)))
+  storage.setItem('__telegram__initParams', JSON.stringify({ ...stored, ...fresh }))
+}
+
 // Read once at startup: client-side navigation drops the hash, and Telegram's
 // script reads the same hash when it loads, so nothing here rewrites it.
 const launchInitData = typeof window === 'undefined' ? null : initDataFromHash(window.location.hash)
+if (launchInitData) {
+  try {
+    seedSdkParams(window.sessionStorage, window.location.hash)
+  } catch {
+    // Storage blocked: the script falls back to 6.0 behaviour, sign-in is unaffected.
+  }
+}
 
 export function launchedInTelegram(): string | null {
   return launchInitData

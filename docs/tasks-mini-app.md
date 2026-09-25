@@ -22,6 +22,15 @@
 - [x] MA8 `startapp`: `t-<uuid>` → `/tasks?task=<uuid>`, `dt` → `/day-tasks`, прочее игнорируется; один раз за запуск
 - [x] MA8b День `d-2026-09-25` → календарь на этом дне: у `/calendar` нет параметра даты — сначала он (`?date=`), потом ссылка · ~30 мин · ~60k
 
+## Ревью 25.09 (`docs/team/research/V003-20260925-res-review-miniapp-mobile.md`)
+
+- [x] I1 SDK Telegram после редиректа без hash считал себя версией 6.0 → свайпы и «Назад» молча не работали. Параметры запуска кладутся в `sessionStorage.__telegram__initParams` (внутренний запасной путь самого SDK); синхронный `document.write` отвергнут — при недоступном telegram.org повесил бы Mini App
+- [x] I2 Неудачный обмен оставлял чужую сессию из WebView (а «Выйти» скрыт) → сессия остаётся, только если её `tg_id` = `user.id` запуска (`sessionFitsLaunch`)
+- [x] I3 «Назад» на первой странице (start link) ничего не делал → уходит в календарь (`backAction`)
+- [x] M1 Окно повторного использования `initData` 24 ч → 1 ч, `auth_date` из будущего (> 5 мин) отклоняется
+- [ ] 🟡 M3 (отложено) В dev StrictMode первый вход шлёт обмен дважды; гонка создания пользователя по `tg_id` (бот и Mini App одновременно) даёт 500 одному из них — поправить `ON CONFLICT` в `createUserFromTelegram`
+- [ ] 🟡 M4 (отложено) На телефоне с `?date=` сетка прокручена к «сейчас − 1», хотя день не сегодня
+
 ## Бот
 
 - [x] MA9 (`6296e40`, пакет `bot/internal/menubutton`, env `WEBAPP_URL`; на nl-2 в `.env` dev-бота вписать после push — шаг руками или мой после его «ок») Кнопка меню dev-бота `web_app` → `https://dev.neuroboost.website` (после push на staging, через `setChatMenuButton` в коде бота по env `WEBAPP_URL`, пусто = не ставить)

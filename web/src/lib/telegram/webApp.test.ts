@@ -1,9 +1,12 @@
 import { describe, it, expect, vi } from 'vitest'
 import {
+  backAction,
   backButtonVisible,
   initDataFromHash,
   pickStartupAuth,
   prepareWebApp,
+  seedSdkParams,
+  sessionFitsLaunch,
   startAppRoute,
   startParamFromHash,
   type TgWebApp,
@@ -89,5 +92,55 @@ describe('start links (t.me/<bot>/<app>?startapp=…)', () => {
   })
   it('ignores anything it does not know rather than guessing a page', () => {
     for (const p of [null, '', 'x', 't-', 't-../admin', 'dt2', 'd-2026-9-27', 'd-']) expect(startAppRoute(p), String(p)).toBeNull()
+  })
+})
+
+describe('sessionFitsLaunch (review I2)', () => {
+  const launch = 'auth_date=1&hash=x&user=' + encodeURIComponent(JSON.stringify({ id: 4242, first_name: 'A' }))
+  it('outside Telegram any session is fine', () => {
+    expect(sessionFitsLaunch(null, 1)).toBe(true)
+    expect(sessionFitsLaunch(null, undefined)).toBe(true)
+  })
+  it('inside Telegram only the launching person\'s session is kept', () => {
+    expect(sessionFitsLaunch(launch, 4242)).toBe(true)
+    // Somebody else's session left in the WebView, and no Sign out in the Mini App.
+    expect(sessionFitsLaunch(launch, 7)).toBe(false)
+    expect(sessionFitsLaunch(launch, undefined)).toBe(false)
+  })
+  it('an unreadable launch keeps no session', () => {
+    expect(sessionFitsLaunch('user=%7Bbroken', 4242)).toBe(false)
+  })
+})
+
+describe('backAction (review I3)', () => {
+  it('steps back when there is somewhere to go', () => {
+    expect(backAction(2)).toBe('back')
+  })
+  it('goes to the calendar when the page was the first one (a start link)', () => {
+    expect(backAction(0)).toBe('calendar')
+    expect(backAction(undefined)).toBe('calendar')
+  })
+})
+
+describe('seedSdkParams (review I1)', () => {
+  function memory(initial: Record<string, string> = {}) {
+    const m = new Map(Object.entries(initial))
+    return { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => void m.set(k, v), m }
+  }
+  it('keeps the launch parameters where the SDK looks when the hash is gone', () => {
+    const store = memory()
+    seedSdkParams(store, '#tgWebAppData=abc&tgWebAppVersion=8.0&tgWebAppPlatform=android')
+    expect(JSON.parse(store.m.get('__telegram__initParams')!)).toEqual({
+      tgWebAppData: 'abc',
+      tgWebAppVersion: '8.0',
+      tgWebAppPlatform: 'android',
+    })
+  })
+  it('does nothing outside Telegram and keeps what the SDK stored itself', () => {
+    const store = memory({ __telegram__initParams: '{"tgWebAppVersion":"7.0","other":"1"}' })
+    seedSdkParams(store, '#section')
+    expect(store.m.get('__telegram__initParams')).toBe('{"tgWebAppVersion":"7.0","other":"1"}')
+    seedSdkParams(store, '#tgWebAppData=abc&tgWebAppVersion=8.0')
+    expect(JSON.parse(store.m.get('__telegram__initParams')!)).toEqual({ tgWebAppVersion: '8.0', other: '1', tgWebAppData: 'abc' })
   })
 })

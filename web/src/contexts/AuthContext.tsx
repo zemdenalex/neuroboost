@@ -21,7 +21,7 @@ import {
   setStoredToken,
   clearStoredToken,
 } from '../api/client'
-import { launchedInTelegram, loadWebApp, pickStartupAuth, prepareWebApp } from '../lib/telegram/webApp'
+import { launchedInTelegram, loadWebApp, pickStartupAuth, prepareWebApp, sessionFitsLaunch } from '../lib/telegram/webApp'
 
 /**
  * AuthContextValue defines the shape of the authentication context.  In addition
@@ -79,13 +79,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const response = await telegramWebAppLogin(initData)
           setStoredToken(response.token, response.expires_at)
         } catch {
-          // Keep whatever session there was; the login screen covers the rest.
+          // A stored session survives only if it is this person's: checked
+          // against the launch below (sessionFitsLaunch, review I2).
         }
       }
       const token = getStoredToken()
       if (token && !isTokenExpired()) {
         try {
           const userData = await getMe()
+          if (!sessionFitsLaunch(initData, userData.tg_id)) {
+            // Somebody else's session in this WebView: drop it, show the login.
+            clearStoredToken()
+            setLoading(false)
+            return
+          }
           setUser(userData)
           if (userData.settings) {
             applySettingsToLocalStorage(userData.settings)

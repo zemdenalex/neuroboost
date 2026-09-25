@@ -18,8 +18,14 @@ import (
 	"neuroboost/api-go/internal/util"
 )
 
-// webAppMaxAge bounds how old initData may be, the same day as the Login Widget.
-const webAppMaxAge = 24 * time.Hour
+// webAppMaxAge bounds how old initData may be. An hour, not the Login
+// Widget's day (review M1, 25.09): the exchange happens in the first second of
+// a launch, and a leaked string should not buy a day of access. A reload after
+// that fails the exchange and the web keeps the same person's stored session.
+const webAppMaxAge = time.Hour
+
+// webAppClockSkew is how far in the future auth_date may be (clock drift).
+const webAppClockSkew = 5 * time.Minute
 
 // verifyWebAppInitData checks the initData string a Telegram Mini App receives
 // (core.telegram.org/bots/webapps, "Validating data received via the Mini App").
@@ -67,7 +73,8 @@ func verifyWebAppInitData(initData, botToken string, now time.Time) (TelegramLog
 	}
 
 	authDate, err := strconv.ParseInt(values.Get("auth_date"), 10, 64)
-	if err != nil || now.Sub(time.Unix(authDate, 0)) > webAppMaxAge {
+	age := now.Sub(time.Unix(authDate, 0))
+	if err != nil || age > webAppMaxAge || age < -webAppClockSkew {
 		return out, errors.New("initData expired")
 	}
 

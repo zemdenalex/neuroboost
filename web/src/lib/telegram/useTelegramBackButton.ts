@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { backButtonVisible, loadWebApp, takeStartRoute } from './webApp'
+import { backAction, backButtonVisible, loadWebApp, takeStartRoute } from './webApp'
 
 /**
  * Inside the Mini App, Telegram's own BackButton (top-left of its frame) steps
@@ -25,7 +25,11 @@ export function useTelegramBackButton(): void {
         wa.BackButton.hide()
         return
       }
-      const back = () => navigate(-1)
+      const back = () => {
+        const idx = (window.history.state as { idx?: number } | null)?.idx
+        if (backAction(idx) === 'back') navigate(-1)
+        else navigate('/calendar', { replace: true })
+      }
       wa.BackButton.onClick(back)
       wa.BackButton.show()
       off = () => wa.BackButton.offClick(back)
