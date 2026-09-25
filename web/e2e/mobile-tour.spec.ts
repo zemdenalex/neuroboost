@@ -32,7 +32,8 @@ const ROUTES = [
 test.describe('mobile tour', () => {
   test.beforeEach(({}, testInfo) => {
     test.skip(process.env.NB_TOUR !== '1', 'screenshot tour, run by hand')
-    test.skip(testInfo.project.name !== 'mobile', 'mobile viewport only')
+    // NB_TOUR_DESKTOP=1 runs it in the desktop project too (1440px screens).
+    test.skip(testInfo.project.name !== 'mobile' && process.env.NB_TOUR_DESKTOP !== '1', 'mobile viewport only')
   })
 
   for (const route of ROUTES) {
