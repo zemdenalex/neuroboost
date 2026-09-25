@@ -49,6 +49,9 @@ statement. Сценарий: задача без срока и без повто
 
 ### ⚠ M1 · Зона, которую Go принял, Postgres может не принять: `AT TIME ZONE` → 500
 
+✅ **Починено 25.09**: `validTimezone` отклоняет `"Local"`; живьём на postgres:16 проверено — `AT TIME ZONE 'Local'` → `time zone "Local" not recognized`. Тест `TestValidTimezone`, красный до правки. ⚠ Прочие имена, известные Go и неизвестные tz-базе Postgres, не закрыты — сверка с `pg_timezone_names` не сделана.
+
+
 `api-go/internal/tasks/handlers.go:424-432` и `:569-577` (`listTasks`, `getTask`):
 ```sql
 o.occurrence = (NOW() AT TIME ZONE COALESCE((SELECT timezone FROM "user" WHERE id = $2), 'Europe/Moscow'))::date
@@ -68,6 +71,9 @@ tz-базой Postgres. Они не совпадают: Go принимает `"
   (или хотя бы `SELECT now() AT TIME ZONE $1` при записи).
 
 ### ⚠ M2 · `event_id` задачи читается без scope — утекает id события из чужого календаря
+
+✅ **Починено 25.09**: подзапрос `event_id` в `listTasks`/`getTask` ограничен календарями читателя. ⚠ Отдельного красного теста нет (нужна связка задачи с событием в чужом календаре); существующие тесты связки зелёные.
+
 
 `api-go/internal/tasks/handlers.go:419` и `:564`:
 ```sql
@@ -107,6 +113,9 @@ round-trip'ов в одном запросе и серия, закрытая н�
 - **Fix:** 400 при `postpone_days > 366` (как `ErrRangeTooLarge` у `ListOccurrences`).
 
 ### ⚠ M5 · Два экспортированных helper'а читают без всякого scope (сейчас мёртвые)
+
+✅ **Удалены 25.09**: оба helper'а, вызывающих нет ни в `api-go`, ни в `bot` (grep).
+
 
 `api-go/internal/tasks/occurrence.go:103` `OccurrenceState(ctx, taskID, day)` и
 `api-go/internal/tasks/convert.go:329` `ConvertedFrom(ctx, taskID)` — `WHERE task_id = $1`

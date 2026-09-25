@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/jackc/pgx/v5"
-
 	"neuroboost/api-go/internal/calendars"
 	"neuroboost/api-go/internal/recurrence"
 )
@@ -97,21 +95,6 @@ func LocalDay(at time.Time, timezone string) time.Time {
 	}
 	l := at.In(loc)
 	return time.Date(l.Year(), l.Month(), l.Day(), 0, 0, 0, 0, loc)
-}
-
-// OccurrenceState reports what was done with one day: "", "done" or "skipped".
-func OccurrenceState(ctx context.Context, taskID string, day time.Time) (string, error) {
-	var state string
-	err := db.Pool.QueryRow(ctx,
-		`SELECT state FROM task_occurrence WHERE task_id = $1 AND occurrence = $2`,
-		taskID, day.Format("2006-01-02")).Scan(&state)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return "", nil
-	}
-	if err != nil {
-		return "", err
-	}
-	return state, nil
 }
 
 // MarkOccurrence records what happened to one day of a series.

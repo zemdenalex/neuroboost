@@ -324,14 +324,3 @@ func userZone(ctx context.Context, q rowQuerier, userID string) string {
 		`SELECT COALESCE(timezone, 'Europe/Moscow') FROM "user" WHERE id = $1`, userID).Scan(&tz)
 	return tz
 }
-
-// ConvertedFrom reports the event a task was linked to, if any.
-func ConvertedFrom(ctx context.Context, taskID string) (string, error) {
-	var id string
-	err := db.Pool.QueryRow(ctx,
-		`SELECT id::text FROM event WHERE task_id = $1 LIMIT 1`, taskID).Scan(&id)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return "", nil
-	}
-	return id, err
-}

@@ -418,7 +418,7 @@ func listTasks(ctx context.Context, userID, status, category, taskContext string
 		       COALESCE(t.contexts, '{}'), t.energy, t.parent_id, t.completed_at, t.created_at,
 		       t.updated_at, t.actual_minutes, COALESCE(t.reminder_offsets, '{}'),
 		       t.rrule, t.repeat_anchor, t.nag_minutes,
-		       (SELECT e.id::text FROM event e WHERE e.task_id = t.id LIMIT 1),
+		       (SELECT e.id::text FROM event e WHERE e.task_id = t.id AND e.calendar_id = ANY($1) LIMIT 1),
 		       COALESCE(o.state, '')
 		FROM task t
 		LEFT JOIN task_occurrence o
@@ -563,7 +563,7 @@ func getTask(ctx context.Context, userID, taskID string) (*Task, error) {
 		       COALESCE(t.contexts, '{}'), t.energy, t.parent_id, t.completed_at, t.created_at,
 		       t.updated_at, t.actual_minutes, COALESCE(t.reminder_offsets, '{}'),
 		       t.rrule, t.repeat_anchor, t.nag_minutes,
-		       (SELECT e.id::text FROM event e WHERE e.task_id = t.id LIMIT 1),
+		       (SELECT e.id::text FROM event e WHERE e.task_id = t.id AND e.calendar_id = ANY($2) LIMIT 1),
 		       COALESCE(o.state, '')
 		FROM task t
 		LEFT JOIN task_occurrence o
