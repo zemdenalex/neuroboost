@@ -30,6 +30,8 @@ export interface TgWebApp {
   /** Telegram's current scheme; follows the person's theme switch. */
   colorScheme?: 'light' | 'dark'
   onEvent?: (event: 'themeChanged', cb: () => void) => void
+  setHeaderColor?: (color: string) => void
+  setBackgroundColor?: (color: string) => void
 }
 
 declare global {

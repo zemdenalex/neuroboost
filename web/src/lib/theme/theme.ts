@@ -47,3 +47,12 @@ export function applyTheme(theme: Theme, root: HTMLElement = document.documentEl
   root.dataset.theme = theme
   root.style.colorScheme = theme
 }
+
+/**
+ * Telegram's own frame (header bar, the background behind the page) in the
+ * app's colours, so the Mini App reads as one surface (LT6): the page is
+ * zinc-950 and the app's header zinc-900 of the current theme.
+ */
+export function telegramChrome(theme: Theme): { header: string; background: string } {
+  return theme === 'light' ? { header: '#f4f4f5', background: '#fafafa' } : { header: '#18181b', background: '#09090b' }
+}

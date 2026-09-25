@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { resolveTheme, schemeFromHash, schemeFromBg } from './theme'
+import { resolveTheme, schemeFromHash, schemeFromBg, telegramChrome } from './theme'
 
 describe('schemeFromBg', () => {
   it('reads a light or dark background colour', () => {
@@ -36,5 +36,12 @@ describe('resolveTheme (Denis 25.09: follow Telegram)', () => {
   })
   it('outside Telegram stays dark, as the web has always been', () => {
     expect(resolveTheme({ telegram: null })).toBe('dark')
+  })
+})
+
+describe('telegramChrome (LT6)', () => {
+  it("paints Telegram's frame in the app's zinc-900 / zinc-950 of the theme", () => {
+    expect(telegramChrome('dark')).toEqual({ header: '#18181b', background: '#09090b' })
+    expect(telegramChrome('light')).toEqual({ header: '#f4f4f5', background: '#fafafa' })
   })
 })
