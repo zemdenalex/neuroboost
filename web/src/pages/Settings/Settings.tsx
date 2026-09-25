@@ -111,7 +111,7 @@ export default function Settings() {
 
 
   return (
-    <div className="max-w-3xl mx-auto p-6 space-y-8">
+    <div className="max-w-3xl mx-auto p-4 sm:p-6 space-y-6 sm:space-y-8">
         <div data-hint="settings.sections" className="flex items-center justify-between">
           <h1 className="text-2xl font-mono font-bold text-white">{t('title')}</h1>
         </div>

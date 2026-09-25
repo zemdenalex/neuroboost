@@ -45,7 +45,7 @@ export default function Tools() {
   ]
 
   return (
-    <div className="p-6 max-w-3xl mx-auto">
+    <div className="p-4 sm:p-6 max-w-3xl mx-auto">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-zinc-100">{t('hub.title')}</h1>
         <p className="text-zinc-400 mt-1">{t('hub.subtitle')}</p>

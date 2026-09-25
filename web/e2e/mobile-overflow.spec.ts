@@ -305,6 +305,22 @@ test.describe('375px layout', () => {
     const moved = await logo.boundingBox()
     expect(moved!.x, 'logo under the hamburger').toBeGreaterThanOrEqual(burger!.x + burger!.width)
   })
+
+  // Tour 25.09 (MW6): page padding 24px plus card padding 20-24px took ~96px
+  // of 375. On a phone the page keeps 16px a side.
+  for (const [route, selector] of [
+    ['/settings', '[data-testid="settings-hint-section"]'],
+    ['/tools', 'main a[href="/tools/pomodoro"]'],
+    ['/tasks', '[data-testid="task-stats"]'],
+  ] as const) {
+    test(`${route}: the first block spans the phone, not 24px in`, async ({ authedPage }) => {
+      await authedPage.goto(route)
+      const el = authedPage.locator(selector).first()
+      await expect(el).toBeVisible({ timeout: 15_000 })
+      const box = await el.boundingBox()
+      expect(box!.x, `${route} left gutter`).toBeLessThanOrEqual(19)
+    })
+  }
 })
 
 /**

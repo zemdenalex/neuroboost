@@ -404,7 +404,7 @@ export default function Tasks() {
   return (
     <div className="flex flex-col h-full">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-zinc-800 bg-zinc-900">
+        <div className="px-4 sm:px-6 py-4 border-b border-zinc-800 bg-zinc-900">
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-xl font-mono font-semibold text-white">{t('title')}</h1>
             <button
@@ -480,7 +480,7 @@ export default function Tasks() {
         </div>
 
         {/* Task List */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
           {selected.size > 0 && (
             <div className="flex items-center gap-3 rounded-lg border border-blue-900 bg-blue-950/40 px-4 py-2">
               <span className="font-mono text-sm text-blue-200">{t('bulk.count', { count: selected.size })}</span>
