@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import HorizontalHeader from './HorizontalHeader'
 import VerticalSidebar from './VerticalSidebar'
+import { useMediaQuery } from '../../../hooks/useMediaQuery'
+import { effectiveHeaderVariant, PHONE_QUERY } from '../../../lib/layout/headerVariant'
 
 type HeaderVariant = 'horizontal' | 'vertical'
 
@@ -32,7 +34,8 @@ export default function Header() {
     }
   }, [])
 
-  return variant === 'horizontal' ? <HorizontalHeader /> : <VerticalSidebar />
+  const isPhone = useMediaQuery(PHONE_QUERY)
+  return effectiveHeaderVariant(variant, isPhone) === 'horizontal' ? <HorizontalHeader /> : <VerticalSidebar />
 }
 
 export { HorizontalHeader, VerticalSidebar }

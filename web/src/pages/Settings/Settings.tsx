@@ -122,7 +122,8 @@ export default function Settings() {
           </div>
         )}
 
-        <LayoutStyleSection />
+        {/* Desktop only: a phone always has the top bar (lib/layout/headerVariant). */}
+        {!isMobile && <LayoutStyleSection />}
 
         <HintStyleSection />
 

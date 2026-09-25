@@ -258,4 +258,35 @@ test.describe('375px layout', () => {
     const box = await title.boundingBox()
     expect(box!.height, 'title wrapped').toBeLessThan(30)
   })
+
+  // Tour 25.09 (MW5): the "vertical sidebar" layout is hidden below md, so a
+  // phone with that setting (it syncs from the account, e.g. chosen on a
+  // desktop) had no top bar at all: no avatar menu, no help.
+  test('a phone keeps its top bar even with the sidebar layout saved', async ({ authedPage }) => {
+    // The account's settings are applied over localStorage on load, so the
+    // saved variant is substituted in the /auth/me answer; writes are blocked
+    // so the real account never gets it (it is Denis's staging account).
+    await authedPage.route('**/api/auth/me', (route) =>
+      route.request().method() === 'PATCH' ? route.abort() : route.fallback(),
+    )
+    await authedPage.addInitScript(() => {
+      localStorage.setItem('neuroboost-header-variant', 'vertical')
+      const orig = window.fetch.bind(window)
+      window.fetch = async (input, init) => {
+        const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url
+        const res = await orig(input, init)
+        if (!url.includes('/api/auth/me') || (init?.method && init.method !== 'GET')) return res
+        const body = await res.clone().json()
+        body.data.settings = { ...(body.data.settings ?? {}), header_variant: 'vertical' }
+        return new Response(JSON.stringify(body), { status: res.status, headers: { 'Content-Type': 'application/json' } })
+      }
+    })
+    await authedPage.goto('/calendar')
+    await expect(authedPage.getByTestId('calendar-period-title')).toBeVisible({ timeout: 15_000 })
+    await expect(authedPage.locator('header').first(), 'no top bar on the phone').toBeVisible()
+    await authedPage.goto('/settings')
+    // Wait for the page itself: a count of 0 is true before a lazy page renders.
+    await expect(authedPage.getByTestId('settings-hint-section')).toBeVisible({ timeout: 15_000 })
+    await expect(authedPage.getByTestId('settings-layout-section')).toHaveCount(0)
+  })
 })
