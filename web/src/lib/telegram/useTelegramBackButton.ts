@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { backButtonVisible, loadWebApp } from './webApp'
+import { backButtonVisible, loadWebApp, takeStartRoute } from './webApp'
 
 /**
  * Inside the Mini App, Telegram's own BackButton (top-left of its frame) steps
@@ -11,6 +11,11 @@ import { backButtonVisible, loadWebApp } from './webApp'
 export function useTelegramBackButton(): void {
   const { pathname } = useLocation()
   const navigate = useNavigate()
+  // A start link (t.me/<bot>/<app>?startapp=t-<id>) opens its page once.
+  useEffect(() => {
+    const to = takeStartRoute()
+    if (to) navigate(to, { replace: true })
+  }, [navigate])
   useEffect(() => {
     let off: (() => void) | undefined
     let live = true

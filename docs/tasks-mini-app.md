@@ -19,7 +19,8 @@
 - [x] MA5 Вход: при `initData` — `POST /api/auth/telegram-webapp` до экрана логина, токен как обычно; ошибка → обычный логин с понятной строкой; тест на ветвление
 - [x] MA6 (`ready/expand/disableVerticalSwipes` в `prepareWebApp`, `BackButton` — `useTelegramBackButton` в `AppLayout`, «Выйти» скрыт в обеих шапках; вживую проверяется только в Telegram, MA10) Внутри Telegram: `ready()`, `expand()`, `disableVerticalSwipes()` (иначе перетаскивание события сворачивает Mini App), спрятать выход; `BackButton` на не-корневых страницах
 - [x] MA7 (`c3dc519`, `web/e2e/mini-app.spec.ts`; локально красный до push — на staging нет эндпоинта; проводка доказана разовой спекой с подменой ответа) e2e: страница с подменённым `window.Telegram.WebApp` (подписанный `initData` тестовым путём нельзя — токен dev-бота есть в e2e, значит, можно подписать настоящим) → попадаем в календарь без логина
-- [ ] MA8 `startapp`-параметр → глубокий переход (день `d-2026-09-25`, задача `t-<id>`)
+- [x] MA8 `startapp`: `t-<uuid>` → `/tasks?task=<uuid>`, `dt` → `/day-tasks`, прочее игнорируется; один раз за запуск
+- [ ] MA8b День `d-2026-09-25` → календарь на этом дне: у `/calendar` нет параметра даты — сначала он (`?date=`), потом ссылка · ~30 мин · ~60k
 
 ## Бот
 

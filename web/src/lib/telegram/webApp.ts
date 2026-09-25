@@ -44,6 +44,25 @@ export function initDataFromHash(hash: string): string | null {
   return value ? value : null
 }
 
+/** The startapp parameter of a t.me/<bot>/<app>?startapp=… launch, or null. */
+export function startParamFromHash(hash: string): string | null {
+  if (!hash.startsWith('#')) return null
+  return new URLSearchParams(hash.slice(1)).get('tgWebAppStartParam') || null
+}
+
+/**
+ * Where a start link lands. Telegram allows only [A-Za-z0-9_-] (its length
+ * limit is not confirmed, see the research file), so the forms are short: `t-<task uuid>` opens the task, `dt` the day tasks.
+ * Anything unknown is ignored (the app opens as usual) rather than guessed.
+ */
+export function startAppRoute(param: string | null): string | null {
+  if (!param) return null
+  if (param === 'dt') return '/day-tasks'
+  const task = /^t-([0-9a-f-]{36})$/i.exec(param)
+  if (task) return `/tasks?task=${task[1]}`
+  return null
+}
+
 export type StartupAuth = 'webapp' | 'stored' | 'none'
 
 /** Inside Telegram the signed identity wins over whatever session storage holds. */
@@ -79,6 +98,16 @@ const launchInitData = typeof window === 'undefined' ? null : initDataFromHash(w
 
 export function launchedInTelegram(): string | null {
   return launchInitData
+}
+
+const launchStartParam = typeof window === 'undefined' ? null : startParamFromHash(window.location.hash)
+
+/** The page a start link asked for, once per launch; null afterwards. */
+let startRouteTaken = false
+export function takeStartRoute(): string | null {
+  if (startRouteTaken || !launchInitData) return null
+  startRouteTaken = true
+  return startAppRoute(launchStartParam)
 }
 
 let sdk: Promise<TgWebApp | null> | null = null

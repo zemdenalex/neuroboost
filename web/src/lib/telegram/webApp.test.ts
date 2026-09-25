@@ -1,5 +1,13 @@
 import { describe, it, expect, vi } from 'vitest'
-import { backButtonVisible, initDataFromHash, pickStartupAuth, prepareWebApp, type TgWebApp } from './webApp'
+import {
+  backButtonVisible,
+  initDataFromHash,
+  pickStartupAuth,
+  prepareWebApp,
+  startAppRoute,
+  startParamFromHash,
+  type TgWebApp,
+} from './webApp'
 
 // Telegram opens a Mini App with its launch data in the hash:
 // #tgWebAppData=<url-encoded initData>&tgWebAppVersion=8.0&tgWebAppPlatform=ios
@@ -66,5 +74,19 @@ describe('backButtonVisible', () => {
     for (const path of ['/settings', '/tools/kanban', '/day-tasks', '/profile']) {
       expect(backButtonVisible(path), path).toBe(true)
     }
+  })
+})
+
+describe('start links (t.me/<bot>/<app>?startapp=…)', () => {
+  it('reads the start parameter from the launch hash', () => {
+    expect(startParamFromHash('#tgWebAppData=x&tgWebAppStartParam=dt&tgWebAppVersion=8.0')).toBe('dt')
+    expect(startParamFromHash('#tgWebAppData=x')).toBeNull()
+  })
+  it('routes a task link to the task and the day-tasks link to its screen', () => {
+    expect(startAppRoute('t-0b6c2a52-8a54-4bb8-9d0e-1f2a3b4c5d6e')).toBe('/tasks?task=0b6c2a52-8a54-4bb8-9d0e-1f2a3b4c5d6e')
+    expect(startAppRoute('dt')).toBe('/day-tasks')
+  })
+  it('ignores anything it does not know rather than guessing a page', () => {
+    for (const p of [null, '', 'x', 't-', 't-../admin', 'dt2']) expect(startAppRoute(p), String(p)).toBeNull()
   })
 })
