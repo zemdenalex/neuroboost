@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-09-23
 tags: [tooling, method, bot]
-weight: { importance: 4, connectivity: 2, access: 3, last_accessed: 2026-09-25 }
+weight: { importance: 4, connectivity: 2, access: 4, last_accessed: 2026-09-25 }
 sources:
   - file: "bot/internal/handlers/help.go, agenda.go, daytasks_test.go — ремонт 23.09"
 stakes: low

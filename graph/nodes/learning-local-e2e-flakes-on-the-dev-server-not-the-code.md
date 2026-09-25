@@ -4,7 +4,7 @@ title: "Локальный e2e на vite dev-сервере флакает на 
 type: learning
 status: verified
 tags: [neuroboost, web, e2e, tooling]
-weight: { importance: 3, connectivity: 2, access: 1, last_accessed: 2026-09-25 }
+weight: { importance: 3, connectivity: 3, access: 2, last_accessed: 2026-09-25 }
 sources:
   - command: "web/scripts/e2e-local.sh --project desktop e2e/month-view.spec.ts: 4 failed / 7 passed, 4.4 мин; разные тесты каждый прогон, включая /settings"
   - command: "VITE_API_URL=… vite build && vite preview --port 5173; playwright → 11 passed (42.9s)"

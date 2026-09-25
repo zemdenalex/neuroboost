@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-09-24
 tags: [neuroboost, method, loop, denis]
-weight: { importance: 5, connectivity: 4, access: 2, last_accessed: 2026-09-25 }
+weight: { importance: 5, connectivity: 4, access: 3, last_accessed: 2026-09-25 }
 sources:
   - quote: "start the loop, work on the bot update… or you can work on the android app or telegram mini-app. So a lot to do, just don't stop and don't wait for me"
   - quote: "so you basically worked for like fucking 30 minutes… there's so much to do and you decided to do nothing"
