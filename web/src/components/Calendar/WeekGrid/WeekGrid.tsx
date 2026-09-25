@@ -24,6 +24,7 @@ export function WeekGrid({
   onDelete,
   onTaskDrop,
   onWeekChange,
+  focusDay,
 }: WeekGridProps) {
   // Refs
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -73,8 +74,8 @@ export function WeekGrid({
   // (it landed on Monday before this change). Not covered by the mobile specs —
   // both drag specs skip at 375px and recurring-scope never swipes.
   useEffect(() => {
-    setMobileDayOffset(initialMobileDayOffset(currentWeekOffset, timezone));
-  }, [currentWeekOffset, timezone]);
+    setMobileDayOffset(initialMobileDayOffset(currentWeekOffset, timezone, new Date(), focusDay));
+  }, [currentWeekOffset, timezone, focusDay]);
 
   // When mobileDayOffset goes beyond week boundary, advance the week and reset offset
   useEffect(() => {

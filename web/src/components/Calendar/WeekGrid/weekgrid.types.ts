@@ -167,6 +167,8 @@ export interface WeekGridCallbacks {
   onDelete?: (id: string) => void;
   onTaskDrop?: (task: Task, startTime: Date) => void;
   onWeekChange?: (offset: number) => void;
+  /** A day asked for by name: on a phone the single-day view opens on it. */
+  focusDay?: string | null;
 }
 
 // WeekGrid props

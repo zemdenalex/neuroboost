@@ -85,8 +85,9 @@ describe('start links (t.me/<bot>/<app>?startapp=…)', () => {
   it('routes a task link to the task and the day-tasks link to its screen', () => {
     expect(startAppRoute('t-0b6c2a52-8a54-4bb8-9d0e-1f2a3b4c5d6e')).toBe('/tasks?task=0b6c2a52-8a54-4bb8-9d0e-1f2a3b4c5d6e')
     expect(startAppRoute('dt')).toBe('/day-tasks')
+    expect(startAppRoute('d-2026-09-27')).toBe('/calendar?date=2026-09-27')
   })
   it('ignores anything it does not know rather than guessing a page', () => {
-    for (const p of [null, '', 'x', 't-', 't-../admin', 'dt2']) expect(startAppRoute(p), String(p)).toBeNull()
+    for (const p of [null, '', 'x', 't-', 't-../admin', 'dt2', 'd-2026-9-27', 'd-']) expect(startAppRoute(p), String(p)).toBeNull()
   })
 })

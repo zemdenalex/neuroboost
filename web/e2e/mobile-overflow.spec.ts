@@ -349,6 +349,17 @@ test.describe('375px layout', () => {
     })
     expect(top, 'opened at midnight').toBeGreaterThan(0)
   })
+
+  // MA8b: /calendar?date= (a Mini App start link d-YYYY-MM-DD lands here)
+  // opens that very day on a phone, not today or the week's Monday.
+  test('calendar: ?date= opens that day on a phone', async ({ authedPage }) => {
+    // Two days on, in Moscow terms; the week may roll over, which is the point.
+    const target = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Moscow' }).format(new Date(Date.now() + 2 * 864e5))
+    await authedPage.goto(`/calendar?date=${target}`)
+    const header = authedPage.getByTestId('week-day-header').first()
+    await expect(header).toHaveAttribute('data-day', target, { timeout: 15_000 })
+    await expect(authedPage).not.toHaveURL(/date=/)
+  })
 })
 
 /**

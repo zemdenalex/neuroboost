@@ -52,12 +52,16 @@ export function startParamFromHash(hash: string): string | null {
 
 /**
  * Where a start link lands. Telegram allows only [A-Za-z0-9_-] (its length
- * limit is not confirmed, see the research file), so the forms are short: `t-<task uuid>` opens the task, `dt` the day tasks.
+ * limit is not confirmed, see the research file), so the forms are short:
+ * `t-<task uuid>` opens the task, `dt` the day tasks, `d-2026-09-25` the
+ * calendar on that day.
  * Anything unknown is ignored (the app opens as usual) rather than guessed.
  */
 export function startAppRoute(param: string | null): string | null {
   if (!param) return null
   if (param === 'dt') return '/day-tasks'
+  const day = /^d-(\d{4}-\d{2}-\d{2})$/.exec(param)
+  if (day) return `/calendar?date=${day[1]}`
   const task = /^t-([0-9a-f-]{36})$/i.exec(param)
   if (task) return `/tasks?task=${task[1]}`
   return null

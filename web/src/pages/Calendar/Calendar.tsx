@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { taskDeepLinkTo } from '../../lib/tasks/taskDeepLink';
 import { ListTodo } from 'lucide-react';
 import { WeekGrid } from '../../components/Calendar/WeekGrid';
@@ -72,6 +72,8 @@ export function Calendar() {
   // re-render per load would be pure noise.
   const lastLoadedAtRef = useRef(0);
   const [currentWeekOffset, setCurrentWeekOffset] = useState(0);
+  // The day a link or the month view asked for; a phone opens on it.
+  const [focusDay, setFocusDay] = useState<string | null>(null);
   const currentWeekOffsetRef = useRef(0);
   currentWeekOffsetRef.current = currentWeekOffset;
   const [latestEvents] = useState(createLatestOnly);
@@ -312,9 +314,22 @@ export function Calendar() {
   // there at the start of the working day, a drop moves by calendar days.
   const handleOpenDay = useCallback((day: string) => {
     setCurrentWeekOffset(weekOffset(todayInZone(new Date(), timezone), day));
+    setFocusDay(day);
     // Not saved: a look at one week keeps "month" as the view to come back to.
     setSavedView('week');
   }, [timezone]);
+
+  // /calendar?date=YYYY-MM-DD opens that day (Mini App start link d-…),
+  // then the parameter is dropped so a reload does not pin the calendar to it.
+  const [searchParams, setSearchParams] = useSearchParams();
+  useEffect(() => {
+    const day = searchParams.get('date');
+    if (!day || !/^\d{4}-\d{2}-\d{2}$/.test(day)) return;
+    handleOpenDay(day);
+    const next = new URLSearchParams(searchParams);
+    next.delete('date');
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams, handleOpenDay]);
 
   const handleCreateOnDay = useCallback((day: string) => {
     const start = new Date(localTimeOn(day, user?.settings?.work_start ?? '09:00', timezone));
@@ -470,6 +485,7 @@ export function Calendar() {
           />
         ) : (
         <WeekGrid
+          focusDay={focusDay}
           events={shownEvents}
           currentWeekOffset={currentWeekOffset}
           timezone={timezone}
