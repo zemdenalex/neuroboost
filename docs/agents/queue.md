@@ -18,7 +18,8 @@
 
 ## Постоянная работа (конкретно, не «улучшить код»)
 
-- [ ] Аудит кода: `api-go/internal/tasks/` + `api-go/internal/daytasks/` — чьё «сегодня» и чей календарь в каждом запросе (урок `learning-the-right-time-in-the-wrong-zone`) — роль `code-audit`, результат в `docs/team/research/`
+- [x] Аудит кода: `api-go/internal/tasks/` + `api-go/internal/daytasks/` — чьё «сегодня» и чей календарь в каждом запросе (урок `learning-the-right-time-in-the-wrong-zone`) — роль `code-audit`, результат в `docs/team/research/`
+  - ✅ 25.09 отчёт `docs/team/research/V003-20260925-res-audit-today-and-scope.md`: 0 critical · 1 important · 6 minor. Important (якорь серии от старого `due_date` при PATCH rrule+due) — починен с тестом, красный до правки; латентный: ни один клиент так не шлёт. Minor — открыты, список в отчёте; один из них вкус («viewer берёт общую задачу в задачи дня, но закрыть не может») — Денису
 - [ ] Аудит кода: `web/src/pages/Admin/Admin.tsx` — 1095 строк, внутри захардкоженный список «фич» (`:1032` `MonthView component … open`); что из него живо, что врёт — роль `code-audit`
 - [x] Тесты: `api-go/internal/planning/` и `api-go/internal/reflections/` — ни одного `_test.go` (реализованы полностью, CLAUDE.md «Architecture»)
   - ✅ 25.09 `reflections`: 4 теста через HTTP против БД (`handlers_test.go`). Нашли дефект: повторное сохранение перезаписывало «выполнено / вовремя» на true, а редактор события слал true жёстко при каждом сохранении → отметка со страницы рефлексий слетала. Починено в API (COALESCE для существующей строки) и в вебе (`EventEditor/reflectionBody.ts` не шлёт флаги)
