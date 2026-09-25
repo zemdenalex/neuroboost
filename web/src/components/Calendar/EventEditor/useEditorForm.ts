@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createEvent, updateEvent, saveReflection } from '../../../api';
 import { describeSaveError } from '../../../lib/calendar/saveError';
+import { editorReflectionBody } from './reflectionBody';
 import { 
   utcToLocalDateTime, 
   localDateTimeToUtc, 
@@ -13,7 +14,6 @@ import type {
   TimeValidation, 
   ReflectionState,
   CreateEventBody,
-  ReflectionBody,
 } from './editor.types';
 import type { NbEvent } from '../../../types';
 
@@ -264,14 +264,7 @@ export function useEditorForm(
           const saved = await updateEvent(draft.id, body, scope);
 
           if (showReflection) {
-            const reflectionBody: ReflectionBody = {
-              focus: reflection.focus,
-              energy: reflection.energy,
-              mood: reflection.mood,
-              note: reflection.note.trim() || undefined,
-              wasCompleted: true,
-              wasOnTime: true,
-            };
+            const reflectionBody = editorReflectionBody(reflection);
             // The saved event's id, not the draft's: editing one occurrence
             // detaches it into a new row, and the reflection belongs to that row.
             // Posting to the synthetic "<uuid>:<date>" id would 500 outright.
