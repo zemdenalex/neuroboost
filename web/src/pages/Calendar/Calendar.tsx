@@ -549,7 +549,7 @@ export function Calendar() {
       {/* Event editor modal */}
       {editorOpen && (
         <div
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          className="fixed inset-0 bg-scrim/50 flex items-center justify-center z-50 p-4"
           // detail > 1: the third click of a triple click on a month day lands
           // here, on a backdrop that appeared under the second one.
           onClick={e => { if (e.detail <= 1) handleEditorClose(); }}
@@ -577,7 +577,7 @@ export function Calendar() {
       {/* Quick task creation modal */}
       {quickTaskOpen && (
         <div
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          className="fixed inset-0 bg-scrim/50 flex items-center justify-center z-50 p-4"
           onClick={() => setQuickTaskOpen(false)}
         >
           <div
@@ -613,7 +613,7 @@ export function Calendar() {
               <button
                 onClick={handleQuickTaskSubmit}
                 disabled={!quickTaskTitle.trim()}
-                className="px-3 py-1.5 text-xs font-mono bg-blue-600 hover:bg-blue-700 disabled:bg-zinc-700 text-white rounded"
+                className="px-3 py-1.5 text-xs font-mono bg-blue-600 hover:bg-blue-700 disabled:bg-zinc-700 disabled:text-zinc-500 text-onaccent rounded"
               >
                 {t('create')}
               </button>

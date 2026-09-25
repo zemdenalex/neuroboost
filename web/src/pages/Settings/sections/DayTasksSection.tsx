@@ -57,7 +57,7 @@ export function DayTasksSection({ autoSave }: Props) {
                   aria-checked={prefs.target === n}
                   onClick={() => set({ ...prefs, target: n }, { day_tasks_target: n })}
                   className={`w-10 h-9 rounded-md text-sm font-mono transition-colors ${
-                    prefs.target === n ? 'bg-blue-600 text-white' : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
+                    prefs.target === n ? 'bg-blue-600 text-onaccent' : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
                   }`}
                 >
                   {n}

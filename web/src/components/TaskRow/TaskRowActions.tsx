@@ -142,7 +142,7 @@ export function SwipeRow({
           }}
           aria-label={t('schedule')}
           tabIndex={open ? 0 : -1}
-          className="flex flex-1 items-center justify-center bg-blue-700 text-white"
+          className="flex flex-1 items-center justify-center bg-blue-700 text-onaccent"
         >
           <CalendarPlus className="w-5 h-5" />
         </button>
@@ -154,7 +154,7 @@ export function SwipeRow({
           }}
           aria-label={tc('action.delete')}
           tabIndex={open ? 0 : -1}
-          className="flex flex-1 items-center justify-center bg-red-700 text-white"
+          className="flex flex-1 items-center justify-center bg-red-700 text-onaccent"
         >
           <Trash2 className="w-5 h-5" />
         </button>
@@ -237,7 +237,7 @@ export function TaskActionSheet({
   }
   return (
     <div className="fixed inset-0 z-50 md:hidden" role="dialog" aria-modal="true" aria-label={title}>
-      <button type="button" aria-label={tc('action.close')} className="absolute inset-0 bg-black/60" onClick={onClose} />
+      <button type="button" aria-label={tc('action.close')} className="absolute inset-0 bg-scrim/60" onClick={onClose} />
       <div
         data-testid="task-action-sheet"
         className="absolute inset-x-0 bottom-0 rounded-t-xl border-t border-zinc-700 bg-zinc-900 p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))]"

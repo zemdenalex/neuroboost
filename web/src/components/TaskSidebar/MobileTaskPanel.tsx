@@ -105,7 +105,7 @@ export function MobileTaskPanel({
     <div className="lg:hidden fixed inset-0 z-40 font-mono">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/50"
+        className="absolute inset-0 bg-scrim/50"
         onClick={onClose}
       />
 

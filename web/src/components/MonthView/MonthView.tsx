@@ -205,7 +205,7 @@ export function MonthView(props: MonthViewProps) {
                 <span
                   className={
                     isToday
-                      ? 'text-[11px] font-semibold px-1 rounded bg-blue-600 text-white tabular-nums'
+                      ? 'text-[11px] font-semibold px-1 rounded bg-blue-600 text-onaccent tabular-nums'
                       : 'text-[11px] font-semibold text-zinc-300 tabular-nums'
                   }
                 >

@@ -92,7 +92,7 @@ export default function DayTasks() {
           <p className="text-zinc-300">{t('off')}</p>
           <button
             onClick={() => void updateSettings({ day_tasks_enabled: true })}
-            className="mt-3 px-4 py-2 rounded-md bg-blue-600 text-white text-sm hover:bg-blue-500"
+            className="mt-3 px-4 py-2 rounded-md bg-blue-600 text-onaccent text-sm hover:bg-blue-500"
           >
             {t('turnOn')}
           </button>
@@ -156,7 +156,7 @@ export default function DayTasks() {
             <button
               disabled={busy}
               onClick={() => void act(() => confirmDay(day, proposal.map((p) => p.task_id)))}
-              className="mt-3 px-4 py-2 rounded-md bg-blue-600 text-white text-sm hover:bg-blue-500 disabled:opacity-50"
+              className="mt-3 px-4 py-2 rounded-md bg-blue-600 text-onaccent text-sm hover:bg-blue-500 disabled:opacity-50"
             >
               ✅ {proposal.length ? t('take') : t('takeEmpty')}
             </button>

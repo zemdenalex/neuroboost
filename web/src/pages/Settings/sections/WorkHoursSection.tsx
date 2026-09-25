@@ -78,7 +78,7 @@ export function WorkHoursSection({ autoSave }: Props) {
                 onClick={() => toggleDay(day)}
                 className={`px-3 py-1.5 rounded text-sm font-mono transition-colors ${
                   days.includes(day)
-                    ? 'bg-blue-600 text-white'
+                    ? 'bg-blue-600 text-onaccent'
                     : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
                 }`}
               >

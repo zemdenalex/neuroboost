@@ -113,7 +113,7 @@ export function FabBottomSheet() {
 
       {/* Overlay backdrop */}
       <div
-        className={`fixed inset-0 bg-black/50 z-[70] md:hidden transition-opacity duration-300 ${
+        className={`fixed inset-0 bg-scrim/50 z-[70] md:hidden transition-opacity duration-300 ${
           isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
         onClick={() => setIsOpen(false)}

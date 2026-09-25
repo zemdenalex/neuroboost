@@ -40,7 +40,7 @@ export function Landing() {
         <div className="flex flex-col sm:flex-row gap-4">
           <Link
             to="/login"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-lg transition-colors"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-500 text-onaccent font-semibold rounded-lg transition-colors"
           >
             {t('landing.getStarted')}
             <ArrowRight size={18} />
@@ -102,7 +102,7 @@ export function Landing() {
           <p className="text-zinc-400 mb-8">{t('landing.ctaText')}</p>
           <Link
             to="/login"
-            className="inline-flex items-center gap-2 px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-lg text-lg transition-colors"
+            className="inline-flex items-center gap-2 px-8 py-4 bg-blue-600 hover:bg-blue-500 text-onaccent font-semibold rounded-lg text-lg transition-colors"
           >
             {t('landing.ctaButton')}
             <ArrowRight size={20} />

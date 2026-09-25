@@ -33,7 +33,7 @@ export function QuickAddModal({ open, onClose }: QuickAddModalProps) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center bg-black/60 p-4 pt-24"
+      className="fixed inset-0 z-50 flex items-start justify-center bg-scrim/60 p-4 pt-24"
       onClick={onClose}
     >
       <div

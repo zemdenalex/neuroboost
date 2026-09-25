@@ -201,7 +201,7 @@ export function CalendarShare({ calendar, meId }: Props) {
               disabled={busy || !email.trim()}
               aria-label={t('share.inviteAria')}
               title={t('share.invite')}
-              className="shrink-0 rounded bg-blue-600 px-2 py-1 text-white transition-colors hover:bg-blue-700 disabled:bg-zinc-700 disabled:text-zinc-500"
+              className="shrink-0 rounded bg-blue-600 px-2 py-1 text-onaccent transition-colors hover:bg-blue-700 disabled:bg-zinc-700 disabled:text-zinc-500"
             >
               <UserPlus className="h-4 w-4" />
             </button>

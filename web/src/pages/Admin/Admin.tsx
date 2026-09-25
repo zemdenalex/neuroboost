@@ -151,7 +151,7 @@ export function Admin() {
           <p className="text-zinc-400 mb-6">You don&apos;t have permission to access the admin panel.</p>
           <Link
             to="/calendar"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-mono rounded-lg transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-onaccent font-mono rounded-lg transition-colors"
           >
             <ChevronLeft className="w-4 h-4" />
             Back to Calendar
@@ -212,7 +212,7 @@ export function Admin() {
               onClick={() => setSelectedTab(id)}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg font-mono text-sm transition-colors ${
                 selectedTab === id
-                  ? 'bg-blue-600 text-white'
+                  ? 'bg-blue-600 text-onaccent'
                   : 'bg-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-800'
               }`}
             >
@@ -587,7 +587,7 @@ function BacklogRow({
               handleSaveDetails()
             }}
             disabled={saving}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 text-white text-sm font-mono rounded transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 text-onaccent text-sm font-mono rounded transition-colors"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             Save Notes & Tags

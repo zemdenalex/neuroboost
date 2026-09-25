@@ -40,7 +40,7 @@ export function PomodoroToasts() {
       {breakOver && (
         <div className="pointer-events-auto flex items-center gap-3 rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 shadow-2xl">
           <span className="text-sm text-zinc-300">{t('pomodoro.breakOver')}</span>
-          <button onClick={() => { dismissBreakOver(); start() }} className="rounded-lg bg-red-600 px-3 py-1 text-sm font-semibold text-white">
+          <button onClick={() => { dismissBreakOver(); start() }} className="rounded-lg bg-red-600 px-3 py-1 text-sm font-semibold text-onaccent">
             {t('pomodoro.start')}
           </button>
           <button onClick={dismissBreakOver} className="text-zinc-500 hover:text-zinc-300" aria-label={t('pomodoro.dismiss')}>

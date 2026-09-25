@@ -87,7 +87,7 @@ export default function Profile() {
                   className="w-16 h-16 sm:w-24 sm:h-24 rounded-full border-4 border-blue-600"
                 />
               ) : (
-                <div className="w-16 h-16 sm:w-24 sm:h-24 rounded-full bg-blue-600 flex items-center justify-center text-2xl sm:text-3xl font-mono text-white border-4 border-blue-500">
+                <div className="w-16 h-16 sm:w-24 sm:h-24 rounded-full bg-blue-600 flex items-center justify-center text-2xl sm:text-3xl font-mono text-onaccent border-4 border-blue-500">
                   {userName.slice(0, 2).toUpperCase()}
                 </div>
               )}

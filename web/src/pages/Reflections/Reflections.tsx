@@ -282,7 +282,7 @@ export default function Reflections() {
               onClick={() => setFilterRange(range)}
               className={`px-3 py-1.5 text-sm font-mono rounded-lg transition-colors ${
                 filterRange === range
-                  ? 'bg-blue-600 text-white'
+                  ? 'bg-blue-600 text-onaccent'
                   : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white'
               }`}
             >
@@ -313,7 +313,7 @@ export default function Reflections() {
             <p className="text-sm text-zinc-500 max-w-sm mb-6">{t('noReflectionsHint')}</p>
             <Link
               to="/calendar"
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-mono rounded-lg transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-onaccent text-sm font-mono rounded-lg transition-colors"
             >
               <Calendar className="w-4 h-4" />
               {t('goToCalendar')}

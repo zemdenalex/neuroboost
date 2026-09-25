@@ -152,7 +152,7 @@ export default function Planning() {
             onClick={() => setWeekOffset(0)}
             className={`px-3 py-1.5 font-mono text-sm rounded-lg transition-colors ${
               isCurrentWeek
-                ? 'bg-blue-600 text-white'
+                ? 'bg-blue-600 text-onaccent'
                 : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
             }`}
           >

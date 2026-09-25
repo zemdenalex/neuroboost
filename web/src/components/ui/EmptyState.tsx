@@ -33,7 +33,7 @@ export function EmptyState({
       {cta && (
         <Link
           to={cta.to}
-          className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 font-mono text-sm text-white transition-colors hover:bg-blue-700"
+          className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 font-mono text-sm text-onaccent transition-colors hover:bg-blue-700"
         >
           {cta.icon && <cta.icon className="h-4 w-4" />}
           {cta.label}

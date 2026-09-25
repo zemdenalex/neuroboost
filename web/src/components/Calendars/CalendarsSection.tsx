@@ -213,7 +213,7 @@ export function CalendarsSection({ onCalendarsChanged }: Props = {}) {
           data-testid="calendar-create-submit"
           onClick={() => void handleCreate()}
           disabled={creating || status !== 'loaded' || !newName.trim()}
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-zinc-700 disabled:text-zinc-500 text-white font-mono text-sm rounded-lg transition-colors"
+          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-zinc-700 disabled:text-zinc-500 text-onaccent font-mono text-sm rounded-lg transition-colors"
         >
           {t('calendars.create')}
         </button>

@@ -444,7 +444,7 @@ export default function Tasks() {
                 setEditingTask({ title: '', priority: 3, contexts: [], tags: [] })
                 setShowEditor(true)
               }}
-              className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-mono rounded-lg transition-colors"
+              className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-onaccent text-sm font-mono rounded-lg transition-colors"
             >
               <Plus className="w-4 h-4" />
               {t('newTask')}
@@ -774,7 +774,7 @@ export default function Tasks() {
 
         {/* Task Editor Modal */}
         {showEditor && editingTask && (
-          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+          <div className="fixed inset-0 bg-scrim/60 flex items-center justify-center z-50">
             <div className="bg-zinc-900 border border-zinc-700 rounded-lg w-full max-w-lg p-6 space-y-4 max-h-[90vh] overflow-y-auto">
               <h2 className="text-lg font-mono font-semibold text-white">
                 {editingTask.id ? t('editTask') : t('newTask')}
@@ -883,7 +883,7 @@ export default function Tasks() {
                       }}
                       className={`px-3 py-1.5 rounded-lg text-sm font-mono transition-colors ${
                         editingTask.contexts?.includes(ctx)
-                          ? 'bg-blue-600 text-white'
+                          ? 'bg-blue-600 text-onaccent'
                           : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
                       }`}
                     >
@@ -924,7 +924,7 @@ export default function Tasks() {
                   <button
                     onClick={handleSaveTask}
                     disabled={!editingTask.title || saving}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-zinc-700 disabled:text-zinc-500 text-white rounded-lg transition-colors"
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-zinc-700 disabled:text-zinc-500 text-onaccent rounded-lg transition-colors"
                   >
                     {tc('action.save')}
                   </button>

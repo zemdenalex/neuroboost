@@ -41,7 +41,7 @@ export function SessionSection() {
           <span className="flex-1 text-sm text-red-400">{t('session.signOutConfirm')}</span>
           <button
             onClick={handleLogout}
-            className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-sm font-mono rounded transition-colors"
+            className="px-3 py-1 bg-red-600 hover:bg-red-700 text-onaccent text-sm font-mono rounded transition-colors"
           >
             {t('session.yesSignOut')}
           </button>
