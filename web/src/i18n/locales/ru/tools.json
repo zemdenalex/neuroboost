@@ -10,7 +10,6 @@
   "hub.eisenhower.desc": "Приоритизация по срочности и важности",
   "hub.timeBlocking": "Тайм-блокинг",
   "hub.timeBlocking.desc": "Расчёт реалистичного бюджета времени",
-
   "pomodoro.title": "Таймер Помодоро",
   "pomodoro.work": "Работа",
   "pomodoro.shortBreak": "Короткий перерыв",
@@ -53,9 +52,7 @@
   "pomodoro.interrupted": "Таймер был прерван, пока вас не было",
   "pomodoro.dismiss": "Скрыть",
   "pomodoro.todayBlocks": "Сегодня: {{count}} блоков фокуса · {{hours}}ч {{minutes}}м",
-
   "kanban.title": "Канбан-доска",
-  "kanban.col.inbox": "Входящие",
   "kanban.col.todo": "К выполнению",
   "kanban.col.inProgress": "В работе",
   "kanban.col.scheduled": "Запланировано",
@@ -64,7 +61,6 @@
   "kanban.noTasks": "Нет задач",
   "kanban.customizeColumns": "Настроить колонки",
   "kanban.error.load": "Не удалось загрузить задачи",
-
   "eisenhower.title": "Матрица Эйзенхауэра",
   "eisenhower.refresh": "Обновить",
   "eisenhower.dragHint": "Перетащите задачи между квадрантами для перестановки приоритетов",
@@ -83,7 +79,6 @@
   "eisenhower.axis.notUrgent": "Не срочно",
   "eisenhower.axis.important": "Важно",
   "eisenhower.axis.notImportant": "Не важно",
-
   "timeBlocking.title": "Калькулятор тайм-блокинга",
   "timeBlocking.availableHours": "Доступное время",
   "timeBlocking.hoursPerDay": "Часов в день",
@@ -110,5 +105,7 @@
   "timeBlocking.days.thu": "Чт",
   "timeBlocking.days.fri": "Пт",
   "timeBlocking.days.sat": "Сб",
-  "timeBlocking.days.sun": "Вс"
+  "timeBlocking.days.sun": "Вс",
+  "kanban.add": "Добавить",
+  "kanban.error.move": "Не удалось перенести задачу, она осталась на месте"
 }

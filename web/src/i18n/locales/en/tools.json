@@ -10,7 +10,6 @@
   "hub.eisenhower.desc": "Prioritize by urgency and importance",
   "hub.timeBlocking": "Time Blocking",
   "hub.timeBlocking.desc": "Calculate realistic time budgets",
-
   "pomodoro.title": "Pomodoro Timer",
   "pomodoro.work": "Work",
   "pomodoro.shortBreak": "Short Break",
@@ -53,9 +52,7 @@
   "pomodoro.interrupted": "Your timer was interrupted while you were away",
   "pomodoro.dismiss": "Dismiss",
   "pomodoro.todayBlocks": "Today: {{count}} focus blocks · {{hours}}h {{minutes}}m focused",
-
   "kanban.title": "Kanban Board",
-  "kanban.col.inbox": "Inbox",
   "kanban.col.todo": "To Do",
   "kanban.col.inProgress": "In Progress",
   "kanban.col.scheduled": "Scheduled",
@@ -64,7 +61,6 @@
   "kanban.noTasks": "No tasks",
   "kanban.customizeColumns": "Customize columns",
   "kanban.error.load": "Failed to load tasks",
-
   "eisenhower.title": "Eisenhower Matrix",
   "eisenhower.refresh": "Refresh",
   "eisenhower.dragHint": "Drag tasks between quadrants to reprioritize",
@@ -83,7 +79,6 @@
   "eisenhower.axis.notUrgent": "Not Urgent",
   "eisenhower.axis.important": "Important",
   "eisenhower.axis.notImportant": "Not Important",
-
   "timeBlocking.title": "Time Blocking Calculator",
   "timeBlocking.availableHours": "Available Hours",
   "timeBlocking.hoursPerDay": "Hours per day",
@@ -110,5 +105,7 @@
   "timeBlocking.days.thu": "Thu",
   "timeBlocking.days.fri": "Fri",
   "timeBlocking.days.sat": "Sat",
-  "timeBlocking.days.sun": "Sun"
+  "timeBlocking.days.sun": "Sun",
+  "kanban.add": "Add",
+  "kanban.error.move": "Could not move the task; it stayed where it was"
 }
