@@ -132,17 +132,20 @@ export function backButtonVisible(pathname: string): boolean {
  * navigation, so the parameters are seeded there while the hash is intact.
  * ⚠ That key is the script's internal detail, not a documented API.
  */
+function readJson(raw: string | null): Record<string, string> {
+  try {
+    return JSON.parse(raw ?? '{}') as Record<string, string>
+  } catch {
+    return {}
+  }
+}
+
 export function seedSdkParams(
   storage: { getItem: (k: string) => string | null; setItem: (k: string, v: string) => void },
   hash: string,
 ): void {
   if (!initDataFromHash(hash)) return
-  let stored: Record<string, string> = {}
-  try {
-    stored = JSON.parse(storage.getItem('__telegram__initParams') ?? '{}') as Record<string, string>
-  } catch {
-    stored = {}
-  }
+  const stored = readJson(storage.getItem('__telegram__initParams'))
   const fresh = Object.fromEntries(new URLSearchParams(hash.slice(1)))
   storage.setItem('__telegram__initParams', JSON.stringify({ ...stored, ...fresh }))
 }
