@@ -1339,3 +1339,32 @@ CI/CD: `concurrency` в `ci.yml` (два push'а подряд ломают e2e �
 - **Проверено:** все фиксы — тест красный→зелёный + сабботаж; e2e месяца 11/11 против production-сборки; api-go с тестовой БД (`nb-test-db`, строка — в памяти проекта) зелёный; бот зелёный.
 - **Опровергнуто:** «флак e2e = регрессия» — это dev-сервер (11/11 на сборке); «гейт упал» в 00:38 — машина спала 6.5 ч, перезапуск 766/766.
 - **Скрипты-ловушки:** Go-строки и регэкспы — только через Write+python, не heredoc (дважды за сессию).
+
+## [2026-09-25 17:07] consolidate | PRESERVED — transcript-precompact-04e1a014-20260925-170556.jsonl, 124 MB → .oversize/ (too large for one pass, kept for chunked consolidation)
+
+## [2026-09-25] recall | learning-shell-heredoc-scripts-break-escapes,learning-local-e2e-flakes-on-the-dev-server-not-the-code,learning-a-test-that-cannot-fail-guards-nothing,preference-keep-sabotage-advisor-e2e-obsidian,preference-a-loop-does-not-stop-itself
+
+## [2026-09-25 22:00] handoff-auto (loop) | Mini App, мобильный веб, светлая тема, финансирование
+
+**Луп:** «work in a loop to create telegram miniapp and fix mobile web» (Денис 25.09). Всё локально на `develop`, **48 коммитов не запушены** — Денис сказал не пушить, пока не решит (ответ 25.09: «make new doc … if you didn't push to dev»).
+
+**Сделано 25.09** (каждая правка: тест красный→зелёный + сабботаж; весь e2e против сборки — зелёный, кроме 2 спек Mini App: эндпоинта нет на staging до push):
+- Mini App: `POST /api/auth/telegram-webapp` (initData WebAppData HMAC, 1 ч, не из будущего, гонка tg_id → найти), веб-вход из hash, SDK только в Telegram + `__telegram__initParams`, BackButton, без «Выйти», start links `t-`/`dt`/`d-YYYY-MM-DD`, `/calendar?date=`, бот `WEBAPP_URL` → кнопка меню. Ревью opus: `docs/team/research/V003-20260925-res-review-miniapp-mobile.md`, I1–I3 + M1, M3, M4 закрыты.
+- Мобильный веб MW1–MW14: `docs/tasks-mobile-web.md`. Решения Дениса 25.09 (страница https://claude.ai/artifact/GqNKUBaqERKbD6vFzJRyBD): календарь A (подсказка 3 раза, полоса 20 px), строка задачи — все три варианта в ⚙️, тема Telegram (B), `@types/node` да.
+- Светлая тема LT1–LT8: `docs/tasks-light-theme.md`; тёмная сверена попиксельно; ⚙️ «Тема: Тёмная/Светлая/Как в системе» (Денис: «dark light system is fine», «more themes» — потом, LT9).
+- Документ для Дениса о версиях: `docs/relizy/plan-v0.4.11.6-i-v0.4.12.md` (прод v0.4.11.5; PR #10 = бот D3 + подзадачи; веб → v0.4.12).
+- Финансирование (задача корня): `docs/team/pitch/V003-20260925-pit-investor-pack.md`; Сбер500 и ФРИИ закрыты и только для юрлиц, Миелофонд исключён (отчуждение РИД). Ничего не подано.
+
+## План следующей сессии (auto, loop)
+
+- **Цель:** держать луп на очереди, пока Денис решает push/релиз; ничего наружу без его «да».
+- **Первый шаг:** `git -C "E:/Projects/007 - Ventures/V003 - NeuroBoost" rev-list --count origin/develop..develop` и `grep -c '\- \[x\]' docs/proverka-2026-09-24-bot-i-veb.md` — если Денис сказал «push»: `git push origin develop`, `gh run list --branch develop --limit 1` до зелёного (e2e Mini App должны позеленеть), затем `WEBAPP_URL=https://dev.neuroboost.website` в `/opt/neuroboost-bot/.env` на nl-2 и `scripts/deploy-dev-bot.sh`, логи только через sed-фильтр токена.
+- **Если его «да» на PR #10:** сначала он проходит раздел 3 (подзадачи); затем дата в `bot/internal/release/notes.go` на ветке `release/v0.4.11.6`, мерж, прод-бот руками (`/opt/neuroboost-bot-prod`), `/broadcast` пробный.
+- **Пока ждём (без Дениса, по очереди `docs/agents/queue.md`):**
+  1. `docs/tasks-web-cleanup.md` 4.1, 4.2, 4.8, 4.9 (Eisenhower: срочность из due_date), 4.10 («Бюджет времени» из рабочих часов), 4.11 (повторы на Tasks через occurrences)
+  2. Флак `e2e/month-view.spec.ts` «saves month_view_variant» (`Response has been disposed`)
+  3. Постоянная работа из очереди: тесты `api-go/internal/planning`, `reflections`; Lighthouse `/calendar`
+- **Разогрев:** `docs/relizy/plan-v0.4.11.6-i-v0.4.12.md` · `docs/tasks-mini-app.md` · `docs/tasks-mobile-web.md` · `docs/tasks-light-theme.md` · `docs/tasks-web-cleanup.md` · узлы `learning-e2e-specs-assume-the-screen-they-were-written-on`, `learning-eslint-last-line-counts-only-fixable`, `learning-shell-heredoc-scripts-break-escapes`.
+- **Проверено:** e2e на сборке (`web/scripts/e2e-local.sh --preview`), тур `NB_TOUR=1 [NB_TOUR_THEME=light] [NB_TOUR_DESKTOP=1]`. **Опровергнуто:** «drag-спеки сломал скролл логики» — ломалось предположение спек о первом экране; «тёмная тема изменилась» — различия были загрузкой.
+- **Ловушки:** Go/TS-строки и регэкспы — Write+python, не heredoc/sed (сегодня ещё 4 раза); lint проверять `grep -c " error "`, не `tail -1`; `pnpm add` только из `C:\E_Drive\…`.
+- **Незакрытое:** `docs/tasks-mini-app.md` (MA3b тема — сделано иначе, закрыть), `docs/tasks-mobile-web.md` (MW8 🟡, флак), `docs/tasks-light-theme.md` (LT9 потом), `docs/tasks-web-cleanup.md`.
