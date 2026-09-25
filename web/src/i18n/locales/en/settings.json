@@ -24,6 +24,7 @@
   "uiScale.reset": "Reset to 100%",
   "workHours.title": "Work Hours",
   "workHours.days": "Working Days",
+  "workHours.endBeforeStart": "The end is not after the start: a working day like this counts as 0 hours in Planning and the time budget.",
   "workHours.start": "Start",
   "workHours.end": "End",
   "workHours.Mon": "Mon",

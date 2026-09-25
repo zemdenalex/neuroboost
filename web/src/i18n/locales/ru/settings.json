@@ -24,6 +24,7 @@
   "uiScale.reset": "Сбросить до 100%",
   "workHours.title": "Рабочие часы",
   "workHours.days": "Рабочие дни",
+  "workHours.endBeforeStart": "Конец не позже начала: такой рабочий день в планировании и бюджете времени считается как 0 часов.",
   "workHours.start": "Начало",
   "workHours.end": "Конец",
   "workHours.Mon": "Пн",
