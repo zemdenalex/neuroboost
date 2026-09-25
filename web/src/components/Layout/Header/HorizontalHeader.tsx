@@ -66,7 +66,14 @@ export default function HorizontalHeader() {
     <header className="fixed top-0 left-0 right-0 bg-zinc-900 border-b border-zinc-800 z-50">
       <div className="px-4 py-2 flex items-center justify-between">
         {/* Logo */}
-        <Link to="/calendar" className="text-lg font-mono font-bold text-white hover:text-blue-400 transition-colors ml-10 md:ml-0">
+        {/* Room for the hamburger only when there is one (mobile_nav), not for
+            every phone: the default bottom tabs left a 40px hole (tour 25.09, MW7). */}
+        <Link
+          to="/calendar"
+          className={`text-lg font-mono font-bold text-white hover:text-blue-400 transition-colors md:ml-0 ${
+            user?.settings?.mobile_nav === 'hamburger' ? 'ml-10' : ''
+          }`}
+        >
           NeuroBoost
         </Link>
 

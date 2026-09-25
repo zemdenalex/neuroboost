@@ -289,4 +289,41 @@ test.describe('375px layout', () => {
     await expect(authedPage.getByTestId('settings-hint-section')).toBeVisible({ timeout: 15_000 })
     await expect(authedPage.getByTestId('settings-layout-section')).toHaveCount(0)
   })
+
+  // Tour 25.09 (MW7): the logo sat 40px in from the edge for a hamburger
+  // button that only exists when mobile_nav is 'hamburger'.
+  test('the logo starts at the edge, and clears the hamburger when there is one', async ({ authedPage }) => {
+    await authedPage.goto('/calendar')
+    const logo = authedPage.locator('header a', { hasText: 'NeuroBoost' }).first()
+    await expect(logo).toBeVisible({ timeout: 15_000 })
+    expect((await logo.boundingBox())!.x, 'gap without a hamburger').toBeLessThan(24)
+
+    await withSettings(authedPage, { mobile_nav: 'hamburger' })
+    await authedPage.goto('/calendar')
+    await expect(authedPage.getByTestId('calendar-period-title')).toBeVisible({ timeout: 15_000 })
+    const burger = await authedPage.getByRole('button', { name: /menu/i }).first().boundingBox()
+    const moved = await logo.boundingBox()
+    expect(moved!.x, 'logo under the hamburger').toBeGreaterThanOrEqual(burger!.x + burger!.width)
+  })
 })
+
+/**
+ * Substitutes account settings in the /auth/me answer for this page only, and
+ * blocks settings writes: the e2e account is a real person's staging account.
+ */
+async function withSettings(page: Page, settings: Record<string, unknown>) {
+  await page.route('**/api/auth/me', (route) =>
+    route.request().method() === 'PATCH' ? route.abort() : route.fallback(),
+  )
+  await page.addInitScript((extra) => {
+    const orig = window.fetch.bind(window)
+    window.fetch = async (input, init) => {
+      const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url
+      const res = await orig(input, init)
+      if (!url.includes('/api/auth/me') || (init?.method && init.method !== 'GET')) return res
+      const body = await res.clone().json()
+      body.data.settings = { ...(body.data.settings ?? {}), ...extra }
+      return new Response(JSON.stringify(body), { status: res.status, headers: { 'Content-Type': 'application/json' } })
+    }
+  }, settings)
+}
