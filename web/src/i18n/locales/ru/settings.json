@@ -166,5 +166,11 @@
   "taskRow.swipeDesc": "Смахни задачу влево: «Запланировать» и «Удалить». Тап открывает редактор.",
   "taskRow.card": "Карточка по тапу",
   "taskRow.cardDesc": "Тап по задаче, и снизу выезжают её действия.",
-  "error.saveTaskRow": "Не удалось сохранить выбор действий с задачей"
+  "error.saveTaskRow": "Не удалось сохранить выбор действий с задачей",
+  "theme.title": "Тема",
+  "theme.dark": "Тёмная",
+  "theme.light": "Светлая",
+  "theme.system": "Как в системе",
+  "theme.telegramNote": "Внутри Telegram NeuroBoost берёт тему самого Telegram.",
+  "error.saveTheme": "Не удалось сохранить тему"
 }

@@ -38,8 +38,55 @@ export function schemeFromHash(hash: string): Theme | null {
   }
 }
 
-export function resolveTheme(s: { telegram: Theme | null }): Theme {
-  return s.telegram ?? 'dark'
+export const THEME_CHOICES = ['dark', 'light', 'system'] as const
+export type ThemeChoice = (typeof THEME_CHOICES)[number]
+
+/** The web's own choice (⚙️, account setting `theme`); dark when unset or unknown. */
+export function readThemeChoice(settings: { theme?: unknown } | undefined): ThemeChoice {
+  const v = settings?.theme
+  return typeof v === 'string' && (THEME_CHOICES as readonly string[]).includes(v) ? (v as ThemeChoice) : 'dark'
+}
+
+/**
+ * Inside Telegram its scheme wins (Denis 25.09, choice B). Outside it, the
+ * choice in settings: dark, light, or the device's (Denis 25.09: «dark light
+ * system is fine»). No choice means dark, as the web has always been.
+ */
+export function resolveTheme(s: { telegram: Theme | null; choice?: ThemeChoice; systemDark?: boolean }): Theme {
+  if (s.telegram) return s.telegram
+  if (s.choice === 'light') return 'light'
+  if (s.choice === 'system') return s.systemDark === false ? 'light' : 'dark'
+  return 'dark'
+}
+
+const CHOICE_KEY = 'nb-theme'
+
+/** The choice kept on this device too, so it applies before the first frame. */
+export function storedThemeChoice(): ThemeChoice {
+  try {
+    return readThemeChoice({ theme: localStorage.getItem(CHOICE_KEY) })
+  } catch {
+    return 'dark'
+  }
+}
+
+export function storeThemeChoice(choice: ThemeChoice): void {
+  try {
+    localStorage.setItem(CHOICE_KEY, choice)
+  } catch {
+    // Only the pre-first-frame hint is lost; the account keeps the choice.
+  }
+}
+
+/** Resolves and applies the theme for this page right now. */
+export function applyCurrentTheme(choice: ThemeChoice = storedThemeChoice()): Theme {
+  const theme = resolveTheme({
+    telegram: schemeFromHash(window.location.hash),
+    choice,
+    systemDark: window.matchMedia?.('(prefers-color-scheme: dark)').matches,
+  })
+  applyTheme(theme)
+  return theme
 }
 
 /** Puts the theme on <html>: data-theme for the CSS variables, color-scheme for native controls. */

@@ -21,6 +21,7 @@ import {
   setStoredToken,
   clearStoredToken,
 } from '../api/client'
+import { applyCurrentTheme, readThemeChoice, storeThemeChoice } from '../lib/theme/theme'
 import { launchedInTelegram, loadWebApp, pickStartupAuth, prepareWebApp, sessionFitsLaunch } from '../lib/telegram/webApp'
 
 /**
@@ -348,6 +349,10 @@ export function useRequireAdmin() {
  * settings are updated or loaded.
  */
 function applySettingsToLocalStorage(settings: UserSettings) {
+  // The account's theme choice, mirrored on the device for the next first frame.
+  const theme = readThemeChoice(settings)
+  storeThemeChoice(theme)
+  applyCurrentTheme(theme)
   if (settings.header_variant) {
     localStorage.setItem('neuroboost-header-variant', settings.header_variant)
   }

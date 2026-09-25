@@ -166,5 +166,11 @@
   "taskRow.swipeDesc": "Swipe a task left for Schedule and Delete; tap it to edit.",
   "taskRow.card": "Tap for a card",
   "taskRow.cardDesc": "Tap a task and its actions slide up from the bottom.",
-  "error.saveTaskRow": "Could not save the task actions choice"
+  "error.saveTaskRow": "Could not save the task actions choice",
+  "theme.title": "Theme",
+  "theme.dark": "Dark",
+  "theme.light": "Light",
+  "theme.system": "System",
+  "theme.telegramNote": "Inside the Telegram app NeuroBoost follows Telegram's own theme.",
+  "error.saveTheme": "Could not save the theme"
 }

@@ -3,12 +3,15 @@ import ReactDOM from 'react-dom/client'
 import './i18n'
 import App from './App'
 import './index.css'
-import { applyTheme, resolveTheme, schemeFromHash, telegramChrome, type Theme } from './lib/theme/theme'
+import { applyCurrentTheme, applyTheme, resolveTheme, schemeFromHash, telegramChrome, type Theme } from './lib/theme/theme'
 import { loadWebApp } from './lib/telegram/webApp'
 
-// Before the first frame, so a light Telegram never flashes the dark app.
-// Telegram passes its theme in the launch hash (docs/tasks-light-theme.md).
-applyTheme(resolveTheme({ telegram: schemeFromHash(window.location.hash) }))
+// Before the first frame, so neither a light Telegram nor a light choice
+// flashes the dark app. Telegram passes its theme in the launch hash; the
+// web's own choice is mirrored on the device (docs/tasks-light-theme.md).
+applyCurrentTheme()
+// «System» follows the device when it switches between light and dark.
+window.matchMedia?.('(prefers-color-scheme: dark)').addEventListener?.('change', () => applyCurrentTheme())
 // And follow it when the person switches Telegram's theme with the app open.
 void loadWebApp().then((wa) => {
   if (!wa) return

@@ -34,3 +34,22 @@ test('without Telegram the app stays dark', async ({ authedPage }) => {
   await expect(authedPage.locator('html')).toHaveAttribute('data-theme', 'dark')
   await expect.poll(() => bodyLuminance(authedPage)).toBeLessThan(0.1)
 })
+
+// Denis 25.09: «dark light system is fine». The choice applies at once; the
+// PATCH is blocked so the real account keeps its setting.
+test('choosing a theme in settings applies it at once, «system» follows the device', async ({ authedPage }) => {
+  await authedPage.route('**/api/auth/me', (route) =>
+    route.request().method() === 'PATCH' ? route.abort() : route.fallback(),
+  )
+  await authedPage.emulateMedia({ colorScheme: 'light' })
+  await authedPage.goto('/settings')
+  const html = authedPage.locator('html')
+  await authedPage.getByTestId('theme-option-light').click()
+  await expect(html).toHaveAttribute('data-theme', 'light')
+  await authedPage.getByTestId('theme-option-dark').click()
+  await expect(html).toHaveAttribute('data-theme', 'dark')
+  await authedPage.getByTestId('theme-option-system').click()
+  await expect(html, 'device is light, so «system» is light').toHaveAttribute('data-theme', 'light')
+  await authedPage.emulateMedia({ colorScheme: 'dark' })
+  await expect(html, 'and follows the device when it switches').toHaveAttribute('data-theme', 'dark')
+})

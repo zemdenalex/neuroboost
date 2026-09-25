@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { resolveTheme, schemeFromHash, schemeFromBg, telegramChrome } from './theme'
+import { readThemeChoice, resolveTheme, schemeFromHash, schemeFromBg, telegramChrome } from './theme'
 
 describe('schemeFromBg', () => {
   it('reads a light or dark background colour', () => {
@@ -29,13 +29,30 @@ describe('schemeFromHash (Telegram launch)', () => {
   })
 })
 
-describe('resolveTheme (Denis 25.09: follow Telegram)', () => {
-  it('inside Telegram follows its scheme', () => {
-    expect(resolveTheme({ telegram: 'light' })).toBe('light')
-    expect(resolveTheme({ telegram: 'dark' })).toBe('dark')
+describe('resolveTheme (Denis 25.09: follow Telegram; dark / light / system on the web)', () => {
+  it('inside Telegram follows its scheme, whatever was chosen on the web', () => {
+    expect(resolveTheme({ telegram: 'light', choice: 'dark' })).toBe('light')
+    expect(resolveTheme({ telegram: 'dark', choice: 'light' })).toBe('dark')
   })
-  it('outside Telegram stays dark, as the web has always been', () => {
+  it('outside Telegram takes the choice', () => {
+    expect(resolveTheme({ telegram: null, choice: 'light' })).toBe('light')
+    expect(resolveTheme({ telegram: null, choice: 'dark' })).toBe('dark')
+  })
+  it('«system» follows the device', () => {
+    expect(resolveTheme({ telegram: null, choice: 'system', systemDark: false })).toBe('light')
+    expect(resolveTheme({ telegram: null, choice: 'system', systemDark: true })).toBe('dark')
+  })
+  it('with no choice stays dark, as the web has always been', () => {
     expect(resolveTheme({ telegram: null })).toBe('dark')
+  })
+})
+
+describe('readThemeChoice', () => {
+  it('reads dark, light or system; anything else is dark', () => {
+    expect(readThemeChoice({ theme: 'light' })).toBe('light')
+    expect(readThemeChoice({ theme: 'system' })).toBe('system')
+    expect(readThemeChoice({ theme: 'sepia' })).toBe('dark')
+    expect(readThemeChoice(undefined)).toBe('dark')
   })
 })
 

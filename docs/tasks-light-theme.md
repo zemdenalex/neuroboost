@@ -21,7 +21,8 @@
 - [x] LT5 (`e2e/theme.spec.ts` + сабботаж) e2e: `?theme=light`-запуск (или подменённый `colorScheme`) → фон `html` светлый, текст тёмный; тёмная по умолчанию не меняется
 - [x] LT6 (`telegramChrome`; вживую видно только в Telegram — пункт в `docs/proverka-mini-app.md`) Шапка и фон Telegram под тему (`setHeaderColor`, `setBackgroundColor`)
 - [x] LT8 (14 экранов 1440px, `NB_TOUR_DESKTOP=1`; дефектов контраста не видно) Скриншот-тур светлой темы на 1440px (LT4 прошёл только 375px: тур живёт в mobile-проекте) · ~15 мин
-- [ ] 🟡 LT7 Вопрос Денису после LT4: светлая тема и вне Telegram (переключатель в ⚙️)? — не решено
+- [x] LT7 Денис 25.09: *«dark light system is fine»* → ⚙️ «Тема»: Тёмная / Светлая / Как в системе (ключ `theme`, копия на устройстве для первого кадра; внутри Telegram тема Telegram главнее); e2e + сабботаж
+- [ ] LT9 Денис 25.09: *«we talked about giving even more themes»* — больше тем позже; механизм переменных это позволяет (новый набор значений под `data-theme`)
 
 ## Не входит
 

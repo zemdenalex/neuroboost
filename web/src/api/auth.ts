@@ -51,6 +51,8 @@ export interface UserSettings {
   month_click_wait_ms?: number
   /** Phone task rows: 'menu' | 'swipe' | 'card' (lib/tasks/rowActions, Denis 25.09). */
   task_row_actions?: string
+  /** Web theme: 'dark' | 'light' | 'system' (lib/theme/theme, Denis 25.09). */
+  theme?: string
   quiet_hours_start?: string
   quiet_hours_end?: string
   quick_task?: {
