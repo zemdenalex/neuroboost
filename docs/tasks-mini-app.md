@@ -25,7 +25,7 @@
 ## Бот
 
 - [x] MA9 (`6296e40`, пакет `bot/internal/menubutton`, env `WEBAPP_URL`; на nl-2 в `.env` dev-бота вписать после push — шаг руками или мой после его «ок») Кнопка меню dev-бота `web_app` → `https://dev.neuroboost.website` (после push на staging, через `setChatMenuButton` в коде бота по env `WEBAPP_URL`, пусто = не ставить)
-- [ ] MA10 Проверка руками — чеклист Денису `docs/proverka-mini-app.md` (открыть из dev-бота, войти без логина, перетащить событие, назад)
+- [x] MA10 Проверка руками — чеклист Денису `docs/proverka-mini-app.md` (написан; проходить после push) (открыть из dev-бота, войти без логина, перетащить событие, назад)
 
 ## Не входит
 
