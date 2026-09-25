@@ -133,7 +133,7 @@ cd web && pnpm build
 cd web && pnpm dev          # порт 5173
 
 # e2e с этой машины — одной командой (sandbox off: он режет loopback)
-web/scripts/e2e-local.sh [--staging] [--project desktop] [spec…]   # локальная сборка против staging API; --staging = как CI
+web/scripts/e2e-local.sh [--staging|--dev] [--project desktop] [spec…]   # сборка (build+preview) против staging API; --staging = как CI; --dev = vite dev (флакает)
 
 # dev-бот на nl-2 — одной командой; падает, если нет «Bot started». Прод — только руками по «да»
 scripts/deploy-dev-bot.sh [ref]                                     # по умолчанию develop
