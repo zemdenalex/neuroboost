@@ -1,5 +1,5 @@
 # Builder stage
-FROM golang:1.22-alpine AS build
+FROM golang:1.26-alpine AS build
 WORKDIR /app
 RUN apk add --no-cache git ca-certificates curl
 
@@ -22,7 +22,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /api ./cmd/a
 RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /healthcheck ./cmd/healthcheck
 
 # Runtime stage - using alpine instead of distroless for shell access (needed for migrations)
-FROM alpine:3.19
+FROM alpine:3.22
 RUN apk add --no-cache ca-certificates tzdata
 
 WORKDIR /srv
