@@ -1,3 +1,4 @@
+import { feedbackStats } from '../../lib/admin/feedbackStats'
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuthContext, useRequireAdmin } from '../../contexts/AuthContext'
@@ -107,11 +108,34 @@ export function Admin() {
     if (isAdmin) loadFeedback()
   }, [isAdmin, loadFeedback])
 
+  // Overview counts the whole backlog, not the Backlog tab's filtered list
+  // (audit A2, 4.1): with a «bug» filter «Total» used to mean «bugs».
+  const [allFeedback, setAllFeedback] = useState<Feedback[]>([])
+  useEffect(() => {
+    if (!isAdmin || selectedTab !== 'overview') return
+    listFeedback({})
+      .then(setAllFeedback)
+      .catch((err) => console.error('Failed to load feedback for the overview:', err))
+  }, [isAdmin, selectedTab])
+
+  // Rows whose last edit did not save (audit A4, 4.2): said at the row
+  // instead of only in the console.
+  const [unsaved, setUnsaved] = useState<Record<string, boolean>>({})
+  const markSaved = (id: string, ok: boolean) =>
+    setUnsaved((prev) => {
+      const next = { ...prev }
+      if (ok) delete next[id]
+      else next[id] = true
+      return next
+    })
+
   const handleStatusChange = async (id: string, status: FeedbackStatus) => {
     try {
       const updated = await updateFeedback(id, { status })
       setFeedback((prev) => prev.map((f) => (f.id === id ? updated : f)))
+      markSaved(id, true)
     } catch (err) {
+      markSaved(id, false)
       console.error('Failed to update status:', err)
     }
   }
@@ -120,7 +144,9 @@ export function Admin() {
     try {
       const updated = await updateFeedback(id, { priority })
       setFeedback((prev) => prev.map((f) => (f.id === id ? updated : f)))
+      markSaved(id, true)
     } catch (err) {
+      markSaved(id, false)
       console.error('Failed to update priority:', err)
     }
   }
@@ -162,19 +188,11 @@ export function Admin() {
   }
 
   // Stats
-  const statsByStatus = Object.fromEntries(
-    (Object.keys(STATUS_CONFIG) as FeedbackStatus[]).map((s) => [
-      s,
-      feedback.filter((f) => f.status === s).length,
-    ]),
-  ) as Record<FeedbackStatus, number>
-
-  const statsByType = Object.fromEntries(
-    (Object.keys(TYPE_CONFIG) as FeedbackType[]).map((t) => [
-      t,
-      feedback.filter((f) => f.type === t).length,
-    ]),
-  ) as Record<FeedbackType, number>
+  const {
+    total: statsTotal,
+    byStatus: statsByStatus,
+    byType: statsByType,
+  } = feedbackStats(allFeedback, Object.keys(STATUS_CONFIG) as FeedbackStatus[], Object.keys(TYPE_CONFIG) as FeedbackType[])
 
   return (
     <div className="min-h-screen bg-zinc-950">
@@ -268,7 +286,7 @@ export function Admin() {
             {/* Total */}
             <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-5">
               <p className="text-zinc-400 text-sm">Total Backlog Items</p>
-              <p className="text-4xl font-mono font-bold text-white mt-1">{feedback.length}</p>
+              <p data-testid="overview-total" className="text-4xl font-mono font-bold text-white mt-1">{statsTotal}</p>
             </div>
           </div>
         )}
@@ -368,6 +386,8 @@ export function Admin() {
                     onStatusChange={handleStatusChange}
                     onPriorityChange={handlePriorityChange}
                     onUpdate={(updated) => setFeedback((prev) => prev.map((f) => (f.id === updated.id ? updated : f)))}
+                    unsaved={!!unsaved[item.id]}
+                    onSaved={(ok) => markSaved(item.id, ok)}
                   />
                 ))}
               </div>
@@ -424,6 +444,8 @@ function BacklogRow({
   onStatusChange,
   onPriorityChange,
   onUpdate,
+  unsaved,
+  onSaved,
 }: {
   item: Feedback
   isExpanded: boolean
@@ -431,6 +453,9 @@ function BacklogRow({
   onStatusChange: (id: string, status: FeedbackStatus) => void
   onPriorityChange: (id: string, priority: FeedbackPriority) => void
   onUpdate: (item: Feedback) => void
+  /** The row's last edit failed to save. */
+  unsaved: boolean
+  onSaved: (ok: boolean) => void
 }) {
   const [notes, setNotes] = useState(item.admin_notes)
   const [tagsInput, setTagsInput] = useState(item.tags.join(', '))
@@ -451,7 +476,9 @@ function BacklogRow({
         .filter(Boolean)
       const updated = await updateFeedback(item.id, { admin_notes: notes, tags })
       onUpdate(updated)
+      onSaved(true)
     } catch (err) {
+      onSaved(false)
       console.error('Failed to save:', err)
     } finally {
       setSaving(false)
@@ -483,7 +510,12 @@ function BacklogRow({
           <span className="text-xs text-zinc-400">{statusCfg.label}</span>
         </span>
         <span className="text-xs text-zinc-500">{item.source}</span>
-        <span className="text-xs text-zinc-500">{new Date(item.created_at).toLocaleDateString()}</span>
+        <span className="text-xs text-zinc-500">
+          {new Date(item.created_at).toLocaleDateString()}
+          {unsaved && (
+            <span data-testid="feedback-row-unsaved" className="ml-2 text-red-400">Not saved</span>
+          )}
+        </span>
       </div>
 
       {/* Expanded Detail */}
