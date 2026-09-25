@@ -42,7 +42,9 @@ import {
   CONTEXT_ICONS,
 } from '../../api/tasks'
 import { answeredToday } from '../../types'
-import { tickAction, tickedToday } from '../../lib/tasks/tickAction'
+import { tickAction, tickedToday, undoOccurrence } from '../../lib/tasks/tickAction'
+import { todayInZone } from '../../lib/dayTasks/dayColour'
+import { ApiError } from '../../api/client'
 import { defaultScheduleSlot } from '../../lib/schedule/defaultScheduleSlot'
 import { toDateTimeLocalValue, fromDateTimeLocalValue } from '../../lib/datetime/dateTimeLocal'
 import { ReminderOffsets } from '../../components/ReminderOffsets/ReminderOffsets'
@@ -262,28 +264,36 @@ export default function Tasks() {
   }
 
   // A running series answers today's day, not its status (4.11, lib/tasks/tickAction).
-  const setOccurrence = async (task: Task, state: 'done' | 'open', date?: string) => {
+  // 🔴 The date is named: without one the server picks the day the series is
+  // on, which for a Friday task on a Wednesday is Friday, while this row shows
+  // today (review of 731172a, 25.09).
+  const setOccurrence = async (task: Task, state: 'done' | 'skipped' | 'open') => {
     const previous = task.occurrence_state
-    const shown = state === 'done' ? 'done' : undefined
+    const shown = state === 'open' ? undefined : state
+    const today = todayInZone(new Date(), user?.timezone || 'Europe/Moscow')
     setTasks(prev => prev.map(t => (t.id === task.id ? { ...t, occurrence_state: shown } : t)))
     try {
-      const answer = await markOccurrence(task.id, state, date)
-      return answer.occurrence
+      await markOccurrence(task.id, state, today)
+      return true
     } catch (error) {
-      console.error('Failed to mark the day:', error)
       setTasks(prev => prev.map(t => (t.id === task.id ? { ...t, occurrence_state: previous } : t)))
-      return null
+      if (error instanceof ApiError && error.code === 'NOT_AN_OCCURRENCE') {
+        showToast(t('toast.notToday', { title: task.title }))
+      } else {
+        console.error('Failed to mark the day:', error)
+      }
+      return false
     }
   }
 
   const handleStatusToggle = async (task: Task) => {
     const action = tickAction(task)
     if (action.kind === 'occurrence') {
-      const day = await setOccurrence(task, action.state)
-      if (day && action.state === 'done') {
+      const ok = await setOccurrence(task, action.state)
+      if (ok && action.state === 'done') {
         showToast(t('toast.closedToday', { title: task.title }), {
           label: t('toast.undo'),
-          onClick: () => void setOccurrence({ ...task, occurrence_state: 'done' }, 'open', day),
+          onClick: () => void setOccurrence({ ...task, occurrence_state: 'done' }, undoOccurrence(task.occurrence_state)),
         })
       }
       return

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { tickAction, tickedToday } from './tickAction'
+import { tickAction, tickedToday, undoOccurrence } from './tickAction'
 
 // docs/tasks-web-cleanup.md 4.11: the Tasks page ticked a repeating task by
 // writing status = DONE, which switches the whole series off. A tick on a
@@ -34,5 +34,13 @@ describe('tickedToday', () => {
     expect(tickedToday({ status: 'TODO', rrule: 'FREQ=DAILY', occurrence_state: 'done' })).toBe(true)
     expect(tickedToday({ status: 'TODO', rrule: 'FREQ=DAILY', occurrence_state: 'skipped' })).toBe(false)
     expect(tickedToday({ status: 'DONE', rrule: 'FREQ=DAILY' })).toBe(true)
+  })
+})
+
+describe('undoOccurrence', () => {
+  it('gives a skip back and clears anything else', () => {
+    expect(undoOccurrence('skipped')).toBe('skipped')
+    expect(undoOccurrence(undefined)).toBe('open')
+    expect(undoOccurrence('')).toBe('open')
   })
 })

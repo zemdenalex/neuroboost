@@ -65,6 +65,7 @@
   "toast": {
     "closed": "Closed “{{title}}”",
     "closedToday": "Done for today: “{{title}}”",
+    "notToday": "“{{title}}” is not due today",
     "undo": "Undo",
     "bulkClosed": "Closed {{count}}",
     "bulkMoved": "Moved {{count}} to tomorrow"

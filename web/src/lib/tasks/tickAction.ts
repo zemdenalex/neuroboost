@@ -30,3 +30,12 @@ export function tickedToday(task: Tickable): boolean {
   if (task.rrule && task.status !== 'DONE') return task.occurrence_state === 'done'
   return task.status === 'DONE'
 }
+
+/**
+ * What Undo after a tick sends: the day's previous answer. A tick on a day
+ * marked «skipped» turns it into «done»; its Undo must give the skip back,
+ * not erase it to «no answer» (review of 731172a, 25.09).
+ */
+export function undoOccurrence(previous: string | undefined): 'skipped' | 'open' {
+  return previous === 'skipped' ? 'skipped' : 'open'
+}

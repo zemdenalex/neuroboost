@@ -155,3 +155,21 @@ func TestAPlainWeekCountsTimedEventsOnly(t *testing.T) {
 		t.Errorf("week starts %s, want the Monday 2026-09-21", got)
 	}
 }
+
+// The week's events come in time order. The rows used to be read ORDER BY
+// starts_at; ListExpanded keeps each series' occurrences together in parent
+// order, so a weekly series from last month came before a Monday one-off, and
+// the Planning page buckets by day without sorting (review of 4097870).
+func TestTheWeeksEventsAreInTimeOrder(t *testing.T) {
+	f := setup(t, "UTC")
+	f.event(t, "пятничный созвон", time.Date(2026, 8, 28, 10, 0, 0, 0, time.UTC), 30, "FREQ=WEEKLY")
+	f.event(t, "понедельник", time.Date(2026, 9, 21, 9, 0, 0, 0, time.UTC), 30, "")
+
+	plan := f.week(t, "2026-09-21")
+	if len(plan.WeekEvents) != 2 {
+		t.Fatalf("%d events, want 2", len(plan.WeekEvents))
+	}
+	if plan.WeekEvents[0].Title != "понедельник" {
+		t.Errorf("first event %q, want the Monday one", plan.WeekEvents[0].Title)
+	}
+}

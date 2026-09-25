@@ -3,6 +3,7 @@ package planning
 import (
 	"context"
 	"net/http"
+	"sort"
 	"time"
 
 	"neuroboost/api-go/internal/calendars"
@@ -212,6 +213,9 @@ func listWeekEvents(ctx context.Context, userID string, weekStart, weekEnd time.
 			totalHours += e.EndsAt.Sub(e.StartsAt).Hours()
 		}
 	}
+	// ListExpanded keeps a series' occurrences together in parent order; the
+	// plan is read by time.
+	sort.SliceStable(week, func(i, j int) bool { return week[i].StartsAt.Before(week[j].StartsAt) })
 	return week, totalHours, nil
 }
 

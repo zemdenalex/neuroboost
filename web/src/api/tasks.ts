@@ -160,13 +160,14 @@ export async function updateTask(id: string, data: UpdateTaskRequest): Promise<T
 }
 
 /**
- * Answers one day of a repeating task: 'done', or 'open' to take the answer
- * back. No date means the day the series is on for the user (the server
- * resolves it); the answer names the day it wrote, for an Undo to reuse.
+ * Answers one day of a repeating task: 'done', 'skipped', or 'open' to take
+ * the answer back. No date means the day the series is on for the user (the
+ * server resolves it, and it may be a later day); the answer names the day it
+ * wrote. A page that shows TODAY must name today.
  */
 export async function markOccurrence(
   id: string,
-  state: 'done' | 'open',
+  state: 'done' | 'skipped' | 'open',
   date?: string,
 ): Promise<{ occurrence: string; state: string }> {
   return api.post(`/tasks/${encodeURIComponent(id)}/occurrences`, date ? { state, date } : { state })

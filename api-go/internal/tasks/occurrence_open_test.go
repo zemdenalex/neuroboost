@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"testing"
+
+	"neuroboost/api-go/internal/calendars"
 )
 
 // Undo of a tick (docs/tasks-web-cleanup.md 4.11): the web Tasks page closes
@@ -70,4 +72,44 @@ func occurrenceRows(t *testing.T, taskID string) int {
 		t.Fatalf("count: %v", err)
 	}
 	return n
+}
+
+// 🔴 A day of a SHARED series is one row for the whole calendar (unique on
+// task_id + occurrence) and keeps the id of whoever answered first. The first
+// «open» filtered on user_id as well, so when the other member took the answer
+// back it deleted nothing and still said 200: the tick came back on reload.
+// Review of 731172a, 25.09.
+func TestOpenOnASharedSeriesTakesBackTheOtherMembersAnswer(t *testing.T) {
+	d, ctx, owner := repeatDB(t)
+	editor := seedTaskUser(t, ctx, d, "open-editor")
+
+	shared, err := calendars.Create(ctx, owner, "Дом", nil)
+	if err != nil {
+		t.Fatalf("create shared calendar: %v", err)
+	}
+	t.Cleanup(func() { _, _ = d.Pool.Exec(ctx, `DELETE FROM calendar WHERE id = $1`, shared.ID) })
+	if _, err := d.Pool.Exec(ctx,
+		`INSERT INTO calendar_member (calendar_id, user_id, role, status) VALUES ($1, $2, $3, $4)`,
+		shared.ID, editor, calendars.RoleEditor, calendars.StatusActive); err != nil {
+		t.Fatalf("seed editor: %v", err)
+	}
+
+	task, err := insertTask(ctx, owner, CreateTaskRequest{
+		Title: "полить цветы", Rrule: str("FREQ=DAILY"), CalendarID: shared.ID,
+	}, nil)
+	if err != nil {
+		t.Fatalf("create: %v", err)
+	}
+	t.Cleanup(func() { _, _ = d.Pool.Exec(ctx, `DELETE FROM task WHERE id = $1`, task.ID) })
+
+	today := userToday().Format("2006-01-02")
+	if rec := callOccurrence(task.ID, owner, map[string]any{"state": "done", "date": today}); rec.Code != http.StatusOK {
+		t.Fatalf("owner done: %d %s", rec.Code, rec.Body.String())
+	}
+	if rec := callOccurrence(task.ID, editor, map[string]any{"state": "open", "date": today}); rec.Code != http.StatusOK {
+		t.Fatalf("editor open: %d %s", rec.Code, rec.Body.String())
+	}
+	if n := occurrenceRows(t, task.ID); n != 0 {
+		t.Errorf("after the editor's open: %d rows, want 0", n)
+	}
 }

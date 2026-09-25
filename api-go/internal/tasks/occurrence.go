@@ -129,9 +129,12 @@ func MarkOccurrence(ctx context.Context, userID, taskID string, day time.Time, s
 	}
 
 	if state == StateOpen {
+		// Not filtered by user_id: a day of a shared series is one row for the
+		// calendar and keeps whoever answered first, so the other member's
+		// «open» would delete nothing. Write access was checked by repeatOf.
 		_, err = db.Pool.Exec(ctx,
-			`DELETE FROM task_occurrence WHERE task_id = $1 AND user_id = $2 AND occurrence = $3`,
-			taskID, userID, day.Format("2006-01-02"))
+			`DELETE FROM task_occurrence WHERE task_id = $1 AND occurrence = $2`,
+			taskID, day.Format("2006-01-02"))
 		return err
 	}
 

@@ -66,6 +66,7 @@
   "toast": {
     "closed": "Закрыто «{{title}}»",
     "closedToday": "На сегодня сделано: «{{title}}»",
+    "notToday": "«{{title}}» сегодня не по расписанию",
     "undo": "Вернуть",
     "bulkClosed": "Закрыто: {{count}}",
     "bulkMoved": "Перенесено на завтра: {{count}}"
