@@ -21,6 +21,9 @@ branch `develop` @ `82de712`. Read-only: код не менялся, тесты 
 
 ### 🟡 I1 · Якорь серии берётся из СТАРОГО `due_date`, если PATCH одновременно включает повтор и меняет срок
 
+✅ **Починено 25.09** (`923c3d1`), тест `TestTurningRepeatOnWithANewDueDateAnchorsOnTheNewDate`, красный до правки.
+
+
 `api-go/internal/tasks/repeat_write.go:132-140` (`repeatUpdates`):
 
 ```go
@@ -79,6 +82,9 @@ tz-базой Postgres. Они не совпадают: Go принимает `"
 
 ### ⚠ M3 · Viewer получает 500 вместо 403 на schedule и convert
 
+✅ **Починено 25.09**: schedule и convert через `calendarWriteError` → 403 `CALENDAR_READ_ONLY`; тест `TestAViewerSchedulingASharedTaskIsToldItIsReadOnly`, красный до правки (500).
+
+
 `api-go/internal/tasks/handlers.go:386-393` (`ScheduleHandler`) мапит только `pgx.ErrNoRows`;
 `api-go/internal/tasks/convert_handlers.go:43-65` (`ConvertHandler`) мапит `ErrCalendarNotFound`,
 но не `ErrNotCalendarOwner`. Scope сам по себе правильный (`WritableIDFor` в `scheduleTask:795`
@@ -90,6 +96,9 @@ tz-базой Postgres. Они не совпадают: Go принимает `"
 - **Fix:** прогнать обе ошибки через уже существующий `calendarWriteError`.
 
 ### ⚠ M4 · `postpone_days` без верхней границы
+
+✅ **Починено 25.09**: `postpone_days > 366` → 400 `POSTPONE_TOO_LONG`; тест `TestPostponingMoreThanAYearIsRefused` (до правки 400 дней = 400 строк, 100000 дней вешали тест).
+
 
 `api-go/internal/tasks/occurrence_handlers.go:93` → `occurrence.go:194` (цикл `for i := 0; i < days; i++`
 с `INSERT` на каждое вхождение). `{"postpone_days": 1000000}` на ежедневной серии — миллион

@@ -389,7 +389,9 @@ func ScheduleHandler(w http.ResponseWriter, r *http.Request) {
 			util.RespondError(w, http.StatusNotFound, "NOT_FOUND", "Task not found")
 			return
 		}
-		util.RespondError(w, http.StatusInternalServerError, "SCHEDULE_ERROR", "Failed to schedule task")
+		// A read-only member gets «read only», not «500» (audit 25.09, M3).
+		status, code, msg := calendarWriteError(err, "SCHEDULE_ERROR", "Failed to schedule task")
+		util.RespondError(w, status, code, msg)
 		return
 	}
 
