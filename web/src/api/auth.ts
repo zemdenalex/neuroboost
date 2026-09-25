@@ -112,6 +112,11 @@ export async function telegramLogin(telegramUser: TelegramUser): Promise<AuthRes
   return api.post<AuthResponse>('/auth/telegram', telegramUser)
 }
 
+/** Sign-in from inside the Telegram Mini App: the raw initData string, untouched. */
+export async function telegramWebAppLogin(initData: string): Promise<AuthResponse> {
+  return api.post<AuthResponse>('/auth/telegram-webapp', { init_data: initData })
+}
+
 export async function register(data: RegisterRequest): Promise<AuthResponse> {
   return api.post<AuthResponse>('/auth/register', data)
 }

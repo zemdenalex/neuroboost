@@ -9,6 +9,7 @@ import {
   login as emailLogin,
   register as registerUser,
   telegramLogin,
+  telegramWebAppLogin,
   getMe,
   logout as apiLogout,
   updateMe,
@@ -20,6 +21,7 @@ import {
   setStoredToken,
   clearStoredToken,
 } from '../api/client'
+import { launchedInTelegram, loadWebApp, pickStartupAuth, prepareWebApp } from '../lib/telegram/webApp'
 
 /**
  * AuthContextValue defines the shape of the authentication context.  In addition
@@ -66,6 +68,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // On mount, attempt to restore session from localStorage
   useEffect(() => {
     const checkAuth = async () => {
+      // Telegram Mini App: the launch hash carries a signed identity, so the
+      // person lands in the app without a login screen. A failed exchange
+      // falls through to the ordinary path below rather than stranding them.
+      const initData = launchedInTelegram()
+      void loadWebApp().then((wa) => wa && prepareWebApp(wa))
+      const storedTokenValid = Boolean(getStoredToken()) && !isTokenExpired()
+      if (pickStartupAuth({ initData, storedTokenValid }) === 'webapp' && initData) {
+        try {
+          const response = await telegramWebAppLogin(initData)
+          setStoredToken(response.token, response.expires_at)
+        } catch {
+          // Keep whatever session there was; the login screen covers the rest.
+        }
+      }
       const token = getStoredToken()
       if (token && !isTokenExpired()) {
         try {
