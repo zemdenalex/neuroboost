@@ -45,6 +45,11 @@ import { defaultScheduleSlot } from '../../lib/schedule/defaultScheduleSlot'
 import { toDateTimeLocalValue, fromDateTimeLocalValue } from '../../lib/datetime/dateTimeLocal'
 import { ReminderOffsets } from '../../components/ReminderOffsets/ReminderOffsets'
 import { useReminderSettings } from '../../hooks/useReminderSettings'
+import { useAuthContext } from '../../contexts/AuthContext'
+import { useMediaQuery } from '../../hooks/useMediaQuery'
+import { PHONE_QUERY } from '../../lib/layout/headerVariant'
+import { readRowActions } from '../../lib/tasks/rowActions'
+import { RowActionsMenu, SwipeRow, TaskActionSheet } from '../../components/TaskRow/TaskRowActions'
 
 export default function Tasks() {
   const { t } = useTranslation('tasks')
@@ -53,6 +58,32 @@ export default function Tasks() {
   const [loading, setLoading] = useState(true)
   const [showEditor, setShowEditor] = useState(false)
   const [editingTask, setEditingTask] = useState<Partial<Task> | null>(null)
+  // Phone task rows: the actions variant chosen in settings (Denis 25.09).
+  const { user } = useAuthContext()
+  const isPhone = useMediaQuery(PHONE_QUERY)
+  const rowActions = readRowActions(user?.settings)
+  const [sheetTask, setSheetTask] = useState<Task | null>(null)
+  const openEditor = (task: Task) => {
+    setEditingTask(task)
+    setShowEditor(true)
+  }
+  const deleteFromRow = async (task: Task) => {
+    if (!confirm(t('confirmDelete', { title: task.title }))) return
+    try {
+      await deleteTask(task.id)
+      setTasks(prev => prev.filter(x => x.id !== task.id))
+      // As in the editor's delete: a deleted id left selected miscounts the bulk bar.
+      setSelected(prev => {
+        const next = new Set(prev)
+        next.delete(task.id)
+        return next
+      })
+    } catch (error) {
+      // Keep the row (setTasks is skipped on throw) and avoid an
+      // unhandled rejection. List-level error UI is a follow-up.
+      console.error('Failed to delete task:', error)
+    }
+  }
   const [saving, setSaving] = useState(false)
   const [editorError, setEditorError] = useState<string | null>(null)
   const reminderSettings = useReminderSettings()
@@ -561,148 +592,185 @@ export default function Tasks() {
                   {/* Tasks */}
                   {expandedGroups.has(priority) && (
                     <div className="border-t border-zinc-800">
-                      {priorityTasks.map(task => (
-                        <div
-                          key={task.id}
-                          id={`task-${task.id}`}
-                          className={`flex items-center gap-3 px-4 py-3 border-b border-zinc-800/50 last:border-b-0 transition-colors group ${
-                            highlightId === task.id ? 'bg-blue-900/30 ring-1 ring-blue-500' : selected.has(task.id) ? 'bg-blue-950/40' : 'hover:bg-zinc-800/30'
-                          }`}
-                        >
-                          {/* Selection — Shift+click extends from the last plain click.
-                              Hidden at rest so the row shows ONE control and the
-                              "done" circle is unambiguous; it fades in on hover, on
-                              keyboard focus, and stays up for every row while a
-                              selection exists.
-                              Opacity rather than `hidden`: a display:none checkbox
-                              leaves the Tab order, which would make bulk selection
-                              unreachable without a mouse. */}
-                          <input
-                            type="checkbox"
-                            checked={selected.has(task.id)}
-                            onChange={() => {}}
-                            onClick={(e) => handleRowSelect(task.id, e.shiftKey)}
-                            aria-label={t('bulk.select', { title: task.title })}
-                            className={`shrink-0 accent-blue-500 transition-opacity focus-visible:opacity-100 ${
-                              selected.size > 0
-                                ? 'opacity-100'
-                                : // A phone has no hover, so there it would be an invisible
-                                  // control taking the row's width that a tap beside the
-                                  // circle silently ticks (tour 25.09, MW10): not drawn.
-                                  'hidden md:block opacity-0 group-hover:opacity-100 group-focus-within:opacity-100'
-                            }`}
-                          />
-                          {/* Status toggle */}
-                          <button
-                            data-hint="tasks.complete"
-                            onClick={() => handleStatusToggle(task)}
-                            className="shrink-0"
-                          >
-                            {task.status === 'DONE' ? (
-                              <CheckCircle className="w-5 h-5 text-green-500" />
-                            ) : (
-                              <Circle className="w-5 h-5 text-zinc-600 hover:text-zinc-400" />
+                      {priorityTasks.map(task => {
+                        const phoneVariant = isPhone ? rowActions : null
+                        const rowTone =
+                          highlightId === task.id ? 'bg-blue-900/30 ring-1 ring-blue-500' : selected.has(task.id) ? 'bg-blue-950/40' : 'hover:bg-zinc-800/30'
+                        const body = (
+                          <>
+                            {/* Selection — Shift+click extends from the last plain click.
+                                Hidden at rest so the row shows ONE control and the
+                                "done" circle is unambiguous; it fades in on hover, on
+                                keyboard focus, and stays up for every row while a
+                                selection exists.
+                                Opacity rather than `hidden`: a display:none checkbox
+                                leaves the Tab order, which would make bulk selection
+                                unreachable without a mouse. */}
+                            <input
+                              type="checkbox"
+                              checked={selected.has(task.id)}
+                              onChange={() => {}}
+                              onClick={(e) => handleRowSelect(task.id, e.shiftKey)}
+                              aria-label={t('bulk.select', { title: task.title })}
+                              className={`shrink-0 accent-blue-500 transition-opacity focus-visible:opacity-100 ${
+                                selected.size > 0
+                                  ? 'opacity-100'
+                                  : // A phone has no hover, so there it would be an invisible
+                                    // control taking the row's width that a tap beside the
+                                    // circle silently ticks (tour 25.09, MW10): not drawn.
+                                    'hidden md:block opacity-0 group-hover:opacity-100 group-focus-within:opacity-100'
+                              }`}
+                            />
+                            {/* Status toggle */}
+                            <button
+                              data-hint="tasks.complete"
+                              onClick={() => handleStatusToggle(task)}
+                              className="shrink-0"
+                            >
+                              {task.status === 'DONE' ? (
+                                <CheckCircle className="w-5 h-5 text-green-500" />
+                              ) : (
+                                <Circle className="w-5 h-5 text-zinc-600 hover:text-zinc-400" />
+                              )}
+                            </button>
+
+                            {/* Task content */}
+                            <div className="flex-1 min-w-0">
+                              <div className={`font-mono text-sm ${task.status === 'DONE' ? 'text-zinc-500 line-through' : 'text-white'}`}>
+                                {task.title}
+                              </div>
+                              
+                              {/* Meta info */}
+                              <div className="flex items-center gap-3 mt-1">
+                                {task.due_date && (
+                                  <span className={`flex items-center gap-1 text-xs ${
+                                    new Date(task.due_date) < new Date() && task.status !== 'DONE'
+                                      ? 'text-red-400'
+                                      : 'text-zinc-500'
+                                  }`}>
+                                    <Calendar className="w-3 h-3" />
+                                    {new Date(task.due_date).toLocaleDateString()}
+                                  </span>
+                                )}
+                                {task.estimated_minutes && (
+                                  <span className="flex items-center gap-1 text-xs text-zinc-500">
+                                    <Clock className="w-3 h-3" />
+                                    {task.estimated_minutes}m
+                                  </span>
+                                )}
+                                {task.contexts?.map(ctx => (
+                                  <span key={ctx} className="text-xs text-zinc-500">
+                                    {CONTEXT_ICONS[ctx] || ''} {ctx}
+                                  </span>
+                                ))}
+                                {task.tags?.map(tag => (
+                                  <span key={tag} className="flex items-center gap-1 text-xs text-zinc-500">
+                                    <Tag className="w-3 h-3" />
+                                    {tag}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Actions. Desktop: icons revealed on hover. Phone: the variant
+                                chosen in settings (lib/tasks/rowActions; Denis 25.09). */}
+                            {phoneVariant === 'menu' && (
+                              <RowActionsMenu
+                                title={task.title}
+                                onSchedule={() => handleScheduleTask(task)}
+                                onEdit={() => openEditor(task)}
+                                onDelete={() => void deleteFromRow(task)}
+                              />
                             )}
-                          </button>
-
-                          {/* Task content */}
-                          <div className="flex-1 min-w-0">
-                            <div className={`font-mono text-sm ${task.status === 'DONE' ? 'text-zinc-500 line-through' : 'text-white'}`}>
-                              {task.title}
+                            {!phoneVariant && (
+                            <div className="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                              <button
+                                data-hint="tasks.schedule"
+                                onClick={() => handleScheduleTask(task)}
+                                title={t('schedule')}
+                                aria-label={t('schedule')}
+                                className="p-1.5 text-zinc-500 hover:text-blue-400 hover:bg-zinc-700 rounded transition-colors"
+                              >
+                                <CalendarPlus className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => openEditor(task)}
+                                // Icon-only, like its neighbours — but unlike them
+                                // it carried no accessible name at all, so screen
+                                // readers announced it as an unlabelled button.
+                                title={t('editTask')}
+                                aria-label={t('editTask')}
+                                // Addressable by something that does not change
+                                // with the interface language. The accessible
+                                // name is the right thing for a screen reader and
+                                // the wrong thing for a test: e2e looked for
+                                // "Edit Task" and staging rendered "Редактировать
+                                // задачу", because the account's language comes
+                                // from server settings and outranks anything the
+                                // spec seeds into localStorage.
+                                data-testid="task-edit"
+                                className="p-1.5 text-zinc-500 hover:text-white hover:bg-zinc-700 rounded transition-colors"
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => void deleteFromRow(task)}
+                                className="p-1.5 text-zinc-500 hover:text-red-400 hover:bg-zinc-700 rounded transition-colors"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
                             </div>
-                            
-                            {/* Meta info */}
-                            <div className="flex items-center gap-3 mt-1">
-                              {task.due_date && (
-                                <span className={`flex items-center gap-1 text-xs ${
-                                  new Date(task.due_date) < new Date() && task.status !== 'DONE'
-                                    ? 'text-red-400'
-                                    : 'text-zinc-500'
-                                }`}>
-                                  <Calendar className="w-3 h-3" />
-                                  {new Date(task.due_date).toLocaleDateString()}
-                                </span>
-                              )}
-                              {task.estimated_minutes && (
-                                <span className="flex items-center gap-1 text-xs text-zinc-500">
-                                  <Clock className="w-3 h-3" />
-                                  {task.estimated_minutes}m
-                                </span>
-                              )}
-                              {task.contexts?.map(ctx => (
-                                <span key={ctx} className="text-xs text-zinc-500">
-                                  {CONTEXT_ICONS[ctx] || ''} {ctx}
-                                </span>
-                              ))}
-                              {task.tags?.map(tag => (
-                                <span key={tag} className="flex items-center gap-1 text-xs text-zinc-500">
-                                  <Tag className="w-3 h-3" />
-                                  {tag}
-                                </span>
-                              ))}
+                            )}
+                          </>
+                        )
+                        if (phoneVariant === 'swipe') {
+                          return (
+                            <div key={task.id} id={`task-${task.id}`} className="border-b border-zinc-800/50 last:border-b-0">
+                              <SwipeRow
+                                onSchedule={() => handleScheduleTask(task)}
+                                onDelete={() => void deleteFromRow(task)}
+                                onTap={() => openEditor(task)}
+                              >
+                                <div className={`flex items-center gap-3 px-4 py-3 group ${rowTone}`}>{body}</div>
+                              </SwipeRow>
                             </div>
-                          </div>
-
-                          {/* Actions — always visible on touch (no hover), hover-revealed on desktop */}
-                          <div className="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
-                            <button
-                              data-hint="tasks.schedule"
-                              onClick={() => handleScheduleTask(task)}
-                              title={t('schedule')}
-                              aria-label={t('schedule')}
-                              className="p-1.5 text-zinc-500 hover:text-blue-400 hover:bg-zinc-700 rounded transition-colors"
-                            >
-                              <CalendarPlus className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => {
-                                setEditingTask(task)
-                                setShowEditor(true)
-                              }}
-                              // Icon-only, like its neighbours — but unlike them
-                              // it carried no accessible name at all, so screen
-                              // readers announced it as an unlabelled button.
-                              title={t('editTask')}
-                              aria-label={t('editTask')}
-                              // Addressable by something that does not change
-                              // with the interface language. The accessible
-                              // name is the right thing for a screen reader and
-                              // the wrong thing for a test: e2e looked for
-                              // "Edit Task" and staging rendered "Редактировать
-                              // задачу", because the account's language comes
-                              // from server settings and outranks anything the
-                              // spec seeds into localStorage.
-                              data-testid="task-edit"
-                              className="p-1.5 text-zinc-500 hover:text-white hover:bg-zinc-700 rounded transition-colors"
-                            >
-                              <Edit2 className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={async () => {
-                                if (confirm(t('confirmDelete', { title: task.title }))) {
-                                  try {
-                                    await deleteTask(task.id)
-                                    setTasks(prev => prev.filter(t => t.id !== task.id))
-                                  } catch (error) {
-                                    // Keep the row (setTasks is skipped on throw) and avoid an
-                                    // unhandled rejection. List-level error UI is a follow-up.
-                                    console.error('Failed to delete task:', error)
+                          )
+                        }
+                        return (
+                          <div
+                            key={task.id}
+                            id={`task-${task.id}`}
+                            data-testid={phoneVariant === 'card' ? 'task-row-card' : undefined}
+                            onClick={
+                              phoneVariant === 'card'
+                                ? (e) => {
+                                    // The row opens its sheet; its own controls keep their job.
+                                    if (!(e.target as HTMLElement).closest('button, input, a')) setSheetTask(task)
                                   }
-                                }
-                              }}
-                              className="p-1.5 text-zinc-500 hover:text-red-400 hover:bg-zinc-700 rounded transition-colors"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+                                : undefined
+                            }
+                            className={`flex items-center gap-3 px-4 py-3 border-b border-zinc-800/50 last:border-b-0 transition-colors group ${rowTone}`}
+                          >
+                            {body}
                           </div>
-                        </div>
-                      ))}
+                        )
+                      })}
                     </div>
                   )}
                 </div>
               ))
           )}
         </div>
+
+        {sheetTask && (
+          <TaskActionSheet
+            title={sheetTask.title}
+            onSchedule={() => handleScheduleTask(sheetTask)}
+            onEdit={() => openEditor(sheetTask)}
+            onDelete={() => void deleteFromRow(sheetTask)}
+            onClose={() => setSheetTask(null)}
+          />
+        )}
 
         {/* Task Editor Modal */}
         {showEditor && editingTask && (

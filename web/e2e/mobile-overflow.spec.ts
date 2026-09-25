@@ -392,6 +392,48 @@ test.describe('375px layout', () => {
     })
     expect(top, 'day header sits under a 20px all-day strip').toBe(20)
   })
+
+  // Denis 25.09: task actions on a phone, all three variants, chosen in settings.
+  test('task row: «⋯» by default, with the actions in its menu', async ({ authedPage }) => {
+    await authedPage.goto('/tasks')
+    const row = authedPage.locator('[id^="task-"]').first()
+    await expect(row).toBeVisible({ timeout: 15_000 })
+    await expect(row.getByRole('button', { name: /schedule|запланировать/i })).toHaveCount(0)
+    await row.getByTestId('task-row-more').click()
+    const menu = authedPage.getByTestId('task-row-menu')
+    await expect(menu.getByRole('menuitem')).toHaveCount(3)
+    await authedPage.keyboard.press('Escape')
+    await expect(menu).toBeHidden()
+  })
+
+  test('task row: swipe left uncovers the actions', async ({ authedPage }) => {
+    await withSettings(authedPage, { task_row_actions: 'swipe' })
+    await authedPage.goto('/tasks')
+    const swipe = authedPage.getByTestId('task-row-swipe').first()
+    await expect(swipe).toBeVisible({ timeout: 15_000 })
+    const box = (await swipe.boundingBox())!
+    const y = box.y + box.height / 2
+    await authedPage.mouse.move(box.x + box.width - 20, y)
+    await authedPage.mouse.down()
+    await authedPage.mouse.move(box.x + box.width - 160, y, { steps: 8 })
+    await authedPage.mouse.up()
+    await expect(swipe).toHaveAttribute('data-open', 'true')
+    await expect(authedPage.getByRole('dialog')).toHaveCount(0)
+  })
+
+  test('task row: a tap opens the card with the actions', async ({ authedPage }) => {
+    await withSettings(authedPage, { task_row_actions: 'card' })
+    await authedPage.goto('/tasks')
+    const row = authedPage.getByTestId('task-row-card').first()
+    await expect(row).toBeVisible({ timeout: 15_000 })
+    // The title, not the done circle: the circle keeps its own job.
+    await row.locator('.font-mono').first().click()
+    const sheet = authedPage.getByTestId('task-action-sheet')
+    await expect(sheet).toBeVisible()
+    await expect(sheet.getByRole('button')).toHaveCount(4)
+    await authedPage.keyboard.press('Escape')
+    await expect(sheet).toBeHidden()
+  })
 })
 
 /**

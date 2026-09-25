@@ -49,6 +49,8 @@ export interface UserSettings {
   month_view_variant?: string
   /** Month view: how long a click waits for a second click, ms (150–800, default 300). */
   month_click_wait_ms?: number
+  /** Phone task rows: 'menu' | 'swipe' | 'card' (lib/tasks/rowActions, Denis 25.09). */
+  task_row_actions?: string
   quiet_hours_start?: string
   quiet_hours_end?: string
   quick_task?: {

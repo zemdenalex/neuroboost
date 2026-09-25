@@ -14,6 +14,7 @@ import { WorkHoursSection } from './sections/WorkHoursSection'
 import { FeatureTogglesSection } from './sections/FeatureTogglesSection'
 import { DayTasksSection } from './sections/DayTasksSection'
 import { MonthViewSection } from './sections/MonthViewSection'
+import { TaskRowSection } from './sections/TaskRowSection'
 import { RecurringScopeSection } from './sections/RecurringScopeSection'
 import { DataSection } from './sections/DataSection'
 import { RemindersSection } from './sections/RemindersSection'
@@ -129,6 +130,7 @@ export default function Settings() {
 
         {/* The isMobile gate stays here: it decides whether the section exists. */}
         {isMobile && <MobileNavSection />}
+        {isMobile && <TaskRowSection />}
 
         <UIScaleSection autoSave={autoSaveSettings} />
 

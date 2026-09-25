@@ -158,5 +158,13 @@
     },
     "clickWait": "Wait for a second click: {{ms}} ms",
     "clickWaitNote": "One click on a day opens its week, a double click creates an event. If your double click is slow and the week opens, raise this"
-  }
+  },
+  "taskRow.title": "Task actions on a phone",
+  "taskRow.menu": "«⋯» button",
+  "taskRow.menuDesc": "One button per task opens Schedule, Edit and Delete.",
+  "taskRow.swipe": "Swipe left",
+  "taskRow.swipeDesc": "Swipe a task left for Schedule and Delete; tap it to edit.",
+  "taskRow.card": "Tap for a card",
+  "taskRow.cardDesc": "Tap a task and its actions slide up from the bottom.",
+  "error.saveTaskRow": "Could not save the task actions choice"
 }
