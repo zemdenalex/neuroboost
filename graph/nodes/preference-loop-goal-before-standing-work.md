@@ -1,6 +1,6 @@
 ---
 id: preference-loop-goal-before-standing-work
-title: "Луп тратит время на свою названную цель раньше постоянной работы: ночь 25→26.09 ушла в аудиты и бэкенд, а просили Mini App и мобильный веб"
+title: "Луп работает на свою названную цель; побочные мелкие задачи (починки, документы, исследование, свои инструменты) — когда застрял на цели или следующий шаг цели огромный (большой рефакторинг, миграция), потом обратно к цели"
 type: preference
 status: verified
 verified_by: session-04e1a014
@@ -14,13 +14,15 @@ links:
   - relates-to: "[[preference-a-loop-does-not-stop-itself]]"
   - relates-to: "[[preference-keep-sabotage-advisor-e2e-obsidian]]"
 ---
-Денис, рефлексия 26.09: из вариантов выбрал *«Fine, keep going»* (метод — тест до правки, саботаж, ревью —
-держать) и *«Too little mini app / mobile»*. Луп был запущен словами *«work in a loop to create telegram miniapp
-and fix mobile web»*, а после закрытия чек-листов ушёл в очередь постоянной работы (аудиты tasks/daytasks,
-reflections, planning, зависимости, производительность) — полезное, но не то, о чём просили.
+Денис 26.09 (handoff): рефлексия — *«Fine, keep going»* и *«Too little mini app / mobile»*; уточнение формулировки,
+дословно: *«when agent is in the loop and it stuck somewhere in the goal, or next step from the goal is giant (like
+big refactor or migration), it can do small side-quests, or it can improve its docs and research etc»*. Выбрал
+вариант «Goal first, side-quests allowed».
 
-**Как применять:** пока в названной цели есть хоть что-то без Дениса (варианты по вкусу, проверка на 375px,
-перенос бот→веб, Android-разведка) — это раньше постоянной работы из `docs/agents/queue.md`. Постоянная работа —
-когда по цели правда остались только его решения.
+**Что было не так в ночь 25→26.09:** луп *«work in a loop to create telegram miniapp and fix mobile web»* ушёл в
+аудиты tasks/daytasks, reflections, planning, зависимости, производительность, хотя по цели ещё были шаги без
+Дениса (проверка на 375px, перенос бот→веб, варианты цветов Mini App).
 
-Формулировку Денис подтвердил 26.09 (handoff, раунд 2 новой версии скилла): «Yes, like that».
+**Как применять:** шаг цели выполним без Дениса — делать его. Застрял (ждёт решения, окружения, деплоя) или
+следующий шаг огромный — можно побочное: мелкие починки, документы, research, улучшение своих инструментов;
+после — вернуться к цели. Побочное не должно вытеснять цель, когда у неё есть выполнимые шаги.
