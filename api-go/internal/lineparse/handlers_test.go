@@ -201,9 +201,18 @@ func TestParseAsksWhatTheBotWouldAsk(t *testing.T) {
 		"зарядка завтра 8:00 повтор": "freq",
 	} {
 		got := answer(t, post(t, token(t, user), map[string]string{"text": line}))
-		if got.Kind != KindAsk || got.Missing != missing {
-			t.Errorf("%q: kind %q missing %q, want ask/%s", line, got.Kind, got.Missing, missing)
+		if got.Kind != KindAsk || got.Missing != missing || !got.HasTime {
+			t.Errorf("%q: kind %q missing %q has_time %v, want ask/%s with a time", line, got.Kind, got.Missing, got.HasTime, missing)
 		}
+	}
+}
+
+// A plain task has no clock time, so the web may save it without asking.
+func TestParsePlainTaskHasNoTime(t *testing.T) {
+	withClock(t)
+	user, _ := seedUser(t, `{}`)
+	if got := answer(t, post(t, token(t, user), map[string]string{"text": "купить молоко завтра"})); got.HasTime {
+		t.Errorf("has_time = true for a line with no clock time")
 	}
 }
 

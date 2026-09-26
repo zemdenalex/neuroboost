@@ -4,3 +4,5 @@
 *
 !api-go
 !bot
+# A secret next to the sources (bot/.env on a server) stays out too.
+**/.env

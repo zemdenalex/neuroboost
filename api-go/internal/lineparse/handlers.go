@@ -78,6 +78,10 @@ type Answer struct {
 	// "date", "span", "time"), or "list" / "dates" for a line the bot asks
 	// about as a whole. Empty unless Kind is "ask".
 	Missing string `json:"missing,omitempty"`
+	// HasTime: the line named a clock time. An «ask» line with a time is one
+	// the web must not save as typed without asking — «встреча 15:00» with no
+	// day is the common one.
+	HasTime bool `json:"has_time"`
 
 	Tags  []string `json:"tags"`
 	Rrule *string  `json:"rrule"`
@@ -165,7 +169,7 @@ func Read(text string, at time.Time, zone string, v parse.Vocabulary) Answer {
 
 	u := parse.Understand(text, at, v)
 	d := u.Draft
-	a.Title, a.AllDay, a.IsTask = u.Title, d.AllDay, d.IsTask
+	a.Title, a.AllDay, a.IsTask, a.HasTime = u.Title, d.AllDay, d.IsTask, d.HasTime
 	if len(d.Tags) > 0 {
 		a.Tags = d.Tags
 	}
