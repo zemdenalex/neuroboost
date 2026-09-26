@@ -1,18 +1,26 @@
+# Built from the REPO ROOT (context `.` in docker-compose*.yml), not from
+# api-go/: go.mod replaces github.com/zemdenalex/neuroboost-bot with ../bot, so
+# the shared line parser (bot/parse) has to be in the context next to api-go.
+# The root .dockerignore keeps everything else (web/, ref/, .env) out.
+
 # Builder stage
 FROM golang:1.26-alpine AS build
-WORKDIR /app
+WORKDIR /src/api-go
 RUN apk add --no-cache git ca-certificates curl
 
 # Install golang-migrate
 RUN curl -L https://github.com/golang-migrate/migrate/releases/download/v4.17.0/migrate.linux-amd64.tar.gz | tar xvz \
     && mv migrate /usr/local/bin/migrate
 
+# The replaced module first: go mod download reads its go.mod.
+COPY bot /src/bot
+
 # Copy go.mod first for caching
-COPY go.mod go.sum* ./
+COPY api-go/go.mod api-go/go.sum* ./
 RUN go mod download || true
 
 # Copy source and build
-COPY . .
+COPY api-go/ .
 RUN go mod tidy
 
 # Build main API binary
@@ -33,7 +41,7 @@ COPY --from=build /healthcheck /srv/healthcheck
 COPY --from=build /usr/local/bin/migrate /usr/local/bin/migrate
 
 # Copy migrations
-COPY migrations /srv/migrations
+COPY api-go/migrations /srv/migrations
 
 # Create non-root user
 RUN adduser -D -u 1000 appuser

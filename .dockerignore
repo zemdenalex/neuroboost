@@ -1,0 +1,6 @@
+# Only the api image builds from the repo root (context `.`); web and bot have
+# their own contexts. The api needs api-go/ and bot/ (the shared line parser,
+# bot/parse) and nothing else — least of all .env, web/node_modules or ref/.
+*
+!api-go
+!bot
