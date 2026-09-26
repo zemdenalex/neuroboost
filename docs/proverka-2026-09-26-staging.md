@@ -1,6 +1,6 @@
 # Проверка 26.09 — staging после push: Mini App, мобильный веб, всё открытое
 
-**Веб:** https://dev.neuroboost.website · **Бот:** @NeuroBoost\_dev\_bot · код `develop` @ `SHA`
+**Веб:** https://dev.neuroboost.website · **Бот:** @NeuroBoost\_dev\_bot · код `develop` @ `6f52478`
 **Прод:** `v0.4.11.5`, ничего из этого там нет.
 **Заменяет:** открытые разделы 3–5 из `docs/proverka-2026-09-24-bot-i-veb.md` (твои 1–2 там отмечены,
 не трогаю) + `docs/proverka-mini-app.md` + §8 из `docs/relizy/plan-v0.4.11.6-i-v0.4.12.md`.

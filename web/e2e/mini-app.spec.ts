@@ -41,7 +41,9 @@ test('a Mini App launch signs in without the login screen', async ({ page }) => 
 
   await page.goto(`/calendar${hash}`)
   await expect(page).toHaveURL(/\/calendar/, { timeout: 20_000 })
-  await expect(page.getByTestId('week-day-header').first().or(page.getByText(/tap: select|нажми/i).first())).toBeVisible({
+  // Either marker proves the calendar; on a phone both are on screen at once
+  // (the tap hint shows on the first three opens), so take the first match.
+  await expect(page.getByTestId('week-day-header').or(page.getByText(/tap: select|нажми/i)).first()).toBeVisible({
     timeout: 20_000,
   })
   expect(await page.evaluate(() => localStorage.getItem('nb_token')), 'a session was stored').toBeTruthy()

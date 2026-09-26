@@ -17,9 +17,20 @@ test('Overview counts the whole backlog; a row whose edit failed says so', async
     const filtered = new URL(req.url()).searchParams.has('sort_by')
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ data: filtered ? [ALL[0]] : ALL }) })
   })
+  // The page is shown only to an admin. CI's e2e account is not one (the local
+  // account happened to be, which is how this spec first passed), so the
+  // account's own answer is taken and marked admin: the gate is the page's,
+  // and the feedback API it then reads is answered above.
+  await authedPage.route('**/api/auth/me', async (route) => {
+    if (route.request().method() !== 'GET') return route.fallback()
+    const res = await route.fetch()
+    const body = await res.json()
+    const user = body.data ?? body
+    user.is_admin = true
+    await route.fulfill({ response: res, json: body })
+  })
   await authedPage.goto('/admin')
   const overview = authedPage.getByRole('button', { name: 'Overview' })
-  // isVisible() does not wait; the e2e account is an admin (checked 25.09), so wait for the tab.
   await overview.waitFor({ timeout: 15_000 })
   await overview.click()
   await expect(authedPage.getByTestId('overview-total')).toHaveText('3')
