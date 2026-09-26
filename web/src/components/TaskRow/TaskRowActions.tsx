@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CalendarPlus, Edit2, MoreHorizontal, Trash2, X } from 'lucide-react'
+import { CalendarPlus, Edit2, ListPlus, MoreHorizontal, Trash2, X } from 'lucide-react'
 import { SWIPE_ACTIONS_PX, swipeOffset, swipeSettle } from '../../lib/tasks/rowActions'
 
 /**
@@ -13,10 +13,12 @@ export interface RowActionHandlers {
   onSchedule: () => void
   onEdit: () => void
   onDelete: () => void
+  /** Add a subtask under this task (gap list row 7: a phone has no Alt+→). */
+  onAddSubtask?: () => void
 }
 
 /** `menu`: one «⋯» button and a small menu; Delete set apart in red. */
-export function RowActionsMenu({ title, onSchedule, onEdit, onDelete }: RowActionHandlers & { title: string }) {
+export function RowActionsMenu({ title, onSchedule, onEdit, onDelete, onAddSubtask }: RowActionHandlers & { title: string }) {
   const { t } = useTranslation('tasks')
   const { t: tc } = useTranslation('common')
   const [open, setOpen] = useState(false)
@@ -65,6 +67,11 @@ export function RowActionsMenu({ title, onSchedule, onEdit, onDelete }: RowActio
           <MenuItem icon={<Edit2 className="w-4 h-4" />} onClick={pick(onEdit)} testId="task-edit">
             {t('editTask')}
           </MenuItem>
+          {onAddSubtask && (
+            <MenuItem icon={<ListPlus className="w-4 h-4" />} onClick={pick(onAddSubtask)} testId="task-add-subtask">
+              {t('addSubtask')}
+            </MenuItem>
+          )}
           <div className="my-1 border-t border-zinc-800" />
           <MenuItem icon={<Trash2 className="w-4 h-4" />} onClick={pick(onDelete)} danger>
             {tc('action.delete')}
@@ -222,6 +229,7 @@ export function TaskActionSheet({
   onSchedule,
   onEdit,
   onDelete,
+  onAddSubtask,
   onClose,
 }: RowActionHandlers & { title: string; meta?: ReactNode; onClose: () => void }) {
   const { t } = useTranslation('tasks')
@@ -251,13 +259,18 @@ export function TaskActionSheet({
             <X className="w-5 h-5" />
           </button>
         </div>
-        <div className="grid grid-cols-3 gap-2">
+        <div className={`grid gap-2 ${onAddSubtask ? 'grid-cols-2' : 'grid-cols-3'}`}>
           <SheetButton icon={<CalendarPlus className="w-5 h-5" />} onClick={pick(onSchedule)}>
             {t('schedule')}
           </SheetButton>
           <SheetButton icon={<Edit2 className="w-5 h-5" />} onClick={pick(onEdit)}>
             {tc('action.edit')}
           </SheetButton>
+          {onAddSubtask && (
+            <SheetButton icon={<ListPlus className="w-5 h-5" />} onClick={pick(onAddSubtask)}>
+              {t('addSubtask')}
+            </SheetButton>
+          )}
           <SheetButton icon={<Trash2 className="w-5 h-5" />} onClick={pick(onDelete)} danger>
             {tc('action.delete')}
           </SheetButton>

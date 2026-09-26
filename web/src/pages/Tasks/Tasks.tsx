@@ -376,6 +376,17 @@ export default function Tasks() {
     })
   }
 
+  // A subtask from the row menu (gap list row 7): the editor opens with the
+  // parent set, in the parent's calendar — a subtask of a shared task is shared
+  // too (bot pass 3.7), and the server otherwise files it in the personal one.
+  const openSubtaskEditor = (parent: Task) => {
+    setEditingTask({
+      title: '', priority: parent.priority, contexts: [], tags: [], parent_id: parent.id,
+      ...(parent.calendar_id ? { calendar_id: parent.calendar_id } : {}),
+    })
+    setShowEditor(true)
+  }
+
   const handleSaveTask = () => {
     if (!editingTask?.title) return
     // Capture the narrowed title: property narrowing from the guard above is not
@@ -417,6 +428,7 @@ export default function Tasks() {
             // user's default preset. An explicit [] means "deliberately none".
             reminder_offsets: editingTask.reminder_offsets,
             ...(editingTask.rrule ? { rrule: editingTask.rrule } : {}),
+            ...(editingTask.parent_id ? { parent_id: editingTask.parent_id } : {}),
           })
           setTasks(prev => [...prev, created])
         }
@@ -797,6 +809,7 @@ export default function Tasks() {
                                 onSchedule={() => handleScheduleTask(task)}
                                 onEdit={() => openEditor(task)}
                                 onDelete={() => void deleteFromRow(task)}
+                                onAddSubtask={() => openSubtaskEditor(task)}
                               />
                             )}
                             {!phoneVariant && (
@@ -885,6 +898,7 @@ export default function Tasks() {
             onSchedule={() => handleScheduleTask(sheetTask)}
             onEdit={() => openEditor(sheetTask)}
             onDelete={() => void deleteFromRow(sheetTask)}
+            onAddSubtask={() => openSubtaskEditor(sheetTask)}
             onClose={() => setSheetTask(null)}
           />
         )}

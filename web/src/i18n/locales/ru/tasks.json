@@ -96,5 +96,6 @@
   "plan.hours": "{{h}}ч",
   "plan.hoursMinutes": "{{h}}ч {{m}}м",
   "plan.estimate": "оценка",
-  "plan.back": "Назад"
+  "plan.back": "Назад",
+  "addSubtask": "Подзадача"
 }
