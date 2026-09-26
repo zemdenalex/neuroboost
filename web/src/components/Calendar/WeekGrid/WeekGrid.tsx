@@ -284,7 +284,7 @@ export function WeekGrid({
         onTaskDrop(dragData.task, new Date(targetDay.dayUtc0 + dropMin * 60000));
       }
     } catch { /* ignore drop errors */ }
-  }, [onTaskDrop, days, visibleDays]);
+  }, [onTaskDrop, days, visibleDays, allDayHeight]);
 
   return (
     <div className="h-full w-full flex flex-col font-mono bg-black text-zinc-100">
