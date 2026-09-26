@@ -97,5 +97,6 @@
   "plan.hoursMinutes": "{{h}}ч {{m}}м",
   "plan.estimate": "оценка",
   "plan.back": "Назад",
-  "addSubtask": "Подзадача"
+  "addSubtask": "Подзадача",
+  "pinDay": "В задачи дня"
 }

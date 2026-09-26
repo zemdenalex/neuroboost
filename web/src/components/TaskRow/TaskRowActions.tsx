@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CalendarPlus, Edit2, ListPlus, MoreHorizontal, Trash2, X } from 'lucide-react'
+import { CalendarPlus, Edit2, ListPlus, MoreHorizontal, Pin, Trash2, X } from 'lucide-react'
 import { SWIPE_ACTIONS_PX, swipeOffset, swipeSettle } from '../../lib/tasks/rowActions'
 
 /**
@@ -15,10 +15,12 @@ export interface RowActionHandlers {
   onDelete: () => void
   /** Add a subtask under this task (gap list row 7: a phone has no Alt+→). */
   onAddSubtask?: () => void
+  /** 📌 Put the task on a day (row 15); absent while day tasks are off. */
+  onPinDay?: () => void
 }
 
 /** `menu`: one «⋯» button and a small menu; Delete set apart in red. */
-export function RowActionsMenu({ title, onSchedule, onEdit, onDelete, onAddSubtask }: RowActionHandlers & { title: string }) {
+export function RowActionsMenu({ title, onSchedule, onEdit, onDelete, onAddSubtask, onPinDay }: RowActionHandlers & { title: string }) {
   const { t } = useTranslation('tasks')
   const { t: tc } = useTranslation('common')
   const [open, setOpen] = useState(false)
@@ -70,6 +72,11 @@ export function RowActionsMenu({ title, onSchedule, onEdit, onDelete, onAddSubta
           {onAddSubtask && (
             <MenuItem icon={<ListPlus className="w-4 h-4" />} onClick={pick(onAddSubtask)} testId="task-add-subtask">
               {t('addSubtask')}
+            </MenuItem>
+          )}
+          {onPinDay && (
+            <MenuItem icon={<Pin className="w-4 h-4" />} onClick={pick(onPinDay)} testId="task-pin-day">
+              {t('pinDay')}
             </MenuItem>
           )}
           <div className="my-1 border-t border-zinc-800" />
@@ -230,6 +237,7 @@ export function TaskActionSheet({
   onEdit,
   onDelete,
   onAddSubtask,
+  onPinDay,
   onClose,
 }: RowActionHandlers & { title: string; meta?: ReactNode; onClose: () => void }) {
   const { t } = useTranslation('tasks')
@@ -269,6 +277,11 @@ export function TaskActionSheet({
           {onAddSubtask && (
             <SheetButton icon={<ListPlus className="w-5 h-5" />} onClick={pick(onAddSubtask)}>
               {t('addSubtask')}
+            </SheetButton>
+          )}
+          {onPinDay && (
+            <SheetButton icon={<Pin className="w-5 h-5" />} onClick={pick(onPinDay)}>
+              {t('pinDay')}
             </SheetButton>
           )}
           <SheetButton icon={<Trash2 className="w-5 h-5" />} onClick={pick(onDelete)} danger>

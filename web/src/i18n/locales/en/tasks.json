@@ -96,5 +96,6 @@
   "plan.hoursMinutes": "{{h}}h {{m}}m",
   "plan.estimate": "estimate",
   "plan.back": "Back",
-  "addSubtask": "Add subtask"
+  "addSubtask": "Add subtask",
+  "pinDay": "Day tasks"
 }

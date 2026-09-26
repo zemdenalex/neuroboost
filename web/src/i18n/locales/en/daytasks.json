@@ -34,5 +34,13 @@
     "targetHint": "A new number applies from the next day you take.",
     "paintBefore": "Colour days before the first one taken",
     "paintBeforeHint": "Off: those days stay uncoloured. On: they are ⬛."
+  },
+  "pin": {
+    "which": "Which day should it go to?",
+    "today": "Today",
+    "tomorrow": "Tomorrow",
+    "date": "Date",
+    "add": "Add",
+    "added": "Added to the day tasks: {{day}}"
   }
 }

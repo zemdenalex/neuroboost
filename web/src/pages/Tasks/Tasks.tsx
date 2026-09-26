@@ -47,6 +47,9 @@ import { tickAction, tickedToday, undoOccurrence } from '../../lib/tasks/tickAct
 import { nestGroups, subtaskProgress } from '../../lib/tasks/taskTree'
 import { todayInZone } from '../../lib/dayTasks/dayColour'
 import { matchesStatusFilter } from '../../lib/tasks/statusFilter'
+import { DayPinSheet } from '../../components/TaskRow/DayPinSheet'
+import { errorKey, readDayPrefs, shiftDay } from '../../lib/dayTasks/dayView'
+import { addDayTask } from '../../api/dayTasks'
 import { REPEAT_CHOICES, repeatChoiceOf, rruleForSave, withRepeatChoice, type RepeatChoice } from '../../lib/tasks/repeatField'
 import { ApiError } from '../../api/client'
 import { linkedStarts, scheduleStart, whenShort, type ScheduleSlotKey } from '../../lib/schedule/scheduleSlot'
@@ -64,6 +67,7 @@ import { ScheduleChooser } from '../../components/TaskRow/ScheduleChooser'
 export default function Tasks() {
   const { t, i18n } = useTranslation('tasks')
   const { t: tc } = useTranslation('common')
+  const { t: td } = useTranslation('daytasks')
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
   const [showEditor, setShowEditor] = useState(false)
@@ -75,6 +79,8 @@ export default function Tasks() {
   const [sheetTask, setSheetTask] = useState<Task | null>(null)
   // «Запланировать» asks when and how long first (gap list row 4, as the bot).
   const [schedulingTask, setSchedulingTask] = useState<Task | null>(null)
+  const [pinningTask, setPinningTask] = useState<Task | null>(null)
+  const dayTasksOn = readDayPrefs(user?.settings).enabled
   const timeZone = user?.timezone || 'Europe/Moscow'
   // taskId → start of its nearest linked event today or later, for «завтра 09:00» on the row.
   const [linked, setLinked] = useState<Map<string, string>>(new Map())
@@ -349,6 +355,19 @@ export default function Tasks() {
   // Tap-friendly alternative to drag-scheduling: ask when and how long, as the
   // bot does (ScheduleChooser), then put the task on the calendar.
   const handleScheduleTask = (task: Task) => setSchedulingTask(task)
+
+  // 📌 to a day from the task (gap list row 15), as the bot's card does.
+  const pinToDay = async (task: Task, day: string) => {
+    setPinningTask(null)
+    const today = todayInZone(new Date(), user?.timezone || 'Europe/Moscow')
+    try {
+      await addDayTask(day, task.id)
+      const when = day === today ? td('pin.today') : day === shiftDay(today, 1) ? td('pin.tomorrow') : day
+      showToast(td('pin.added', { day: when }))
+    } catch (error) {
+      showToast(td(errorKey(error)))
+    }
+  }
 
   // The start is resolved at the final tap, like the bot's handleTaskSchedule:
   // «через час» means an hour from now, not from when the sheet opened.
@@ -810,6 +829,7 @@ export default function Tasks() {
                                 onEdit={() => openEditor(task)}
                                 onDelete={() => void deleteFromRow(task)}
                                 onAddSubtask={() => openSubtaskEditor(task)}
+                                onPinDay={dayTasksOn ? () => setPinningTask(task) : undefined}
                               />
                             )}
                             {!phoneVariant && (
@@ -899,7 +919,18 @@ export default function Tasks() {
             onEdit={() => openEditor(sheetTask)}
             onDelete={() => void deleteFromRow(sheetTask)}
             onAddSubtask={() => openSubtaskEditor(sheetTask)}
+            onPinDay={dayTasksOn ? () => setPinningTask(sheetTask) : undefined}
             onClose={() => setSheetTask(null)}
+          />
+        )}
+
+        {pinningTask && (
+          <DayPinSheet
+            title={pinningTask.title}
+            today={todayInZone(new Date(), user?.timezone || 'Europe/Moscow')}
+            tomorrow={shiftDay(todayInZone(new Date(), user?.timezone || 'Europe/Moscow'), 1)}
+            onPick={(day) => void pinToDay(pinningTask, day)}
+            onClose={() => setPinningTask(null)}
           />
         )}
 
