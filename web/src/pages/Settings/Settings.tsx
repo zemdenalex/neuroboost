@@ -15,6 +15,7 @@ import { FeatureTogglesSection } from './sections/FeatureTogglesSection'
 import { DayTasksSection } from './sections/DayTasksSection'
 import { MonthViewSection } from './sections/MonthViewSection'
 import { TaskRowSection } from './sections/TaskRowSection'
+import { PriorityStyleSection } from './sections/PriorityStyleSection'
 import { ThemeSection } from './sections/ThemeSection'
 import { RecurringScopeSection } from './sections/RecurringScopeSection'
 import { DataSection } from './sections/DataSection'
@@ -134,6 +135,8 @@ export default function Settings() {
         {/* The isMobile gate stays here: it decides whether the section exists. */}
         {isMobile && <MobileNavSection />}
         {isMobile && <TaskRowSection />}
+
+        <PriorityStyleSection />
 
         <UIScaleSection autoSave={autoSaveSettings} />
 

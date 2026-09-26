@@ -48,6 +48,7 @@ import { nestGroups, subtaskProgress } from '../../lib/tasks/taskTree'
 import { todayInZone } from '../../lib/dayTasks/dayColour'
 import { matchesStatusFilter } from '../../lib/tasks/statusFilter'
 import { DayPinSheet } from '../../components/TaskRow/DayPinSheet'
+import { PriorityMark } from '../../components/PriorityMark'
 import { errorKey, readDayPrefs, shiftDay } from '../../lib/dayTasks/dayView'
 import { addDayTask } from '../../api/dayTasks'
 import { REPEAT_CHOICES, repeatChoiceOf, rruleForSave, withRepeatChoice, type RepeatChoice } from '../../lib/tasks/repeatField'
@@ -717,7 +718,7 @@ export default function Tasks() {
                       ) : (
                         <ChevronRight className="w-4 h-4 text-zinc-500" />
                       )}
-                      <div className={`w-3 h-3 rounded-full ${PRIORITY_COLORS[priority]}`} />
+                      <PriorityMark priority={Number(priority)} size="md" circleClass={PRIORITY_COLORS[priority]} />
                       <span className="font-mono font-medium text-white">
                         {t(`priority.${priority}`)}
                       </span>

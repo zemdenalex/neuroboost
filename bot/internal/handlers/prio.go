@@ -3,6 +3,7 @@ package handlers
 import (
 	"github.com/zemdenalex/neuroboost-bot/internal/format"
 	"github.com/zemdenalex/neuroboost-bot/internal/keyboards"
+	"time"
 )
 
 // The priority symbol (spec 21.09 §B). Настя, 18.09: «смайлики слишком из
@@ -13,14 +14,14 @@ import (
 // which is what the one-time question looks for.
 func (h *Handler) priorityStyleRaw(chatID int64) string {
 	us := h.store.GetOrCreate(chatID)
-	if us.PriorityStyleKnown {
+	if us.PriorityStyleKnown && time.Since(us.PriorityStyleAt) < langTTL {
 		return us.PriorityStyle
 	}
 	v, err := h.api.BotSetting(us.AuthToken, "priority_style")
 	if err != nil {
 		return ""
 	}
-	us.PriorityStyle, us.PriorityStyleKnown = v, true
+	us.PriorityStyle, us.PriorityStyleKnown, us.PriorityStyleAt = v, true, time.Now()
 	return v
 }
 
@@ -55,7 +56,7 @@ func (h *Handler) handlePriorityPick(chatID int64, messageID int, style, prefix 
 			h.sendText(chatID, h.t(chatID, "❌ Не сохранилось: ", "❌ Not saved: ")+h.errorText(chatID, err))
 			return
 		}
-		us.PriorityStyle, us.PriorityStyleKnown = style, true
+		us.PriorityStyle, us.PriorityStyleKnown, us.PriorityStyleAt = style, true, time.Now()
 	}
 
 	backData, backLabel := "settings_menu", h.t(chatID, "« Настройки", "« Settings")

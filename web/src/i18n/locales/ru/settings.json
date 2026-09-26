@@ -173,5 +173,11 @@
   "theme.light": "Светлая",
   "theme.system": "Как в системе",
   "theme.telegramNote": "Внутри Telegram NeuroBoost берёт тему самого Telegram.",
-  "error.saveTheme": "Не удалось сохранить тему"
+  "error.saveTheme": "Не удалось сохранить тему",
+  "priorityStyle.title": "Символ приоритета",
+  "priorityStyle.hint": "Та же настройка, что в боте: меняется и там.",
+  "priorityStyle.circles": "Кружки",
+  "priorityStyle.dot": "Точки с цифрой",
+  "priorityStyle.dash": "Тире",
+  "priorityStyle.error": "Не удалось сохранить символ приоритета."
 }

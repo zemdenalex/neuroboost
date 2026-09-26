@@ -49,6 +49,8 @@ export interface AuthContextValue {
   updateProfile: (data: { display_name?: string; timezone?: string; locale?: string }) => Promise<void>
   /** Interface language for the web AND the bot (one language per person). */
   updateLanguage: (locale: string) => Promise<void>
+  /** One key of settings.bot (shared with the bot), merged on the server's copy. */
+  updateBotSetting: (key: string, value: unknown) => Promise<void>
 }
 
 // One saver for the app: its queue is what keeps two quick saves apart.
@@ -300,6 +302,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(await saveSettings.language(locale))
   }, [])
 
+  const updateBotSetting = useCallback(async (key: string, value: unknown) => {
+    setUser(await saveSettings.botSetting(key, value))
+  }, [])
+
   /**
    * Reset the current error state.
    */
@@ -322,6 +328,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     updateSettings,
     updateProfile,
     updateLanguage,
+    updateBotSetting,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

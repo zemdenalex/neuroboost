@@ -64,6 +64,9 @@ type UserState struct {
 	// task list draws it (spec 21.09 §B). "" means «not chosen» — circles.
 	PriorityStyle      string
 	PriorityStyleKnown bool
+	// PriorityStyleAt: the web sets the style too (26.09), so it is re-read
+	// after a few minutes, like Lang.
+	PriorityStyleAt time.Time
 
 	// DayTasksOn caches settings.day_tasks_enabled (spec 2026-09-22 §11): the
 	// home keyboard draws it on every screen, so it is not read each time.

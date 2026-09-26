@@ -13,6 +13,11 @@ export interface SettingsSaver {
    * request, so a half-done write cannot leave them disagreeing.
    */
   language: (locale: string) => Promise<User>
+  /**
+   * One key of the bot section (settings.bot.*), merged into the section the
+   * server holds now: it also keeps the keyword vocabulary and the language.
+   */
+  botSetting: (key: string, value: unknown) => Promise<User>
 }
 
 /**
@@ -38,12 +43,17 @@ export function createSettingsSaver(deps: SettingsDeps): SettingsSaver {
   const save = ((patch: Partial<UserSettings>) =>
     queued((fresh) => ({ settings: { ...(fresh.settings ?? {}), ...patch } }))) as SettingsSaver
 
+  const withBot = (fresh: User, key: string, value: unknown): UserSettings => {
+    const settings = (fresh.settings ?? {}) as Record<string, unknown>
+    const bot = (settings.bot && typeof settings.bot === 'object' ? settings.bot : {}) as Record<string, unknown>
+    return { ...settings, bot: { ...bot, [key]: value } } as UserSettings
+  }
+
   save.language = (locale: string) =>
-    queued((fresh) => {
-      const settings = (fresh.settings ?? {}) as Record<string, unknown>
-      const bot = (settings.bot && typeof settings.bot === 'object' ? settings.bot : {}) as Record<string, unknown>
-      return { locale, settings: { ...settings, bot: { ...bot, lang: locale } } as UserSettings }
-    })
+    queued((fresh) => ({ locale, settings: withBot(fresh, 'lang', locale) }))
+
+  save.botSetting = (key: string, value: unknown) =>
+    queued((fresh) => ({ settings: withBot(fresh, key, value) }))
 
   return save
 }

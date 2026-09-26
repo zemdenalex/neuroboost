@@ -46,3 +46,20 @@ func TestTheBotPicksUpALanguageChangedElsewhere(t *testing.T) {
 		t.Errorf("after the cache aged: %v, want en (changed in the web)", got)
 	}
 }
+
+// Gap list row 16 (Denis 26.09): the priority style is set in the web too, so
+// the chat's cached copy ages out like the language does.
+func TestTheBotPicksUpAPriorityStyleChangedElsewhere(t *testing.T) {
+	acc := &fakeAccount{timezone: "Europe/Moscow", settings: map[string]any{"bot": map[string]any{"lang": "ru", "priority_style": "circles"}}}
+	h, _, chat := onboardHandler(t, acc)
+	if got := h.priorityStyle(chat); got != "circles" {
+		t.Fatalf("first read: %q", got)
+	}
+	acc.mu.Lock()
+	acc.settings = map[string]any{"bot": map[string]any{"lang": "ru", "priority_style": "dot"}}
+	acc.mu.Unlock()
+	h.store.GetOrCreate(chat).PriorityStyleAt = time.Now().Add(-langTTL - time.Second)
+	if got := h.priorityStyle(chat); got != "dot" {
+		t.Errorf("after the cache aged: %q, want dot (changed in the web)", got)
+	}
+}

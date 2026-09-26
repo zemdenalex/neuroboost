@@ -173,5 +173,11 @@
   "theme.light": "Light",
   "theme.system": "System",
   "theme.telegramNote": "Inside the Telegram app NeuroBoost follows Telegram's own theme.",
-  "error.saveTheme": "Could not save the theme"
+  "error.saveTheme": "Could not save the theme",
+  "priorityStyle.title": "Priority symbol",
+  "priorityStyle.hint": "The same setting as in the bot: changing it here changes it there.",
+  "priorityStyle.circles": "Circles",
+  "priorityStyle.dot": "Dots with a number",
+  "priorityStyle.dash": "Dashes",
+  "priorityStyle.error": "Could not save the priority symbol."
 }

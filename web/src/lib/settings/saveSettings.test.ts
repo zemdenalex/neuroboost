@@ -101,3 +101,17 @@ describe('language write', () => {
     expect(wrote).toBe(false)
   })
 })
+
+// Gap list row 16: the priority style is the bot's key, written from the web.
+describe('bot setting write', () => {
+  it('sets one bot key and keeps the rest of the bot section and the blob', async () => {
+    const sent: UpdateUserRequest[] = []
+    const save = createSettingsSaver({
+      getMe: async () => ({ settings: { work_start: '09:00', bot: { lang: 'en', keywords: { созвон: {} } } } }) as unknown as User,
+      updateMe: async (data) => { sent.push(data); return {} as User },
+    })
+    await save.botSetting('priority_style', 'dot')
+    expect(sent[0].settings).toEqual({ work_start: '09:00', bot: { lang: 'en', keywords: { созвон: {} }, priority_style: 'dot' } })
+    expect(sent[0].locale).toBeUndefined()
+  })
+})

@@ -4,6 +4,7 @@ import { Plus, Settings, X, GripVertical, Clock, Calendar } from 'lucide-react'
 import { listTasks, createTask, updateTask } from '../../api/tasks'
 import type { Task } from '../../api/tasks'
 import { PRIORITY_DOT_COLORS } from '../../lib/priority'
+import { PriorityMark } from '../../components/PriorityMark'
 import { describeDueDate, dueDateColorClass, formatDueDateLabel } from '../../lib/dueDate'
 // Column rules live in a leaf module so they can be tested; this page renders
 // them. KanbanColumnId stays derived from COLUMN_DEFS below, so if the two
@@ -28,8 +29,8 @@ type KanbanColumnId = typeof COLUMN_DEFS[number]['id']
 // Colors come from lib/priority (shared across Tasks, calendar, sidebar, Eisenhower).
 
 function PriorityDot({ priority }: { priority: number }) {
-  const color = PRIORITY_DOT_COLORS[priority] ?? PRIORITY_DOT_COLORS[3]
-  return <span className={`inline-block w-2 h-2 rounded-full flex-shrink-0 ${color}`} />
+  // The person's priority style (dot, «●1», «—»), as in the bot (gap list row 16).
+  return <PriorityMark priority={priority} circleClass={PRIORITY_DOT_COLORS[priority] ?? PRIORITY_DOT_COLORS[3]} />
 }
 
 // ─── Column header accent ─────────────────────────────────────────────────────

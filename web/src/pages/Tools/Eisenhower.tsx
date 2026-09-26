@@ -4,6 +4,7 @@ import { Grid2X2, RefreshCw, AlertCircle } from 'lucide-react'
 import { getTasks, updateTask } from '../../api'
 import type { Task } from '../../types'
 import { PRIORITY_DOT_COLORS } from '../../lib/priority'
+import { PriorityMark } from '../../components/PriorityMark'
 // The matrix rule lives in a leaf module so it can be tested; this page
 // renders it. Do not re-declare it here — two copies would drift.
 import { dropPriority, taskQuadrant, type QuadrantId } from '../../lib/tools/eisenhower'
@@ -87,10 +88,7 @@ function TaskCard({ task, dotColor, onDragStart }: TaskCardProps) {
       className="group flex items-start gap-2 px-3 py-2 bg-zinc-900 border border-zinc-700/50
         rounded-lg cursor-grab active:cursor-grabbing hover:border-zinc-600 transition-colors select-none"
     >
-      <span
-        className={`mt-1.5 w-2 h-2 rounded-full flex-shrink-0 ${dotClass}`}
-        aria-hidden
-      />
+      <PriorityMark priority={task.priority} circleClass={dotClass} className="mt-1.5" />
       <span className="text-sm text-zinc-200 leading-snug break-words min-w-0 flex-1">
         {task.title}
       </span>
