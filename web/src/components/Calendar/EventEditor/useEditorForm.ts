@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { allDayBounds, allDayLastDay } from './allDayDates';
 import { buildRrule } from './buildRrule';
 import { createEvent, updateEvent, saveReflection } from '../../../api';
 import { describeSaveError } from '../../../lib/calendar/saveError';
@@ -117,7 +118,9 @@ export function useEditorForm(
       setStartTimeInput(start.time);
       setEndTimeInput(end.time);
       setStartDateLocal(start.date);
-      setEndDateLocal(end.date);
+      // An all-day event is stored up to the midnight AFTER its last day; the
+      // form shows the last day (row 9, 26.09).
+      setEndDateLocal(draft.allDay ? allDayLastDay(start.date, end.date, end.time) : end.date);
       setValidation(createInitialValidation(start.time, end.time));
       
       if (hasReflection && draft.reflections?.[0]) {
@@ -220,8 +223,12 @@ export function useEditorForm(
     
     const body: CreateEventBody = {
       title: title.trim(),
-      startsAt: localDateTimeToUtc(startDateLocal, validation.startParsed, timezone).toISOString(),
-      endsAt: localDateTimeToUtc(adjustedEndDate, validation.endParsed, timezone).toISOString(),
+      ...(isAllDay
+        ? allDayBounds(startDateLocal, endDateLocal, timezone)
+        : {
+            startsAt: localDateTimeToUtc(startDateLocal, validation.startParsed, timezone).toISOString(),
+            endsAt: localDateTimeToUtc(adjustedEndDate, validation.endParsed, timezone).toISOString(),
+          }),
       allDay: isAllDay,
       description: description.trim() || undefined,
       location: location.trim() || undefined,

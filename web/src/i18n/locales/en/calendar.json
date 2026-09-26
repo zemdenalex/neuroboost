@@ -103,5 +103,6 @@
     "openWeek": "Open week",
     "free": "Free"
   },
-  "escapeAgain": "Changes are not saved. Press Escape again to close without saving"
+  "escapeAgain": "Changes are not saved. Press Escape again to close without saving",
+  "dateTime.lastDay": "Last day"
 }

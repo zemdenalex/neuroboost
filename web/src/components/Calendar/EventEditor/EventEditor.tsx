@@ -83,22 +83,21 @@ export function EventEditor({
       </div>
       
       <div className="space-y-4">
-        {/* Date/Time fields (hidden for all-day events) */}
-        {!state.isAllDay && (
-          <DateTimeFields
-            startDate={state.startDateLocal}
-            endDate={state.endDateLocal}
-            startTime={state.startTimeInput}
-            endTime={state.endTimeInput}
-            validation={state.validation}
-            timezone={timezone}
-            onStartDateChange={actions.setStartDateLocal}
-            onEndDateChange={actions.setEndDateLocal}
-            onStartTimeChange={(v, p) => actions.handleTimeChange(v, p, true)}
-            onEndTimeChange={(v, p) => actions.handleTimeChange(v, p, false)}
-            onEndTimeEnter={actions.handleSave}
-          />
-        )}
+        {/* Date/Time fields; an all-day event gets its dates only (row 9) */}
+        <DateTimeFields
+          datesOnly={state.isAllDay}
+          startDate={state.startDateLocal}
+          endDate={state.endDateLocal}
+          startTime={state.startTimeInput}
+          endTime={state.endTimeInput}
+          validation={state.validation}
+          timezone={timezone}
+          onStartDateChange={actions.setStartDateLocal}
+          onEndDateChange={actions.setEndDateLocal}
+          onStartTimeChange={(v, p) => actions.handleTimeChange(v, p, true)}
+          onEndTimeChange={(v, p) => actions.handleTimeChange(v, p, false)}
+          onEndTimeEnter={actions.handleSave}
+        />
 
         {/* Basic fields (title always, description/location/tags when advanced) */}
         <BasicFields
