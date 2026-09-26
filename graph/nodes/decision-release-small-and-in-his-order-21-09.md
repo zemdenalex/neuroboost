@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-09-21
 tags: [neuroboost, release, product, bot]
-weight: { importance: 5, connectivity: 12, access: 4, last_accessed: 2026-09-23 }
+weight: { importance: 5, connectivity: 14, access: 4, last_accessed: 2026-09-26 }
 sources:
   - file: "docs/relizy/plan-reliza-v0.4.11.3-2026-09-21.md"
   - file: "docs/superpowers/plans/2026-09-21-v04114-release-plan.md"
@@ -17,6 +17,7 @@ links:
   - relates-to: "[[decision-priority-style-is-a-choice-21-09]]"
   - relates-to: "[[learning-a-tally-cannot-say-whom-to-retry]]"
   - relates-to: "[[decision-3-day-plan-answers-23-09]]"
+  - relates-to: "[[decision-bottom-tabs-three-26-09]]"
 ---
 Его слова, 21.09, когда прод отставал на 81 коммит и 5 миграций:
 

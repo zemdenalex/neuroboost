@@ -6,13 +6,14 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-09-26
 tags: [loop, method]
-weight: { importance: 4, connectivity: 2, access: 1, last_accessed: 2026-09-26 }
+weight: { importance: 4, connectivity: 5, access: 2, last_accessed: 2026-09-26 }
 sources:
   - file: "transcript 04e1a014, handoff 26.09"
 stakes: low
 links:
   - relates-to: "[[preference-a-loop-does-not-stop-itself]]"
   - relates-to: "[[preference-keep-sabotage-advisor-e2e-obsidian]]"
+  - relates-to: "[[learning-a-question-to-denis-is-not-a-pause]]"
 ---
 Денис 26.09 (handoff): рефлексия — *«Fine, keep going»* и *«Too little mini app / mobile»*; уточнение формулировки,
 дословно: *«when agent is in the loop and it stuck somewhere in the goal, or next step from the goal is giant (like

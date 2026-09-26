@@ -12,6 +12,7 @@ sources:
   - file: "commit 66e429b"
 links:
   - relates-to: "[[learning-a-check-outside-the-checklist-never-runs]]"
+  - relates-to: "[[learning-playwright-call-log-prints-the-bearer-token]]"
 ---
 26.09: `govulncheck` на машине с go1.26.3 показал 8 уязвимостей stdlib — но прод собирается `golang:1.22-alpine`
 (`api-go/Dockerfile`, `bot/Dockerfile`, CI `GO_VERSION`), где их больше. Обратное тоже: GO-2026-5004 в pgx

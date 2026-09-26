@@ -12,6 +12,7 @@ links:
   - relates-to: "[[learning-measure-develop-before-blaming-staging]]"
   - relates-to: "[[entity-e2e-playwright-harness]]"
   - relates-to: "[[learning-a-test-that-cannot-fail-guards-nothing]]"
+  - relates-to: "[[learning-equal-z-index-lets-dom-order-decide]]"
 ---
 Симптом — вечный спиннер `initialLoading` у Календаря или таймаут первого клика; падают разные тесты,
 в том числе на страницах, которых правка не касалась. Это холодная компиляция dev-сервера на машине

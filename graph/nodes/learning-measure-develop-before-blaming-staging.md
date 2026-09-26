@@ -12,6 +12,7 @@ sources:
   - file: "docs/agents/queue.md (Производительность)"
 links:
   - relates-to: "[[learning-local-e2e-flakes-on-the-dev-server-not-the-code]]"
+  - relates-to: "[[learning-a-push-carries-every-commit-on-the-branch]]"
 ---
 26.09 `web/e2e/perf.spec.ts` (NB_PERF=1, CPU ×4, ~Fast 4G, кэш выключен, 375px): staging `/tasks` CLS 0.121
 три прогона подряд — нарушение стандарта < 0.1. Тот же спек с локальной сборкой `develop` против той же

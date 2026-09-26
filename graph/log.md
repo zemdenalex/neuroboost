@@ -1414,3 +1414,32 @@ CI/CD: `concurrency` в `ci.yml` (два push'а подряд ломают e2e �
 - **Ждёт Дениса:** «да» на PR #10 (бот v0.4.11.6) · вопросы `graph/.questions-next.md` (ООО/ИП, M6 задачи дня viewer, рабочие часы через полночь, сирота графа) · веб-релиз v0.4.12 после его прохода · ⚠ корню отправлены: баг дат `docs_index.py` и его замечание про раунд подтверждений графа в `/handoff`
 - **Открытые `- [ ]`:** `docs/tasks-mini-app.md` (MA3b) · `docs/tasks-mobile-web.md` (MW8 — вкус) · `docs/tasks-light-theme.md` (LT9) · `docs/tasks-web-month.md` (19, 68) · `docs/tasks-web-cleanup.md` (4.3) · `docs/tasks-prohod3-2026-09-23.md` (N1 ℹ️ на шагах — решает он, N2) · `docs/tasks-nochnoy-2026-09-24.md` (push)
 - **Промпт лупа:** `/loop work in a loop to create telegram miniapp and fix mobile web (Denis 25.09, verbatim). Checklists: docs/tasks-mini-app.md, docs/tasks-mobile-web.md; queue: docs/agents/queue.md. Rules: E:/Projects/CLAUDE.md "Loops"; no merge to main; prod bot untouched.`
+
+## [2026-09-26 04:08] consolidate | PRESERVED — transcript-precompact-04e1a014-20260926-040754.jsonl, 147 MB → .oversize/ (too large for one pass, kept for chunked consolidation)
+
+## [2026-09-26 04:08] consolidate | PRESERVED — transcript-sessionend-20260926-040807-115936-56c5b3.jsonl, 148 MB → .oversize/ (too large for one pass, kept for chunked consolidation)
+
+## [2026-09-26 04:49] consolidate | PRESERVED — transcript-precompact-04e1a014-20260926-044802.jsonl, 149 MB → .oversize/ (too large for one pass, kept for chunked consolidation)
+
+## [2026-09-26] recall | preference-loop-goal-before-standing-work, learning-a-page-showing-today-must-name-today, learning-a-series-due-date-is-its-start, learning-local-e2e-flakes-on-the-dev-server-not-the-code, decision-release-small-and-in-his-order-21-09
+
+## [2026-09-26 13:30] handoff-auto (loop) | утро 26.09: push, Mini App на staging, строки списка дыр бот→веб
+
+**Сделано (всё на `develop`, запушено до `b49bcc8`):** push 98 коммитов ночи + WEBAPP_URL у dev-бота (Mini App на staging) · MA3b цвета темы Telegram (`3420004`, вариант 2 Дениса) · телефонный календарь рисует 1 день (`f545f2c`) · F1 галочка серии в панели календаря, F2 редактор события терял INTERVAL · один язык на человека (веб+бот+API) · строки списка дыр 2, 4, 7, 9, 11, 13, 14, 15, 16, 8 · нижняя панель телефона «Календарь · Добавить · Ещё» (решение Дениса, `decision-bottom-tabs-three-26-09`) · `GET /api/events` `[]` вместо `null` · листы над панелью (z-60).
+**Проверка Денису:** `docs/proverka-2026-09-26-staging.md` (разделы 1–10). Список дыр с прогрессом — `docs/team/research/V003-20260926-res-bot-vs-web-gaps.md`.
+**Узлы прочитать первыми:** `learning-a-push-carries-every-commit-on-the-branch`, `learning-a-question-to-denis-is-not-a-pause`, `learning-equal-z-index-lets-dom-order-decide`, `decision-bottom-tabs-three-26-09`, `preference-loop-goal-before-standing-work`.
+
+### План следующей сессии (auto)
+
+- **Цель:** луп *«work in a loop to create telegram miniapp and fix mobile web»* — дыры бот→веб и мобильный веб.
+- **Первый шаг:** прочитать результат CI для `b49bcc8` (`gh run list --branch develop --limit 2`) — в нём незапланированно уехали 4 коммита агента строки 1 (парсер): `07a42ba` `08e5c57` `777fe8c` `b49bcc8`, образ API теперь собирается из корня репозитория (`api-go/Dockerfile`, `docker-compose*.yml`). Если deploy-dev или e2e красные — чинить первым (staging!). Затем дождаться/прочитать отчёт агента строки 1 и сделать ревью его diff (`pr-review-toolkit:code-reviewer` на `git diff e4f0739..b49bcc8`), особенно: сборка прод-образа на сервере (`/opt/neuroboost` использует тот же compose?) — прод трогает только релиз, но ci.yml job `deploy` на main должен собраться.
+- **Ждёт Дениса:** строка 3 «месяц на телефоне» — страница вариантов https://claude.ai/artifact/NRbFMBYbLHj6yPkGMXmheo открыта ему (он попросил «show me visually»); строка 5 (экран «связать/перенести») — нарисовать страницу вариантов, не ждать; строки 10 (онбординг веба), 12 (статистика) — решения; `graph/.questions-next.md`.
+- **Дальше без Дениса:** страница вариантов строки 5 → после выбора строки 3 строить месяц на телефоне → строка 18 «после быстрого создания ↩️ Отменить / → Событие» и 17 «свои слова» (зависят от строки 1, парсер уже есть) → пункт проверки 10.x в чек-лист Дениса за каждую фичу.
+- **Разогрев (≈150k):** `CLAUDE.md` проекта (уже инжектится) · список дыр (прогресс, решения) · `docs/proverka-2026-09-26-staging.md` (что уже отдано Денису) · `web/e2e/task-repeat-field.spec.ts` (образец e2e без записи в аккаунт: catch-all route ПЕРВЫМ) · `web/src/pages/Tasks/Tasks.tsx` (центр правок) · этот блок.
+- **Проверено и чем:** e2e без записи в аккаунт на каждую фичу (перехват записи + отказ остальным); CI зелёный до `e4f0739` включительно; вывод e2e только через `sed` (токен!).
+- **Опровергнуто:** «локально прошло = ок» для наложения слоёв (z-index) — на CI было иначе.
+- **Не проверено:** Home и таб-бар на реальном телефоне в Telegram; строка 13 (повтор напоминания) вживую в боте.
+- **Открытые `- [ ]`:** `docs/tasks-mobile-web.md` (MW8 — вкус) · `docs/tasks-light-theme.md` · `docs/tasks-web-month.md`.
+- **К ротации (Денису в отчёт):** JWT e2e-сессии staging-аккаунта попал в транскрипт 26.09 (~30 дней жизни).
+- **Начать с вопросов:** нет
+- **Промпт лупа:** `/loop work in a loop to create telegram miniapp and fix mobile web (Denis 25.09, verbatim). Checklists: docs/tasks-mini-app.md, docs/tasks-mobile-web.md; queue: docs/agents/queue.md. Rules: E:/Projects/CLAUDE.md "Loops"; no merge to main; prod bot untouched.`
