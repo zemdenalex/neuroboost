@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { buildRrule } from './buildRrule';
 import { createEvent, updateEvent, saveReflection } from '../../../api';
 import { describeSaveError } from '../../../lib/calendar/saveError';
 import { editorReflectionBody } from './reflectionBody';
@@ -251,11 +252,14 @@ export function useEditorForm(
     }
 
     // Build RRULE string from repeat fields
+    // Parts of the rule the form does not show (INTERVAL, BYDAY) survive the save.
     if (repeatType !== 'none') {
-      let rrule = `FREQ=${repeatType.toUpperCase()}`;
-      if (repeatEndType === 'count') rrule += `;COUNT=${repeatCount}`;
-      if (repeatEndType === 'date' && repeatUntil) rrule += `;UNTIL=${repeatUntil}`;
-      body.rrule = rrule;
+      body.rrule = buildRrule(draft?.rrule, {
+        freq: repeatType,
+        end: repeatEndType === 'count' ? 'count' : repeatEndType === 'date' ? 'until' : 'never',
+        count: repeatCount,
+        until: repeatUntil,
+      });
     }
 
     try {
