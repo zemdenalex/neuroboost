@@ -15,6 +15,8 @@ export interface ParsedLine {
   /** The zone the line was read in; wall times are printed in it. */
   timezone: string
   missing?: string
+  /** The line named a clock time: never saved as typed without asking. */
+  has_time: boolean
   tags: string[]
   rrule: string | null
   // Task fields. null = not stated; priority 0 is Buffer, a real answer.

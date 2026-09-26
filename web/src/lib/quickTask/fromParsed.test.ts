@@ -7,7 +7,7 @@ const base: ParsedLine = {
   kind: 'task', title: '', timezone: 'Europe/Moscow', tags: [], rrule: null,
   priority: null, due_date: null, estimated_minutes: null,
   starts_at: null, ends_at: null, all_day: false, color: null, calendar_id: null,
-  calendar_name: null, reminder_offsets: null, is_task: false, uncertain: [],
+  calendar_name: null, reminder_offsets: null, is_task: false, uncertain: [], has_time: false,
 }
 
 const built: CreateTaskRequest = {

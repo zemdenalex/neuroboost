@@ -20,7 +20,23 @@
       "cancel": "Cancel",
       "repeats": "repeats",
       "hint": "Enter creates · Esc cancels",
-      "failed": "Could not create: {{message}}"
+      "failed": "Could not create: {{message}}",
+      "today": "Today",
+      "tomorrow": "Tomorrow",
+      "saveTyped": "As typed, as a task",
+      "askHint": "Pick one · Esc cancels",
+      "dayFailed": "Could not read that. Save it as typed or open the full form",
+      "taskKept": "The task was created, the event was not: {{message}}. Enter retries",
+      "missing": {
+        "date": "Which day?",
+        "time": "What time?",
+        "title": "No title",
+        "freq": "A repeat with no frequency: set it in the full form",
+        "span": "The end is before the start",
+        "list": "Looks like a list",
+        "dates": "Several dates in one line",
+        "other": "The bot would ask about this line"
+      }
     }
   },
   "newTask": "New Task",

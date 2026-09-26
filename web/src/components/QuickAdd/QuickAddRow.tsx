@@ -52,10 +52,11 @@ export function QuickAddRow({ onCreate, onCreateMany, onOpenFull, filters, autoF
   // Tasks created in this session, oldest first — the basis for nesting.
   const [trail, setTrail] = useState<TrailEntry[]>([])
   const [parentId, setParentId] = useState<string | undefined>(undefined)
-  // A line with a clock time waits here for a second Enter: what will be
-  // created and when is shown first (gap list row 1). `text` is the line it
-  // was read from; any edit to the input drops it.
-  const [pending, setPending] = useState<{ text: string; parsed: ParsedLine } | null>(null)
+  // A line with a clock time waits here: what will be created and when is
+  // shown first (gap list row 1). `text` is the line it was read from; any
+  // edit to the input drops it. `taskId` is a task already created for it by
+  // «as a task» whose event then failed, so a retry does not make a second one.
+  const [pending, setPending] = useState<{ text: string; parsed: ParsedLine; taskId?: string } | null>(null)
   const [confirmError, setConfirmError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const settings = resolveQuickTaskSettings(user?.settings)
@@ -71,8 +72,10 @@ export function QuickAddRow({ onCreate, onCreateMany, onOpenFull, filters, autoF
   async function submit() {
     if (busy) return
     // The second Enter on an unchanged line confirms what the first one showed.
+    // A line the bot would ask about waits for a choice on the panel: Enter
+    // does not guess for it.
     if (pending && pending.text === title) {
-      await confirm(pending.parsed.is_task ? 'task' : 'event')
+      if (pending.parsed.kind === 'event') await confirm(pending.parsed.is_task ? 'task' : 'event')
       return
     }
     const built = buildQuickTask({ title, settings, now: new Date(), filters, parentId })
@@ -85,7 +88,9 @@ export function QuickAddRow({ onCreate, onCreateMany, onOpenFull, filters, autoF
     // (an API without the route, offline, slow) gives null, and the line is
     // saved as typed, exactly as before the parser existed.
     const parsed = await parseLine(typed)
-    if (parsed?.kind === 'event') {
+    // A clock time is never saved without a look: an event is confirmed, and
+    // a timed line the bot would ask about («встреча 15:00», no day) asks.
+    if (parsed && (parsed.kind === 'event' || (parsed.kind === 'ask' && parsed.has_time))) {
       setPending({ text: typed, parsed })
       setConfirmError(null)
       setBusy(false)
@@ -93,12 +98,16 @@ export function QuickAddRow({ onCreate, onCreateMany, onOpenFull, filters, autoF
       return
     }
     // A line with no clock time is a task at once, as in the bot. Defaults,
-    // then what the line said, then a field typed in the expanded form. Lines
-    // the bot would ask about (a list, a time with no day) keep the old
-    // behaviour for now.
+    // then what the line said, then a field typed in the expanded form. Other
+    // lines the bot would ask about (a list, «повтор» with no frequency) keep
+    // the old behaviour for now.
     const base = parsed?.kind === 'task' ? taskFromParsed(built, parsed) : built
-    const request: CreateTaskRequest = { ...base, ...draft, title: base.title }
+    await saveTask({ ...base, ...draft, title: base.title }, typed)
+  }
 
+  /** Saves one task; on failure the typed line comes back into the input. */
+  async function saveTask(request: CreateTaskRequest, typed: string) {
+    setBusy(true)
     // Clear optimistically so the next title can be typed while the request flies.
     setTitle('')
     setDraft({})
@@ -122,14 +131,17 @@ export function QuickAddRow({ onCreate, onCreateMany, onOpenFull, filters, autoF
    */
   async function confirm(as: 'event' | 'task') {
     if (!pending || busy) return
-    const { parsed } = pending
+    const { parsed, text } = pending
     setBusy(true)
     setConfirmError(null)
     try {
-      let taskId: string | undefined
-      if (as === 'task') {
+      // A task made by an earlier attempt is reused: the bot says «the task
+      // was created» rather than making it twice, and so does this.
+      let taskId = pending.taskId
+      if (as === 'task' && !taskId) {
         const task = await onCreate({ title: parsed.title, status: 'TODO', tags: parsed.tags })
         taskId = task.id
+        setPending({ text, parsed, taskId })
       }
       await createEvent(eventFromParsed(parsed, taskId))
       setPending(null)
@@ -141,6 +153,33 @@ export function QuickAddRow({ onCreate, onCreateMany, onOpenFull, filters, autoF
       setBusy(false)
       inputRef.current?.focus()
     }
+  }
+
+  /**
+   * «встреча 15:00» with no day: the day is added as a word and the line is
+   * read again by the server, so the date is computed where the bot computes
+   * it, in the user's zone, not in the browser.
+   */
+  async function pickDay(word: 'сегодня' | 'завтра') {
+    if (!pending || busy) return
+    const { text } = pending
+    setBusy(true)
+    setConfirmError(null)
+    const parsed = await parseLine(`${text} ${word}`)
+    if (parsed?.kind === 'event') setPending({ text, parsed })
+    else setConfirmError(t('quickAdd.confirm.dayFailed'))
+    setBusy(false)
+    inputRef.current?.focus()
+  }
+
+  /** The panel's way out: the line as typed, as a plain task, as before. */
+  async function saveAsTyped() {
+    if (!pending || busy) return
+    const built = buildQuickTask({ title: pending.text, settings, now: new Date(), filters, parentId })
+    if (!built) return
+    const typed = pending.text
+    setPending(null)
+    await saveTask({ ...built, ...draft, title: built.title }, typed)
   }
 
   /**
@@ -278,31 +317,81 @@ export function QuickAddRow({ onCreate, onCreateMany, onOpenFull, filters, autoF
           className="flex flex-wrap items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2"
         >
           <CalendarDays className="h-4 w-4 shrink-0 text-zinc-500" aria-hidden="true" />
-          <span className="font-mono text-sm text-zinc-100">
-            {pending.parsed.is_task ? t('quickAdd.confirm.task') : t('quickAdd.confirm.event')}: {pending.parsed.title}
-          </span>
-          <span data-testid="quick-add-confirm-when" className="font-mono text-xs text-zinc-400">
-            {describeParsedWhen(pending.parsed, i18n.language)}
-            {pending.parsed.calendar_name ? ` · ${pending.parsed.calendar_name}` : ''}
-            {pending.parsed.rrule ? ` · ${t('quickAdd.confirm.repeats')}` : ''}
-          </span>
-          <div className="flex w-full gap-2 sm:ml-auto sm:w-auto">
-            <button
-              type="button"
-              data-testid="quick-add-confirm-create"
-              onClick={() => void confirm(pending.parsed.is_task ? 'task' : 'event')}
-              className="rounded-lg border border-blue-500 px-3 py-1 font-mono text-sm text-zinc-100"
-            >
-              {t('quickAdd.confirm.create')}
-            </button>
-            <button
-              type="button"
-              data-testid="quick-add-confirm-other"
-              onClick={() => void confirm(pending.parsed.is_task ? 'event' : 'task')}
-              className="rounded-lg border border-zinc-700 px-3 py-1 font-mono text-sm text-zinc-400 hover:border-blue-500 hover:text-zinc-100"
-            >
-              {pending.parsed.is_task ? t('quickAdd.confirm.asEvent') : t('quickAdd.confirm.asTask')}
-            </button>
+          {pending.parsed.kind === 'event' ? (
+            <>
+              <span className="font-mono text-sm text-zinc-100">
+                {pending.parsed.is_task || pending.taskId ? t('quickAdd.confirm.task') : t('quickAdd.confirm.event')}: {pending.parsed.title}
+              </span>
+              <span data-testid="quick-add-confirm-when" className="font-mono text-xs text-zinc-400">
+                {describeParsedWhen(pending.parsed, i18n.language)}
+                {pending.parsed.calendar_name ? ` · ${pending.parsed.calendar_name}` : ''}
+                {pending.parsed.rrule ? ` · ${t('quickAdd.confirm.repeats')}` : ''}
+              </span>
+            </>
+          ) : (
+            <>
+              <span className="font-mono text-sm text-zinc-100">{pending.parsed.title || pending.text}</span>
+              <span className="font-mono text-xs text-zinc-400">
+                {t(`quickAdd.confirm.missing.${pending.parsed.missing ?? 'other'}`, {
+                  defaultValue: t('quickAdd.confirm.missing.other'),
+                })}
+              </span>
+            </>
+          )}
+          <div className="flex w-full flex-wrap gap-2 sm:ml-auto sm:w-auto">
+            {pending.parsed.kind === 'event' ? (
+              <>
+                <button
+                  type="button"
+                  data-testid="quick-add-confirm-create"
+                  onClick={() => void confirm(pending.parsed.is_task ? 'task' : 'event')}
+                  className="rounded-lg border border-blue-500 px-3 py-1 font-mono text-sm text-zinc-100"
+                >
+                  {t('quickAdd.confirm.create')}
+                </button>
+                {!pending.taskId && (
+                  <button
+                    type="button"
+                    data-testid="quick-add-confirm-other"
+                    onClick={() => void confirm(pending.parsed.is_task ? 'event' : 'task')}
+                    className="rounded-lg border border-zinc-700 px-3 py-1 font-mono text-sm text-zinc-400 hover:border-blue-500 hover:text-zinc-100"
+                  >
+                    {pending.parsed.is_task ? t('quickAdd.confirm.asEvent') : t('quickAdd.confirm.asTask')}
+                  </button>
+                )}
+              </>
+            ) : (
+              <>
+                {pending.parsed.missing === 'date' && (
+                  <>
+                    <button
+                      type="button"
+                      data-testid="quick-add-day-today"
+                      onClick={() => void pickDay('сегодня')}
+                      className="rounded-lg border border-blue-500 px-3 py-1 font-mono text-sm text-zinc-100"
+                    >
+                      {t('quickAdd.confirm.today')}
+                    </button>
+                    <button
+                      type="button"
+                      data-testid="quick-add-day-tomorrow"
+                      onClick={() => void pickDay('завтра')}
+                      className="rounded-lg border border-blue-500 px-3 py-1 font-mono text-sm text-zinc-100"
+                    >
+                      {t('quickAdd.confirm.tomorrow')}
+                    </button>
+                  </>
+                )}
+                <button
+                  type="button"
+                  data-testid="quick-add-save-typed"
+                  onClick={() => void saveAsTyped()}
+                  className="rounded-lg border border-zinc-700 px-3 py-1 font-mono text-sm text-zinc-400 hover:border-blue-500 hover:text-zinc-100"
+                >
+                  {t('quickAdd.confirm.saveTyped')}
+                </button>
+              </>
+            )}
             <button
               type="button"
               onClick={() => {
@@ -314,10 +403,14 @@ export function QuickAddRow({ onCreate, onCreateMany, onOpenFull, filters, autoF
               {t('quickAdd.confirm.cancel')}
             </button>
           </div>
-          <p className="w-full font-mono text-xs text-zinc-600">{t('quickAdd.confirm.hint')}</p>
+          <p className="w-full font-mono text-xs text-zinc-600">
+            {pending.parsed.kind === 'event' ? t('quickAdd.confirm.hint') : t('quickAdd.confirm.askHint')}
+          </p>
           {confirmError && (
             <p role="alert" className="w-full font-mono text-xs text-red-400">
-              {t('quickAdd.confirm.failed', { message: confirmError })}
+              {pending.taskId
+                ? t('quickAdd.confirm.taskKept', { message: confirmError })
+                : t('quickAdd.confirm.failed', { message: confirmError })}
             </p>
           )}
         </div>
