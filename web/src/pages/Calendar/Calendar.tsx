@@ -27,6 +27,9 @@ import { useAuthContext } from '../../contexts/AuthContext';
 import { computeWeekRange } from '../../lib/calendar/weekRange';
 import { shouldRefetchOnReturn } from '../../lib/calendar/refetchOnReturn';
 import { createTask } from '../../api';
+import { markOccurrence } from '../../api/tasks';
+import { ApiError } from '../../api/client';
+import { showToast } from '../../components/ui/Toast';
 import { listCalendars, type Calendar as NbCalendar } from '../../api/calendars';
 import { CalendarFilter } from '../../components/Calendars/CalendarFilter';
 import { CalendarPicker } from '../../components/Calendars/CalendarPicker';
@@ -306,6 +309,21 @@ export function Calendar() {
     }
   }, [loadTasks]);
 
+  // A tick on a repeating task in the task panel answers TODAY, named in the
+  // user's zone (a page that shows today must name today, 731172a review).
+  const handleAnswerDay = useCallback(async (task: Task, state: 'done' | 'open') => {
+    try {
+      await markOccurrence(task.id, state, todayInZone(new Date(), timezone));
+      await loadTasks();
+    } catch (error) {
+      if (error instanceof ApiError && error.code === 'NOT_AN_OCCURRENCE') {
+        showToast(t('tasks:toast.notToday', { title: task.title }));
+      } else {
+        console.error('Failed to mark the day:', error);
+      }
+    }
+  }, [loadTasks, timezone, t]);
+
   const handleWeekChange = useCallback((offset: number) => {
     setCurrentWeekOffset(offset);
   }, []);
@@ -450,6 +468,7 @@ export function Calendar() {
           onSelectTask={handleSelectTask}
           onEditTask={handleEditTask}
           onUpdateTask={handleTaskUpdate}
+          onAnswerDay={handleAnswerDay}
           onCreateTask={handleCreateTask}
         />
       </div>
@@ -543,6 +562,7 @@ export function Calendar() {
         onSelectTask={handleSelectTask}
         onEditTask={handleEditTask}
         onUpdateTask={handleTaskUpdate}
+        onAnswerDay={handleAnswerDay}
         onCreateTask={handleCreateTask}
       />
 

@@ -12,6 +12,7 @@ interface MobileTaskPanelProps {
   onSelectTask: (task: Task) => void;
   onEditTask: (task: Task) => void;
   onUpdateTask: (id: string, updates: Partial<Task>) => Promise<void>;
+  onAnswerDay: (task: Task, state: 'done' | 'open') => Promise<void>;
   onCreateTask?: () => void;
 }
 
@@ -23,6 +24,7 @@ export function MobileTaskPanel({
   onSelectTask,
   onEditTask,
   onUpdateTask,
+  onAnswerDay,
   onCreateTask,
 }: MobileTaskPanelProps) {
   const { t } = useTranslation('tasks');
@@ -138,6 +140,7 @@ export function MobileTaskPanel({
             onSelectTask={onSelectTask}
             onEditTask={onEditTask}
             onUpdateTask={onUpdateTask}
+            onAnswerDay={onAnswerDay}
             onCreateTask={onCreateTask}
           />
         </div>
