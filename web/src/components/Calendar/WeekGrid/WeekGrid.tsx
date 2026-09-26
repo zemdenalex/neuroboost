@@ -101,22 +101,29 @@ export function WeekGrid({
   useEffect(() => {
     if (visibleDays >= 7) return; // desktop handles this via onWeekChange directly
     const daysInWeek = 7;
-    if (mobileDayOffset >= daysInWeek) {
+    // Under the week strip the shown day must stay inside the strip's week, so
+    // a swipe back from Monday rolls at once instead of at −7 (review of 3fe9456).
+    if (weekStrip && visibleDays === 1 && mobileDayOffset < 0) {
+      onWeekChange?.(currentWeekOffset - 1);
+      setMobileDayOffset(prev => prev + daysInWeek);
+    } else if (mobileDayOffset >= daysInWeek) {
       onWeekChange?.(currentWeekOffset + 1);
       setMobileDayOffset(prev => prev - daysInWeek);
     } else if (mobileDayOffset <= -daysInWeek) {
       onWeekChange?.(currentWeekOffset - 1);
       setMobileDayOffset(prev => prev + daysInWeek);
     }
-  }, [mobileDayOffset, visibleDays, currentWeekOffset, onWeekChange]);
+  }, [mobileDayOffset, visibleDays, currentWeekOffset, onWeekChange, weekStrip]);
 
   // Generate day info
   const days = useMemo(
     () => generateDays(adjustedStart, visibleDays, timezone),
     [adjustedStart, visibleDays, timezone]
   );
-  // The week strip (phone month variant C) sits over the one-day grid only.
-  const showStrip = weekStrip && isMobile;
+  // The week strip (phone month variant C) sits over the one-day grid only:
+  // over the 3-column tablet grid a tap on Fri–Sun would page into a week that
+  // was never loaded (review of 3fe9456).
+  const showStrip = weekStrip && visibleDays === 1;
   // Day tasks: one square per day header, one request for the visible days
   // (the whole week when the strip shows it).
   const dayColours = useDayColours(

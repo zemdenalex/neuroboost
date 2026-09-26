@@ -31,10 +31,14 @@ for (const variant of ['split', 'strip', 'heat'] as const) {
       const days = strip.getByTestId('week-strip-day')
       await expect(days).toHaveCount(7)
       // A tap shows that day below: the pressed day follows the tap.
-      const target = days.nth(0).getAttribute('aria-pressed').then((p) => (p === 'true' ? 6 : 0))
-      const i = await target
-      await days.nth(i).click()
-      await expect(days.nth(i)).toHaveAttribute('aria-pressed', 'true')
+      await days.nth(0).click()
+      await expect(days.nth(0)).toHaveAttribute('aria-pressed', 'true')
+      // ← from Monday: the grid goes to last week, and the strip goes with it
+      // rather than keeping a week the shown day is not in (review of 3fe9456).
+      const monday = await days.nth(0).getAttribute('data-day')
+      await page.getByTitle('Previous period').click()
+      await expect(days.nth(0)).not.toHaveAttribute('data-day', monday ?? '')
+      await expect(strip.locator('[aria-pressed="true"]')).toHaveCount(1)
     } else {
       await expect(page.getByTestId('month-view')).toHaveAttribute('data-variant', variant, { timeout: 15_000 })
       await expect(page.getByTestId('month-day')).toHaveCount(42)
