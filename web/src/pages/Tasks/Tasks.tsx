@@ -66,6 +66,9 @@ import { ScheduleChooser } from '../../components/TaskRow/ScheduleChooser'
 
 /** The bot's nag choices (keyboards.NagCodes); the API's floor is 5, ceiling a day. */
 const NAG_MINUTES = [0, 10, 15, 30, 60]
+/** The bot's card buttons (tasks.go dueOffsets, keyboards estimateRow). */
+const DUE_CHIPS = [{ days: 0, key: 'today' }, { days: 1, key: 'tomorrow' }, { days: 7, key: 'week' }]
+const ESTIMATE_CHIPS = [15, 30, 60, 120]
 
 export default function Tasks() {
   const { t, i18n } = useTranslation('tasks')
@@ -1017,6 +1020,25 @@ export default function Tasks() {
                     onChange={(e) => setEditingTask(prev => ({ ...prev!, due_date: e.target.value ? fromDateTimeLocalValue(e.target.value) : undefined }))}
                     className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white font-mono focus:outline-none focus:border-blue-500"
                   />
+                  {/* One tap instead of a date wheel (gap list row 14), as the
+                      bot's card: now plus 0, 1 or 7 days. */}
+                  <div className="mt-1.5 flex flex-wrap gap-1.5">
+                    {DUE_CHIPS.map(({ days, key }) => (
+                      <button
+                        key={key}
+                        type="button"
+                        data-testid={`task-due-${key}`}
+                        onClick={() => {
+                          const due = new Date()
+                          due.setDate(due.getDate() + days)
+                          setEditingTask(prev => ({ ...prev!, due_date: due.toISOString() }))
+                        }}
+                        className="px-2 py-1 rounded border border-zinc-700 bg-zinc-800 text-xs font-mono text-zinc-300 hover:border-zinc-500"
+                      >
+                        {t(`due.${key}`)}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 
@@ -1047,6 +1069,22 @@ export default function Tasks() {
                   placeholder={t('form.estimatedPlaceholder')}
                   className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white font-mono focus:outline-none focus:border-blue-500"
                 />
+                <div className="mt-1.5 flex flex-wrap gap-1.5">
+                  {ESTIMATE_CHIPS.map((m) => (
+                    <button
+                      key={m}
+                      type="button"
+                      data-testid={`task-estimate-${m}`}
+                      aria-pressed={editingTask.estimated_minutes === m}
+                      onClick={() => setEditingTask(prev => ({ ...prev!, estimated_minutes: m }))}
+                      className={`px-2 py-1 rounded border text-xs font-mono hover:border-zinc-500 ${
+                        editingTask.estimated_minutes === m ? 'border-blue-500 bg-zinc-800 text-white' : 'border-zinc-700 bg-zinc-800 text-zinc-300'
+                      }`}
+                    >
+                      {m < 60 ? `${m}m` : `${m / 60}h`}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {/* Reminders count back from due_date, so without one there is

@@ -101,5 +101,8 @@
   "form.nag": "Repeat an unanswered reminder",
   "nag.off": "Once",
   "nag.minutes": "Every {{m}} min",
-  "nag.hour": "Every hour"
+  "nag.hour": "Every hour",
+  "due.today": "Today",
+  "due.tomorrow": "Tomorrow",
+  "due.week": "In a week"
 }
