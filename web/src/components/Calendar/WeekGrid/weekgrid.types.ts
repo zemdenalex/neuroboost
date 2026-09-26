@@ -180,4 +180,9 @@ export interface WeekGridProps extends WeekGridCallbacks {
   calendarColors?: Record<string, string | null>;
   /** Passed straight through to WeekHeader's right-hand button row. */
   headerExtra?: ReactNode;
+  /**
+   * Phone month variant C: the week's seven days as a strip over the one-day
+   * grid (WeekStrip). Ignored when the grid shows the whole week.
+   */
+  weekStrip?: boolean;
 }

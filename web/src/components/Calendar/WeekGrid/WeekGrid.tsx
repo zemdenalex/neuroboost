@@ -13,6 +13,10 @@ import { useKeyboardNav } from './useKeyboardNav';
 import { initialMobileDayOffset } from '../../../lib/calendar/mobileDayOffset';
 import { isHorizontalSwipe } from '../../../lib/calendar/swipe';
 import { useDayColours, dayKey } from '../../../lib/dayTasks/loadDayColours';
+import { useTranslation } from 'react-i18next';
+import { dateLocale } from '../../../utils/date';
+import { busyShare } from '../../../lib/calendar/busyShare';
+import { WeekStrip, type WeekStripDay } from '../WeekStrip';
 
 export function WeekGrid({
   events,
@@ -27,6 +31,7 @@ export function WeekGrid({
   onTaskDrop,
   onWeekChange,
   focusDay,
+  weekStrip = false,
 }: WeekGridProps) {
   // Refs
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -110,11 +115,30 @@ export function WeekGrid({
     () => generateDays(adjustedStart, visibleDays, timezone),
     [adjustedStart, visibleDays, timezone]
   );
-  // Day tasks: one square per day header, one request for the visible days.
+  // The week strip (phone month variant C) sits over the one-day grid only.
+  const showStrip = weekStrip && isMobile;
+  // Day tasks: one square per day header, one request for the visible days
+  // (the whole week when the strip shows it).
   const dayColours = useDayColours(
-    dayKey(days[0]?.dayUtc0 ?? adjustedStart, timezone),
-    dayKey(days[days.length - 1]?.dayUtc0 ?? adjustedStart, timezone)
+    dayKey(showStrip ? mondayUtc0 : days[0]?.dayUtc0 ?? adjustedStart, timezone),
+    dayKey(showStrip ? mondayUtc0 + 6 * DAY_MS : days[days.length - 1]?.dayUtc0 ?? adjustedStart, timezone)
   );
+  const { i18n } = useTranslation();
+  const stripDays = useMemo<WeekStripDay[]>(() => {
+    if (!showStrip) return [];
+    const locale = dateLocale(i18n.language);
+    return Array.from({ length: 7 }, (_, i) => {
+      const dayUtc0 = mondayUtc0 + i * DAY_MS;
+      const day = dayKey(dayUtc0, timezone);
+      const date = new Date(day + 'T12:00:00Z');
+      return {
+        day,
+        label: `${date.toLocaleDateString(locale, { weekday: 'short', timeZone: 'UTC' })} ${date.getUTCDate()}`,
+        share: busyShare(events, day, timezone),
+        square: dayColours[day],
+      };
+    });
+  }, [showStrip, mondayUtc0, timezone, events, dayColours, i18n.language]);
 
   // Process events for rendering
   const { allDayEvents, timedPerDay } = useMemo(
@@ -300,6 +324,15 @@ export function WeekGrid({
         onQuickCreate={handleQuickCreate}
         headerExtra={headerExtra}
       />
+
+      {showStrip && (
+        <WeekStrip
+          days={stripDays}
+          shown={dayKey(adjustedStart, timezone)}
+          today={dayKey(nowInfo.dayUtc0, timezone)}
+          onPick={setMobileDayOffset}
+        />
+      )}
 
       <div
         ref={scrollRef}

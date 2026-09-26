@@ -3,7 +3,14 @@ import { useTranslation } from 'react-i18next'
 import { CalendarDays } from 'lucide-react'
 import { useAuthContext } from '../../../contexts/AuthContext'
 import type { UserSettings } from '../../../api/auth'
-import { MONTH_VARIANTS, readMonthVariant, type MonthVariant } from '../../../lib/calendar/monthVariant'
+import {
+  MONTH_VARIANTS,
+  PHONE_MONTH_VARIANTS,
+  readMonthVariant,
+  readPhoneMonthVariant,
+  type MonthVariant,
+  type PhoneMonthVariant,
+} from '../../../lib/calendar/monthVariant'
 import { CLICK_WAIT_MAX, CLICK_WAIT_MIN, readClickWait } from '../../../lib/calendar/monthClick'
 
 interface Props {
@@ -80,6 +87,23 @@ function Sketch({ variant }: { variant: MonthVariant }) {
   }
 }
 
+/** The phone's week strip (variant C): seven days with a fullness bar each. */
+function StripSketch() {
+  return (
+    <div className="flex flex-col gap-0.5">
+      <div className="grid grid-cols-7 gap-px">
+        {[40, 80, 0, 100, 30, 60, 10].map((w, i) => (
+          <div key={i} className={`h-4 rounded-sm flex items-end px-px pb-0.5 ${i === 3 ? 'bg-zinc-700' : 'bg-black border border-zinc-800'}`}>
+            <div className="h-0.5 bg-blue-500" style={{ width: `${w}%` }} />
+          </div>
+        ))}
+      </div>
+      <div className="h-3 w-full border-l-2 border-purple-500 bg-zinc-800" />
+      <div className="h-3 w-2/3 border-l-2 border-green-500 bg-zinc-800" />
+    </div>
+  )
+}
+
 /**
  * Which month view the calendar shows (spec V003-20260924-arc-web-month-view).
  * Denis, 24.09: «let's build all of them, make a default and other to choose in settings».
@@ -89,11 +113,13 @@ export function MonthViewSection({ autoSave }: Props) {
   const { user } = useAuthContext()
   const [variant, setVariant] = useState<MonthVariant>(() => readMonthVariant(user?.settings))
   const [wait, setWait] = useState(() => readClickWait(user?.settings))
+  const [phone, setPhone] = useState<PhoneMonthVariant>(() => readPhoneMonthVariant(user?.settings))
 
   // Keyed on the account, not the user object: see UIScaleSection.
   useEffect(() => {
     setVariant(readMonthVariant(user?.settings))
     setWait(readClickWait(user?.settings))
+    setPhone(readPhoneMonthVariant(user?.settings))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id])
 
@@ -124,6 +150,32 @@ export function MonthViewSection({ autoSave }: Props) {
           >
             <Sketch variant={v} />
             <span className={`text-sm font-mono ${variant === v ? 'text-blue-300' : 'text-zinc-200'}`}>
+              {t(`monthView.${v}.name`)}
+            </span>
+            <span className="text-xs text-zinc-500">{t(`monthView.${v}.desc`)}</span>
+          </button>
+        ))}
+      </div>
+      <h3 className="mt-5 text-sm font-mono font-semibold text-zinc-200">{t('monthView.phone.title')}</h3>
+      <p className="text-xs text-zinc-500 mb-2">{t('monthView.phone.note')}</p>
+      <div role="radiogroup" aria-label={t('monthView.phone.title')} className="grid grid-cols-3 gap-2 md:w-[36rem]">
+        {PHONE_MONTH_VARIANTS.map((v) => (
+          <button
+            key={v}
+            type="button"
+            role="radio"
+            aria-checked={phone === v}
+            data-testid={`phone-month-${v}`}
+            onClick={() => {
+              setPhone(v)
+              autoSave({ phone_month_variant: v })
+            }}
+            className={`text-left p-2 rounded-lg border transition-colors flex flex-col gap-2 min-w-0 ${
+              phone === v ? 'bg-blue-600/20 border-blue-500' : 'bg-zinc-800 border-zinc-700 hover:border-zinc-600'
+            }`}
+          >
+            {v === 'strip' ? <StripSketch /> : <Sketch variant={v} />}
+            <span className={`text-sm font-mono ${phone === v ? 'text-blue-300' : 'text-zinc-200'}`}>
               {t(`monthView.${v}.name`)}
             </span>
             <span className="text-xs text-zinc-500">{t(`monthView.${v}.desc`)}</span>

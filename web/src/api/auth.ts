@@ -47,6 +47,8 @@ export interface UserSettings {
    * classic, heat, split or commit. Unknown or missing = list.
    */
   month_view_variant?: string
+  /** Phone month: split (A) · strip (C) · heat (D). */
+  phone_month_variant?: string
   /** Month view: how long a click waits for a second click, ms (150–800, default 300). */
   month_click_wait_ms?: number
   /** Phone task rows: 'menu' | 'swipe' | 'card' (lib/tasks/rowActions, Denis 25.09). */

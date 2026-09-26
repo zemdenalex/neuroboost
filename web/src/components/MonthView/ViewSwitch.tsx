@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import type { CalendarView } from '../../lib/calendar/monthVariant'
 
-/** Week / Month tabs above the calendar. Desktop only in v1 (spec §3). */
+/** Week / Month tabs above the calendar, on the phone too since 26.09 (phone month A + C + D). */
 export function ViewSwitch({ view, onChange }: { view: CalendarView; onChange: (v: CalendarView) => void }) {
   const { t } = useTranslation('calendar')
   return (

@@ -4,7 +4,7 @@ import {
   readMonthVariant,
   readCalendarView,
   saveCalendarView,
-  effectiveView,
+  readPhoneMonthVariant,
 } from './monthVariant'
 
 afterEach(() => {
@@ -64,13 +64,15 @@ describe('calendar view on this device', () => {
   })
 })
 
-describe('effectiveView', () => {
-  it('keeps the saved view on a desktop', () => {
-    expect(effectiveView('month', false)).toBe('month')
-    expect(effectiveView('week', false)).toBe('week')
+// The phone reads its own key: a desktop choice ("list", "classic", …) is not
+// a phone variant and must not leave the phone with a month it cannot draw.
+describe('readPhoneMonthVariant', () => {
+  it('is A ("split") when unset, unknown or a desktop-only variant', () => {
+    expect(readPhoneMonthVariant(undefined)).toBe('split')
+    expect(readPhoneMonthVariant({ phone_month_variant: 'list' })).toBe('split')
   })
 
-  it('never opens the month on a phone: the switch is hidden there', () => {
-    expect(effectiveView('month', true)).toBe('week')
+  it('keeps a phone variant', () => {
+    expect(readPhoneMonthVariant({ phone_month_variant: 'strip' })).toBe('strip')
   })
 })

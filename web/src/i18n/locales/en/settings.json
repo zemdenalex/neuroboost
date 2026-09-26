@@ -149,6 +149,14 @@
       "name": "Heatmap",
       "desc": "No text: how full each day was and how it went"
     },
+    "phone": {
+      "title": "On a phone",
+      "note": "What «Month» shows on a phone. This choice is for the phone only; the computer keeps its own."
+    },
+    "strip": {
+      "name": "Week strip",
+      "desc": "The seven days of the week, with how full each is, over one day"
+    },
     "split": {
       "name": "Month and day",
       "desc": "A compact month with the chosen day's list below"

@@ -13,6 +13,21 @@ export type MonthVariant = (typeof MONTH_VARIANTS)[number]
 
 export type CalendarView = 'week' | 'month'
 
+/**
+ * What "month" is on a phone (Denis 26.09: «let people choose, build all of
+ * these, okay, A + C + D»): A month + the day's list, C the week strip over the
+ * day, D the heatmap. A separate key from the desktop's month_view_variant, so
+ * choosing for the phone does not change the desktop.
+ */
+export const PHONE_MONTH_VARIANTS = ['split', 'strip', 'heat'] as const
+export type PhoneMonthVariant = (typeof PHONE_MONTH_VARIANTS)[number]
+
+/** The phone's month variant; A ("split") when unset or unknown. */
+export function readPhoneMonthVariant(settings: { phone_month_variant?: unknown } | undefined): PhoneMonthVariant {
+  const v = settings?.phone_month_variant
+  return typeof v === 'string' && (PHONE_MONTH_VARIANTS as readonly string[]).includes(v) ? (v as PhoneMonthVariant) : 'split'
+}
+
 const VIEW_KEY = 'nb-calendar-view'
 
 function isVariant(v: unknown): v is MonthVariant {
@@ -39,9 +54,4 @@ export function saveCalendarView(view: CalendarView): void {
   } catch {
     /* private window or blocked storage: the choice just is not remembered */
   }
-}
-
-/** A phone has no month switch in v1, so a month saved on a desktop opens the week there. */
-export function effectiveView(saved: CalendarView, isMobile: boolean): CalendarView {
-  return isMobile ? 'week' : saved
 }

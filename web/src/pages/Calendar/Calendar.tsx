@@ -11,11 +11,12 @@ import { monthGrid, monthOfWeek, shiftMonth, weekOffset } from '../../lib/calend
 import { daysBetween, localTimeOn, shiftByDays } from '../../lib/calendar/shiftDays';
 import { readClickWait } from '../../lib/calendar/monthClick';
 import {
-  effectiveView,
   readCalendarView,
   readMonthVariant,
+  readPhoneMonthVariant,
   saveCalendarView,
   type CalendarView,
+  type MonthVariant,
 } from '../../lib/calendar/monthVariant';
 import { todayInZone } from '../../lib/dayTasks/dayColour';
 import { createLatestOnly } from '../../lib/async/latestOnly';
@@ -82,17 +83,22 @@ export function Calendar() {
   const [latestEvents] = useState(createLatestOnly);
 
   // Week or month (spec V003-20260924-arc-web-month-view). The choice is kept
-  // on this device; a phone has no month in v1 and always gets the week.
+  // on this device. A phone's month is its own choice of three (Denis 26.09,
+  // A + C + D); C, the week strip, is the day grid with the week over it.
   const isMobile = useMediaQuery('(max-width: 767px)');
   const [savedView, setSavedView] = useState<CalendarView>(readCalendarView);
-  const view = effectiveView(savedView, isMobile);
+  const view = savedView;
   const changeView = useCallback((next: CalendarView) => {
     saveCalendarView(next);
     setSavedView(next);
     // Week → Month opens the month of the week being looked at, not today's.
     if (next === 'month') setMonthCursor(monthOfWeek(todayInZone(new Date(), timezone), currentWeekOffsetRef.current));
   }, [timezone]);
-  const monthVariant = readMonthVariant(user?.settings);
+  const phoneMonth = readPhoneMonthVariant(user?.settings);
+  const stripMonth = isMobile && view === 'month' && phoneMonth === 'strip';
+  const monthVariant: MonthVariant = isMobile
+    ? (phoneMonth === 'heat' ? 'heat' : 'split')
+    : readMonthVariant(user?.settings);
   const clickWaitMs = readClickWait(user?.settings);
   const [monthCursor, setMonthCursor] = useState(() => {
     const today = todayInZone(new Date(), timezone);
@@ -176,7 +182,7 @@ export function Calendar() {
   // Load events for current week
   const loadEvents = useCallback(async () => {
     let { start, end } = getWeekRange(currentWeekOffset);
-    if (view === 'month') {
+    if (view === 'month' && !stripMonth) {
       // The 42 grid days, padded by 14 hours each side so that whatever the
       // zone, its first and last local day are whole; cells file by local day.
       const days = monthGrid(monthCursor.year, monthCursor.month);
@@ -192,7 +198,7 @@ export function Calendar() {
     } catch (error) {
       console.error('Failed to load events:', error);
     }
-  }, [currentWeekOffset, getWeekRange, view, monthCursor, latestEvents]);
+  }, [currentWeekOffset, getWeekRange, view, stripMonth, monthCursor, latestEvents]);
 
   // Load tasks
   const loadTasks = useCallback(async () => {
@@ -475,7 +481,7 @@ export function Calendar() {
 
       {/* Main calendar area */}
       <div data-testid="calendar-main" className="flex-1 flex flex-col min-w-0">
-        {view === 'month' ? (
+        {view === 'month' && !stripMonth ? (
           <MonthView
             year={monthCursor.year}
             month={monthCursor.month}
@@ -505,13 +511,14 @@ export function Calendar() {
         ) : (
         <WeekGrid
           focusDay={focusDay}
+          weekStrip={stripMonth}
           events={shownEvents}
           currentWeekOffset={currentWeekOffset}
           timezone={timezone}
           calendarColors={calendarColors}
           headerExtra={
             <>
-              {!isMobile && <ViewSwitch view={view} onChange={changeView} />}
+              <ViewSwitch view={view} onChange={changeView} />
               {/* 🔴 Creating a task from the calendar used to live ONLY in the
                   task sidebar's header — and the sidebar is collapsed by
                   default, so on a first visit it was two clicks behind an
