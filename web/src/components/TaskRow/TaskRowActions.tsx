@@ -267,14 +267,34 @@ export function TaskActionSheet({
   )
 }
 
-function SheetButton({ icon, children, onClick, danger }: { icon: ReactNode; children: ReactNode; onClick: () => void; danger?: boolean }) {
+/** One tile of a task sheet. Shared with the schedule chooser (ScheduleChooser.tsx). */
+export function SheetButton({
+  icon,
+  children,
+  onClick,
+  danger,
+  accent,
+  autoFocus,
+  testId,
+}: {
+  icon?: ReactNode
+  children: ReactNode
+  onClick: () => void
+  danger?: boolean
+  /** The suggested choice: a blue frame, always with a text label beside it. */
+  accent?: boolean
+  autoFocus?: boolean
+  testId?: string
+}) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`flex flex-col items-center gap-1 rounded-lg border border-zinc-700 bg-zinc-800 px-2 py-3 text-xs font-mono ${
-        danger ? 'text-red-400' : 'text-zinc-200'
-      }`}
+      autoFocus={autoFocus}
+      data-testid={testId}
+      className={`flex flex-col items-center gap-1 rounded-lg border bg-zinc-800 px-2 py-3 text-xs font-mono ${
+        accent ? 'border-blue-500' : 'border-zinc-700'
+      } ${danger ? 'text-red-400' : 'text-zinc-200'}`}
     >
       {icon}
       <span className="text-center leading-tight">{children}</span>

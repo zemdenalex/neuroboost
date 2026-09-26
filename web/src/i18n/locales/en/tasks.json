@@ -68,7 +68,9 @@
     "notToday": "“{{title}}” is not due today",
     "undo": "Undo",
     "bulkClosed": "Closed {{count}}",
-    "bulkMoved": "Moved {{count}} to tomorrow"
+    "bulkMoved": "Moved {{count}} to tomorrow",
+    "scheduled": "Scheduled: {{when}}",
+    "scheduleFailed": "Could not schedule “{{title}}”"
   },
   "bulk": {
     "count": "{{count}} selected",
@@ -82,5 +84,16 @@
   "repeat.none": "Does not repeat",
   "repeat.daily": "Every day",
   "repeat.weekly": "Every week",
-  "repeat.monthly": "Every month"
+  "repeat.monthly": "Every month",
+  "plan.when": "When will you do it?",
+  "plan.howLong": "For how long?",
+  "plan.now": "Now",
+  "plan.hour": "In an hour",
+  "plan.eve": "This evening",
+  "plan.tmr": "Tomorrow morning",
+  "plan.minutes": "{{m}}m",
+  "plan.hours": "{{h}}h",
+  "plan.hoursMinutes": "{{h}}h {{m}}m",
+  "plan.estimate": "estimate",
+  "plan.back": "Back"
 }

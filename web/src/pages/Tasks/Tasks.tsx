@@ -20,6 +20,7 @@ import {
   Search,
   Filter,
   CalendarPlus,
+  CalendarClock,
 } from 'lucide-react'
 import { QuickAddRow } from '../../components/QuickAdd'
 import { showToast } from '../../components/ui/Toast'
@@ -47,7 +48,8 @@ import { nestGroups, subtaskProgress } from '../../lib/tasks/taskTree'
 import { todayInZone } from '../../lib/dayTasks/dayColour'
 import { REPEAT_CHOICES, repeatChoiceOf, rruleForSave, withRepeatChoice, type RepeatChoice } from '../../lib/tasks/repeatField'
 import { ApiError } from '../../api/client'
-import { defaultScheduleSlot } from '../../lib/schedule/defaultScheduleSlot'
+import { linkedStarts, scheduleStart, whenShort, type ScheduleSlotKey } from '../../lib/schedule/scheduleSlot'
+import { listEvents } from '../../api/events'
 import { toDateTimeLocalValue, fromDateTimeLocalValue } from '../../lib/datetime/dateTimeLocal'
 import { ReminderOffsets } from '../../components/ReminderOffsets/ReminderOffsets'
 import { useReminderSettings } from '../../hooks/useReminderSettings'
@@ -56,9 +58,10 @@ import { useMediaQuery } from '../../hooks/useMediaQuery'
 import { PHONE_QUERY } from '../../lib/layout/headerVariant'
 import { readRowActions } from '../../lib/tasks/rowActions'
 import { RowActionsMenu, SwipeRow, TaskActionSheet } from '../../components/TaskRow/TaskRowActions'
+import { ScheduleChooser } from '../../components/TaskRow/ScheduleChooser'
 
 export default function Tasks() {
-  const { t } = useTranslation('tasks')
+  const { t, i18n } = useTranslation('tasks')
   const { t: tc } = useTranslation('common')
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
@@ -69,6 +72,11 @@ export default function Tasks() {
   const isPhone = useMediaQuery(PHONE_QUERY)
   const rowActions = readRowActions(user?.settings)
   const [sheetTask, setSheetTask] = useState<Task | null>(null)
+  // «Запланировать» asks when and how long first (gap list row 4, as the bot).
+  const [schedulingTask, setSchedulingTask] = useState<Task | null>(null)
+  const timeZone = user?.timezone || 'Europe/Moscow'
+  // taskId → start of its nearest linked event today or later, for «завтра 09:00» on the row.
+  const [linked, setLinked] = useState<Map<string, string>>(new Map())
   const openEditor = (task: Task) => {
     setEditingTask(task)
     setShowEditor(true)
@@ -133,6 +141,28 @@ export default function Tasks() {
     const off = onTasksChanged(() => fetchTasks(false))
     return () => { cancelled = true; off() }
   }, [])
+
+  // When each task is on the calendar: ONE events fetch over today … +60 days,
+  // as the bot's linkedFor, never a request per task. Decoration: a failure
+  // leaves the rows without times and the list is not held up by it.
+  useEffect(() => {
+    let cancelled = false
+    const fetchLinked = async () => {
+      const now = new Date()
+      try {
+        const events = await listEvents(
+          startOfLocalDay(now, timeZone, 0).toISOString(),
+          startOfLocalDay(now, timeZone, 60).toISOString(),
+        )
+        if (!cancelled) setLinked(linkedStarts(Array.isArray(events) ? events : [], now, timeZone))
+      } catch (error) {
+        console.error('Failed to load scheduled times:', error)
+      }
+    }
+    void fetchLinked()
+    const off = onTasksChanged(() => void fetchLinked())
+    return () => { cancelled = true; off() }
+  }, [timeZone])
 
   // Arriving from the calendar with one task named.
   //
@@ -315,16 +345,32 @@ export default function Tasks() {
     }
   }
 
-  // Tap-friendly alternative to drag-scheduling: drop the task on the calendar
-  // at a sensible default slot. Optimistically reflect the SCHEDULED status.
-  const handleScheduleTask = (task: Task) => {
-    const slot = defaultScheduleSlot(new Date(), task.estimated_minutes)
+  // Tap-friendly alternative to drag-scheduling: ask when and how long, as the
+  // bot does (ScheduleChooser), then put the task on the calendar.
+  const handleScheduleTask = (task: Task) => setSchedulingTask(task)
+
+  // The start is resolved at the final tap, like the bot's handleTaskSchedule:
+  // «через час» means an hour from now, not from when the sheet opened.
+  const confirmSchedule = (task: Task, slot: ScheduleSlotKey, minutes: number) => {
+    setSchedulingTask(null)
     return scheduleGuard(async () => {
+      const now = new Date()
+      const start = scheduleStart(slot, now, timeZone)
+      const end = new Date(start.getTime() + minutes * 60_000)
       try {
-        await scheduleTask(task.id, { starts_at: slot.startsAt, ends_at: slot.endsAt, all_day: false })
+        const event = await scheduleTask(task.id, { starts_at: start.toISOString(), ends_at: end.toISOString(), all_day: false })
         setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: 'SCHEDULED' } : t))
+        // From the answer, not a refetch: the row shows its time at once.
+        const startsAt = event?.starts_at || start.toISOString()
+        setLinked(prev => {
+          const current = prev.get(task.id)
+          if (current && Date.parse(current) <= Date.parse(startsAt)) return prev
+          return new Map(prev).set(task.id, startsAt)
+        })
+        showToast(t('toast.scheduled', { when: whenShort(new Date(startsAt), now, timeZone, i18n.language) }))
       } catch (error) {
         console.error('Failed to schedule task:', error)
+        showToast(t('toast.scheduleFailed', { title: task.title }))
       }
     })
   }
@@ -704,7 +750,7 @@ export default function Tasks() {
                               </div>
                               
                               {/* Meta info */}
-                              <div className="flex items-center gap-3 mt-1">
+                              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
                                 {task.due_date && (
                                   <span className={`flex items-center gap-1 text-xs ${
                                     // A running series' due_date is the day it began: never «overdue».
@@ -720,6 +766,12 @@ export default function Tasks() {
                                   <span className="flex items-center gap-1 text-xs text-zinc-500">
                                     <Clock className="w-3 h-3" />
                                     {task.estimated_minutes}m
+                                  </span>
+                                )}
+                                {linked.has(task.id) && (
+                                  <span data-testid="task-scheduled-at" className="flex items-center gap-1 text-xs text-blue-400">
+                                    <CalendarClock className="w-3 h-3" />
+                                    {whenShort(new Date(linked.get(task.id)!), new Date(), timeZone, i18n.language)}
                                   </span>
                                 )}
                                 {task.contexts?.map(ctx => (
@@ -833,6 +885,16 @@ export default function Tasks() {
             onEdit={() => openEditor(sheetTask)}
             onDelete={() => void deleteFromRow(sheetTask)}
             onClose={() => setSheetTask(null)}
+          />
+        )}
+
+        {schedulingTask && (
+          <ScheduleChooser
+            title={schedulingTask.title}
+            estimatedMinutes={schedulingTask.estimated_minutes}
+            timeZone={timeZone}
+            onPick={(slot, minutes) => void confirmSchedule(schedulingTask, slot, minutes)}
+            onClose={() => setSchedulingTask(null)}
           />
         )}
 

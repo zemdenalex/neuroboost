@@ -69,7 +69,9 @@
     "notToday": "«{{title}}» сегодня не по расписанию",
     "undo": "Вернуть",
     "bulkClosed": "Закрыто: {{count}}",
-    "bulkMoved": "Перенесено на завтра: {{count}}"
+    "bulkMoved": "Перенесено на завтра: {{count}}",
+    "scheduled": "Запланировано: {{when}}",
+    "scheduleFailed": "Не удалось запланировать «{{title}}»"
   },
   "bulk": {
     "count": "Выбрано: {{count}}",
@@ -83,5 +85,16 @@
   "repeat.none": "Не повторяется",
   "repeat.daily": "Каждый день",
   "repeat.weekly": "Каждую неделю",
-  "repeat.monthly": "Каждый месяц"
+  "repeat.monthly": "Каждый месяц",
+  "plan.when": "Когда заняться?",
+  "plan.howLong": "Насколько?",
+  "plan.now": "Сейчас",
+  "plan.hour": "Через час",
+  "plan.eve": "Сегодня вечером",
+  "plan.tmr": "Завтра утром",
+  "plan.minutes": "{{m}}м",
+  "plan.hours": "{{h}}ч",
+  "plan.hoursMinutes": "{{h}}ч {{m}}м",
+  "plan.estimate": "оценка",
+  "plan.back": "Назад"
 }
