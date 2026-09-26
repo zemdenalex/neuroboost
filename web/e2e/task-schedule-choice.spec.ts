@@ -49,6 +49,21 @@ async function stubAccount(page: Page) {
     list.unshift(TASK)
     await route.fulfill({ response: res, json: Array.isArray(body) ? list : { ...body, data: list } })
   })
+  // The real events answer, plus two for the fixture: one 10:00 Moscow in two
+  // days, one that started yesterday (the row must show the first, as the bot).
+  await page.route(/\/api\/events\?/, async (route) => {
+    if (route.request().method() !== 'GET') return route.fallback()
+    const res = await route.fetch()
+    const body = await res.json()
+    const list = Array.isArray(body) ? body : Array.isArray(body?.data) ? body.data : null
+    if (!list) throw new Error(`GET /api/events answered in a shape the page does not read: ${JSON.stringify(body).slice(0, 200)}`)
+    const inTwoDays = zoneParts(new Date(Date.now() + 2 * 24 * 3600_000)).date
+    const yesterday = new Date(Date.now() - 24 * 3600_000).toISOString()
+    for (const starts_at of [`${inTwoDays}T10:00:00+03:00`, yesterday]) {
+      list.push({ id: `e2e-ev-${starts_at}`, title: TASK.title, starts_at, ends_at: starts_at, all_day: false, task_id: TASK.id, tags: [], timezone: ZONE })
+    }
+    await route.fulfill({ response: res, json: body })
+  })
 }
 
 /** Tomorrow's date in the zone, YYYY-MM-DD, and the wall time of an instant there. */
@@ -73,7 +88,8 @@ test('a task is scheduled for tomorrow morning with its own estimate, and the ro
   await page.goto('/tasks')
   const row = page.locator('[id^="task-"]').filter({ hasText: TASK.title }).first()
   await expect(row).toBeVisible({ timeout: 15_000 })
-  await expect(row.getByTestId('task-scheduled-at')).toHaveCount(0)
+  // Loaded from the events fetch: the nearest link today or later, not yesterday's.
+  await expect(row.getByTestId('task-scheduled-at')).toHaveText(/^(пн|вт|ср|чт|пт|сб|вс|Mo|Tu|We|Th|Fr|Sa|Su) 10:00$/)
 
   const mobile = testInfo.project.name === 'mobile'
   if (mobile) {
@@ -109,6 +125,7 @@ test('a task is scheduled for tomorrow morning with its own estimate, and the ro
 
   await expect(chooser).toHaveCount(0)
   await expect(page.getByRole('status')).toHaveText(/^(Запланировано: завтра|Scheduled: tomorrow) 09:00$/)
+  // Tomorrow is nearer than the one in two days, so it wins.
   await expect(row.getByTestId('task-scheduled-at')).toHaveText(/^(завтра|tomorrow) 09:00$/)
   if (mobile) await page.screenshot({ path: `${SHOTS}/row-after-375.png` })
 
