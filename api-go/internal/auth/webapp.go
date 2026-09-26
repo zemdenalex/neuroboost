@@ -81,22 +81,24 @@ func verifyWebAppInitData(initData, botToken string, now time.Time) (TelegramLog
 	}
 
 	var u struct {
-		ID        int64  `json:"id"`
-		FirstName string `json:"first_name"`
-		LastName  string `json:"last_name"`
-		Username  string `json:"username"`
-		PhotoURL  string `json:"photo_url"`
+		ID           int64  `json:"id"`
+		FirstName    string `json:"first_name"`
+		LastName     string `json:"last_name"`
+		Username     string `json:"username"`
+		PhotoURL     string `json:"photo_url"`
+		LanguageCode string `json:"language_code"`
 	}
 	if err := json.Unmarshal([]byte(values.Get("user")), &u); err != nil || u.ID == 0 {
 		return out, errors.New("no user in initData")
 	}
 	return TelegramLoginRequest{
-		ID:        u.ID,
-		FirstName: u.FirstName,
-		LastName:  u.LastName,
-		Username:  u.Username,
-		PhotoURL:  u.PhotoURL,
-		AuthDate:  authDate,
+		ID:           u.ID,
+		FirstName:    u.FirstName,
+		LastName:     u.LastName,
+		Username:     u.Username,
+		PhotoURL:     u.PhotoURL,
+		AuthDate:     authDate,
+		LanguageCode: u.LanguageCode,
 	}, nil
 }
 

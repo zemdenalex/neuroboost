@@ -57,7 +57,7 @@ interface Props {
  */
 export function RegionalSection({ autoSaveProfile }: Props) {
   const { t } = useTranslation('settings')
-  const { user, updateProfile } = useAuthContext()
+  const { user, updateLanguage } = useAuthContext()
 
   const [timezone, setTimezone] = useState(user?.timezone || 'Europe/Moscow')
   const [language, setLanguage] = useState(i18n.language?.startsWith('ru') ? 'ru' : 'en')
@@ -83,7 +83,7 @@ export function RegionalSection({ autoSaveProfile }: Props) {
     i18n.changeLanguage(locale)
     localStorage.setItem('neuroboost-locale', locale)
     try {
-      await updateProfile({ locale })
+      await updateLanguage(locale)
       showToast(t('saved'))
     } catch {
       showToast(t('error.languageFailed'))

@@ -81,3 +81,34 @@ func TestCreatingATelegramUserWhoAlreadyExistsReturnsThem(t *testing.T) {
 		t.Fatalf("got user %s, want the existing %s", u.ID, existing)
 	}
 }
+
+// One language per person (Denis 26.09): an account born in the Mini App takes
+// Telegram's language by the bot's own rule — «ru*» Russian, anything else
+// English — so a person who never wrote to the bot does not open it in Russian.
+func TestAMiniAppAccountStartsInTelegramsLanguage(t *testing.T) {
+	d := linkingDB(t)
+	ctx := context.Background()
+	r := chi.NewRouter()
+	r.Post("/api/auth/telegram-webapp", NewHandler(d, &config.Config{TelegramBotToken: webAppToken, JWTSecret: "s"}).TelegramWebApp)
+
+	for i, c := range []struct{ code, want string }{{"en", "en"}, {"ru-RU", "ru"}, {"ar", "en"}, {"", "ru"}} {
+		tgID := time.Now().UnixNano()%1_000_000_000_000 + int64(100+i)
+		t.Cleanup(func() { _, _ = d.Pool.Exec(ctx, `DELETE FROM "user" WHERE tg_id = $1`, tgID) })
+		user := `{"id":` + strconv.FormatInt(tgID, 10) + `,"first_name":"Lang"`
+		if c.code != "" {
+			user += `,"language_code":"` + c.code + `"`
+		}
+		body, _ := json.Marshal(TelegramWebAppLoginRequest{InitData: signInitData(t, webAppToken, map[string]string{
+			"auth_date": strconv.FormatInt(time.Now().Unix(), 10), "user": user + "}",
+		})})
+		rec := httptest.NewRecorder()
+		r.ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/api/auth/telegram-webapp", bytes.NewReader(body)))
+		var env struct {
+			Data AuthResponse `json:"data"`
+		}
+		_ = json.Unmarshal(rec.Body.Bytes(), &env)
+		if rec.Code != http.StatusOK || env.Data.User.Locale != c.want {
+			t.Errorf("language_code %q: %d, locale %q, want %q", c.code, rec.Code, env.Data.User.Locale, c.want)
+		}
+	}
+}

@@ -90,3 +90,36 @@ func TestBotLangToleratesAnyShape(t *testing.T) {
 		}
 	}
 }
+
+// One language per person (Denis 26.09): the bot's language is also the
+// account's `locale`, so the Mini App opens in it. One PATCH carries both, so
+// the two can never disagree after a half-done write.
+func TestSetBotLangAlsoSetsTheAccountLocale(t *testing.T) {
+	var patches []map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPatch {
+			var body map[string]any
+			raw, _ := io.ReadAll(r.Body)
+			_ = json.Unmarshal(raw, &body)
+			patches = append(patches, body)
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{"data": map[string]any{"settings": map[string]any{}}})
+	}))
+	defer srv.Close()
+
+	if err := NewClient(srv.URL).SetBotLang("tok", "en"); err != nil {
+		t.Fatalf("SetBotLang: %v", err)
+	}
+	if len(patches) != 1 {
+		t.Fatalf("%d PATCHes, want one carrying both", len(patches))
+	}
+	if patches[0]["locale"] != "en" {
+		t.Errorf("locale = %v, want en", patches[0]["locale"])
+	}
+	bot, _ := patches[0]["settings"].(map[string]any)["bot"].(map[string]any)
+	if bot["lang"] != "en" {
+		t.Errorf("bot.lang = %v, want en", bot["lang"])
+	}
+}

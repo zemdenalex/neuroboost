@@ -562,11 +562,11 @@ func (h *Handler) createUserFromTelegram(ctx context.Context, req TelegramLoginR
 	authTime := time.Unix(req.AuthDate, 0)
 
 	err := h.db.Pool.QueryRow(ctx, `
-		INSERT INTO "user" (tg_id, tg_username, tg_first_name, tg_last_name, tg_photo_url, tg_auth_date, display_name, last_login_at, settings)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), '{}')
+		INSERT INTO "user" (tg_id, tg_username, tg_first_name, tg_last_name, tg_photo_url, tg_auth_date, display_name, last_login_at, settings, locale)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), '{}', $8)
 		RETURNING id, tg_id, tg_username, tg_first_name, tg_last_name, tg_photo_url, display_name,
 		          COALESCE(timezone, 'Europe/Moscow'), COALESCE(locale, 'ru'), COALESCE(is_admin, FALSE), created_at
-	`, req.ID, nullString(req.Username), req.FirstName, nullString(req.LastName), nullString(req.PhotoURL), authTime, req.FirstName).Scan(
+	`, req.ID, nullString(req.Username), req.FirstName, nullString(req.LastName), nullString(req.PhotoURL), authTime, req.FirstName, localeFromTelegram(req.LanguageCode)).Scan(
 		&user.ID, &user.TgID, &user.TgUsername, &user.TgFirstName, &user.TgLastName, &user.TgPhotoURL,
 		&user.DisplayName, &user.Timezone, &user.Locale, &user.IsAdmin, &user.CreatedAt,
 	)
@@ -577,6 +577,21 @@ func (h *Handler) createUserFromTelegram(ctx context.Context, req TelegramLoginR
 
 	user.Settings = make(map[string]interface{})
 	return &user, nil
+}
+
+// localeFromTelegram is the bot's onboarding rule (onboarding.go
+// startOnboarding): «ru*» Russian, anything else English. No code at all —
+// the Login Widget, the bot — stays NULL, which reads as 'ru' as before
+// (one language per person, Denis 26.09).
+func localeFromTelegram(code string) *string {
+	if code == "" {
+		return nil
+	}
+	l := "en"
+	if strings.HasPrefix(strings.ToLower(code), "ru") {
+		l = "ru"
+	}
+	return &l
 }
 
 func (h *Handler) createUserWithEmail(ctx context.Context, email, passwordHash, name string) (*User, error) {
