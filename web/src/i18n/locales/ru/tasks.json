@@ -78,5 +78,10 @@
     "clear": "Снять",
     "select": "Выбрать {{title}}"
   },
-  "stat.answeredToday": "Сегодня сделано:"
+  "stat.answeredToday": "Сегодня сделано:",
+  "form.repeat": "Повтор",
+  "repeat.none": "Не повторяется",
+  "repeat.daily": "Каждый день",
+  "repeat.weekly": "Каждую неделю",
+  "repeat.monthly": "Каждый месяц"
 }

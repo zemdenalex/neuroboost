@@ -77,5 +77,10 @@
     "clear": "Clear",
     "select": "Select {{title}}"
   },
-  "stat.answeredToday": "Done today:"
+  "stat.answeredToday": "Done today:",
+  "form.repeat": "Repeat",
+  "repeat.none": "Does not repeat",
+  "repeat.daily": "Every day",
+  "repeat.weekly": "Every week",
+  "repeat.monthly": "Every month"
 }

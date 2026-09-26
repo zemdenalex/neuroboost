@@ -76,7 +76,8 @@ export interface CreateTaskRequest {
    * Minutes before due_date, one entry per reminder. Omitting the field asks
    * the backend for the user's default preset; an explicit [] means none.
    */
-  reminder_offsets?: number[]
+  reminder_offsets?: number[]  /** Repeat rule (FREQ=DAILY|WEEKLY|MONTHLY, INTERVAL/COUNT/UNTIL); absent = one-off. */
+  rrule?: string
 }
 
 export interface UpdateTaskRequest {
@@ -92,6 +93,8 @@ export interface UpdateTaskRequest {
   energy?: number
   parent_id?: string
   reminder_offsets?: number[]
+  /** Absent leaves the repeat alone, "" switches it off. */
+  rrule?: string
 }
 
 export interface ScheduleTaskRequest {

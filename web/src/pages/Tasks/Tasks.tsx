@@ -45,6 +45,7 @@ import { answeredToday } from '../../types'
 import { tickAction, tickedToday, undoOccurrence } from '../../lib/tasks/tickAction'
 import { nestGroups, subtaskProgress } from '../../lib/tasks/taskTree'
 import { todayInZone } from '../../lib/dayTasks/dayColour'
+import { REPEAT_CHOICES, repeatChoiceOf, rruleForSave, withRepeatChoice, type RepeatChoice } from '../../lib/tasks/repeatField'
 import { ApiError } from '../../api/client'
 import { defaultScheduleSlot } from '../../lib/schedule/defaultScheduleSlot'
 import { toDateTimeLocalValue, fromDateTimeLocalValue } from '../../lib/datetime/dateTimeLocal'
@@ -349,6 +350,7 @@ export default function Tasks() {
             contexts: editingTask.contexts,
             tags: editingTask.tags,
             reminder_offsets: editingTask.reminder_offsets,
+            rrule: rruleForSave(tasks.find(t => t.id === editingTask.id)?.rrule, editingTask.rrule),
           })
           setTasks(prev => prev.map(t => t.id === updated.id ? updated : t))
         } else {
@@ -367,6 +369,7 @@ export default function Tasks() {
             // Omitted entirely when untouched, so the backend applies the
             // user's default preset. An explicit [] means "deliberately none".
             reminder_offsets: editingTask.reminder_offsets,
+            ...(editingTask.rrule ? { rrule: editingTask.rrule } : {}),
           })
           setTasks(prev => [...prev, created])
         }
@@ -900,6 +903,24 @@ export default function Tasks() {
                     className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white font-mono focus:outline-none focus:border-blue-500"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label htmlFor="task-repeat" className="block text-sm text-zinc-400 mb-1">{t('form.repeat')}</label>
+                <select
+                  id="task-repeat"
+                  data-testid="task-repeat"
+                  value={repeatChoiceOf(editingTask.rrule)}
+                  onChange={(e) => {
+                    const original = tasks.find(t => t.id === editingTask.id)?.rrule
+                    setEditingTask(prev => ({ ...prev!, rrule: withRepeatChoice(original, e.target.value as RepeatChoice) }))
+                  }}
+                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white font-mono focus:outline-none focus:border-blue-500"
+                >
+                  {REPEAT_CHOICES.map((c) => (
+                    <option key={c} value={c}>{t(`repeat.${c}`)}</option>
+                  ))}
+                </select>
               </div>
 
               <div>
