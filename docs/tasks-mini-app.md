@@ -16,6 +16,7 @@
 
 - [x] MA3 `lib/telegram/webApp.ts`: чистые функции — есть ли `initData`; тесты vitest
 - [ ] 🟡 MA3b Тема из `themeParams` (цвета Telegram) — **не сделано**: это вкус (цвета Telegram против нашей тёмной темы), вопрос Денису
+  - 26.09: страница вариантов 0–3 (как есть · поверхности · всё · только акцент) на трёх примерах тем Telegram — https://claude.ai/artifact/GYZJSUPtrGaR6T5XNoVcyu ; ждёт выбора Дениса. Во всех вариантах цвета календарей не трогаются, вне Telegram ничего не меняется
 - [x] MA4 ~~Скрипт в `index.html`~~ → **Ruling 25.09:** скрипт грузится динамически и только внутри Telegram (признак — `#tgWebAppData` в hash); `initData` читается из hash сам, без скрипта. Причина: telegram.org может быть заблокирован у обычных посетителей, `<script>` в `<head>` у всех повесил бы сайт. Цена ошибки: одна строка в `index.html`
 - [x] MA5 Вход: при `initData` — `POST /api/auth/telegram-webapp` до экрана логина, токен как обычно; ошибка → обычный логин с понятной строкой; тест на ветвление
 - [x] MA6 (`ready/expand/disableVerticalSwipes` в `prepareWebApp`, `BackButton` — `useTelegramBackButton` в `AppLayout`, «Выйти» скрыт в обеих шапках; вживую проверяется только в Telegram, MA10) Внутри Telegram: `ready()`, `expand()`, `disableVerticalSwipes()` (иначе перетаскивание события сворачивает Mini App), спрятать выход; `BackButton` на не-корневых страницах
