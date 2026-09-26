@@ -55,6 +55,12 @@
     "overdue": "Overdue",
     "noTasks": "No tasks yet",
     "noTasksHint": "Create your first task to start planning your week.",
-    "allTasks": "All tasks"
+    "allTasks": "All tasks",
+    "dayLine": "{{square}} {{done}} of {{target}}",
+    "dayNotTaken": "The day is not taken yet",
+    "dayTasks": "Day tasks",
+    "allDay": "all day",
+    "tick": "Done: {{title}}",
+    "more": "and {{count}} more"
   }
 }

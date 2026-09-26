@@ -55,6 +55,12 @@
     "overdue": "Просрочено",
     "noTasks": "Пока нет задач",
     "noTasksHint": "Создайте первую задачу, чтобы начать планировать неделю.",
-    "allTasks": "Все задачи"
+    "allTasks": "Все задачи",
+    "dayLine": "{{square}} {{done}} из {{target}}",
+    "dayNotTaken": "День ещё не взят",
+    "dayTasks": "Задачи дня",
+    "allDay": "весь день",
+    "tick": "Выполнено: {{title}}",
+    "more": "и ещё {{count}}"
   }
 }
