@@ -60,6 +60,22 @@ type UserState struct {
 	PriorityStyle      string
 	PriorityStyleKnown bool
 
+	// DayTasksOn caches settings.day_tasks_enabled (spec 2026-09-22 §11): the
+	// home keyboard draws it on every screen, so it is not read each time.
+	DayTasksOn    bool
+	DayTasksKnown bool
+	// DayTasksAt is when DayTasksOn was read: the web switches it too.
+	DayTasksAt time.Time
+	// CalendarCell caches settings.bot.calendar_cell (spec §6): what a month
+	// cell shows, "both" / "colour" / "bar". Read on every month page.
+	CalendarCell      string
+	CalendarCellKnown bool
+	// DayPrefsFailedAt is when the last settings read failed: for a short
+	// while after it the default is used without asking again (review I3).
+	DayPrefsFailedAt time.Time
+	// DayTasksAskDone: the one-time day-tasks question needs no more reads.
+	DayTasksAskDone bool
+
 	// Onboarded caches bot.onboarded once it is known to be true. False means
 	// "not known yet", never "known false" — that one is always re-read, so a
 	// user who finishes onboarding on the web or another device is not asked

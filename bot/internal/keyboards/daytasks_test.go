@@ -46,8 +46,12 @@ func dayKeyboards() map[string]tgbotapi.InlineKeyboardMarkup {
 		"add":          DayAddList(i18n.RU, "2026-09-23", items),
 		"pin":          DayPinPick(i18n.RU, dtID, "2026-09-23", "2026-09-24"),
 		"pinned":       DayPinned(i18n.RU, dtID, "2026-09-23"),
-		"target":       DayTarget(i18n.RU, 5),
+		"settings-on":  DaySettings(i18n.RU, DaySettingsView{On: true, Target: 5}),
+		"settings-off": DaySettings(i18n.RU, DaySettingsView{}),
+		"target-pick":  DayTargetPick(i18n.RU, 5, "ob_dtn_", "ob_finish", "Дальше →"),
 		"date-cancel":  DayDateCancel(i18n.RU, dtID),
+		"off":          DayTasksOff(i18n.RU),
+		"onboard":      DayOnboard(i18n.RU, "ob_dt_on", "ob_dt_off"),
 	}
 }
 
@@ -145,7 +149,7 @@ func TestPinOffersTodayTomorrowAndADate(t *testing.T) {
 }
 
 func TestTargetOffersThreeToSevenAndTicksTheCurrent(t *testing.T) {
-	kb := DayTarget(i18n.RU, 5)
+	kb := DaySettings(i18n.RU, DaySettingsView{On: true, Target: 5})
 	for n := 3; n <= 7; n++ {
 		if !has(kb, "dtn_"+string(rune('0'+n))) {
 			t.Errorf("no dtn_%d", n)
@@ -166,13 +170,42 @@ func TestTargetOffersThreeToSevenAndTicksTheCurrent(t *testing.T) {
 
 // The ways in (spec §8): the menu, a task's card, and the target in Settings.
 func TestDayTasksCanBeReached(t *testing.T) {
-	if !has(HomeInline(i18n.RU), "dt_d_today") {
+	if !has(HomeInlineFor(i18n.RU, true), "dt_d_today") {
 		t.Errorf("the menu has no 📌 Задачи дня")
 	}
-	if !has(TaskActions(i18n.RU, dtID, false, ""), "dt_pin_"+dtID) {
+	if !has(TaskActions(i18n.RU, dtID, false, "", true), "dt_pin_"+dtID) {
 		t.Errorf("the task card has no 📌 В задачи дня")
+	}
+	// Spec §11: switched off, the card has no 📌.
+	if has(TaskActions(i18n.RU, dtID, false, "", false), "dt_pin_"+dtID) {
+		t.Errorf("day tasks off, and the card still has 📌")
 	}
 	if !has(SettingsMenu(i18n.RU), "settings_dtn") {
 		t.Errorf("Settings has no 🎯 Задач в день")
+	}
+}
+
+// Spec §6: the cell choice sits on the day-tasks screen while they are on,
+// the current one ticked; off has no colour to choose.
+func TestDaySettingsOffersTheCellChoice(t *testing.T) {
+	kb := DaySettings(i18n.RU, DaySettingsView{On: true, Target: 5, Cell: "colour"})
+	for _, want := range []string{"dts_cell_both", "dts_cell_colour", "dts_cell_bar"} {
+		if !has(kb, want) {
+			t.Errorf("no %s: %v", want, datas(kb))
+		}
+	}
+	ticked := false
+	for _, row := range kb.InlineKeyboard {
+		for _, b := range row {
+			if b.Text == "✓ 🟩" {
+				ticked = true
+			}
+		}
+	}
+	if !ticked {
+		t.Errorf("colour only is not ticked: %v", kb.InlineKeyboard)
+	}
+	if off := DaySettings(i18n.RU, DaySettingsView{}); has(off, "dts_cell_bar") {
+		t.Error("the cell choice shows while day tasks are off")
 	}
 }

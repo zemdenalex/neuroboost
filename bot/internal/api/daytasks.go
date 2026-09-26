@@ -22,6 +22,9 @@ type Day struct {
 	Items     []DayItem `json:"items"`
 	Done      int       `json:"done"`
 	Level     int       `json:"level"`
+	// BeforeStart: earlier than the first day ever taken (spec §11), decided
+	// by the server.
+	BeforeStart bool `json:"before_start"`
 }
 
 // DayTasks reads every day of [from, to] (the server allows ≤ 62 days).

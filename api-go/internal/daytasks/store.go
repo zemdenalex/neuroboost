@@ -40,6 +40,10 @@ type Day struct {
 	Items     []Item `json:"items"`
 	Done      int    `json:"done"`
 	Level     int    `json:"level"`
+	// BeforeStart: the day is earlier than the first day this person ever
+	// took, or they never took one (spec §11). One rule, on the server, so the
+	// web cannot decide «the start» differently later.
+	BeforeStart bool `json:"before_start"`
 }
 
 const dateFmt = "2006-01-02"
@@ -90,6 +94,19 @@ func List(ctx context.Context, userID string, from, to time.Time) ([]Day, error)
 	}
 	for i := range out {
 		byDay[out[i].Day] = &out[i]
+	}
+
+	// Before the promises are read: the early return for a range without
+	// promises must not skip it. Days are the user's own dates on both sides,
+	// and YYYY-MM-DD strings sort as dates.
+	var first *string
+	if err := db.Pool.QueryRow(ctx,
+		`SELECT to_char(MIN(day), 'YYYY-MM-DD') FROM day_commitment_day WHERE user_id = $1`,
+		userID).Scan(&first); err != nil {
+		return nil, err
+	}
+	for i := range out {
+		out[i].BeforeStart = first == nil || out[i].Day < *first
 	}
 
 	confirmed, err := db.Pool.Query(ctx, `

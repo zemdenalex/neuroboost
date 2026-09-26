@@ -31,8 +31,17 @@ type dayAPI struct {
 	// proposalDown makes /proposal answer 500; noDay makes /day-tasks answer
 	// an empty list; meDownAfterWrite fails every settings read after a PATCH.
 	proposalDown, noDay, meDownAfterWrite, meWritten bool
-	calls                                            []string
-	bodies                                           map[string]string
+	// settings adds top-level keys to /api/auth/me; meDown fails every read of it.
+	settings map[string]any
+	// days, when set, is what GET /api/day-tasks answers, whatever the range.
+	days   []map[string]any
+	meDown bool
+	// events, when set, is what GET /api/events answers.
+	events []map[string]any
+	// eventsDown fails GET /api/events: the API is unreachable.
+	eventsDown bool
+	calls      []string
+	bodies     map[string]string
 }
 
 func (a *dayAPI) handler(t *testing.T) http.HandlerFunc {
@@ -56,7 +65,8 @@ func (a *dayAPI) handler(t *testing.T) http.HandlerFunc {
 			return
 		}
 		down := (r.URL.Path == "/api/day-tasks/proposal" && a.proposalDown) ||
-			(r.URL.Path == "/api/auth/me" && r.Method == http.MethodGet && a.meDownAfterWrite && a.meWritten)
+			(r.URL.Path == "/api/events" && a.eventsDown) ||
+			(r.URL.Path == "/api/auth/me" && r.Method == http.MethodGet && (a.meDown || (a.meDownAfterWrite && a.meWritten)))
 		if r.URL.Path == "/api/auth/me" && r.Method != http.MethodGet {
 			a.meWritten = true
 		}
@@ -66,11 +76,21 @@ func (a *dayAPI) handler(t *testing.T) http.HandlerFunc {
 			return
 		}
 		switch {
+		case r.URL.Path == "/api/events" && a.events != nil:
+			_ = json.NewEncoder(w).Encode(map[string]any{"data": a.events})
+		case r.URL.Path == "/api/events":
+			_ = json.NewEncoder(w).Encode(map[string]any{"data": []any{}})
+		case r.URL.Path == "/api/day-tasks" && r.Method == http.MethodGet && a.days != nil:
+			_ = json.NewEncoder(w).Encode(map[string]any{"data": a.days})
 		case r.URL.Path == "/api/day-tasks" && r.Method == http.MethodGet && a.noDay:
 			_ = json.NewEncoder(w).Encode(map[string]any{"data": []any{}})
 		case r.URL.Path == "/api/auth/me":
+			settings := map[string]any{"bot": map[string]any{"onboarded": true, "lang": "ru"}}
+			for k, v := range a.settings {
+				settings[k] = v
+			}
 			_ = json.NewEncoder(w).Encode(map[string]any{"data": map[string]any{"timezone": "Europe/Moscow",
-				"settings": map[string]any{"bot": map[string]any{"onboarded": true, "lang": "ru"}}}})
+				"settings": settings}})
 		case r.URL.Path == "/api/day-tasks" && r.Method == http.MethodGet:
 			_ = json.NewEncoder(w).Encode(map[string]any{"data": []any{day}})
 		case r.URL.Path == "/api/day-tasks/proposal":
@@ -357,8 +377,22 @@ func TestEditingAPastDayShowsTheDay(t *testing.T) {
 func TestTheSavedTargetIsTickedWhenTheReReadFails(t *testing.T) {
 	a := &dayAPI{meDownAfterWrite: true}
 	h, fake, chat := dayHandler(t, a)
-	h.handleDayTarget(chat, 0, "4")
+	h.handleDaySettings(chat, 0, "n:4")
 	if got := fake.last(t).Markup; !strings.Contains(got, "✓ 4") {
 		t.Errorf("saved 4, ticked: %s", got)
+	}
+}
+
+// Review Focus 2: an old 📌 button, day tasks off → a sentence and the way back
+// on; no screen, no write.
+func TestAnOldDayTasksButtonWhenOff(t *testing.T) {
+	a := &dayAPI{settings: map[string]any{"day_tasks_enabled": false}}
+	h, fake, chat := dayHandler(t, a)
+	press(h, chat, "dt_put_"+moscowToday()+"_"+dtOne)
+	if a.called("POST /api/day-tasks") {
+		t.Errorf("wrote while off: %v", a.calls)
+	}
+	if got := fake.last(t); !strings.Contains(got.Text, "выключены") || !strings.Contains(got.Markup, "dts_on") {
+		t.Errorf("off answered %q / %s", got.Text, got.Markup)
 	}
 }

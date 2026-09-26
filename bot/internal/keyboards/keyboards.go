@@ -31,7 +31,8 @@ import (
 // ⏰ is the two-tap slot + length; 📅 is the path that asks link or move and
 // shows what becomes what. linkedEventID, when set, adds a way to the event
 // the task's time already went into.
-func TaskActions(lang i18n.Lang, taskID string, repeats bool, linkedEventID string) tgbotapi.InlineKeyboardMarkup {
+// dayTasks: with day tasks switched off the card has no 📌 (spec 2026-09-22 §11).
+func TaskActions(lang i18n.Lang, taskID string, repeats bool, linkedEventID string, dayTasks bool) tgbotapi.InlineKeyboardMarkup {
 	rows := [][]tgbotapi.InlineKeyboardButton{
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "⏰ Запланировать", "⏰ Schedule"), "task_sched_"+taskID),
@@ -42,7 +43,7 @@ func TaskActions(lang i18n.Lang, taskID string, repeats bool, linkedEventID stri
 		rows = append(rows, tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🗓 Открыть событие", "🗓 Open event"), "ev_"+linkedEventID)))
 	}
-	return tgbotapi.NewInlineKeyboardMarkup(append(rows,
+	rows = append(rows,
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "📅 Срок", "📅 Due"), "task_due_"+taskID),
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "⏱ Оценка", "⏱ Estimate"), "task_est_"+taskID),
@@ -53,9 +54,12 @@ func TaskActions(lang i18n.Lang, taskID string, repeats bool, linkedEventID stri
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🔔 Долбить", "🔔 Nag"), "task_ng_"+taskID),
 		),
 		doneRow(lang, taskID, repeats),
-		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "📌 В задачи дня", "📌 To day tasks"), "dt_pin_"+taskID),
-		),
+	)
+	if dayTasks {
+		rows = append(rows, tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "📌 В задачи дня", "📌 To day tasks"), "dt_pin_"+taskID)))
+	}
+	return tgbotapi.NewInlineKeyboardMarkup(append(rows,
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "« Назад", "« Back"), "top_tasks"),
 		),
@@ -257,11 +261,15 @@ func BackToTasks(lang i18n.Lang) tgbotapi.InlineKeyboardMarkup {
 // rule against pointing at those (TestNoScreenPointsAtAReplyButton). Prose
 // that names a button is a button the user has to go and find; this is the
 // button.
-func TodayScreen(lang i18n.Lang) tgbotapi.InlineKeyboardMarkup {
+func TodayScreen(lang i18n.Lang, dayTasks bool) tgbotapi.InlineKeyboardMarkup {
+	first := tgbotapi.NewInlineKeyboardRow(
+		tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "📋 Задачи", "📋 Tasks"), "top_tasks"))
+	if dayTasks {
+		first = append(first,
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "📌 Задачи дня", "📌 Day tasks"), "dt_d_today"))
+	}
 	return tgbotapi.NewInlineKeyboardMarkup(
-		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "📋 Задачи", "📋 Tasks"), "top_tasks"),
-		),
+		first,
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "« Меню", "« Menu"), "main_menu"),
 		),
@@ -283,7 +291,7 @@ func SettingsMenu(lang i18n.Lang) tgbotapi.InlineKeyboardMarkup {
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "📏 Шкала статистики", "📏 Statistics scale"), "settings_stscale"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🎯 Задач в день", "🎯 Tasks per day"), "settings_dtn"),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "📌 Задачи дня", "📌 Day tasks"), "settings_dtn"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🔤 Ключевые слова", "🔤 Keywords"), "settings_keywords"),

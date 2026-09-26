@@ -457,7 +457,7 @@ func (h *Handler) showCard(chatID int64, messageID int) {
 
 func (h *Handler) lostDraft(chatID int64) {
 	h.store.ClearFlow(chatID)
-	h.sendHTMLWithKeyboard(chatID, h.t(chatID, "Черновик потерялся, начнём заново.", "Lost the draft; let's start over."), keyboards.HomeInline(h.lang(chatID)))
+	h.sendHTMLWithKeyboard(chatID, h.t(chatID, "Черновик потерялся, начнём заново.", "Lost the draft; let's start over."), h.home(chatID))
 }
 
 // handleDraftCallback answers every button of the confirmation card.
@@ -497,7 +497,7 @@ func (h *Handler) handleDraftCallback(chatID int64, messageID int, data string) 
 
 	if data == "dr_cancel" {
 		h.store.ClearFlow(chatID)
-		h.editOrSend(chatID, messageID, h.t(chatID, "🗑 Отменено.", "🗑 Cancelled."), keyboards.HomeInline(h.lang(chatID)))
+		h.editOrSend(chatID, messageID, h.t(chatID, "🗑 Отменено.", "🗑 Cancelled."), h.home(chatID))
 		return true
 	}
 
@@ -505,7 +505,7 @@ func (h *Handler) handleDraftCallback(chatID int64, messageID int, data string) 
 		// The card belongs to a flow that is over — most often because a menu
 		// button interrupted it. Saying so beats editing a message the state no
 		// longer backs.
-		h.editOrSend(chatID, messageID, h.t(chatID, "Это создание уже закрыто.", "That one is already closed."), keyboards.HomeInline(h.lang(chatID)))
+		h.editOrSend(chatID, messageID, h.t(chatID, "Это создание уже закрыто.", "That one is already closed."), h.home(chatID))
 		return true
 	}
 
@@ -803,7 +803,7 @@ func (h *Handler) createFromDraft(chatID int64, messageID int, st draftState) {
 	eventID, err := h.createOne(chatID, st)
 	if err != nil {
 		h.store.ClearFlow(chatID)
-		h.editOrSend(chatID, messageID, "❌ "+h.errorText(chatID, err), keyboards.HomeInline(h.lang(chatID)))
+		h.editOrSend(chatID, messageID, "❌ "+h.errorText(chatID, err), h.home(chatID))
 		return
 	}
 

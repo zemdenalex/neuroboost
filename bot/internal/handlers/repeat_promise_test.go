@@ -81,7 +81,11 @@ func TestAnsweringFromTheCardGoesBackToCreating(t *testing.T) {
 func TestTheAnsweredRuleReachesTheRequest(t *testing.T) {
 	var body []byte
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		body, _ = io.ReadAll(r.Body)
+		// Only the create: the home screen reads settings afterwards (GET),
+		// and keeping the last body would lose the one this test is about.
+		if r.Method == http.MethodPost {
+			body, _ = io.ReadAll(r.Body)
+		}
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{"data":{"id":"t1","title":"пить таблетки"}}`))
 	}))

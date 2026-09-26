@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/zemdenalex/neuroboost-bot/internal/format"
-	"github.com/zemdenalex/neuroboost-bot/internal/keyboards"
 )
 
 // handleMenu draws the home screen — state first, buttons under it.
@@ -18,6 +17,10 @@ import (
 func (h *Handler) handleMenu(chatID int64, messageID int) {
 	// Once, for people onboarded before the choice existed (spec 21.09 §B2).
 	if h.askPriorityOnce(chatID, messageID) {
+		return
+	}
+	// And once about day tasks (spec 2026-09-22 §11).
+	if h.askDayTasksOnce(chatID, messageID) {
 		return
 	}
 	us := h.store.GetOrCreate(chatID)
@@ -44,5 +47,5 @@ func (h *Handler) handleMenu(chatID int64, messageID int) {
 		}
 	}
 
-	h.editOrSend(chatID, messageID, text, keyboards.HomeInline(h.lang(chatID)))
+	h.editOrSend(chatID, messageID, text, h.home(chatID))
 }

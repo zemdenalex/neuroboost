@@ -307,6 +307,32 @@ func (h *Handler) handleOnboardCallback(chatID int64, messageID int, data string
 		h.handleScalePick(chatID, messageID, "", true)
 	case strings.HasPrefix(data, "ob_sc_"):
 		h.handleScalePick(chatID, messageID, strings.TrimPrefix(data, "ob_sc_"), true)
+	case data == "ob_dt":
+		// Spec 2026-09-22 §11: after the scale, whether day tasks are on.
+		us.FlowStep = "daytasks"
+		h.editOrSend(chatID, messageID, h.dayTasksIntro(chatID), keyboards.DayOnboard(h.lang(chatID), "ob_dt_on", "ob_dt_off"))
+	case data == "ob_dt_on":
+		if err := h.setDayPref(chatID, "day_tasks_enabled", true); err != nil {
+			h.sendText(chatID, h.t(chatID, "❌ Не сохранилось: ", "❌ Not saved: ")+h.errorText(chatID, err))
+			return true
+		}
+		h.showOnboardTarget(chatID, messageID, h.dayPrefs(chatID).Target)
+	case strings.HasPrefix(data, "ob_dtn_"):
+		n, err := strconv.Atoi(strings.TrimPrefix(data, "ob_dtn_"))
+		if err != nil || n < 3 || n > 7 {
+			return true
+		}
+		if err := h.setDayPref(chatID, "day_tasks_target", n); err != nil {
+			h.sendText(chatID, h.t(chatID, "❌ Не сохранилось: ", "❌ Not saved: ")+h.errorText(chatID, err))
+			return true
+		}
+		h.showOnboardTarget(chatID, messageID, n)
+	case data == "ob_dt_off":
+		if err := h.setDayPref(chatID, "day_tasks_enabled", false); err != nil {
+			h.sendText(chatID, h.t(chatID, "❌ Не сохранилось: ", "❌ Not saved: ")+h.errorText(chatID, err))
+			return true
+		}
+		h.onboardClosing(chatID, messageID)
 	case data == "ob_finish":
 		h.onboardClosing(chatID, messageID)
 	case data == "ob_skip":
@@ -317,4 +343,12 @@ func (h *Handler) handleOnboardCallback(chatID int64, messageID int, data string
 		return false
 	}
 	return true
+}
+
+// showOnboardTarget is N in onboarding, right after «✅ Включить».
+func (h *Handler) showOnboardTarget(chatID int64, messageID int, current int) {
+	h.editOrSend(chatID, messageID, h.t(chatID,
+		"🎯 <b>Сколько дел брать на день?</b>\n\nЦвет дня считается от этого числа. Поменять можно в любой момент.",
+		"🎯 <b>How many things a day?</b>\n\nThe day's colour is counted against this number. You can change it any time."),
+		keyboards.DayTargetPick(h.lang(chatID), current, "ob_dtn_", "ob_finish", h.t(chatID, "Дальше →", "Next →")))
 }

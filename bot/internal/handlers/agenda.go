@@ -85,7 +85,7 @@ func (h *Handler) handleAgenda(chatID int64, messageID int) {
 	events, err := h.api.GetEvents(us.AuthToken, from, to)
 	if err != nil {
 		h.editOrSend(chatID, messageID,
-			h.t(chatID, "⚠️ Не дозвонился до сервера. Попробуй через минуту.", "⚠️ Could not reach the server. Try again in a minute."), keyboards.HomeInline(h.lang(chatID)))
+			h.t(chatID, "⚠️ Не дозвонился до сервера. Попробуй через минуту.", "⚠️ Could not reach the server. Try again in a minute."), h.home(chatID))
 		return
 	}
 	h.editOrSend(chatID, messageID, agendaText(h.lang(chatID), events, now, h.timezone(chatID)), keyboards.AgendaActions(h.lang(chatID)))

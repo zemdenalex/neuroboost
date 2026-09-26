@@ -83,7 +83,7 @@ func TestOnboardingAsksForTheScale(t *testing.T) {
 	if !strings.Contains(*patched, `"stats_scale":"peak"`) {
 		t.Errorf("PATCH = %s", *patched)
 	}
-	if m := fake.last(t).Markup; !strings.Contains(m, `"ob_finish"`) || !strings.Contains(m, "✓ по максимуму") {
+	if m := fake.last(t).Markup; !strings.Contains(m, `"ob_dt"`) || !strings.Contains(m, "✓ по максимуму") {
 		t.Errorf("markup: %s", m)
 	}
 }

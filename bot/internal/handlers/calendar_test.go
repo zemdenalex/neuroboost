@@ -15,7 +15,7 @@ func TestBuildMonthAlwaysStartsOnMondayAndFillsSixWeeks(t *testing.T) {
 	// August 2026 starts on a Saturday — the awkward case, where the first row
 	// is almost entirely July. A month starting on Monday would hide an
 	// off-by-one in the ISO offset entirely.
-	cells := buildMonth(2026, time.August, time.Date(2026, 8, 18, 12, 0, 0, 0, loc), nil, loc)
+	cells := buildMonth(2026, time.August, time.Date(2026, 8, 18, 12, 0, 0, 0, loc), nil, nil, loc)
 
 	if len(cells) != 42 {
 		t.Fatalf("got %d cells, want 42 — the grid must not change height between months", len(cells))
@@ -46,7 +46,7 @@ func TestBuildMonthHandlesAMonthStartingOnMonday(t *testing.T) {
 	// begin a week earlier. This is the case an `offset == 0 ? 7 : offset` slip
 	// would break, and the Saturday fixture above cannot see it.
 	loc := mustLoad(t, "Europe/Moscow")
-	cells := buildMonth(2026, time.June, time.Date(2026, 6, 15, 12, 0, 0, 0, loc), nil, loc)
+	cells := buildMonth(2026, time.June, time.Date(2026, 6, 15, 12, 0, 0, 0, loc), nil, nil, loc)
 	if got := cells[0].Date.Format("2006-01-02"); got != "2026-06-01" {
 		t.Errorf("first cell is %s, want 2026-06-01", got)
 	}
@@ -60,7 +60,7 @@ func TestBuildMonthMarksTodayAndBusyDays(t *testing.T) {
 	today := time.Date(2026, 8, 18, 23, 40, 0, 0, loc)
 	busy := map[string]int{"2026-08-20": 5, "2026-07-28": 1}
 
-	cells := buildMonth(2026, time.August, today, busy, loc)
+	cells := buildMonth(2026, time.August, today, busy, nil, loc)
 
 	var sawToday, sawBusy, sawBusyOutside int
 	for _, c := range cells {
@@ -103,7 +103,7 @@ func TestTodayIsMarkedInTheUsersZoneNotUTC(t *testing.T) {
 		t.Fatalf("fixture proves nothing: UTC and %s agree it is the %dth", loc, smallHours.Day())
 	}
 
-	cells := buildMonth(2026, time.August, smallHours, nil, loc)
+	cells := buildMonth(2026, time.August, smallHours, nil, nil, loc)
 	var marked []string
 	for _, c := range cells {
 		if c.IsToday {

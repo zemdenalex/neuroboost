@@ -216,7 +216,7 @@ func (h *Handler) HandleMessage(msg *tgbotapi.Message) {
 			}
 			h.handleStart(chatID)
 		default:
-			h.sendHTMLWithKeyboard(chatID, h.t(chatID, "Неизвестная команда.", "Unknown command."), keyboards.HomeInline(h.lang(chatID)))
+			h.sendHTMLWithKeyboard(chatID, h.t(chatID, "Неизвестная команда.", "Unknown command."), h.home(chatID))
 		}
 		return
 	}
@@ -227,7 +227,7 @@ func (h *Handler) HandleMessage(msg *tgbotapi.Message) {
 		return
 	}
 
-	h.sendHTMLWithKeyboard(chatID, h.t(chatID, "Не понял. Вот меню:", "Didn't get that. Here's the menu:"), keyboards.HomeInline(h.lang(chatID)))
+	h.sendHTMLWithKeyboard(chatID, h.t(chatID, "Не понял. Вот меню:", "Didn't get that. Here's the menu:"), h.home(chatID))
 }
 
 // openScreen renders the screen a reply-keyboard button names.
@@ -251,7 +251,7 @@ func (h *Handler) openScreen(chatID int64, screen string) {
 	case keyboards.ScreenSettings:
 		h.handleSettings(chatID, 0)
 	default:
-		h.sendHTMLWithKeyboard(chatID, h.t(chatID, "Не понял. Вот меню:", "Didn't get that. Here's the menu:"), keyboards.HomeInline(h.lang(chatID)))
+		h.sendHTMLWithKeyboard(chatID, h.t(chatID, "Не понял. Вот меню:", "Didn't get that. Here's the menu:"), h.home(chatID))
 	}
 }
 
@@ -409,6 +409,14 @@ func (h *Handler) HandleCallback(cb *tgbotapi.CallbackQuery) {
 		h.handleToday(chatID, cb.Message.MessageID)
 	case data == "top_tasks":
 		h.handleTasks(chatID, cb.Message.MessageID)
+	case strings.HasPrefix(data, "sb_d_"):
+		h.handleSubtaskDone(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "sb_d_"))
+	case strings.HasPrefix(data, "sb_add_"):
+		h.handleSubtaskAdd(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "sb_add_"))
+	case strings.HasPrefix(data, "sb_x_"):
+		// Cancel ends the question, or the next line would still become a subtask.
+		h.store.ClearFlow(chatID)
+		h.handleTaskAction(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "sb_x_"))
 	case strings.HasPrefix(data, "task_action_"):
 		h.handleTaskAction(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "task_action_"))
 	// The three scheduling steps, in the order they fire. They sit above
@@ -552,9 +560,18 @@ func (h *Handler) HandleCallback(cb *tgbotapi.CallbackQuery) {
 	case strings.HasPrefix(data, "cal_sc_"):
 		h.handleScalePickFrom(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "cal_sc_"), scaleFromCalendar)
 	case data == "settings_dtn":
-		h.handleDayTarget(chatID, cb.Message.MessageID, "")
+		h.handleDaySettings(chatID, cb.Message.MessageID, "")
 	case strings.HasPrefix(data, "dtn_"):
-		h.handleDayTarget(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "dtn_"))
+		h.handleDaySettings(chatID, cb.Message.MessageID, "n:"+strings.TrimPrefix(data, "dtn_"))
+	case data == "dtq_on" || data == "dtq_off":
+		// The one-time day-tasks question (spec §11): the answer, then the menu.
+		if err := h.setDayPref(chatID, "day_tasks_enabled", data == "dtq_on"); err != nil {
+			h.sendText(chatID, h.t(chatID, "❌ Не сохранилось: ", "❌ Not saved: ")+h.errorText(chatID, err))
+			return
+		}
+		h.handleMenu(chatID, cb.Message.MessageID)
+	case strings.HasPrefix(data, "dts_"):
+		h.handleDaySettings(chatID, cb.Message.MessageID, strings.TrimPrefix(data, "dts_"))
 	case data == "settings_stscale":
 		h.handleScalePick(chatID, cb.Message.MessageID, "", false)
 	case strings.HasPrefix(data, "scl_"):

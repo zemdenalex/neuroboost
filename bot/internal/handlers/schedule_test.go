@@ -132,7 +132,7 @@ func TestParsePlanCallback(t *testing.T) {
 func scheduleKeyboards() map[string]tgbotapi.InlineKeyboardMarkup {
 	const uuid = "8f14e45f-ceea-467a-9575-0f0e2d4a2f1b"
 	return map[string]tgbotapi.InlineKeyboardMarkup{
-		"TaskActions":          keyboards.TaskActions(i18n.RU, uuid, true, uuid+":2026-10-22"),
+		"TaskActions":          keyboards.TaskActions(i18n.RU, uuid, true, uuid+":2026-10-22", true),
 		"TaskScheduleWhen":     keyboards.TaskScheduleWhen(i18n.RU, uuid),
 		"TaskScheduleDuration": keyboards.TaskScheduleDuration(i18n.RU, uuid, "eve"),
 		"TaskDue":              keyboards.TaskDue(i18n.RU, uuid),

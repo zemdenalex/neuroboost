@@ -33,6 +33,8 @@ type dayCell struct {
 	// Level is how full the day is, 0 (nothing) to 8 — the statistics
 	// measure (spec 22.09 §4), replacing the old «•» that only said «something».
 	Level int
+	// Colour is the day-tasks square (spec 2026-09-22 §11), "" for none.
+	Colour string
 }
 
 // buildMonth lays out the six weeks a month view always shows.
@@ -40,7 +42,7 @@ type dayCell struct {
 // Always six rows, never five: a grid that changes height between months makes
 // the navigation buttons move under the user's thumb between taps. ISO weeks,
 // so the first column is Monday — the same rule the web grid follows.
-func buildMonth(year int, month time.Month, today time.Time, levels map[string]int, loc *time.Location) []dayCell {
+func buildMonth(year int, month time.Month, today time.Time, levels map[string]int, colours map[string]string, loc *time.Location) []dayCell {
 	first := time.Date(year, month, 1, 0, 0, 0, 0, loc)
 
 	// Go's Weekday is Sunday=0; ISO wants Monday=0.
@@ -57,6 +59,7 @@ func buildMonth(year int, month time.Month, today time.Time, levels map[string]i
 			InMonth: d.Month() == month && d.Year() == year,
 			IsToday: key == todayKey,
 			Level:   levels[key],
+			Colour:  colours[key],
 		})
 	}
 	return cells
@@ -67,18 +70,25 @@ func buildMonth(year int, month time.Month, today time.Time, levels map[string]i
 // things a user reads the grid for, and both are one character.
 func cellLabel(c dayCell) string {
 	n := strconv.Itoa(c.Date.Day())
+	if !c.InMonth {
+		return "·" + n
+	}
+	// Colour, space, date, space, bar (Denis, 22.09, spec §6).
+	var parts []string
+	if c.Colour != "" {
+		parts = append(parts, c.Colour)
+	}
 	switch {
 	case c.IsToday:
-		return "🔸" + n
-	case !c.InMonth:
-		return "·" + n
+		parts = append(parts, "🔸"+n)
 	case c.Level > 0:
 		// A space between the number and the bar (Denis, 23.09): «20▄» read
 		// as one glyph.
-		return n + " " + statgrid.Glyph(c.Level)
+		parts = append(parts, n, statgrid.Glyph(c.Level))
 	default:
-		return n
+		parts = append(parts, n)
 	}
+	return strings.Join(parts, " ")
 }
 
 // handleCalendar answers 🗓 Calendar and every paging tap.
@@ -114,7 +124,27 @@ func (h *Handler) showMonth(chatID int64, messageID, year int, month time.Month)
 	// A failed load draws the grid without marks rather than an error screen:
 	// the month is still navigable, and the marks are an aid, not the content.
 
-	cells := buildMonth(year, month, now, levels, loc)
+	// The day-tasks colour: one read for the whole grid (42 days), the same
+	// rule for a failed read as the bars. When the events read failed the API
+	// is most likely down, and two more reads would only wait on it again.
+	var colours map[string]string
+	cell, dayOn := cellBoth, false
+	if err == nil {
+		cell = h.calendarCell(chatID)
+	}
+	if err == nil && cell != cellBar {
+		if p := h.dayPrefs(chatID); p.On {
+			dayOn = true
+			days, err := h.api.DayTasks(us.AuthToken,
+				gridStart.Format("2006-01-02"), gridStart.AddDate(0, 0, 41).Format("2006-01-02"))
+			if err == nil {
+				colours = dayColours(days, now, p.PaintBefore)
+			}
+		}
+	}
+
+	levels, colours = applyCell(cell, dayOn, levels, colours)
+	cells := buildMonth(year, month, now, levels, colours, loc)
 	labels := make([]string, len(cells))
 	dates := make([]string, len(cells))
 	for i, c := range cells {
@@ -125,6 +155,11 @@ func (h *Handler) showMonth(chatID int64, messageID, year int, month time.Month)
 	text := fmt.Sprintf(h.t(chatID, "🗓 <b>%s %d</b>\n\nВыбери день. 🔸 сегодня · ▁▄█: насколько занят день (шкала: %s)",
 		"🗓 <b>%s %d</b>\n\nPick a day. 🔸 today · ▁▄█: how full the day is (scale: %s)"),
 		monthNominative(h.lang(chatID), month), year, scaleLabel(h.lang(chatID), sc.Kind))
+	if dayOn {
+		// Review M4: the squares get a line of their own in the legend.
+		// dayOn is false for bar only: that choice never reads day tasks.
+		text += h.t(chatID, " · 🟩🟧⬛: задачи дня", " · 🟩🟧⬛: day tasks")
+	}
 	kb := keyboards.MonthGrid(h.lang(chatID), year, int(month), monthNominative(h.lang(chatID), month), labels, dates,
 		time.Now().In(loc).Format("2006-01-02"))
 
@@ -181,7 +216,7 @@ func (h *Handler) handleCalendarDay(chatID int64, messageID int, date string) {
 	loc := h.location(chatID)
 	day, err := time.ParseInLocation("2006-01-02", date, loc)
 	if err != nil {
-		h.editOrSend(chatID, messageID, h.t(chatID, "Не понял дату.", "Didn't get the date."), keyboards.HomeInline(h.lang(chatID)))
+		h.editOrSend(chatID, messageID, h.t(chatID, "Не понял дату.", "Didn't get the date."), h.home(chatID))
 		return
 	}
 
@@ -190,7 +225,7 @@ func (h *Handler) handleCalendarDay(chatID int64, messageID int, date string) {
 	if !okPrev || !okNext {
 		// Unparseable date from callback_data: say so rather than render a day
 		// that is not the one asked for.
-		h.editOrSend(chatID, messageID, h.t(chatID, "Не понял дату.", "Didn't get the date."), keyboards.HomeInline(h.lang(chatID)))
+		h.editOrSend(chatID, messageID, h.t(chatID, "Не понял дату.", "Didn't get the date."), h.home(chatID))
 		return
 	}
 
@@ -204,7 +239,7 @@ func (h *Handler) handleCalendarDay(chatID int64, messageID int, date string) {
 	us := h.store.GetOrCreate(chatID)
 	events, err := h.api.GetEvents(us.AuthToken, from, to)
 	if err != nil {
-		h.editOrSend(chatID, messageID, h.t(chatID, "❌ Не удалось загрузить день: ", "❌ Could not load the day: ")+h.errorText(chatID, err), keyboards.HomeInline(h.lang(chatID)))
+		h.editOrSend(chatID, messageID, h.t(chatID, "❌ Не удалось загрузить день: ", "❌ Could not load the day: ")+h.errorText(chatID, err), h.home(chatID))
 		return
 	}
 

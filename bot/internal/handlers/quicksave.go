@@ -61,7 +61,7 @@ func (h *Handler) quickSaveTask(chatID int64, raw string, r parse.TaskResult) {
 	if err != nil {
 		h.sendHTMLWithKeyboard(chatID,
 			h.t(chatID, "❌ Не удалось создать: ", "❌ Could not create: ")+h.errorText(chatID, err),
-			keyboards.HomeInline(h.lang(chatID)))
+			h.home(chatID))
 		return
 	}
 	us.QuickTaskID, us.QuickRaw = task.ID, raw
@@ -101,7 +101,7 @@ func (h *Handler) handleQuickSavedCallback(chatID int64, messageID int, data str
 	if err := h.api.DeleteTask(us.AuthToken, taskID); err != nil {
 		h.editOrSend(chatID, messageID,
 			h.t(chatID, "❌ Не получилось: ", "❌ That didn't work: ")+h.errorText(chatID, err),
-			keyboards.HomeInline(h.lang(chatID)))
+			h.home(chatID))
 		return true
 	}
 	if us.QuickTaskID == taskID {
@@ -112,7 +112,7 @@ func (h *Handler) handleQuickSavedCallback(chatID int64, messageID int, data str
 	case "undo":
 		h.editOrSend(chatID, messageID,
 			fmt.Sprintf(h.t(chatID, "↩️ Отменено: %s", "↩️ Undone: %s"), format.Escape(raw)),
-			keyboards.HomeInline(h.lang(chatID)))
+			h.home(chatID))
 	case "event":
 		// Chosen as an event: the same door as «📅 Событие» on the old question.
 		h.quickKind = kindEvent
