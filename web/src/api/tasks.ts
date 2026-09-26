@@ -42,6 +42,8 @@ export interface Task {
    * `occurrence_state`. See answeredToday in types/index.ts.
    */
   rrule?: string
+  /** An unanswered reminder comes back every N minutes; absent/0 = once. */
+  nag_minutes?: number
   repeat_anchor?: string
   /** Today's answer: '', 'done' or 'skipped'. */
   occurrence_state?: string
@@ -78,6 +80,8 @@ export interface CreateTaskRequest {
    */
   reminder_offsets?: number[]  /** Repeat rule (FREQ=DAILY|WEEKLY|MONTHLY, INTERVAL/COUNT/UNTIL); absent = one-off. */
   rrule?: string
+  /** An unanswered reminder comes back every N minutes; absent = once. */
+  nag_minutes?: number
 }
 
 export interface UpdateTaskRequest {
@@ -95,6 +99,8 @@ export interface UpdateTaskRequest {
   reminder_offsets?: number[]
   /** Absent leaves the repeat alone, "" switches it off. */
   rrule?: string
+  /** 0 stops the nagging; absent leaves it alone. */
+  nag_minutes?: number
 }
 
 export interface ScheduleTaskRequest {

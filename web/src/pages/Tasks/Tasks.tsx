@@ -64,6 +64,9 @@ import { readRowActions } from '../../lib/tasks/rowActions'
 import { RowActionsMenu, SwipeRow, TaskActionSheet } from '../../components/TaskRow/TaskRowActions'
 import { ScheduleChooser } from '../../components/TaskRow/ScheduleChooser'
 
+/** The bot's nag choices (keyboards.NagCodes); the API's floor is 5, ceiling a day. */
+const NAG_MINUTES = [0, 10, 15, 30, 60]
+
 export default function Tasks() {
   const { t, i18n } = useTranslation('tasks')
   const { t: tc } = useTranslation('common')
@@ -428,6 +431,9 @@ export default function Tasks() {
             tags: editingTask.tags,
             reminder_offsets: editingTask.reminder_offsets,
             rrule: rruleForSave(tasks.find(t => t.id === editingTask.id)?.rrule, editingTask.rrule),
+            // Sent only when changed; 0 stops the nagging (gap list row 13).
+            ...((editingTask.nag_minutes ?? 0) !== (tasks.find(t => t.id === editingTask.id)?.nag_minutes ?? 0)
+              ? { nag_minutes: editingTask.nag_minutes ?? 0 } : {}),
           })
           setTasks(prev => prev.map(t => t.id === updated.id ? updated : t))
         } else {
@@ -448,6 +454,7 @@ export default function Tasks() {
             reminder_offsets: editingTask.reminder_offsets,
             ...(editingTask.rrule ? { rrule: editingTask.rrule } : {}),
             ...(editingTask.parent_id ? { parent_id: editingTask.parent_id } : {}),
+            ...(editingTask.nag_minutes ? { nag_minutes: editingTask.nag_minutes } : {}),
           })
           setTasks(prev => [...prev, created])
         }
@@ -1055,6 +1062,21 @@ export default function Tasks() {
                   presets={reminderSettings.presets}
                   disabled={!editingTask.due_date}
                 />
+                {/* How often an unanswered reminder comes back, as the bot's
+                    task card (gap list row 13): per task, same values, 0 = once. */}
+                <label htmlFor="task-nag" className="block text-sm text-zinc-400 mt-3 mb-1">{t('form.nag')}</label>
+                <select
+                  id="task-nag"
+                  data-testid="task-nag"
+                  value={editingTask.nag_minutes ?? 0}
+                  disabled={!editingTask.due_date}
+                  onChange={(e) => setEditingTask(prev => ({ ...prev!, nag_minutes: Number(e.target.value) }))}
+                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white font-mono focus:outline-none focus:border-blue-500 disabled:opacity-50"
+                >
+                  {NAG_MINUTES.map((m) => (
+                    <option key={m} value={m}>{m === 0 ? t('nag.off') : m === 60 ? t('nag.hour') : t('nag.minutes', { m })}</option>
+                  ))}
+                </select>
               </div>
 
               <div>

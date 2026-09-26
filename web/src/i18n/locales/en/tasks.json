@@ -97,5 +97,9 @@
   "plan.estimate": "estimate",
   "plan.back": "Back",
   "addSubtask": "Add subtask",
-  "pinDay": "Day tasks"
+  "pinDay": "Day tasks",
+  "form.nag": "Repeat an unanswered reminder",
+  "nag.off": "Once",
+  "nag.minutes": "Every {{m}} min",
+  "nag.hour": "Every hour"
 }
