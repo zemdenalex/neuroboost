@@ -82,7 +82,7 @@ func TestCreatingATelegramUserWhoAlreadyExistsReturnsThem(t *testing.T) {
 	}
 }
 
-// One language per person (Denis 26.09): an account born in the Mini App takes
+// An account born in the Mini App takes
 // Telegram's language by the bot's own rule — «ru*» Russian, anything else
 // English — so a person who never wrote to the bot does not open it in Russian.
 func TestAMiniAppAccountStartsInTelegramsLanguage(t *testing.T) {

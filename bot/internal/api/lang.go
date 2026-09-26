@@ -47,14 +47,11 @@ func (c *Client) SetBotLang(token, lang string) error {
 	lang = strings.ToLower(strings.TrimSpace(lang))
 	bot["lang"] = lang
 
-	// One language per person (Denis 26.09): the same language becomes the
-	// account's `locale`, which the web and the Mini App read. One PATCH for
-	// both, over the settings read above (the read-merge-write of gotcha 21),
-	// so a half-done write cannot leave the two disagreeing.
-	return c.patch("/api/auth/me", token, map[string]any{
-		"settings": MergeSettings(settings, map[string]any{"bot": bot}),
-		"locale":   lang,
-	}, nil)
+	// Only the bot's own language. The account's `locale` belongs to the web
+	// and the Mini App (Denis 26.09: «sync web interfaces (web, miniapp) but
+	// bot and later android app should stay in their own language»).
+	_, err = c.PatchSettings(token, map[string]any{"bot": bot})
+	return err
 }
 
 // MyTimezone reads the account's IANA timezone.

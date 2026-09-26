@@ -2,7 +2,6 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import i18n from '../i18n'
 import { errorMessage } from '../lib/errorMessage'
 import { createSettingsSaver } from '../lib/settings/saveSettings'
-import { startupLanguage } from '../lib/settings/language'
 import {
   User,
   UserSettings,
@@ -47,7 +46,7 @@ export interface AuthContextValue {
   refreshUser: () => Promise<void>
   updateSettings: (settings: Partial<UserSettings>) => Promise<void>
   updateProfile: (data: { display_name?: string; timezone?: string; locale?: string }) => Promise<void>
-  /** Interface language for the web AND the bot (one language per person). */
+  /** Interface language of the web and the Mini App; the bot keeps its own. */
   updateLanguage: (locale: string) => Promise<void>
   /** One key of settings.bot (shared with the bot), merged on the server's copy. */
   updateBotSetting: (key: string, value: unknown) => Promise<void>
@@ -103,21 +102,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (userData.settings) {
             applySettingsToLocalStorage(userData.settings)
           }
-          // Sync the language to i18n. Inside Telegram a bot choice that
-          // differs wins once and is saved to both (one language per person).
-          const lang = startupLanguage({
-            locale: userData.locale,
-            botLang: (userData.settings as { bot?: { lang?: unknown } } | undefined)?.bot?.lang,
-            inTelegram: Boolean(initData),
-          })
-          if (lang.use && i18n.language !== lang.use) {
-            i18n.changeLanguage(lang.use)
-            localStorage.setItem('neuroboost-locale', lang.use)
-          }
-          if (lang.save && lang.use) {
-            saveSettings.language(lang.use).then(setUser).catch(() => {
-              // Shown in the chosen language already; the next launch retries.
-            })
+          // The web and the Mini App share the account's locale; the bot
+          // keeps its own language (Denis 26.09).
+          if (userData.locale && i18n.language !== userData.locale) {
+            i18n.changeLanguage(userData.locale)
+            localStorage.setItem('neuroboost-locale', userData.locale)
           }
         } catch {
           // If fetching the user fails, clear the stored token to avoid

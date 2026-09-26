@@ -91,10 +91,10 @@ func TestBotLangToleratesAnyShape(t *testing.T) {
 	}
 }
 
-// One language per person (Denis 26.09): the bot's language is also the
-// account's `locale`, so the Mini App opens in it. One PATCH carries both, so
-// the two can never disagree after a half-done write.
-func TestSetBotLangAlsoSetsTheAccountLocale(t *testing.T) {
+// The bot keeps its own language (Denis 26.09: web and Mini App share one, the
+// bot «should stay in [its] own language»). Writing the account's `locale` from
+// here would switch the web whenever the bot's language changes.
+func TestSetBotLangLeavesTheAccountLocaleAlone(t *testing.T) {
 	var patches []map[string]any
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPatch {
@@ -113,10 +113,10 @@ func TestSetBotLangAlsoSetsTheAccountLocale(t *testing.T) {
 		t.Fatalf("SetBotLang: %v", err)
 	}
 	if len(patches) != 1 {
-		t.Fatalf("%d PATCHes, want one carrying both", len(patches))
+		t.Fatalf("%d PATCHes, want one", len(patches))
 	}
-	if patches[0]["locale"] != "en" {
-		t.Errorf("locale = %v, want en", patches[0]["locale"])
+	if l, ok := patches[0]["locale"]; ok {
+		t.Errorf("locale = %v sent; the web's language is not the bot's to set", l)
 	}
 	bot, _ := patches[0]["settings"].(map[string]any)["bot"].(map[string]any)
 	if bot["lang"] != "en" {

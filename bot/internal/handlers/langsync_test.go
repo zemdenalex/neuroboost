@@ -7,27 +7,28 @@ import (
 	"github.com/zemdenalex/neuroboost-bot/internal/i18n"
 )
 
-// One language per person (Denis 26.09), review of 96c0d82: onboarding showed
-// the language guessed from Telegram but saved nothing unless the person
-// tapped a language, so the account kept `locale` ru and the Mini App opened
-// in Russian for someone the bot spoke English to.
-func TestOnboardingSavesTheLanguageItGuessed(t *testing.T) {
+// Onboarding shows the language guessed from Telegram and saves it, even when
+// the person keeps the pre-selected one. It is the BOT's language only: the
+// account's locale belongs to the web and the Mini App (Denis 26.09, the bot
+// «should stay in [its] own language»).
+func TestOnboardingSavesTheLanguageItGuessedForTheBotOnly(t *testing.T) {
 	acc := &fakeAccount{timezone: "Europe/Moscow", settings: map[string]any{}}
 	h, _, chat := onboardHandler(t, acc)
 	h.startOnboarding(chat, 0, "en-GB")
 
+	saved := false
 	for _, p := range acc.patches {
 		bot, _ := p["settings"].(map[string]any)["bot"].(map[string]any)
-		if p["locale"] == "en" && bot["lang"] == "en" {
-			return
-		}
+		saved = saved || bot["lang"] == "en"
 	}
-	t.Fatalf("the guessed language was not saved as locale + bot.lang: %v", acc.patches)
+	if !saved {
+		t.Fatalf("the guessed language was not saved as bot.lang: %v", acc.patches)
+	}
 }
 
-// The same review: the bot kept a chat's language for the whole process, so a
-// language chosen in the web never reached the chat until a redeploy. After a
-// while it asks again.
+// The bot kept a chat's language for the whole process, so a change made by
+// another bot process (dev and prod redeploys, a second chat) stuck until a
+// redeploy. After a while it asks again.
 func TestTheBotPicksUpALanguageChangedElsewhere(t *testing.T) {
 	acc := &fakeAccount{timezone: "Europe/Moscow", settings: map[string]any{"bot": map[string]any{"lang": "ru"}}}
 	h, _, chat := onboardHandler(t, acc)

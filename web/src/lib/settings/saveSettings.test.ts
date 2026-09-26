@@ -75,30 +75,17 @@ describe('createSettingsSaver', () => {
   })
 })
 
-// One language per person (Denis 26.09): the web's language is written to the
-// account's locale AND to settings.bot.lang in one request, merged into the bot
-// section the server holds now (it also keeps the keyword vocabulary).
+// The web's language is the account's locale only; the bot keeps its own
+// settings.bot.lang (Denis 26.09). A write here must not touch the blob.
 describe('language write', () => {
-  it('sets locale and bot.lang together and keeps the rest of the bot section', async () => {
+  it('sends the locale alone and leaves the bot language as it is', async () => {
     const sent: UpdateUserRequest[] = []
     const save = createSettingsSaver({
-      getMe: async () => ({ settings: { work_start: '09:00', bot: { lang: 'ru', keywords: { созвон: {} } } } }) as unknown as User,
+      getMe: async () => ({ settings: { bot: { lang: 'ru' } } }) as unknown as User,
       updateMe: async (data) => { sent.push(data); return {} as User },
     })
     await save.language('en')
-    expect(sent).toHaveLength(1)
-    expect(sent[0].locale).toBe('en')
-    expect(sent[0].settings).toEqual({ work_start: '09:00', bot: { lang: 'en', keywords: { созвон: {} } } })
-  })
-
-  it('writes nothing when the read failed', async () => {
-    let wrote = false
-    const save = createSettingsSaver({
-      getMe: async () => { throw new Error('down') },
-      updateMe: async () => { wrote = true; return {} as User },
-    })
-    await expect(save.language('en')).rejects.toThrow()
-    expect(wrote).toBe(false)
+    expect(sent).toEqual([{ locale: 'en' }])
   })
 })
 

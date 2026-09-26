@@ -9,9 +9,10 @@ import (
 	"github.com/zemdenalex/neuroboost-bot/internal/keyboards"
 )
 
-// langTTL is how long a chat trusts its cached language before asking the API
-// again: short enough that a change made in the web reaches the chat within
-// minutes, long enough that a burst of keypresses costs one read.
+// langTTL is how long a chat trusts a cached per-user setting (language,
+// priority symbol) before asking the API again: short enough that a change
+// made elsewhere (the priority symbol is also set in the web) reaches the chat
+// within minutes, long enough that a burst of keypresses costs one read.
 const langTTL = 5 * time.Minute
 
 // lang returns the interface language for this chat.

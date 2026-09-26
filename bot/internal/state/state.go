@@ -28,9 +28,8 @@ type UserState struct {
 	Lang      string
 	LangKnown bool
 	// LangAt is when Lang was read or set. After a few minutes it is read
-	// again: the language can change in the web (one language per person,
-	// Denis 26.09), and a process-long cache kept the chat on the old one
-	// until the next manual redeploy.
+	// again (langTTL), like the priority symbol: a process-long cache keeps a
+	// chat on a stale value until the next manual redeploy.
 	LangAt time.Time
 
 	// TZ is the user's IANA timezone, cached on the same terms as Lang.

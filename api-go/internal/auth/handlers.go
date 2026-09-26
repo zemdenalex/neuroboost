@@ -581,8 +581,9 @@ func (h *Handler) createUserFromTelegram(ctx context.Context, req TelegramLoginR
 
 // localeFromTelegram is the bot's onboarding rule (onboarding.go
 // startOnboarding): «ru*» Russian, anything else English. No code at all —
-// the Login Widget, the bot — stays NULL, which reads as 'ru' as before
-// (one language per person, Denis 26.09).
+// the Login Widget, the bot — stays NULL, which reads as 'ru' as before. It is
+// the web's and the Mini App's starting language; the bot keeps its own
+// (Denis 26.09).
 func localeFromTelegram(code string) *string {
 	if code == "" {
 		return nil

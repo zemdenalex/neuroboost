@@ -8,9 +8,9 @@ export interface SettingsDeps {
 export interface SettingsSaver {
   (patch: Partial<UserSettings>): Promise<User>
   /**
-   * The interface language, as ONE language per person (Denis 26.09): the
-   * account's `locale` (web, Mini App) and `settings.bot.lang` (bot) in one
-   * request, so a half-done write cannot leave them disagreeing.
+   * The interface language of the web and the Mini App (the account's
+   * `locale`). The bot keeps its own, `settings.bot.lang` (Denis 26.09), so
+   * the settings blob is neither read nor written.
    */
   language: (locale: string) => Promise<User>
   /**
@@ -33,12 +33,14 @@ export interface SettingsSaver {
  */
 export function createSettingsSaver(deps: SettingsDeps): SettingsSaver {
   let queue: Promise<unknown> = Promise.resolve()
-  const queued = (build: (fresh: User) => UpdateUserRequest): Promise<User> => {
-    const run = queue.then(async () => deps.updateMe(build(await deps.getMe())))
+  const inTurn = (write: () => Promise<User>): Promise<User> => {
+    const run = queue.then(write)
     // A rejected save must not jam every later one.
     queue = run.catch(() => undefined)
     return run
   }
+  const queued = (build: (fresh: User) => UpdateUserRequest): Promise<User> =>
+    inTurn(async () => deps.updateMe(build(await deps.getMe())))
 
   const save = ((patch: Partial<UserSettings>) =>
     queued((fresh) => ({ settings: { ...(fresh.settings ?? {}), ...patch } }))) as SettingsSaver
@@ -49,8 +51,7 @@ export function createSettingsSaver(deps: SettingsDeps): SettingsSaver {
     return { ...settings, bot: { ...bot, [key]: value } } as UserSettings
   }
 
-  save.language = (locale: string) =>
-    queued((fresh) => ({ locale, settings: withBot(fresh, 'lang', locale) }))
+  save.language = (locale: string) => inTurn(() => deps.updateMe({ locale }))
 
   save.botSetting = (key: string, value: unknown) =>
     queued((fresh) => ({ settings: withBot(fresh, key, value) }))

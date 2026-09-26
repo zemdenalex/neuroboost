@@ -63,8 +63,8 @@ func (h *Handler) startOnboarding(chatID int64, messageID int, telegramLang stri
 		}
 		us.SetLang(string(guess))
 		// Saved at once, not only when a language is tapped: most people keep
-		// the pre-selected one, and an unsaved guess left the account's locale
-		// Russian, so the Mini App opened in Russian (review of 96c0d82).
+		// the pre-selected one, and an unsaved guess is guessed again on the
+		// next start instead of being the person's choice.
 		if err := h.api.SetBotLang(us.AuthToken, string(guess)); err != nil {
 			log.Printf("onboarding: could not save the guessed language: %s", logsafe.Redact(err))
 		}
