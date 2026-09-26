@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { MOBILE_BREAKPOINT, TABLET_BREAKPOINT, ALL_DAY_HEIGHT, DAY_HEADER_HEIGHT, DAY_MS, HOUR_PX } from './weekgrid.constants';
+import { ALL_DAY_HEIGHT, DAY_HEADER_HEIGHT, DAY_MS, HOUR_PX } from './weekgrid.constants';
 import { initialScrollHour } from '../../../lib/calendar/initialScroll';
 import { allDayBarHeight } from '../../../lib/calendar/calendarChrome';
+import { visibleDaysFor, DAY_COUNT_QUERIES } from '../../../lib/calendar/visibleDays';
 import { getMondayUtcMs, getMidnightUtcMs, utcToLocalMinutes, generateDays, processEventsForWeek } from './weekgrid.utils';
 import type { WeekGridProps, TouchStart, DayInfo, ProcessedEvent } from './weekgrid.types';
 import { WeekHeader } from './WeekHeader';
@@ -34,7 +35,9 @@ export function WeekGrid({
   // State
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [touchStart, setTouchStart] = useState<TouchStart | null>(null);
-  const [visibleDays, setVisibleDays] = useState(7);
+  // Known on the first render: a seven-column first frame overflowed a 375px
+  // page, and the zoomed-out phone then reported a tablet (lib/calendar/visibleDays).
+  const [visibleDays, setVisibleDays] = useState(() => visibleDaysFor(window));
   // Today, not the week's Monday — see initialMobileDayOffset.
   const [mobileDayOffset, setMobileDayOffset] = useState(
     () => initialMobileDayOffset(currentWeekOffset, timezone)
@@ -133,15 +136,14 @@ export function WeekGrid({
     return () => clearInterval(id);
   }, [timezone]);
   
-  // Responsive day count
+  // Responsive day count, by media query (the layout width), never by the
+  // visual viewport that widens when a phone zooms out.
   useEffect(() => {
-    const updateDays = () => {
-      const w = window.innerWidth;
-      setVisibleDays(w < MOBILE_BREAKPOINT ? 1 : w < TABLET_BREAKPOINT ? 3 : 7);
-    };
+    const updateDays = () => setVisibleDays(visibleDaysFor(window));
+    const lists = DAY_COUNT_QUERIES.map(q => window.matchMedia(q));
     updateDays();
-    window.addEventListener('resize', updateDays);
-    return () => window.removeEventListener('resize', updateDays);
+    lists.forEach(l => l.addEventListener('change', updateDays));
+    return () => lists.forEach(l => l.removeEventListener('change', updateDays));
   }, []);
   
   // Drag handling

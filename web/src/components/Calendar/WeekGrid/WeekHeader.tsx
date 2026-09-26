@@ -66,7 +66,12 @@ export function WeekHeader({
 
   return (
     <div className="px-2 py-2 border-b border-zinc-700 bg-zinc-900">
-      <div className="flex items-center justify-between mb-2">
+      {/* Wraps rather than overflows: on a 320px phone arrows, title, Today,
+          + Task and the calendar filter do not fit on one line and the last
+          buttons ran off the screen (26.09). The right group keeps ml-auto so
+          a wrapped row still ends at the right edge, where the filter panel
+          (absolute right-0) expects its anchor. */}
+      <div className="flex flex-wrap items-center justify-between gap-y-2 mb-2">
         <div className="flex items-center gap-2">
           {(onWeekChange || onMobileNav) && (
             <>
@@ -101,7 +106,7 @@ export function WeekHeader({
           <h2 data-testid="calendar-period-title" className="whitespace-nowrap font-semibold text-sm md:text-lg">{weekLabel}</h2>
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="ml-auto flex items-center gap-2">
           {(currentWeekOffset !== 0 || onMobileNav) && (onWeekChange || onToday) && (
             <button
               onClick={() => {

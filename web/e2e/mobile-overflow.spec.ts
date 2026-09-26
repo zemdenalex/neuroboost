@@ -18,10 +18,11 @@ import type { Page } from '@playwright/test'
  * overflow you already thought of. The document either scrolls sideways or it
  * does not, and no element can hide from that.
  *
- * `window.innerWidth` is deliberately NOT the comparison — it is the viewport
- * and stays 375 whatever overflows, so `scrollWidth > innerWidth` would be
- * true for the same reason `scrollWidth > clientWidth` is, but only by luck.
- * clientWidth says what the reader can see, which is the actual claim.
+ * `window.innerWidth` is deliberately NOT the comparison. ⚠ This comment used
+ * to say it "stays 375 whatever overflows"; on this project's mobile emulation
+ * (isMobile: true) it does not: it is the VISUAL viewport, and it read 457
+ * while a seven-column first frame overflowed the page (26.09). clientWidth
+ * stays 375, and it says what the reader can see, which is the actual claim.
  */
 
 const VIEWPORT_WIDTH = 375
@@ -257,6 +258,37 @@ test.describe('375px layout', () => {
     await expect(title).toBeVisible()
     const box = await title.boundingBox()
     expect(box!.height, 'title wrapped').toBeLessThan(30)
+  })
+
+  // CI 26.09 (run 36210478748): the grid counted its days from innerWidth,
+  // which a zoomed-out phone reports wider than the phone, and drew three
+  // 83px days at 375px. lib/calendar/visibleDays asks a media query instead.
+  test('calendar: a phone draws one day', async ({ authedPage }) => {
+    await authedPage.goto('/calendar')
+    await expect(authedPage.getByTestId('week-day-header').first()).toBeVisible({ timeout: 15_000 })
+    await expect(authedPage.getByTestId('week-day-header'), 'a 375px phone drew more than one day').toHaveCount(1)
+  })
+
+  // The narrowest phones still sold are 320px wide. The header row (arrows,
+  // title, Today, + Task, calendars) did not fit there and pushed the last
+  // buttons off the screen; it wraps now, right group kept on the right so the
+  // filter panel keeps its anchor (see WeekHeader).
+  test('calendar: every header button stays on a 320px screen', async ({ authedPage }) => {
+    await authedPage.setViewportSize({ width: 320, height: 640 })
+    await authedPage.goto('/calendar')
+    const title = authedPage.getByTestId('calendar-period-title')
+    await expect(title).toBeVisible({ timeout: 15_000 })
+    const header = title.locator('xpath=ancestor::div[contains(@class,"border-b")][1]')
+    const buttons = header.getByRole('button')
+    expect(await buttons.count(), 'no header buttons found, this test would prove nothing').toBeGreaterThan(2)
+    for (const box of await buttons.evaluateAll(els => els.map(e => {
+      const r = e.getBoundingClientRect()
+      return { text: e.textContent?.trim() || e.getAttribute('aria-label') || '?', left: r.left, right: r.right }
+    }))) {
+      expect(box.right, `«${box.text}» runs off the right edge`).toBeLessThanOrEqual(321)
+      expect(box.left, `«${box.text}» runs off the left edge`).toBeGreaterThanOrEqual(-1)
+    }
+    expect(await horizontalOverflow(authedPage), 'the calendar scrolls sideways at 320px').toBe(0)
   })
 
   // Tour 25.09 (MW5): the "vertical sidebar" layout is hidden below md, so a

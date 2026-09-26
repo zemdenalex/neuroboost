@@ -15,9 +15,8 @@ export const DRAG_THRESHOLD_PX = 5;
 export const EDGE_THRESHOLD = 24;
 export const SCROLL_SPEED = 8;
 
-// Mobile breakpoints for responsive day count
-export const MOBILE_BREAKPOINT = 480;
-export const TABLET_BREAKPOINT = 768;
+// Mobile breakpoints for responsive day count — lib/calendar/visibleDays.
+export { MOBILE_BREAKPOINT, TABLET_BREAKPOINT } from '../../../lib/calendar/visibleDays';
 
 // Priority colors for task integration — from lib/priority (single source of truth).
 export { PRIORITY_BLOCK_COLORS as PRIORITY_COLORS } from '../../../lib/priority';
