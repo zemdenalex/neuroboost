@@ -1,4 +1,6 @@
-// Package release carries what «Что нового» shows.
+// Package release carries what «Что нового» shows, in the bot and (through
+// api-go, GET /api/release-notes) in the web. Outside internal/ so api-go can
+// import it, as bot/parse.
 //
 // 🔴 The text lives in the bot's own source, not in docs/relizy/. The bot runs
 // from a copied src/ directory on nl-2 with no repository beside it (gotcha

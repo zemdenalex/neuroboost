@@ -16,6 +16,7 @@ const Home = lazy(() => import('./pages/Home'))
 const Login = lazy(() => import('./pages/Login'))
 const Calendar = lazy(() => import('./pages/Calendar'))
 const Agenda = lazy(() => import('./pages/Agenda'))
+const WhatsNew = lazy(() => import('./pages/WhatsNew'))
 const Tasks = lazy(() => import('./pages/Tasks'))
 const DayTasks = lazy(() => import('./pages/DayTasks'))
 const Planning = lazy(() => import('./pages/Planning'))
@@ -177,6 +178,15 @@ export const router = createBrowserRouter([
           {
             path: '/calendar',
             element: <Calendar />,
+          },
+          {
+            // The bot's «Что нового» (gap list row 19).
+            path: '/whats-new',
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <WhatsNew />
+              </Suspense>
+            ),
           },
           {
             // «Что дальше» — the list view. Its own route rather than a mode

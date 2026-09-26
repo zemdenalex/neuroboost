@@ -16,6 +16,7 @@ import (
 	"neuroboost/api-go/internal/database"
 	"neuroboost/api-go/internal/daytasks"
 	"neuroboost/api-go/internal/lineparse"
+	"neuroboost/api-go/internal/releasenotes"
 	"neuroboost/api-go/internal/logger"
 	"neuroboost/api-go/internal/middleware"
 	"neuroboost/api-go/internal/status"
@@ -177,6 +178,8 @@ func main() {
 		// the {day} pattern so a reader sees them first; chi does not care.
 		// One typed line read exactly as the bot reads it (the web's quick add).
 		lineparse.Register(r)
+		// The bot's «Что нового», for the web (gap list row 19).
+		releasenotes.Register(r)
 
 		r.Get("/api/day-tasks", daytasks.ListHandler)
 		r.Get("/api/day-tasks/proposal", daytasks.ProposalHandler)

@@ -9,6 +9,7 @@
   "nav.tools": "Tools",
   "nav.settings": "Settings",
   "nav.profile": "Profile",
+  "nav.whatsNew": "What's new",
   "nav.admin": "Admin Panel",
   "action.save": "Save",
   "action.cancel": "Cancel",
@@ -49,5 +50,6 @@
   "agenda.untitled": "(untitled)",
   "agenda.loading": "Loading…",
   "agenda.empty": "Nothing scheduled for the next {{days}} days.",
-  "agenda.more": "{{days}} more days"
+  "agenda.more": "{{days}} more days",
+  "whatsNew.failed": "Could not load. Try again later."
 }

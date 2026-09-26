@@ -2,11 +2,11 @@ import { useRef, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useDayTasksEnabled } from '../../../hooks/useDayTasksEnabled'
 import { useTranslation } from 'react-i18next'
-import { LayoutGrid, Wrench, BookOpen, User, Pin, ListOrdered, CheckSquare, Settings } from 'lucide-react'
+import { LayoutGrid, Wrench, BookOpen, User, Pin, ListOrdered, CheckSquare, Settings, Sparkles } from 'lucide-react'
 import { useFeatureFlags } from '../../../hooks/useFeatureFlags'
 
 /** Pages reached through «Ещё»: the bar lights the tab while one is shown. */
-export const MORE_PATHS = ['/agenda', '/tasks', '/day-tasks', '/planning', '/tools', '/reflections', '/profile', '/settings']
+export const MORE_PATHS = ['/agenda', '/tasks', '/day-tasks', '/planning', '/tools', '/reflections', '/profile', '/settings', '/whats-new']
 
 interface MoreMenuProps {
   open: boolean
@@ -30,6 +30,7 @@ export function MoreMenu({ open, onClose, anchorRef }: MoreMenuProps) {
     { path: '/reflections', label: t('nav.reflections'), icon: BookOpen, enabled: true },
     { path: '/profile', label: t('nav.profile'), icon: User, enabled: true },
     { path: '/settings', label: t('nav.settings'), icon: Settings, enabled: true },
+    { path: '/whats-new', label: t('nav.whatsNew'), icon: Sparkles, enabled: true },
   ].filter((item) => item.enabled)
   const menuRef = useRef<HTMLDivElement>(null)
   const navigate = useNavigate()

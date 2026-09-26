@@ -19,6 +19,7 @@ import {
   ChevronDown,
   Home,
   Pin,
+  Sparkles,
 } from 'lucide-react'
 
 export default function HorizontalHeader() {
@@ -104,6 +105,7 @@ export default function HorizontalHeader() {
         {/* Profile Dropdown */}
         <div className="relative" ref={dropdownRef}>
           <button
+            data-testid="profile-menu"
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
             className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-zinc-800 transition-colors"
           >
@@ -151,6 +153,15 @@ export default function HorizontalHeader() {
               >
                 <Settings className="w-4 h-4" />
                 {t('nav.settings')}
+              </Link>
+
+              <Link
+                to="/whats-new"
+                onClick={() => setIsDropdownOpen(false)}
+                className="flex items-center gap-2 px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-800 transition-colors"
+              >
+                <Sparkles className="w-4 h-4" />
+                {t('nav.whatsNew')}
               </Link>
 
               {user?.is_admin && (
