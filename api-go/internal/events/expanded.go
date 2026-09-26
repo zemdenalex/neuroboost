@@ -28,7 +28,8 @@ func ListExpanded(ctx context.Context, userID string, start, end time.Time) ([]E
 		return nil, err
 	}
 
-	var expanded []Event
+	// [] rather than nil: an empty week must encode as [], not null (gotcha 6).
+	expanded := []Event{}
 	for _, ev := range events {
 		if ev.Rrule == nil || *ev.Rrule == "" {
 			expanded = append(expanded, ev)
