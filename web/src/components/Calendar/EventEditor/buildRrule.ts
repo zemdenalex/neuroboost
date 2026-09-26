@@ -1,7 +1,8 @@
 /**
  * The rule the editor saves. The form edits only the frequency and the end
- * (count or until); every other part of an existing rule — INTERVAL, BYDAY,
- * BYMONTHDAY — is kept while the frequency stays the same. Before 26.09 the
+ * (count or until); every other part of an existing rule is kept while the
+ * frequency stays the same. Today that is INTERVAL: the server accepts only
+ * FREQ, INTERVAL, COUNT and UNTIL (YYYY-MM-DD), api-go/internal/recurrence/rrule.go. Before 26.09 the
  * rule was rebuilt from the three fields and saving an event silently turned
  * a bot-made «every 3 days» into daily (gap list F2).
  */

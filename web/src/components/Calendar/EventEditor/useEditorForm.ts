@@ -252,7 +252,7 @@ export function useEditorForm(
     }
 
     // Build RRULE string from repeat fields
-    // Parts of the rule the form does not show (INTERVAL, BYDAY) survive the save.
+    // The part of the rule the form does not show (INTERVAL) survives the save.
     if (repeatType !== 'none') {
       body.rrule = buildRrule(draft?.rrule, {
         freq: repeatType,

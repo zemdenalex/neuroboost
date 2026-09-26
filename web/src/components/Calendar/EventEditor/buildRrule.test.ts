@@ -12,18 +12,18 @@ describe('buildRrule', () => {
     expect(buildRrule('FREQ=MONTHLY;INTERVAL=12', { freq: 'monthly', end: 'never' })).toBe('FREQ=MONTHLY;INTERVAL=12')
   })
 
-  it('keeps the week days of a weekly rule and applies the form\'s end', () => {
-    expect(buildRrule('FREQ=WEEKLY;BYDAY=MO,WE', { freq: 'weekly', end: 'count', count: 5 }))
-      .toBe('FREQ=WEEKLY;BYDAY=MO,WE;COUNT=5')
+  it('keeps the interval of a weekly rule and applies the form\'s end', () => {
+    expect(buildRrule('FREQ=WEEKLY;INTERVAL=2', { freq: 'weekly', end: 'count', count: 5 }))
+      .toBe('FREQ=WEEKLY;INTERVAL=2;COUNT=5')
   })
 
   it('replaces the end the form changed and drops the one it removed', () => {
-    expect(buildRrule('FREQ=DAILY;INTERVAL=2;COUNT=4', { freq: 'daily', end: 'until', until: '20261231T000000Z' }))
-      .toBe('FREQ=DAILY;INTERVAL=2;UNTIL=20261231T000000Z')
-    expect(buildRrule('FREQ=DAILY;UNTIL=20261231T000000Z', never)).toBe('FREQ=DAILY')
+    expect(buildRrule('FREQ=DAILY;INTERVAL=2;COUNT=4', { freq: 'daily', end: 'until', until: '2026-12-31' }))
+      .toBe('FREQ=DAILY;INTERVAL=2;UNTIL=2026-12-31')
+    expect(buildRrule('FREQ=DAILY;UNTIL=2026-12-31', never)).toBe('FREQ=DAILY')
   })
 
-  it('starts clean when the frequency changes, since an interval or week days mean something else then', () => {
+  it('starts clean when the frequency changes, since an interval means something else then', () => {
     expect(buildRrule('FREQ=DAILY;INTERVAL=3', { freq: 'weekly', end: 'never' })).toBe('FREQ=WEEKLY')
   })
 
