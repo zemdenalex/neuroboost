@@ -16,6 +16,12 @@ import { CLICK_WAIT_MAX, CLICK_WAIT_MIN, readClickWait } from '../../../lib/cale
 interface Props {
   /** The page's debounced saver (see UIScaleSection for why it is passed in). */
   autoSave: (patch: Partial<UserSettings>) => void
+  /**
+   * On a phone only the phone's own choice is shown: the five desktop months
+   * and the double-click wait mean nothing there (the section used to be
+   * hidden on phones entirely, and with it the phone's choice).
+   */
+  phoneOnly?: boolean
 }
 
 /** A static sketch of one cell of each variant: enough to tell them apart. */
@@ -108,7 +114,7 @@ function StripSketch() {
  * Which month view the calendar shows (spec V003-20260924-arc-web-month-view).
  * Denis, 24.09: «let's build all of them, make a default and other to choose in settings».
  */
-export function MonthViewSection({ autoSave }: Props) {
+export function MonthViewSection({ autoSave, phoneOnly = false }: Props) {
   const { t } = useTranslation('settings')
   const { user } = useAuthContext()
   const [variant, setVariant] = useState<MonthVariant>(() => readMonthVariant(user?.settings))
@@ -134,6 +140,8 @@ export function MonthViewSection({ autoSave }: Props) {
         <CalendarDays className="w-5 h-5 text-zinc-400" />
         <h2 className="text-lg font-mono font-semibold text-white">{t('monthView.title')}</h2>
       </div>
+      {!phoneOnly && (
+        <>
       <p className="text-xs text-zinc-500 mb-4">{t('monthView.note')}</p>
       <div role="radiogroup" aria-label={t('monthView.title')} className="grid grid-cols-2 md:grid-cols-5 gap-3">
         {MONTH_VARIANTS.map((v) => (
@@ -156,6 +164,8 @@ export function MonthViewSection({ autoSave }: Props) {
           </button>
         ))}
       </div>
+        </>
+      )}
       <h3 className="mt-5 text-sm font-mono font-semibold text-zinc-200">{t('monthView.phone.title')}</h3>
       <p className="text-xs text-zinc-500 mb-2">{t('monthView.phone.note')}</p>
       <div role="radiogroup" aria-label={t('monthView.phone.title')} className="grid grid-cols-3 gap-2 md:w-[36rem]">
@@ -182,6 +192,8 @@ export function MonthViewSection({ autoSave }: Props) {
           </button>
         ))}
       </div>
+      {!phoneOnly && (
+        <>
       <label htmlFor="month-click-wait" className="block mt-4 text-sm text-zinc-300">
         {t('monthView.clickWait', { ms: wait })}
       </label>
@@ -201,6 +213,8 @@ export function MonthViewSection({ autoSave }: Props) {
         className="w-full md:w-80 accent-blue-500"
       />
       <p className="text-xs text-zinc-500 mt-1">{t('monthView.clickWaitNote')}</p>
+        </>
+      )}
     </section>
   )
 }

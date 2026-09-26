@@ -27,6 +27,7 @@ const ROUTES = [
   '/tools/time-blocking',
   '/settings',
   '/profile',
+  '/whats-new',
 ]
 
 test.describe('mobile tour', () => {

@@ -156,7 +156,7 @@ export default function Settings() {
         <DayTasksSection autoSave={autoSaveSettings} />
 
         {/* Desktop only: the phone has no month in v1 (spec §3). */}
-        {!isMobile && <MonthViewSection autoSave={autoSaveSettings} />}
+        <MonthViewSection autoSave={autoSaveSettings} phoneOnly={isMobile} />
 
         <RegionalSection autoSaveProfile={autoSaveProfile} />
 

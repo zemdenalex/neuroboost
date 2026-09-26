@@ -49,3 +49,31 @@ for (const variant of ['split', 'strip', 'heat'] as const) {
     await page.unrouteAll({ behavior: 'ignoreErrors' })
   })
 }
+
+// The choice lives in ⚙️ on the phone itself: the month section used to be
+// hidden on phones entirely, and the phone's choice with it.
+test('the phone month is chosen in settings on the phone', async ({ authedPage: page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile', 'a phone-only view')
+  let written: { settings?: Record<string, unknown> } | undefined
+  await page.route('**/api/**', (route) =>
+    ['GET', 'HEAD', 'OPTIONS'].includes(route.request().method()) ? route.fallback() : route.abort(),
+  )
+  await page.route('**/api/auth/me', async (route) => {
+    const req = route.request()
+    if (req.method() === 'PATCH') {
+      written = req.postDataJSON()
+      const res = await route.fetch({ method: 'GET', postData: undefined })
+      const body = await res.json()
+      ;(body.data ?? body).settings = written?.settings
+      return route.fulfill({ response: res, json: body })
+    }
+    if (req.method() !== 'GET') return route.abort()
+    return route.fallback()
+  })
+
+  await page.goto('/settings')
+  await expect(page.getByTestId('month-variant-list')).toHaveCount(0)
+  await page.getByTestId('phone-month-strip').click()
+  await expect.poll(() => written?.settings?.phone_month_variant, { timeout: 10_000 }).toBe('strip')
+  await page.unrouteAll({ behavior: 'ignoreErrors' })
+})
