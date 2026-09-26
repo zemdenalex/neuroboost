@@ -9,7 +9,19 @@
     "subtask": "Подзадача",
     "globalTitle": "Быстрый захват",
     "globalHint": "Enter создаёт и оставляет фокус · Esc закрывает",
-    "close": "Закрыть"
+    "close": "Закрыть",
+    "confirm": {
+      "label": "Что будет создано",
+      "event": "Событие",
+      "task": "Задача в календаре",
+      "create": "Создать",
+      "asEvent": "Событием",
+      "asTask": "Задачей",
+      "cancel": "Отмена",
+      "repeats": "повтор",
+      "hint": "Enter создаёт · Esc отменяет",
+      "failed": "Не удалось создать: {{message}}"
+    }
   },
   "newTask": "Новая задача",
   "deepLink": {

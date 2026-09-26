@@ -1,0 +1,136 @@
+import type { Page, Route } from '@playwright/test'
+import { test, expect } from './fixtures/auth'
+
+/**
+ * Gap list row 1 (docs/team/research/V003-20260926-res-bot-vs-web-gaps.md,
+ * Denis 26.09: «A: one parser, API endpoint»): a line typed into quick add is
+ * read by the bot's parser through POST /api/parse.
+ *
+ * The parse answer is mocked here: staging gets the route only once it is
+ * pushed, and the parser itself is tested in Go (api-go/internal/lineparse).
+ * What this spec proves is the web half: what the row does with each answer.
+ * Nothing is written to the account: every create is caught and answered
+ * here, every other write is refused.
+ */
+
+interface Writes {
+  tasks: Record<string, unknown>[]
+  events: Record<string, unknown>[]
+}
+
+const parsedBase = {
+  timezone: 'Europe/Moscow', tags: [], rrule: null, priority: null, due_date: null,
+  estimated_minutes: null, starts_at: null, ends_at: null, all_day: false, color: null,
+  calendar_id: null, calendar_name: null, reminder_offsets: null, is_task: false, uncertain: [],
+}
+
+async function catchWrites(page: Page, parse?: Record<string, unknown>): Promise<Writes> {
+  const writes: Writes = { tasks: [], events: [] }
+  // Registered first: Playwright tries the newest route first, so this is the
+  // fallback for anything the routes below do not answer.
+  await page.route('**/api/**', (route) =>
+    ['GET', 'HEAD', 'OPTIONS'].includes(route.request().method()) ? route.fallback() : route.abort(),
+  )
+  const answer = (route: Route, data: Record<string, unknown>) =>
+    route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({ data }) })
+  const stamp = new Date().toISOString()
+  await page.route('**/api/tasks', async (route) => {
+    if (route.request().method() !== 'POST') return route.fallback()
+    const sent = route.request().postDataJSON() as Record<string, unknown>
+    writes.tasks.push(sent)
+    await answer(route, { id: `e2e-task-${writes.tasks.length}`, status: 'TODO', priority: 3, tags: [], contexts: [], created_at: stamp, updated_at: stamp, ...sent })
+  })
+  await page.route('**/api/events', async (route) => {
+    if (route.request().method() !== 'POST') return route.fallback()
+    const sent = route.request().postDataJSON() as Record<string, unknown>
+    writes.events.push(sent)
+    await answer(route, { id: `e2e-event-${writes.events.length}`, ...sent })
+  })
+  if (parse) {
+    await page.route('**/api/parse', (route) =>
+      route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ data: { ...parsedBase, ...parse } }) }),
+    )
+  }
+  return writes
+}
+
+async function typeLine(page: Page, line: string) {
+  await page.goto('/tasks')
+  const input = page.getByRole('textbox', { name: /Новая задача: введи|New task: type/ })
+  await input.fill(line)
+  await input.press('Enter')
+  return input
+}
+
+test('a line with a time is confirmed before anything is written, then becomes an event', async ({ authedPage: page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'one viewport is enough: the same row on both')
+  const writes = await catchWrites(page, {
+    kind: 'event', title: 'стоматолог',
+    starts_at: '2026-09-27T12:00:00Z', ends_at: '2026-09-27T13:00:00Z', reminder_offsets: [60],
+  })
+
+  const input = await typeLine(page, 'стоматолог завтра 15:00 напомни за час')
+  const confirm = page.getByTestId('quick-add-confirm')
+  await expect(confirm).toBeVisible()
+  await expect(confirm).toContainText('стоматолог')
+  // Wall time in the zone the line was read in: 12:00Z is 15:00 in Moscow.
+  await expect(page.getByTestId('quick-add-confirm-when')).toContainText('15:00')
+  expect(writes.tasks.length + writes.events.length, 'nothing is written before the confirmation').toBe(0)
+
+  // The second Enter on the unchanged line creates what was shown.
+  await input.press('Enter')
+  await expect.poll(() => writes.events.length, { timeout: 10_000 }).toBe(1)
+  expect(writes.events[0]).toMatchObject({
+    title: 'стоматолог', starts_at: '2026-09-27T12:00:00Z', ends_at: '2026-09-27T13:00:00Z',
+    all_day: false, reminder_offsets: [60],
+  })
+  expect(writes.events[0]).not.toHaveProperty('task_id')
+  expect(writes.tasks).toHaveLength(0)
+  await expect(confirm).toBeHidden()
+  await expect(input).toHaveValue('')
+  await page.unrouteAll({ behavior: 'ignoreErrors' })
+})
+
+test('Esc drops the confirmation and writes nothing', async ({ authedPage: page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'one viewport is enough')
+  const writes = await catchWrites(page, {
+    kind: 'event', title: 'созвон', starts_at: '2026-09-27T08:00:00Z', ends_at: '2026-09-27T09:00:00Z',
+  })
+  const input = await typeLine(page, 'созвон завтра 11:00')
+  await expect(page.getByTestId('quick-add-confirm')).toBeVisible()
+  await input.press('Escape')
+  await expect(page.getByTestId('quick-add-confirm')).toBeHidden()
+  await expect(input).toHaveValue('созвон завтра 11:00')
+  expect(writes.tasks.length + writes.events.length).toBe(0)
+  await page.unrouteAll({ behavior: 'ignoreErrors' })
+})
+
+test('a line without a time is saved as a task at once, with what the line said', async ({ authedPage: page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'one viewport is enough')
+  const writes = await catchWrites(page, {
+    kind: 'task', title: 'купить молоко', priority: 1, estimated_minutes: 30,
+    due_date: '2026-09-26T21:00:00Z', tags: ['дом'],
+  })
+  await typeLine(page, 'купить молоко завтра !1 30м #дом')
+
+  await expect.poll(() => writes.tasks.length, { timeout: 10_000 }).toBe(1)
+  expect(writes.tasks[0]).toMatchObject({
+    title: 'купить молоко', priority: 1, estimated_minutes: 30, due_date: '2026-09-26T21:00:00Z',
+  })
+  expect(writes.tasks[0].tags).toContain('дом')
+  expect(writes.events).toHaveLength(0)
+  await expect(page.getByTestId('quick-add-confirm')).toHaveCount(0)
+  await page.unrouteAll({ behavior: 'ignoreErrors' })
+})
+
+test('with the parser unreachable the line is saved as typed, as before', async ({ authedPage: page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'one viewport is enough')
+  // No parse route: the catch-all aborts POST /api/parse.
+  const writes = await catchWrites(page)
+  await typeLine(page, 'стоматолог завтра 15:00')
+
+  await expect.poll(() => writes.tasks.length, { timeout: 10_000 }).toBe(1)
+  expect(writes.tasks[0].title).toBe('стоматолог завтра 15:00')
+  expect(writes.events).toHaveLength(0)
+  await page.unrouteAll({ behavior: 'ignoreErrors' })
+})

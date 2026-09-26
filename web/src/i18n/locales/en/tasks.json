@@ -9,7 +9,19 @@
     "subtask": "Subtask",
     "globalTitle": "Quick capture",
     "globalHint": "Enter creates and keeps the field focused · Esc closes",
-    "close": "Close"
+    "close": "Close",
+    "confirm": {
+      "label": "What will be created",
+      "event": "Event",
+      "task": "Task in the calendar",
+      "create": "Create",
+      "asEvent": "As an event",
+      "asTask": "As a task",
+      "cancel": "Cancel",
+      "repeats": "repeats",
+      "hint": "Enter creates · Esc cancels",
+      "failed": "Could not create: {{message}}"
+    }
   },
   "newTask": "New Task",
   "deepLink": {

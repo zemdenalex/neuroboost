@@ -32,6 +32,10 @@ export interface CreateEventRequest {
   tags?: string[]
   task_id?: string
   is_work_event?: boolean
+  /** Omitted = the author's personal calendar. */
+  calendar_id?: string
+  /** Omitted = the user's default preset; [] = no reminders at all. */
+  reminder_offsets?: number[]
 }
 
 export interface UpdateEventRequest {
