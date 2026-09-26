@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { deleteTask } from '../../api/tasks'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { X } from 'lucide-react'
@@ -63,6 +64,10 @@ export function QuickAddModal({ open, onClose }: QuickAddModalProps) {
             // Without this the row appears only after a reload.
             announceTasksChanged()
             return created
+          }}
+          onUndo={async (task) => {
+            await deleteTask(task.id)
+            announceTasksChanged()
           }}
           onCreateMany={async requests => {
             const result = await createTasksBatch(requests)

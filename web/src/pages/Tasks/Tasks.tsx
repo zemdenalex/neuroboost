@@ -678,6 +678,10 @@ export default function Tasks() {
           <QuickAddRow
             autoFocus
             onCreate={handleQuickCreate}
+            onUndo={async (task) => {
+              await deleteTask(task.id)
+              setTasks(prev => prev.filter(x => x.id !== task.id))
+            }}
             onCreateMany={handleQuickCreateMany}
             onOpenFull={(draft) => {
               setEditingTask({ contexts: [], tags: [], ...draft })

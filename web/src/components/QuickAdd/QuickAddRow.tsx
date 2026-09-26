@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { showToast } from '../ui/Toast'
 import { useTranslation } from 'react-i18next'
 import { Plus, Loader2, ChevronDown, CalendarDays } from 'lucide-react'
 import { useAuthContext } from '../../contexts/AuthContext'
@@ -15,6 +16,11 @@ type Level = 0 | 1 | 2
 
 interface QuickAddRowProps {
   onCreate: (request: CreateTaskRequest) => Promise<Task>
+  /**
+   * Takes back a task just made from the line (gap list row 18: the bot's
+   * «↩️ Отменить» after a quick save). Absent: no Undo is offered.
+   */
+  onUndo?: (task: Task) => Promise<void>
   /** Multi-line paste path — one request for the whole list. */
   onCreateMany: (requests: CreateTaskRequest[]) => Promise<BatchCreateResponse>
   /** Receives a draft pre-filled with the configured defaults, not a bare title. */
@@ -42,7 +48,8 @@ export function hasClockTime(text: string): boolean {
   return /(^|[^\d])([01]?\d|2[0-3])[:.][0-5]\d(?!\d)/.test(text)
 }
 
-export function QuickAddRow({ onCreate, onCreateMany, onOpenFull, filters, autoFocus = false }: QuickAddRowProps) {
+export function QuickAddRow({ onCreate,
+  onUndo, onCreateMany, onOpenFull, filters, autoFocus = false }: QuickAddRowProps) {
   const { t, i18n } = useTranslation('tasks')
   const { user } = useAuthContext()
   const [title, setTitle] = useState('')
@@ -137,6 +144,12 @@ export function QuickAddRow({ onCreate, onCreateMany, onOpenFull, filters, autoF
       const created = await onCreate(request)
       setTrail(prev => [...prev, { id: created.id, parentId: request.parent_id }])
       setRecent(prev => [request.title, ...prev].slice(0, RECENT_LIMIT))
+      if (onUndo) {
+        showToast(t('quickAdd.created', { title: created.title }), {
+          label: t('toast.undo'),
+          onClick: () => void onUndo(created).catch(() => showToast(t('error.deleteFailed'))),
+        })
+      }
     } catch {
       // Put the text back rather than losing what was typed.
       setTitle(typed)

@@ -223,3 +223,21 @@ test('the input is read-only while the line is being read', async ({ authedPage:
   await expect(input).not.toHaveAttribute('readonly', '')
   await page.unrouteAll({ behavior: 'ignoreErrors' })
 })
+
+// Gap list row 18: after a quick save the bot offers «↩️ Отменить»; the toast
+// offers Undo, which deletes the task just made.
+test('Undo in the toast takes back the task just made', async ({ authedPage: page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'one viewport is enough')
+  const writes = await catchWrites(page, { kind: 'task', title: 'купить хлеб' })
+  let deleted = ''
+  await page.route('**/api/tasks/e2e-task-*', async (route) => {
+    if (route.request().method() !== 'DELETE') return route.fallback()
+    deleted = new URL(route.request().url()).pathname
+    await route.fulfill({ status: 204, body: '' })
+  })
+  await typeLine(page, 'купить хлеб')
+  await expect.poll(() => writes.tasks.length, { timeout: 10_000 }).toBe(1)
+  await page.getByRole('button', { name: /^(Undo|Отменить)$/ }).click()
+  await expect.poll(() => deleted, { timeout: 10_000 }).toBe('/api/tasks/e2e-task-1')
+  await page.unrouteAll({ behavior: 'ignoreErrors' })
+})

@@ -38,7 +38,8 @@
         "other": "The bot would ask about this line"
       }
     },
-    "unreadTime": "The time was not understood: the server did not answer. Enter again saves the line as typed, or open the full form."
+    "unreadTime": "The time was not understood: the server did not answer. Enter again saves the line as typed, or open the full form.",
+    "created": "Created “{{title}}”"
   },
   "newTask": "New Task",
   "deepLink": {
