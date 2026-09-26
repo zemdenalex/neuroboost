@@ -46,6 +46,7 @@ import { answeredToday } from '../../types'
 import { tickAction, tickedToday, undoOccurrence } from '../../lib/tasks/tickAction'
 import { nestGroups, subtaskProgress } from '../../lib/tasks/taskTree'
 import { todayInZone } from '../../lib/dayTasks/dayColour'
+import { matchesStatusFilter } from '../../lib/tasks/statusFilter'
 import { REPEAT_CHOICES, repeatChoiceOf, rruleForSave, withRepeatChoice, type RepeatChoice } from '../../lib/tasks/repeatField'
 import { ApiError } from '../../api/client'
 import { linkedStarts, scheduleStart, whenShort, type ScheduleSlotKey } from '../../lib/schedule/scheduleSlot'
@@ -220,7 +221,7 @@ export default function Tasks() {
   // Filter and group tasks
   const filteredTasks = useMemo(() => {
     return tasks.filter(task => {
-      if (filterStatus !== 'ALL' && task.status !== filterStatus) return false
+      if (!matchesStatusFilter(task.status, filterStatus)) return false
       // 🔴 A repeating task answered today is not outstanding.
       //
       // Denis, 18.09: «if completed for the day it should stop being in the
