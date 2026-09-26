@@ -104,5 +104,10 @@
     "free": "Free"
   },
   "escapeAgain": "Changes are not saved. Press Escape again to close without saving",
-  "dateTime.lastDay": "Last day"
+  "dateTime.lastDay": "Last day",
+  "repeat.yearly": "Yearly",
+  "repeat.every": "Every",
+  "repeat.unitDays": "day(s)",
+  "repeat.unitWeeks": "week(s)",
+  "repeat.unitMonths": "month(s)"
 }

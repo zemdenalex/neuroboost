@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 
-type RepeatType = 'none' | 'daily' | 'weekly' | 'monthly';
+type RepeatType = 'none' | 'daily' | 'weekly' | 'monthly' | 'yearly';
 type RepeatEndType = 'never' | 'count' | 'date';
 
 interface RepeatFieldsProps {
@@ -8,6 +8,9 @@ interface RepeatFieldsProps {
   repeatEndType: RepeatEndType;
   repeatCount: number;
   repeatUntil: string;
+  /** Every N days/weeks/months (row 11, 26.09); not shown for yearly. */
+  repeatInterval: number;
+  onRepeatIntervalChange: (n: number) => void;
   onRepeatTypeChange: (type: RepeatType) => void;
   onRepeatEndTypeChange: (type: RepeatEndType) => void;
   onRepeatCountChange: (count: number) => void;
@@ -19,6 +22,13 @@ const REPEAT_TYPE_KEYS: Record<RepeatType, string> = {
   daily: 'repeat.daily',
   weekly: 'repeat.weekly',
   monthly: 'repeat.monthly',
+  yearly: 'repeat.yearly',
+};
+
+const UNIT_KEYS: Partial<Record<RepeatType, string>> = {
+  daily: 'repeat.unitDays',
+  weekly: 'repeat.unitWeeks',
+  monthly: 'repeat.unitMonths',
 };
 
 const END_TYPE_KEYS: Record<RepeatEndType, string> = {
@@ -32,6 +42,8 @@ export function RepeatFields({
   repeatEndType,
   repeatCount,
   repeatUntil,
+  repeatInterval,
+  onRepeatIntervalChange,
   onRepeatTypeChange,
   onRepeatEndTypeChange,
   onRepeatCountChange,
@@ -46,7 +58,12 @@ export function RepeatFields({
         <label className="text-zinc-400">{t('repeat.repeat')}</label>
         <select
           value={repeatType}
-          onChange={(e) => onRepeatTypeChange(e.target.value as RepeatType)}
+          data-testid="event-repeat"
+          onChange={(e) => {
+            onRepeatTypeChange(e.target.value as RepeatType)
+            // An interval means something else in another unit: start at 1.
+            onRepeatIntervalChange(1)
+          }}
           className="bg-zinc-800 border border-zinc-600 rounded px-2 py-1 text-white font-mono text-sm focus:outline-none focus:border-zinc-400"
         >
           {(Object.keys(REPEAT_TYPE_KEYS) as RepeatType[]).map((key) => (
@@ -60,6 +77,25 @@ export function RepeatFields({
       {/* End condition (only when repeating) */}
       {repeatType !== 'none' && (
         <div className="ml-4 space-y-2 border-l-2 border-zinc-700 pl-3">
+          {UNIT_KEYS[repeatType] && (
+            <div className="flex items-center gap-2 text-sm">
+              <label htmlFor="event-repeat-interval" className="text-zinc-400">{t('repeat.every')}</label>
+              <input
+                id="event-repeat-interval"
+                data-testid="event-repeat-interval"
+                type="number"
+                min={1}
+                max={99}
+                value={repeatInterval}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value, 10);
+                  if (!isNaN(val) && val >= 1 && val <= 99) onRepeatIntervalChange(val);
+                }}
+                className="w-16 px-2 py-1 bg-zinc-800 border border-zinc-600 rounded text-white font-mono text-sm focus:outline-none focus:border-zinc-400"
+              />
+              <span className="text-zinc-400">{t(UNIT_KEYS[repeatType]!, { count: repeatInterval })}</span>
+            </div>
+          )}
           <div className="flex items-center gap-2 text-sm">
             <label className="text-zinc-400">{t('repeat.ends')}</label>
             <select

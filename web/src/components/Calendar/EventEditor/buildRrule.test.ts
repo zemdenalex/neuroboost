@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildRrule } from './buildRrule'
+import { buildRrule, repeatFromRrule } from './buildRrule'
 
 // Gap list F2 (docs/team/research/V003-20260926-res-bot-vs-web-gaps.md): the
 // editor rebuilt the rule from its three fields, so saving a bot-made «every 3
@@ -9,7 +9,7 @@ describe('buildRrule', () => {
 
   it('keeps the interval the form does not show', () => {
     expect(buildRrule('FREQ=DAILY;INTERVAL=3', never)).toBe('FREQ=DAILY;INTERVAL=3')
-    expect(buildRrule('FREQ=MONTHLY;INTERVAL=12', { freq: 'monthly', end: 'never' })).toBe('FREQ=MONTHLY;INTERVAL=12')
+    expect(buildRrule('FREQ=MONTHLY;INTERVAL=2', { freq: 'monthly', end: 'never' })).toBe('FREQ=MONTHLY;INTERVAL=2')
   })
 
   it('keeps the interval of a weekly rule and applies the form\'s end', () => {
@@ -30,5 +30,30 @@ describe('buildRrule', () => {
   it('builds from the form alone for a new rule', () => {
     expect(buildRrule(undefined, { freq: 'daily', end: 'count', count: 10 })).toBe('FREQ=DAILY;COUNT=10')
     expect(buildRrule(null, { freq: 'monthly', end: 'never' })).toBe('FREQ=MONTHLY')
+  })
+})
+
+// Gap list row 11 (26.09): the form sets the interval and «every year» itself.
+// The server has no YEARLY; the bot stores a birthday as MONTHLY;INTERVAL=12,
+// and the form does the same.
+describe('buildRrule with an interval', () => {
+  it('writes the interval the form holds, and none for 1', () => {
+    expect(buildRrule(undefined, { freq: 'daily', interval: 3, end: 'never' })).toBe('FREQ=DAILY;INTERVAL=3')
+    expect(buildRrule('FREQ=DAILY;INTERVAL=3', { freq: 'daily', interval: 1, end: 'never' })).toBe('FREQ=DAILY')
+    expect(buildRrule('FREQ=WEEKLY', { freq: 'weekly', interval: 2, end: 'count', count: 4 })).toBe('FREQ=WEEKLY;INTERVAL=2;COUNT=4')
+  })
+
+  it('saves every year as every 12 months', () => {
+    expect(buildRrule(undefined, { freq: 'yearly', end: 'never' })).toBe('FREQ=MONTHLY;INTERVAL=12')
+    expect(buildRrule('FREQ=MONTHLY;INTERVAL=12', { freq: 'yearly', end: 'never' })).toBe('FREQ=MONTHLY;INTERVAL=12')
+  })
+})
+
+describe('repeatFromRrule', () => {
+  it('reads frequency and interval, and a 12-month rule as every year', () => {
+    expect(repeatFromRrule('FREQ=DAILY;INTERVAL=3;COUNT=5')).toEqual({ freq: 'daily', interval: 3 })
+    expect(repeatFromRrule('FREQ=MONTHLY;INTERVAL=12')).toEqual({ freq: 'yearly', interval: 1 })
+    expect(repeatFromRrule('FREQ=WEEKLY')).toEqual({ freq: 'weekly', interval: 1 })
+    expect(repeatFromRrule(undefined)).toEqual({ freq: 'none', interval: 1 })
   })
 })

@@ -104,5 +104,10 @@
     "free": "Свободно"
   },
   "escapeAgain": "Изменения не сохранены. Нажмите Escape ещё раз, чтобы закрыть без сохранения",
-  "dateTime.lastDay": "Последний день"
+  "dateTime.lastDay": "Последний день",
+  "repeat.yearly": "Каждый год",
+  "repeat.every": "Каждые",
+  "repeat.unitDays": "дн.",
+  "repeat.unitWeeks": "нед.",
+  "repeat.unitMonths": "мес."
 }

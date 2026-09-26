@@ -141,6 +141,8 @@ export function EventEditor({
               repeatEndType={state.repeatEndType}
               repeatCount={state.repeatCount}
               repeatUntil={state.repeatUntil}
+              repeatInterval={state.repeatInterval}
+              onRepeatIntervalChange={actions.setRepeatInterval}
               onRepeatTypeChange={actions.setRepeatType}
               onRepeatEndTypeChange={actions.setRepeatEndType}
               onRepeatCountChange={actions.setRepeatCount}

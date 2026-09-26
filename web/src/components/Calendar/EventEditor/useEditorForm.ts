@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { allDayBounds, allDayLastDay } from './allDayDates';
-import { buildRrule } from './buildRrule';
+import { buildRrule, repeatFromRrule } from './buildRrule';
 import { createEvent, updateEvent, saveReflection } from '../../../api';
 import { describeSaveError } from '../../../lib/calendar/saveError';
 import { editorReflectionBody } from './reflectionBody';
@@ -19,7 +19,7 @@ import type {
 } from './editor.types';
 import type { NbEvent } from '../../../types';
 
-export type RepeatType = 'none' | 'daily' | 'weekly' | 'monthly';
+export type RepeatType = 'none' | 'daily' | 'weekly' | 'monthly' | 'yearly';
 export type RepeatEndType = 'never' | 'count' | 'date';
 
 export interface EditorFormState {
@@ -28,6 +28,7 @@ export interface EditorFormState {
   startDateLocal: string; endDateLocal: string; validation: TimeValidation;
   showAdvanced: boolean; showReflection: boolean; isDeleting: boolean; reflection: ReflectionState;
   repeatType: RepeatType; repeatEndType: RepeatEndType; repeatCount: number; repeatUntil: string;
+  repeatInterval: number;
 }
 
 export interface EditorFormActions {
@@ -42,6 +43,7 @@ export interface EditorFormActions {
   handleSave: () => Promise<void>; handleDelete: () => Promise<void>;
   setRepeatType: (v: RepeatType) => void; setRepeatEndType: (v: RepeatEndType) => void;
   setRepeatCount: (v: number) => void; setRepeatUntil: (v: string) => void;
+  setRepeatInterval: (v: number) => void;
 }
 
 export function useEditorForm(
@@ -93,6 +95,7 @@ export function useEditorForm(
   const [repeatType, setRepeatType] = useState<RepeatType>('none');
   const [repeatEndType, setRepeatEndType] = useState<RepeatEndType>('never');
   const [repeatCount, setRepeatCount] = useState(10);
+  const [repeatInterval, setRepeatInterval] = useState(1);
   const [repeatUntil, setRepeatUntil] = useState('');
 
   const isEditing = !!draft;
@@ -130,18 +133,15 @@ export function useEditorForm(
 
       // Parse RRULE if present
       if (draft.rrule) {
+        // Frequency and interval; MONTHLY every 12 reads as «every year» (row 11).
+        const read = repeatFromRrule(draft.rrule);
+        setRepeatType(read.freq);
+        setRepeatInterval(read.interval);
         const parts = draft.rrule.split(';');
         for (const part of parts) {
           const [key, val] = part.split('=');
           if (!key || !val) continue;
           switch (key.toUpperCase()) {
-            case 'FREQ': {
-              const freq = val.toLowerCase();
-              if (freq === 'daily' || freq === 'weekly' || freq === 'monthly') {
-                setRepeatType(freq);
-              }
-              break;
-            }
             case 'COUNT':
               setRepeatEndType('count');
               setRepeatCount(parseInt(val, 10) || 10);
@@ -263,6 +263,7 @@ export function useEditorForm(
     if (repeatType !== 'none') {
       body.rrule = buildRrule(draft?.rrule, {
         freq: repeatType,
+        interval: repeatType === 'yearly' ? undefined : repeatInterval,
         end: repeatEndType === 'count' ? 'count' : repeatEndType === 'date' ? 'until' : 'never',
         count: repeatCount,
         until: repeatUntil,
@@ -301,7 +302,7 @@ export function useEditorForm(
   //
   // ⚠ ESLint reported this exact line, by name, on every CI run. Warnings do
   // not fail the build, so it was counted and never read.
-  }, [title, validation, tags, reminderOffsets, startDateLocal, endDateLocal, timezone, isAllDay, description, location, color, calendarId, isEditing, draft, showReflection, reflection, repeatType, repeatEndType, repeatCount, repeatUntil, onPatched, onCreated, withScope]);
+  }, [title, validation, tags, reminderOffsets, startDateLocal, endDateLocal, timezone, isAllDay, description, location, color, calendarId, isEditing, draft, showReflection, reflection, repeatType, repeatEndType, repeatCount, repeatUntil, repeatInterval, onPatched, onCreated, withScope]);
 
   const handleDelete = useCallback(async () => {
     if (!draft || !confirm(`Delete "${draft.title}"?`)) return;
@@ -319,8 +320,8 @@ export function useEditorForm(
   const canSave = !!(title.trim() && (isAllDay || (validation.start && validation.end && validation.dateRangeValid)));
 
   return {
-    state: { title, description, location, tags, isAllDay, color, calendarId, reminderOffsets, startTimeInput, endTimeInput, startDateLocal, endDateLocal, validation, showAdvanced, showReflection, isDeleting, reflection, repeatType, repeatEndType, repeatCount, repeatUntil },
-    actions: { setTitle, setDescription, setLocation, setTags, setIsAllDay, setColor, setCalendarId, setReminderOffsets, setStartDateLocal, setEndDateLocal, setShowAdvanced, setShowReflection, handleTimeChange, handleReflectionChange, handleSave, handleDelete, setRepeatType, setRepeatEndType, setRepeatCount, setRepeatUntil },
+    state: { title, description, location, tags, isAllDay, color, calendarId, reminderOffsets, startTimeInput, endTimeInput, startDateLocal, endDateLocal, validation, showAdvanced, showReflection, isDeleting, reflection, repeatType, repeatEndType, repeatCount, repeatUntil, repeatInterval },
+    actions: { setTitle, setDescription, setLocation, setTags, setIsAllDay, setColor, setCalendarId, setReminderOffsets, setStartDateLocal, setEndDateLocal, setShowAdvanced, setShowReflection, handleTimeChange, handleReflectionChange, handleSave, handleDelete, setRepeatType, setRepeatEndType, setRepeatCount, setRepeatUntil, setRepeatInterval },
     isEditing,
     hasReflection,
     canSave,
