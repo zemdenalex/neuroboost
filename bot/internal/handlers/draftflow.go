@@ -350,65 +350,27 @@ func (h *Handler) keepDraft(chatID int64) {
 		keyboards.DraftBack(h.lang(chatID)))
 }
 
-// parseIntoDraft runs the pipeline and then resolves a calendar name, which
-// needs data the parser cannot have.
-//
-// ⚠ The title is recomputed AFTER the calendar pass. Recomputing before it
-// would leave the calendar's name in the title — the exact leftover-fragment
-// failure this rewrite exists to end.
+// parseIntoDraft reads the line with this user's calendars, own words and
+// reminder presets — parse.Understand, the same reading the API's /api/parse
+// gives the web. A read that fails leaves that part of the vocabulary empty,
+// as it always did: the line is still read, only without those words.
 func (h *Handler) parseIntoDraft(chatID int64, text string) draftState {
 	us := h.store.GetOrCreate(chatID)
-	p := parse.ParseLine(text, time.Now().In(h.location(chatID)))
-	st := draftState{D: p.Draft}
-
-	if cals, err := h.api.Calendars(us.AuthToken); err == nil && len(cals) > 0 {
-		names := make([]string, len(cals))
-		for i, c := range cals {
-			names[i] = c.Name
-		}
-		if idx, ok := parse.RecogniseCalendar(p.Tokens, names, &st.D); ok {
-			st.CalendarID, st.CalendarName = cals[idx].ID, cals[idx].Name
+	var v parse.Vocabulary
+	if cals, err := h.api.Calendars(us.AuthToken); err == nil {
+		for _, c := range cals {
+			v.Calendars = append(v.Calendars, parse.Calendar{ID: c.ID, Name: c.Name})
 		}
 	}
-
-	// 🔴 The user's own words run LAST, after every built-in recogniser and
-	// after the calendar. A custom word spelled like «синий» or «повтор» must
-	// not take the built-in meaning away from the person who added it.
-	if vocab, err := h.api.BotKeywords(us.AuthToken); err == nil && len(vocab) > 0 {
-		rules := make(map[string]parse.Trigger, len(vocab))
-		for word, kw := range vocab {
-			field, ok := parse.FieldByName(kw.Field)
-			if !ok {
-				// A characteristic this build does not know — written by a
-				// newer version, or renamed. Skipping it leaves the word in
-				// the title, which is visible; guessing a field would not be.
-				continue
-			}
-			rules[word] = parse.Trigger{Field: field, Value: kw.Value}
-		}
-		parse.RecogniseCustomTriggers(p.Tokens, rules, time.Now().In(h.location(chatID)), &st.D)
+	if vocab, err := h.api.BotKeywords(us.AuthToken); err == nil {
+		v.Keywords = vocab
 	}
-
-	// A custom word may name a calendar. Resolving it needs the list again,
-	// but only when the pipeline did not already resolve one from the line.
-	if st.CalendarID == "" && st.D.Calendar != "" {
-		if cals, err := h.api.Calendars(us.AuthToken); err == nil {
-			for _, c := range cals {
-				if strings.EqualFold(strings.TrimSpace(c.Name), strings.TrimSpace(st.D.Calendar)) {
-					st.CalendarID, st.CalendarName = c.ID, c.Name
-					break
-				}
-			}
-		}
+	if presets, err := h.api.ReminderPresets(us.AuthToken); err == nil {
+		v.Presets = presets
 	}
-
-	if presets, err := h.api.ReminderPresets(us.AuthToken); err == nil && len(presets) > 0 {
-		parse.RecogniseReminderPreset(p.Tokens, presets, &st.D)
-	}
-	st.ReminderOffsets = st.D.ReminderOffsets
-
-	st.Title = parse.Title(p.Tokens)
-	return st
+	u := parse.Understand(text, time.Now().In(h.location(chatID)), v)
+	return draftState{D: u.Draft, CalendarID: u.CalendarID, CalendarName: u.CalendarName,
+		ReminderOffsets: u.Draft.ReminderOffsets, Title: u.Title}
 }
 
 func (h *Handler) showCard(chatID int64, messageID int) {
@@ -817,25 +779,9 @@ func (h *Handler) createFromDraft(chatID int64, messageID int, st draftState) {
 		keyboards.EventCard(h.lang(chatID), eventID))
 }
 
-// draftBounds turns the draft's day and offsets into two instants. An all-day
-// event spans local midnight to local midnight; anything else runs an hour
-// unless an end was given.
-func draftBounds(st draftState) (time.Time, time.Time) {
-	if st.D.AllDay {
-		// An all-day event ends at the midnight AFTER its last day — one day
-		// or a span, the same convention.
-		last := st.D.Day
-		if !st.D.EndDay.IsZero() && st.D.EndDay.After(last) {
-			last = st.D.EndDay
-		}
-		return st.D.Day, last.AddDate(0, 0, 1)
-	}
-	start := st.D.StartsAt()
-	if st.D.HasEnd {
-		return start, st.D.EndsAt()
-	}
-	return start, start.Add(time.Hour)
-}
+// draftBounds turns the draft's day and offsets into two instants —
+// parse.Bounds, shared with the API's /api/parse.
+func draftBounds(st draftState) (time.Time, time.Time) { return parse.Bounds(st.D) }
 
 // createOne writes one draft and reports what went wrong, if anything.
 //
