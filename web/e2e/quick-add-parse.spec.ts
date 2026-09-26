@@ -137,10 +137,11 @@ test('with the parser unreachable the line is saved as typed, as before', async 
   test.skip(testInfo.project.name !== 'desktop', 'one viewport is enough')
   // No parse route: the catch-all aborts POST /api/parse.
   const writes = await catchWrites(page)
-  await typeLine(page, 'стоматолог завтра 15:00')
+  // A line without a clock time; a timed one asks first (the test below).
+  await typeLine(page, 'купить молоко завтра')
 
   await expect.poll(() => writes.tasks.length, { timeout: 10_000 }).toBe(1)
-  expect(writes.tasks[0].title).toBe('стоматолог завтра 15:00')
+  expect(writes.tasks[0].title).toBe('купить молоко завтра')
   expect(writes.events).toHaveLength(0)
   await page.unrouteAll({ behavior: 'ignoreErrors' })
 })
@@ -189,5 +190,36 @@ test('as a task: one task and an event bound to it, and a failed event does not 
   expect(writes.tasks[0]).toMatchObject({ title: 'отчёт', status: 'TODO', tags: ['работа'] })
   expect(writes.events[1]).toMatchObject({ title: 'отчёт', task_id: 'e2e-task-1' })
   await expect(page.getByTestId('quick-add-confirm')).toBeHidden()
+  await page.unrouteAll({ behavior: 'ignoreErrors' })
+})
+
+// Review of b49bcc8: with the parser down (here: /api/parse refused like every
+// other unanswered write), a line with a clock time is not saved unread. The
+// first Enter says so; the second saves it as typed.
+test('a timed line is not saved unread when the parser is down', async ({ authedPage: page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'one viewport is enough')
+  const writes = await catchWrites(page)
+  const input = await typeLine(page, 'стоматолог завтра 15:00')
+  await expect(page.getByTestId('quick-add-unread-time')).toBeVisible()
+  expect(writes.tasks, 'nothing written on the first Enter').toHaveLength(0)
+  await input.press('Enter')
+  await expect.poll(() => writes.tasks.length, { timeout: 10_000 }).toBe(1)
+  expect(writes.tasks[0]).toMatchObject({ title: 'стоматолог завтра 15:00' })
+  await page.unrouteAll({ behavior: 'ignoreErrors' })
+})
+
+// Review of b49bcc8: text typed while the line is being read was wiped by the
+// save. The input is read-only for that moment instead.
+test('the input is read-only while the line is being read', async ({ authedPage: page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'one viewport is enough')
+  const writes = await catchWrites(page)
+  await page.route('**/api/parse', async (route) => {
+    await new Promise((r) => setTimeout(r, 1200))
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ data: { ...parsedBase, kind: 'task', title: 'купить хлеб' } }) })
+  })
+  const input = await typeLine(page, 'купить хлеб')
+  await expect(input).toHaveAttribute('readonly', '')
+  await expect.poll(() => writes.tasks.length, { timeout: 10_000 }).toBe(1)
+  await expect(input).not.toHaveAttribute('readonly', '')
   await page.unrouteAll({ behavior: 'ignoreErrors' })
 })

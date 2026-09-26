@@ -37,6 +37,11 @@ const MAX_PASTE_LINES = 100
  * Anything more elaborate lives behind the "full task" button, which hands the
  * already-typed title to the existing editor rather than discarding it.
  */
+/** A clock time in the line («15:00», «9.30»): such a line is never saved unread. */
+export function hasClockTime(text: string): boolean {
+  return /(^|[^\d])([01]?\d|2[0-3])[:.][0-5]\d(?!\d)/.test(text)
+}
+
 export function QuickAddRow({ onCreate, onCreateMany, onOpenFull, filters, autoFocus = false }: QuickAddRowProps) {
   const { t, i18n } = useTranslation('tasks')
   const { user } = useAuthContext()
@@ -58,6 +63,13 @@ export function QuickAddRow({ onCreate, onCreateMany, onOpenFull, filters, autoF
   // «as a task» whose event then failed, so a retry does not make a second one.
   const [pending, setPending] = useState<{ text: string; parsed: ParsedLine; taskId?: string } | null>(null)
   const [confirmError, setConfirmError] = useState<string | null>(null)
+  // The line being read by the parser: the input is read-only meanwhile, so
+  // nothing typed after Enter is wiped by the save (review of b49bcc8).
+  const [parsing, setParsing] = useState(false)
+  // A line with a clock time the parser could not read (down, slow): the first
+  // Enter says so, the second saves it as typed (review of b49bcc8: a timed
+  // line is never saved without a look, not even when the server is down).
+  const [unreadTimed, setUnreadTimed] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const settings = resolveQuickTaskSettings(user?.settings)
 
@@ -86,8 +98,18 @@ export function QuickAddRow({ onCreate, onCreateMany, onOpenFull, filters, autoF
     setBusy(true)
     // The line is read by the bot's own parser on the server. Unreachable
     // (an API without the route, offline, slow) gives null, and the line is
-    // saved as typed, exactly as before the parser existed.
+    // saved as typed, exactly as before the parser existed — except a line
+    // with a clock time, which asks once first (below).
+    setParsing(true)
     const parsed = await parseLine(typed)
+    setParsing(false)
+    if (!parsed && hasClockTime(typed) && unreadTimed !== typed) {
+      setUnreadTimed(typed)
+      setBusy(false)
+      inputRef.current?.focus()
+      return
+    }
+    setUnreadTimed(null)
     // A clock time is never saved without a look: an event is confirmed, and
     // a timed line the bot would ask about («встреча 15:00», no day) asks.
     if (parsed && (parsed.kind === 'event' || (parsed.kind === 'ask' && parsed.has_time))) {
@@ -256,9 +278,11 @@ export function QuickAddRow({ onCreate, onCreateMany, onOpenFull, filters, autoF
         <input
           ref={inputRef}
           value={title}
+          readOnly={parsing}
           onChange={e => {
             setTitle(e.target.value)
             if (pending) setPending(null)
+            if (unreadTimed) setUnreadTimed(null)
           }}
           onPaste={e => void handlePaste(e)}
           onKeyDown={e => {
@@ -308,6 +332,12 @@ export function QuickAddRow({ onCreate, onCreateMany, onOpenFull, filters, autoF
         {t('quickAdd.full')}
       </button>
     </div>
+
+      {unreadTimed && unreadTimed === title && (
+        <p role="status" data-testid="quick-add-unread-time" className="mt-1 px-1 font-mono text-xs text-amber-400">
+          {t('quickAdd.unreadTime')}
+        </p>
+      )}
 
       {pending && (
         <div
