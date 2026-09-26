@@ -6,7 +6,7 @@ import (
 
 	"github.com/zemdenalex/neuroboost-bot/internal/i18n"
 	"github.com/zemdenalex/neuroboost-bot/internal/keyboards"
-	"github.com/zemdenalex/neuroboost-bot/internal/parse"
+	"github.com/zemdenalex/neuroboost-bot/parse"
 )
 
 // The repeat step of the new-task wizard, and typed answers to any step.

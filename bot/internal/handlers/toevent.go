@@ -12,7 +12,7 @@ import (
 	"github.com/zemdenalex/neuroboost-bot/internal/format"
 	"github.com/zemdenalex/neuroboost-bot/internal/i18n"
 	"github.com/zemdenalex/neuroboost-bot/internal/keyboards"
-	"github.com/zemdenalex/neuroboost-bot/internal/parse"
+	"github.com/zemdenalex/neuroboost-bot/parse"
 )
 
 // Task → event, the full path (spec 21.09 §A2). Denis's shape «1 + 3»: ask

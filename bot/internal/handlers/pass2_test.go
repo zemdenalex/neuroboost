@@ -10,8 +10,8 @@ import (
 
 	"github.com/zemdenalex/neuroboost-bot/internal/api"
 	"github.com/zemdenalex/neuroboost-bot/internal/config"
-	"github.com/zemdenalex/neuroboost-bot/internal/parse"
 	"github.com/zemdenalex/neuroboost-bot/internal/state"
+	"github.com/zemdenalex/neuroboost-bot/parse"
 )
 
 // Denis's second pass, 17.09 22:10 — ref/feedback/bot-povtor-otvet-denisa-2026-09-17.md.

@@ -8,7 +8,7 @@ import (
 
 	"github.com/zemdenalex/neuroboost-bot/internal/format"
 	"github.com/zemdenalex/neuroboost-bot/internal/i18n"
-	"github.com/zemdenalex/neuroboost-bot/internal/parse"
+	"github.com/zemdenalex/neuroboost-bot/parse"
 )
 
 // draftState is everything the confirmation card shows and everything creation
