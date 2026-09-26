@@ -73,7 +73,7 @@ export function FeedbackButton({ position = 'bottom-right' }: FeedbackButtonProp
 
       {/* Modal Overlay */}
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-scrim/50 backdrop-blur-sm">
           <div className="w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl">
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-zinc-800">
@@ -163,7 +163,7 @@ export function FeedbackButton({ position = 'bottom-right' }: FeedbackButtonProp
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 disabled:cursor-not-allowed text-white font-mono rounded-lg flex items-center justify-center gap-2 transition-colors"
+                  className="w-full py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 disabled:cursor-not-allowed text-onaccent font-mono rounded-lg flex items-center justify-center gap-2 transition-colors"
                 >
                   {loading ? (
                     <Loader2 className="w-4 h-4 animate-spin" />

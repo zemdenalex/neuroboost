@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-09-24
 tags: [neuroboost, method, testing, denis]
-weight: { importance: 4, connectivity: 3, access: 1, last_accessed: 2026-09-24 }
+weight: { importance: 4, connectivity: 4, access: 3, last_accessed: 2026-09-25 }
 sources:
   - quote: "Sabotage on every fix, Advisor before big steps, e2e red, then green, Check lists in Obsidian (выбор в /handoff 24.09, «what should I keep doing?»)"
 stakes: medium

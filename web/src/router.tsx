@@ -5,16 +5,20 @@ import { safeNextPath } from './lib/auth/nextPath'
 import { Layout } from './components/Layout'
 import { QuickAddModal } from './components/QuickAdd/QuickAddModal'
 import { useGlobalQuickAdd } from './hooks/useGlobalQuickAdd'
+import { useFeatureFlags } from './hooks/useFeatureFlags'
 import { FeedbackButton } from './components/FeedbackButton'
 import { PomodoroWidget } from './components/Pomodoro/PomodoroWidget'
 import { PomodoroToasts } from './components/Pomodoro/PomodoroToasts'
+import { useTelegramBackButton } from './lib/telegram/useTelegramBackButton'
 
 // Lazy-loaded pages
 const Home = lazy(() => import('./pages/Home'))
 const Login = lazy(() => import('./pages/Login'))
 const Calendar = lazy(() => import('./pages/Calendar'))
 const Agenda = lazy(() => import('./pages/Agenda'))
+const WhatsNew = lazy(() => import('./pages/WhatsNew'))
 const Tasks = lazy(() => import('./pages/Tasks'))
+const DayTasks = lazy(() => import('./pages/DayTasks'))
 const Planning = lazy(() => import('./pages/Planning'))
 const Reflections = lazy(() => import('./pages/Reflections'))
 const Tools = lazy(() => import('./pages/Tools'))
@@ -83,6 +87,7 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 // Layout with feedback button and Suspense
 function AppLayout() {
   const quickAdd = useGlobalQuickAdd()
+  useTelegramBackButton()
   return (
     <>
       <Layout>
@@ -96,6 +101,15 @@ function AppLayout() {
       <QuickAddModal open={quickAdd.open} onClose={quickAdd.close} />
     </>
   )
+}
+
+/**
+ * Tools switched off in Settings are closed by URL too, not only hidden from
+ * the menus (audit 24.09, T0c).
+ */
+function ToolsGate({ children }: { children: React.ReactNode }) {
+  const flags = useFeatureFlags()
+  return flags.tools ? <>{children}</> : <Navigate to="/home" replace />
 }
 
 export const router = createBrowserRouter([
@@ -166,6 +180,15 @@ export const router = createBrowserRouter([
             element: <Calendar />,
           },
           {
+            // The bot's «Что нового» (gap list row 19).
+            path: '/whats-new',
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <WhatsNew />
+              </Suspense>
+            ),
+          },
+          {
             // «Что дальше» — the list view. Its own route rather than a mode
             // inside the calendar page: that page is 700 lines of grid, drag
             // and editor state, and a list has nothing to do with any of it.
@@ -181,6 +204,10 @@ export const router = createBrowserRouter([
             element: <Tasks />,
           },
           {
+            path: '/day-tasks',
+            element: <DayTasks />,
+          },
+          {
             path: '/planning',
             element: <Planning />,
           },
@@ -190,23 +217,23 @@ export const router = createBrowserRouter([
           },
           {
             path: '/tools',
-            element: <Tools />,
+            element: <ToolsGate><Tools /></ToolsGate>,
           },
           {
             path: '/tools/pomodoro',
-            element: <Pomodoro />,
+            element: <ToolsGate><Pomodoro /></ToolsGate>,
           },
           {
             path: '/tools/kanban',
-            element: <Kanban />,
+            element: <ToolsGate><Kanban /></ToolsGate>,
           },
           {
             path: '/tools/eisenhower',
-            element: <Eisenhower />,
+            element: <ToolsGate><Eisenhower /></ToolsGate>,
           },
           {
             path: '/tools/time-blocking',
-            element: <TimeBlocking />,
+            element: <ToolsGate><TimeBlocking /></ToolsGate>,
           },
           {
             path: '/settings',

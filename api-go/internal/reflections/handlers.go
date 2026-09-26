@@ -206,30 +206,26 @@ func UpdateHandler(w http.ResponseWriter, r *http.Request) {
 
 // Database operations
 
+// upsertReflection writes the fields the request names and keeps the rest.
+//
+// 🔴 The two flags too. They used to default to true BEFORE the upsert, so a
+// repeat save that did not name them (the event editor saves a reflection with
+// every event save) reset «не успел вовремя» to «вовремя». A new row still
+// reads as done and on time; an existing one keeps what it had.
 func upsertReflection(ctx context.Context, userID, eventID string, req CreateRequest) (*Reflection, error) {
-	wasCompleted := true
-	if req.WasCompleted != nil {
-		wasCompleted = *req.WasCompleted
-	}
-
-	wasOnTime := true
-	if req.WasOnTime != nil {
-		wasOnTime = *req.WasOnTime
-	}
-
 	var ref Reflection
 	err := db.Pool.QueryRow(ctx, `
 		INSERT INTO reflection (user_id, event_id, energy, mood, focus, notes, was_completed, was_on_time)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		VALUES ($1, $2, $3, $4, $5, $6, COALESCE($7::boolean, true), COALESCE($8::boolean, true))
 		ON CONFLICT (user_id, event_id) DO UPDATE SET
 			energy = COALESCE(EXCLUDED.energy, reflection.energy),
 			mood = COALESCE(EXCLUDED.mood, reflection.mood),
 			focus = COALESCE(EXCLUDED.focus, reflection.focus),
 			notes = COALESCE(EXCLUDED.notes, reflection.notes),
-			was_completed = EXCLUDED.was_completed,
-			was_on_time = EXCLUDED.was_on_time
+			was_completed = COALESCE($7::boolean, reflection.was_completed),
+			was_on_time = COALESCE($8::boolean, reflection.was_on_time)
 		RETURNING id, user_id, event_id, energy, mood, focus, notes, was_completed, was_on_time, created_at
-	`, userID, eventID, req.Energy, req.Mood, req.Focus, req.Notes, wasCompleted, wasOnTime).Scan(
+	`, userID, eventID, req.Energy, req.Mood, req.Focus, req.Notes, req.WasCompleted, req.WasOnTime).Scan(
 		&ref.ID, &ref.UserID, &ref.EventID, &ref.Energy, &ref.Mood, &ref.Focus,
 		&ref.Notes, &ref.WasCompleted, &ref.WasOnTime, &ref.CreatedAt,
 	)

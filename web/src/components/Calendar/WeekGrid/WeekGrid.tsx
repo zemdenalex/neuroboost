@@ -1,5 +1,8 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { MOBILE_BREAKPOINT, TABLET_BREAKPOINT, ALL_DAY_HEIGHT, DAY_HEADER_HEIGHT, DAY_MS } from './weekgrid.constants';
+import { ALL_DAY_HEIGHT, DAY_HEADER_HEIGHT, DAY_MS, HOUR_PX } from './weekgrid.constants';
+import { initialScrollHour } from '../../../lib/calendar/initialScroll';
+import { allDayBarHeight } from '../../../lib/calendar/calendarChrome';
+import { visibleDaysFor, DAY_COUNT_QUERIES } from '../../../lib/calendar/visibleDays';
 import { getMondayUtcMs, getMidnightUtcMs, utcToLocalMinutes, generateDays, processEventsForWeek } from './weekgrid.utils';
 import type { WeekGridProps, TouchStart, DayInfo, ProcessedEvent } from './weekgrid.types';
 import { WeekHeader } from './WeekHeader';
@@ -9,6 +12,11 @@ import { useWeekGridDrag } from './useWeekGridDrag';
 import { useKeyboardNav } from './useKeyboardNav';
 import { initialMobileDayOffset } from '../../../lib/calendar/mobileDayOffset';
 import { isHorizontalSwipe } from '../../../lib/calendar/swipe';
+import { useDayColours, dayKey } from '../../../lib/dayTasks/loadDayColours';
+import { useTranslation } from 'react-i18next';
+import { dateLocale } from '../../../utils/date';
+import { busyShare } from '../../../lib/calendar/busyShare';
+import { WeekStrip, type WeekStripDay } from '../WeekStrip';
 
 export function WeekGrid({
   events,
@@ -22,6 +30,8 @@ export function WeekGrid({
   onDelete,
   onTaskDrop,
   onWeekChange,
+  focusDay,
+  weekStrip = false,
 }: WeekGridProps) {
   // Refs
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -30,12 +40,37 @@ export function WeekGrid({
   // State
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [touchStart, setTouchStart] = useState<TouchStart | null>(null);
-  const [visibleDays, setVisibleDays] = useState(7);
+  // Known on the first render: a seven-column first frame overflowed a 375px
+  // page, and the zoomed-out phone then reported a tablet (lib/calendar/visibleDays).
+  const [visibleDays, setVisibleDays] = useState(() => visibleDaysFor(window));
   // Today, not the week's Monday — see initialMobileDayOffset.
   const [mobileDayOffset, setMobileDayOffset] = useState(
     () => initialMobileDayOffset(currentWeekOffset, timezone)
   );
   const isMobile = visibleDays < 7;
+
+  // Open on the current hour, not 00:00 (mobile tour 25.09, MW11). Once, on
+  // mount: later period changes keep whatever the person scrolled to.
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const nowHour = Number(
+      new Intl.DateTimeFormat('en-GB', { hour: 'numeric', hourCycle: 'h23', timeZone: timezone }).format(new Date())
+    );
+    el.scrollTop = initialScrollHour({ nowHour, todayVisible: currentWeekOffset === 0 }) * HOUR_PX;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount only, by design
+  }, []);
+
+  // A day asked for by name that is not today (?date=, a start link, the month
+  // view) opens at the start of the working day: "now minus an hour" belongs
+  // to today (review M4, 25.09).
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el || !focusDay) return;
+    const today = new Intl.DateTimeFormat('en-CA', { timeZone: timezone }).format(new Date());
+    if (focusDay === today) return;
+    el.scrollTop = initialScrollHour({ nowHour: 0, todayVisible: false }) * HOUR_PX;
+  }, [focusDay, timezone]);
 
   // Calculate Monday timestamp
   const mondayUtc0 = useMemo(
@@ -59,27 +94,58 @@ export function WeekGrid({
   // (it landed on Monday before this change). Not covered by the mobile specs —
   // both drag specs skip at 375px and recurring-scope never swipes.
   useEffect(() => {
-    setMobileDayOffset(initialMobileDayOffset(currentWeekOffset, timezone));
-  }, [currentWeekOffset, timezone]);
+    setMobileDayOffset(initialMobileDayOffset(currentWeekOffset, timezone, new Date(), focusDay));
+  }, [currentWeekOffset, timezone, focusDay]);
 
   // When mobileDayOffset goes beyond week boundary, advance the week and reset offset
   useEffect(() => {
     if (visibleDays >= 7) return; // desktop handles this via onWeekChange directly
     const daysInWeek = 7;
-    if (mobileDayOffset >= daysInWeek) {
+    // Under the week strip the shown day must stay inside the strip's week, so
+    // a swipe back from Monday rolls at once instead of at −7 (review of 3fe9456).
+    if (weekStrip && visibleDays === 1 && mobileDayOffset < 0) {
+      onWeekChange?.(currentWeekOffset - 1);
+      setMobileDayOffset(prev => prev + daysInWeek);
+    } else if (mobileDayOffset >= daysInWeek) {
       onWeekChange?.(currentWeekOffset + 1);
       setMobileDayOffset(prev => prev - daysInWeek);
     } else if (mobileDayOffset <= -daysInWeek) {
       onWeekChange?.(currentWeekOffset - 1);
       setMobileDayOffset(prev => prev + daysInWeek);
     }
-  }, [mobileDayOffset, visibleDays, currentWeekOffset, onWeekChange]);
+  }, [mobileDayOffset, visibleDays, currentWeekOffset, onWeekChange, weekStrip]);
 
   // Generate day info
   const days = useMemo(
     () => generateDays(adjustedStart, visibleDays, timezone),
     [adjustedStart, visibleDays, timezone]
   );
+  // The week strip (phone month variant C) sits over the one-day grid only:
+  // over the 3-column tablet grid a tap on Fri–Sun would page into a week that
+  // was never loaded (review of 3fe9456).
+  const showStrip = weekStrip && visibleDays === 1;
+  // Day tasks: one square per day header, one request for the visible days
+  // (the whole week when the strip shows it).
+  const dayColours = useDayColours(
+    dayKey(showStrip ? mondayUtc0 : days[0]?.dayUtc0 ?? adjustedStart, timezone),
+    dayKey(showStrip ? mondayUtc0 + 6 * DAY_MS : days[days.length - 1]?.dayUtc0 ?? adjustedStart, timezone)
+  );
+  const { i18n } = useTranslation();
+  const stripDays = useMemo<WeekStripDay[]>(() => {
+    if (!showStrip) return [];
+    const locale = dateLocale(i18n.language);
+    return Array.from({ length: 7 }, (_, i) => {
+      const dayUtc0 = mondayUtc0 + i * DAY_MS;
+      const day = dayKey(dayUtc0, timezone);
+      const date = new Date(day + 'T12:00:00Z');
+      return {
+        day,
+        label: `${date.toLocaleDateString(locale, { weekday: 'short', timeZone: 'UTC' })} ${date.getUTCDate()}`,
+        share: busyShare(events, day, timezone),
+        square: dayColours[day],
+      };
+    });
+  }, [showStrip, mondayUtc0, timezone, events, dayColours, i18n.language]);
 
   // Process events for rendering
   const { allDayEvents, timedPerDay } = useMemo(
@@ -101,18 +167,18 @@ export function WeekGrid({
     return () => clearInterval(id);
   }, [timezone]);
   
-  // Responsive day count
+  // Responsive day count, by media query (the layout width), never by the
+  // visual viewport that widens when a phone zooms out.
   useEffect(() => {
-    const updateDays = () => {
-      const w = window.innerWidth;
-      setVisibleDays(w < MOBILE_BREAKPOINT ? 1 : w < TABLET_BREAKPOINT ? 3 : 7);
-    };
+    const updateDays = () => setVisibleDays(visibleDaysFor(window));
+    const lists = DAY_COUNT_QUERIES.map(q => window.matchMedia(q));
     updateDays();
-    window.addEventListener('resize', updateDays);
-    return () => window.removeEventListener('resize', updateDays);
+    lists.forEach(l => l.addEventListener('change', updateDays));
+    return () => lists.forEach(l => l.removeEventListener('change', updateDays));
   }, []);
   
   // Drag handling
+  const allDayHeightRef = useRef(ALL_DAY_HEIGHT);
   const {
     drag,
     dragMeta,
@@ -125,7 +191,17 @@ export function WeekGrid({
     stopAutoScroll,
   } = useWeekGridDrag({
     mondayUtc0: adjustedStart, visibleDays, timezone, scrollRef, containerRef, callbacks: { onCreate, onMoveOrResize },
+    allDayHeightRef,
   });
+
+  // The all-day bar: a thin strip on a phone while empty (Denis 25.09, variant A).
+  // Every coordinate below the bar is measured from this one value.
+  const allDayHeight = allDayBarHeight({
+    isMobile,
+    allDayCount: allDayEvents.length,
+    creatingAllDay: drag?.kind === 'create' && drag.allDay,
+  });
+  allDayHeightRef.current = allDayHeight;
   
   // Keyboard navigation
   const { handleKeyDown } = useKeyboardNav({ events, selectedId, setSelectedId, onSelect, onDelete, onMoveOrResize, cancelDrag });
@@ -170,14 +246,14 @@ export function WeekGrid({
     dragMeta.current = {
       colTop: containerRef.current?.getBoundingClientRect().top ?? 0,
       scrollStart: scrollRef.current?.scrollTop ?? 0,
-      allDayTop: ALL_DAY_HEIGHT,
+      allDayTop: allDayHeight,
     };
 
     if (eventId) {
       const event = allDayEvents.find(e => e.id === eventId);
       if (event) startMove(day, event);
     } else startCreate(day, 0, true);
-  }, [days, allDayEvents, startCreate, startMove, dragMeta, containerRef, scrollRef]);
+  }, [days, allDayEvents, startCreate, startMove, dragMeta, containerRef, scrollRef, allDayHeight]);
   
   const handleQuickCreate = useCallback(() => {
     const start = new Date(), end = new Date(start.getTime() + 3600000);
@@ -234,12 +310,12 @@ export function WeekGrid({
       const dayIndex = Math.floor((e.clientX - rect.left) / (rect.width / visibleDays));
       const targetDay = days[Math.max(0, Math.min(days.length - 1, dayIndex))];
       if (targetDay) {
-        const yInTimeGrid = e.clientY - rect.top - ALL_DAY_HEIGHT - DAY_HEADER_HEIGHT;
+        const yInTimeGrid = e.clientY - rect.top - allDayHeight - DAY_HEADER_HEIGHT;
         const dropMin = Math.max(0, Math.round((yInTimeGrid + (scrollRef.current?.scrollTop || 0)) / 44 * 60 / 15) * 15);
         onTaskDrop(dragData.task, new Date(targetDay.dayUtc0 + dropMin * 60000));
       }
     } catch { /* ignore drop errors */ }
-  }, [onTaskDrop, days, visibleDays]);
+  }, [onTaskDrop, days, visibleDays, allDayHeight]);
 
   return (
     <div className="h-full w-full flex flex-col font-mono bg-black text-zinc-100">
@@ -255,6 +331,15 @@ export function WeekGrid({
         onQuickCreate={handleQuickCreate}
         headerExtra={headerExtra}
       />
+
+      {showStrip && (
+        <WeekStrip
+          days={stripDays}
+          shown={dayKey(adjustedStart, timezone)}
+          today={dayKey(nowInfo.dayUtc0, timezone)}
+          onPick={setMobileDayOffset}
+        />
+      )}
 
       <div
         ref={scrollRef}
@@ -290,12 +375,15 @@ export function WeekGrid({
             onSelect={onSelect}
             onSelectId={setSelectedId}
             onDragStart={handleAllDayDragStart}
+            height={allDayHeight}
           />
 
           {days.map(day => (
             <DayColumn
               key={day.i}
               day={day}
+              dayColour={dayColours[dayKey(day.dayUtc0, timezone)]}
+              allDayHeight={allDayHeight}
               events={timedPerDay.get(day.dayUtc0) || []}
               selectedId={selectedId}
               currentDayUtc0={nowInfo.dayUtc0}

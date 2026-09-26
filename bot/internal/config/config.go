@@ -22,6 +22,10 @@ type Config struct {
 	// baked-in one would send every dev invitation to the production bot, where
 	// the calendar does not exist.
 	BotUsername string
+	// WebAppURL, when set, makes the chat menu button open this https URL as
+	// a Telegram Mini App. Empty means the bot leaves the button alone, which
+	// is how the prod bot stays untouched until the web ships there.
+	WebAppURL string
 }
 
 func Load() Config {
@@ -33,6 +37,7 @@ func Load() Config {
 		ProxyURL:      os.Getenv("TELEGRAM_PROXY"),
 		ServiceToken:  os.Getenv("SERVICE_TOKEN"),
 		BotUsername:   os.Getenv("BOT_USERNAME"),
+		WebAppURL:     os.Getenv("WEBAPP_URL"),
 	}
 	if c.APIBase == "" {
 		c.APIBase = "http://localhost:8080"

@@ -3,10 +3,12 @@ package planning
 import (
 	"context"
 	"net/http"
+	"sort"
 	"time"
 
 	"neuroboost/api-go/internal/calendars"
 	"neuroboost/api-go/internal/database"
+	"neuroboost/api-go/internal/events"
 	"neuroboost/api-go/internal/middleware"
 	"neuroboost/api-go/internal/usersettings"
 	"neuroboost/api-go/internal/util"
@@ -63,24 +65,29 @@ func GetWeekHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// 🔴 The week is the USER's: Monday 00:00 where they are. It was cut at
+	// Monday 00:00 UTC, which put a Moscow user's Monday 01:00 meeting into
+	// the week before.
+	loc := userLocation(r.Context(), userID)
+
 	// Parse date param — accept "2026-04-07" or RFC3339
 	dateParam := r.URL.Query().Get("date")
 	var anchorDate time.Time
 	var err error
 
 	if dateParam == "" {
-		anchorDate = time.Now().UTC()
+		anchorDate = time.Now().In(loc)
 	} else {
-		// Try date-only first, then RFC3339
-		anchorDate, err = time.Parse("2006-01-02", dateParam)
+		// Try date-only first (a day on the user's calendar), then RFC3339
+		anchorDate, err = time.ParseInLocation("2006-01-02", dateParam, loc)
 		if err != nil {
 			anchorDate, err = time.Parse(time.RFC3339, dateParam)
 			if err != nil {
 				util.RespondError(w, http.StatusBadRequest, "INVALID_DATE", "Invalid date format. Use YYYY-MM-DD")
 				return
 			}
+			anchorDate = anchorDate.In(loc)
 		}
-		anchorDate = anchorDate.UTC()
 	}
 
 	// Compute Monday of the week (ISO: Monday = 1)
@@ -90,7 +97,7 @@ func GetWeekHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	daysToMonday := weekday - 1
 	weekStart := time.Date(anchorDate.Year(), anchorDate.Month(), anchorDate.Day()-daysToMonday,
-		0, 0, 0, 0, time.UTC)
+		0, 0, 0, 0, loc)
 	weekEnd := weekStart.AddDate(0, 0, 7)
 
 	tasks, err := listUnscheduledTasks(r.Context(), userID)
@@ -180,45 +187,51 @@ func listUnscheduledTasks(ctx context.Context, userID string) ([]PlanningTask, e
 	return tasks, nil
 }
 
-// listWeekEvents returns events within the week and computes total scheduled hours
+// listWeekEvents returns the week's events and the hours they take.
+//
+// 🔴 Through events.ListExpanded, the same reader as GET /api/events: reading
+// rows by starts_at counted a repeating series only in the week of its first
+// row, so every later week of a weekly meeting planned as empty.
 func listWeekEvents(ctx context.Context, userID string, weekStart, weekEnd time.Time) ([]PlanningEvent, float64, error) {
-	calIDs, err := calendars.CalendarIDsFor(ctx, userID)
+	list, err := events.ListExpanded(ctx, userID, weekStart, weekEnd)
 	if err != nil {
 		return nil, 0, err
 	}
 
-	// An empty list is a legitimate "nothing visible", not an error:
-	// ANY('{}') returns zero rows.
-	rows, err := db.Pool.Query(ctx, `
-		SELECT id, title, starts_at, ends_at, all_day, color
-		FROM event
-		WHERE calendar_id = ANY($1)
-		  AND starts_at >= $2
-		  AND starts_at < $3
-		ORDER BY starts_at ASC
-	`, calIDs, weekStart, weekEnd)
-	if err != nil {
-		return nil, 0, err
-	}
-	defer rows.Close()
-
-	var events []PlanningEvent
+	week := []PlanningEvent{}
 	var totalHours float64
-
-	for rows.Next() {
-		var e PlanningEvent
-		if err := rows.Scan(&e.ID, &e.Title, &e.StartsAt, &e.EndsAt, &e.AllDay, &e.Color); err != nil {
-			return nil, 0, err
+	for _, e := range list {
+		// ListExpanded answers what overlaps the range; the plan lists what
+		// STARTS in the week, as it always has.
+		if e.StartsAt.Before(weekStart) || !e.StartsAt.Before(weekEnd) {
+			continue
 		}
-		events = append(events, e)
+		week = append(week, PlanningEvent{
+			ID: e.ID, Title: e.Title, StartsAt: e.StartsAt, EndsAt: e.EndsAt, AllDay: e.AllDay, Color: e.Color,
+		})
 		if !e.AllDay {
 			totalHours += e.EndsAt.Sub(e.StartsAt).Hours()
 		}
 	}
+	// ListExpanded keeps a series' occurrences together in parent order; the
+	// plan is read by time.
+	sort.SliceStable(week, func(i, j int) bool { return week[i].StartsAt.Before(week[j].StartsAt) })
+	return week, totalHours, nil
+}
 
-	if events == nil {
-		events = []PlanningEvent{}
+// userLocation is the user's zone, Moscow when unset or unreadable (the same
+// fallback the rest of the API uses).
+func userLocation(ctx context.Context, userID string) *time.Location {
+	var tz string
+	if err := db.Pool.QueryRow(ctx,
+		`SELECT COALESCE(timezone, 'Europe/Moscow') FROM "user" WHERE id = $1`, userID).Scan(&tz); err != nil {
+		tz = "Europe/Moscow"
 	}
-
-	return events, totalHours, nil
+	loc, err := time.LoadLocation(tz)
+	if err != nil {
+		if loc, err = time.LoadLocation("Europe/Moscow"); err != nil {
+			return time.UTC
+		}
+	}
+	return loc
 }

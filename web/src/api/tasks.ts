@@ -12,6 +12,7 @@
  * blind rename during that very cleanup renamed a call to the wrong one.
  */
 import { api } from './client'
+import type { ConvertBody } from '../lib/convert/linkFlow'
 
 export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'SCHEDULED' | 'DONE' | 'CANCELLED'
 export type TaskCategory = 'EMERGENCY' | 'ASAP' | 'MUST_TODAY' | 'DEADLINE_SOON' | 'IF_POSSIBLE' | 'BUFFER'
@@ -42,6 +43,8 @@ export interface Task {
    * `occurrence_state`. See answeredToday in types/index.ts.
    */
   rrule?: string
+  /** An unanswered reminder comes back every N minutes; absent/0 = once. */
+  nag_minutes?: number
   repeat_anchor?: string
   /** Today's answer: '', 'done' or 'skipped'. */
   occurrence_state?: string
@@ -76,7 +79,10 @@ export interface CreateTaskRequest {
    * Minutes before due_date, one entry per reminder. Omitting the field asks
    * the backend for the user's default preset; an explicit [] means none.
    */
-  reminder_offsets?: number[]
+  reminder_offsets?: number[]  /** Repeat rule (FREQ=DAILY|WEEKLY|MONTHLY, INTERVAL/COUNT/UNTIL); absent = one-off. */
+  rrule?: string
+  /** An unanswered reminder comes back every N minutes; absent = once. */
+  nag_minutes?: number
 }
 
 export interface UpdateTaskRequest {
@@ -92,6 +98,10 @@ export interface UpdateTaskRequest {
   energy?: number
   parent_id?: string
   reminder_offsets?: number[]
+  /** Absent leaves the repeat alone, "" switches it off. */
+  rrule?: string
+  /** 0 stops the nagging; absent leaves it alone. */
+  nag_minutes?: number
 }
 
 export interface ScheduleTaskRequest {
@@ -159,12 +169,35 @@ export async function updateTask(id: string, data: UpdateTaskRequest): Promise<T
   return api.patch<Task>(`/tasks/${id}`, data)
 }
 
+/**
+ * Answers one day of a repeating task: 'done', 'skipped', or 'open' to take
+ * the answer back. No date means the day the series is on for the user (the
+ * server resolves it, and it may be a later day); the answer names the day it
+ * wrote. A page that shows TODAY must name today.
+ */
+export async function markOccurrence(
+  id: string,
+  state: 'done' | 'skipped' | 'open',
+  date?: string,
+): Promise<{ occurrence: string; state: string }> {
+  return api.post(`/tasks/${encodeURIComponent(id)}/occurrences`, date ? { state, date } : { state })
+}
+
 export async function deleteTask(id: string): Promise<void> {
   return api.delete(`/tasks/${id}`)
 }
 
 export async function scheduleTask(id: string, data: ScheduleTaskRequest): Promise<ScheduledEvent> {
   return api.post<ScheduledEvent>(`/tasks/${id}/schedule`, data)
+}
+
+/**
+ * Task → event, linked or moved (api-go/internal/tasks/convert.go). Answers 201
+ * with the event; refusals carry codes the link sheet turns into a question
+ * (lib/convert/linkFlow afterError). There is no dry run on this endpoint.
+ */
+export async function convertTask(id: string, body: ConvertBody): Promise<ScheduledEvent> {
+  return api.post<ScheduledEvent>(`/tasks/${id}/convert`, body)
 }
 
 export async function logTaskTime(id: string, minutes: number): Promise<Task> {

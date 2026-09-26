@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-09-23
 tags: [tooling, method, bot]
-weight: { importance: 4, connectivity: 2, access: 2, last_accessed: 2026-09-24 }
+weight: { importance: 4, connectivity: 2, access: 5, last_accessed: 2026-09-26 }
 sources:
   - file: "bot/internal/handlers/help.go, agenda.go, daytasks_test.go — ремонт 23.09"
 stakes: low
@@ -23,3 +23,5 @@ Python-скрипт, переданный в Bash через `<<'PYEOF'`, сод
 
 **Правило метода:** скрипт правки, в котором есть `\n`, `\\`, кавычки внутри строк, — писать файлом через
 Write, не heredoc'ом. Держится и в `E:\Personal` (тот же инструмент, те же кавычки).
+
+26.09 — ещё раз: `bot/internal/keyboards/menu.go` (`MenuTour`), 11 ошибок `string literal not terminated`. Функция переписана через Write во временный файл и вклеена python-скриптом из файла — с первого раза. Правило держится только когда его исполняют: heredoc с Go-строками не использовать вовсе.

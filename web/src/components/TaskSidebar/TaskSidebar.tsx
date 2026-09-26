@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import type { Task } from '../../types';
 import { PriorityGroup } from './PriorityGroup';
 import { useDragTask } from './useDragTask';
+import { sidebarTick } from './sidebarTick';
 
 interface TaskSidebarProps {
   isOpen: boolean;
@@ -12,6 +13,8 @@ interface TaskSidebarProps {
   onSelectTask: (task: Task) => void;
   onEditTask: (task: Task) => void;
   onUpdateTask: (id: string, updates: Partial<Task>) => Promise<void>;
+  /** Answers today's day of a repeating task ('open' takes the answer back). */
+  onAnswerDay: (task: Task, state: 'done' | 'open') => Promise<void>;
   onCreateTask?: () => void;
 }
 
@@ -23,6 +26,7 @@ export function TaskSidebar({
   onSelectTask,
   onEditTask,
   onUpdateTask,
+  onAnswerDay,
   onCreateTask,
 }: TaskSidebarProps) {
   const { t } = useTranslation('tasks');
@@ -69,9 +73,12 @@ export function TaskSidebar({
     return { filteredTasks: filtered, tasksByPriority: byPriority };
   }, [tasks, showCompleted, searchQuery]);
   
+  // 🔴 A running series answers today; status DONE would switch it off for good
+  // (gap list F1, 26.09 — the same bug the bot fixed on 20.09).
   const handleToggleStatus = async (task: Task) => {
-    const newStatus = task.status === 'DONE' ? 'TODO' : 'DONE';
-    await onUpdateTask(task.id, { status: newStatus });
+    const action = sidebarTick(task);
+    if (action.kind === 'occurrence') await onAnswerDay(task, action.state);
+    else await onUpdateTask(task.id, { status: action.next });
   };
   
   const todoCount = tasks.filter(t => t.status !== 'DONE').length;

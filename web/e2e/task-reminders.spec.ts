@@ -71,12 +71,12 @@ test.describe('task reminders', () => {
     // translated, and the account's language arrives from server settings,
     // which outrank the locale seeded above. This spec failed its first CI run
     // for exactly that reason — staging rendered "Редактировать задачу".
-    const row = authedPage
-      .locator('div')
-      .filter({ hasText: title })
-      .filter({ has: authedPage.getByTestId('task-edit') })
-      .last()
-    await row.getByTestId('task-edit').click()
+    // On a phone the edit button sits in the row's «⋯» menu (Denis 25.09,
+    // lib/tasks/rowActions); on a desktop it is in the row itself.
+    const taskRow = authedPage.locator('[id^="task-"]').filter({ hasText: title }).first()
+    const more = taskRow.getByTestId('task-row-more')
+    if (await more.isVisible()) await more.click()
+    await taskRow.getByTestId('task-edit').click()
 
     const offsetInput = authedPage.getByLabel('New reminder offset')
     await expect(

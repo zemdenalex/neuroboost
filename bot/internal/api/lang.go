@@ -44,8 +44,12 @@ func (c *Client) SetBotLang(token, lang string) error {
 			bot[k] = v
 		}
 	}
-	bot["lang"] = strings.ToLower(strings.TrimSpace(lang))
+	lang = strings.ToLower(strings.TrimSpace(lang))
+	bot["lang"] = lang
 
+	// Only the bot's own language. The account's `locale` belongs to the web
+	// and the Mini App (Denis 26.09: «sync web interfaces (web, miniapp) but
+	// bot and later android app should stay in their own language»).
 	_, err = c.PatchSettings(token, map[string]any{"bot": bot})
 	return err
 }

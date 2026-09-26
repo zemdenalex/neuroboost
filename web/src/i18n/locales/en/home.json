@@ -1,12 +1,12 @@
 {
   "landing": {
-    "tagline": "A calendar-first productivity app built for neurodivergent minds — ADHD, autism, dyslexia, and everyone who thinks differently.",
+    "tagline": "A calendar-first productivity app built for neurodivergent minds: ADHD, autism, dyslexia, and everyone who thinks differently.",
     "getStarted": "Get Started",
     "learnMore": "Learn More",
     "problemTitle": "The Problem",
-    "problem": "Traditional planners assume you think linearly. They expect you to remember deadlines, estimate time accurately, and stay motivated without external structure. For neurodivergent brains, this isn't a skill issue — it's a mismatch between the tool and the mind.",
+    "problem": "Traditional planners assume you think linearly. They expect you to remember deadlines, estimate time accurately, and stay motivated without external structure. For neurodivergent brains, this isn't a skill issue. It's a mismatch between the tool and the mind.",
     "solutionTitle": "The NeuroBoost Approach",
-    "solution": "NeuroBoost puts the calendar at the center of everything. Tasks aren't just a list — they're scheduled blocks of time. The calendar is truth. Everything else exists to support it.",
+    "solution": "NeuroBoost puts the calendar at the center of everything. Tasks aren't just a list. They're scheduled blocks of time. The calendar is truth. Everything else exists to support it.",
     "featuresTitle": "Everything Your Brain Needs",
     "feature": {
       "calendar": {
@@ -19,7 +19,7 @@
       },
       "planning": {
         "title": "Weekly Planning",
-        "desc": "Structured planning sessions to review the past week and prepare the next — without the overwhelm of a blank page."
+        "desc": "Structured planning sessions to review the past week and prepare the next, without the overwhelm of a blank page."
       },
       "reflections": {
         "title": "Reflections",
@@ -55,6 +55,12 @@
     "overdue": "Overdue",
     "noTasks": "No tasks yet",
     "noTasksHint": "Create your first task to start planning your week.",
-    "allTasks": "All tasks"
+    "allTasks": "All tasks",
+    "dayLine": "{{square}} {{done}} of {{target}}",
+    "dayNotTaken": "The day is not taken yet",
+    "dayTasks": "Day tasks",
+    "allDay": "all day",
+    "tick": "Done: {{title}}",
+    "more": "and {{count}} more"
   }
 }

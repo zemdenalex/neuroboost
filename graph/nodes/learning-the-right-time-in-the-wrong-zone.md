@@ -6,7 +6,7 @@ status: verified
 verified_by: session-01VRP8SC
 verified_at: 2026-09-18
 tags: [neuroboost, method, timezone, api, review]
-weight: { importance: 5, connectivity: 11, access: 4, last_accessed: 2026-09-24 }
+weight: { importance: 5, connectivity: 14, access: 5, last_accessed: 2026-09-26 }
 sources:
   - file: "api-go/internal/reminders/nag.go"
   - file: "api-go/internal/tasks/handlers.go"

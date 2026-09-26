@@ -20,8 +20,10 @@ services:
 
   api:
     build:
-      context: ./api-go
-      dockerfile: Dockerfile
+      # Repo root, not ./api-go: the api imports the bot's line parser
+      # (bot/parse) through a go.mod replace. See api-go/Dockerfile.
+      context: .
+      dockerfile: api-go/Dockerfile
     container_name: neuroboost-api
     environment:
       DATABASE_URL: postgres://${POSTGRES_USER:-neuroboost}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-neuroboost}?sslmode=disable

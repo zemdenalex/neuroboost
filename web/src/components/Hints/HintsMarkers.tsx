@@ -111,7 +111,7 @@ export function HintsMarkers() {
           }}
           onFocus={() => setActive(m.anchor)}
           aria-label={t('hints.reveal')}
-          className="pointer-events-auto absolute flex items-center justify-center rounded-full border border-blue-400 bg-blue-600 text-white shadow-md transition-colors hover:bg-blue-500"
+          className="pointer-events-auto absolute flex items-center justify-center rounded-full border border-blue-400 bg-blue-600 text-onaccent shadow-md transition-colors hover:bg-blue-500"
         >
           <Info className="h-3 w-3" />
         </button>

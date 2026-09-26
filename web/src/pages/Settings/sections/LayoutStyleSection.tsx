@@ -62,7 +62,7 @@ export function LayoutStyleSection() {
   }
 
   return (
-    <section className="bg-zinc-900 border border-zinc-800 rounded-lg p-5">
+    <section data-testid="settings-layout-section" className="bg-zinc-900 border border-zinc-800 rounded-lg p-5">
       <div className="flex items-center gap-2 mb-4">
         <LayoutGrid className="w-5 h-5 text-zinc-400" />
         <h2 className="text-lg font-mono font-semibold text-white">{t('layout.title')}</h2>

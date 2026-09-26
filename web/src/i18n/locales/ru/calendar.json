@@ -80,7 +80,7 @@
     "cancel": "Отмена"
   },
   "advanced.colorNone": "Без цвета",
-  "advanced.colorInherits": "Оставь пустым — возьмётся цвет календаря",
+  "advanced.colorInherits": "Оставь пустым, и возьмётся цвет календаря",
   "filter": {
     "title": "Календари",
     "close": "Закрыть",
@@ -88,5 +88,26 @@
     "hideManage": "Скрыть управление",
     "empty": "Календарей пока нет."
   },
-  "taskShort": "Задача"
+  "taskShort": "Задача",
+  "view": {
+    "week": "Неделя",
+    "month": "Месяц",
+    "label": "Вид календаря"
+  },
+  "month": {
+    "more": "+{{count}} ещё",
+    "prev": "Предыдущий месяц",
+    "next": "Следующий месяц",
+    "dayTasksOff": "Задачи дня выключены",
+    "openSettings": "Включить в настройках",
+    "openWeek": "Открыть неделю",
+    "free": "Свободно"
+  },
+  "escapeAgain": "Изменения не сохранены. Нажмите Escape ещё раз, чтобы закрыть без сохранения",
+  "dateTime.lastDay": "Последний день",
+  "repeat.yearly": "Каждый год",
+  "repeat.every": "Каждые",
+  "repeat.unitDays": "дн.",
+  "repeat.unitWeeks": "нед.",
+  "repeat.unitMonths": "мес."
 }

@@ -18,6 +18,7 @@ import (
 	"github.com/zemdenalex/neuroboost-bot/internal/config"
 	"github.com/zemdenalex/neuroboost-bot/internal/handlers"
 	"github.com/zemdenalex/neuroboost-bot/internal/logsafe"
+	"github.com/zemdenalex/neuroboost-bot/internal/menubutton"
 	"github.com/zemdenalex/neuroboost-bot/internal/notifier"
 	"github.com/zemdenalex/neuroboost-bot/internal/state"
 )
@@ -52,6 +53,16 @@ func main() {
 		}
 	}
 	log.Printf("Bot authorized as @%s", bot.Self.UserName)
+
+	// Mini App button: opt-in by WEBAPP_URL. A failure is logged, not fatal:
+	// the chat works without the button.
+	if cfg.WebAppURL != "" {
+		if err := menubutton.Set(bot, cfg.WebAppURL, "Календарь"); err != nil {
+			log.Printf("menu button not set: %s", logsafe.Redact(err))
+		} else {
+			log.Printf("menu button opens %s", cfg.WebAppURL)
+		}
+	}
 
 	apiClient := api.NewClient(cfg.APIBase)
 	store := state.NewStore()

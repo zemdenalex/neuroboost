@@ -9,7 +9,7 @@
 - [x] I2 — `calendar_cell` (цвет / полоска / оба) в ⚙️ → 📌 — `ed6746d`
 - [x] push `develop` (`f5362ec`), CI build green, dev-бот на `f5362ec`
 - [x] фикс: «только 🟩» + выключенные задачи дня прятали полоску без пути назад (нашёл advisor) — тест + 2 сабботажа красные; строка B3a в чеклисте
-- [x] чеклист `docs/proverka-bota-2026-09-24-zadachi-dnya-d3.md` (спека §11 + ширина клетки), открыть в Obsidian
+- [x] чеклист `docs/_arhiv/proverka-bota-2026-09-24-zadachi-dnya-d3.md` (спека §11 + ширина клетки), открыть в Obsidian
 
 ## Веб — задачи дня
 - [x] разведка: в вебе задач дня ноль; месячного вида нет (`MonthView` — заглушка) → цвет в шапке недели
@@ -20,7 +20,7 @@
   - `9160597` страница `/day-tasks`, секция в ⚙️, пункт в навигации (скрыт при выключенных), квадраты в шапке недели
   - e2e `day-tasks.spec.ts`: красный на staging до push, зелёный локально; `settings-race` поправлен под очередь сохранений
 - [ ] push, CI (e2e на staging) зелёный
-- [x] чеклист прохода веба для Дениса: `docs/proverka-veba-2026-09-24-zadachi-dnya.md`, открыт в Obsidian
+- [x] чеклист прохода веба для Дениса: `docs/_arhiv/proverka-veba-2026-09-24-zadachi-dnya.md`, открыт в Obsidian
 
 ## Если веб упёрся
 - [x] разведка Telegram mini-app / Android — `docs/superpowers/specs/2026-09-24-mini-app-and-android-razvedka.md`, без кода. Рекомендация: Mini App раньше Android; для Android сначала PWA
@@ -54,4 +54,4 @@
 - M7 кэш `DayTasksOn` не протухает: выключение в вебе бот увидит после перезапуска
 
 ## Дальше
-- [x] Подзадачи в боте (твой план 23.09, день 2) — `6891e72`, dev-бот, чеклист `docs/proverka-bota-2026-09-24-podzadachi.md`
+- [x] Подзадачи в боте (твой план 23.09, день 2) — `6891e72`, dev-бот, чеклист `docs/_arhiv/proverka-bota-2026-09-24-podzadachi.md`

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { CalendarDays, CheckCircle2, Circle, Clock } from 'lucide-react'
 
@@ -21,6 +22,8 @@ import type { NbEvent, Task } from '../types'
  */
 
 const WINDOW_DAYS = 14
+/** How far «ещё» reaches: the bot's event picker looks 90 days ahead (eventedit.go). */
+const MAX_DAYS = 98
 
 export default function Agenda() {
   const { t, i18n } = useTranslation('common')
@@ -33,6 +36,7 @@ export default function Agenda() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [days, setDays] = useState(WINDOW_DAYS)
 
   // The window starts at local midnight today: something at 09:00 stays in the
   // agenda all morning rather than vanishing the moment it begins.
@@ -45,7 +49,7 @@ export default function Agenda() {
   useEffect(() => {
     let cancelled = false
     const to = new Date(from)
-    to.setDate(to.getDate() + WINDOW_DAYS)
+    to.setDate(to.getDate() + days)
 
     Promise.all([getEvents(from.toISOString(), to.toISOString()), getTasks()])
       .then(([evs, tsks]) => {
@@ -66,7 +70,7 @@ export default function Agenda() {
     return () => {
       cancelled = true
     }
-  }, [from])
+  }, [from, days])
 
   // 🔴 «Сегодня» rather than the weekday name for the first day. The agenda is
   // read to find out what is next, and «пятница» makes you work out whether
@@ -74,8 +78,8 @@ export default function Agenda() {
   const todayKey = useMemo(() => localDayKey(new Date(), timezone), [timezone])
 
   const agenda = useMemo(
-    () => buildAgenda(events, tasks, timezone, from, WINDOW_DAYS),
-    [events, tasks, timezone, from],
+    () => buildAgenda(events, tasks, timezone, from, days),
+    [events, tasks, timezone, from, days],
   )
 
   return (
@@ -95,7 +99,7 @@ export default function Agenda() {
 
       {!loading && !error && agenda.length === 0 && (
         <p className="text-zinc-400 text-sm" data-testid="agenda-empty">
-          {t('agenda.empty', { days: WINDOW_DAYS })}
+          {t('agenda.empty', { days })}
         </p>
       )}
 
@@ -110,6 +114,17 @@ export default function Agenda() {
           />
         ))}
       </div>
+
+      {!loading && !error && days < MAX_DAYS && (
+        <button
+          type="button"
+          data-testid="agenda-more"
+          onClick={() => setDays((d) => Math.min(d + WINDOW_DAYS, MAX_DAYS))}
+          className="mt-4 w-full rounded border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-200 hover:bg-zinc-700"
+        >
+          {t('agenda.more', { days: WINDOW_DAYS })}
+        </button>
+      )}
     </div>
   )
 }
@@ -159,12 +174,9 @@ function AgendaRow({ item, timezone }: { item: AgendaItem; timezone: string }) {
         minute: '2-digit',
       }).format(item.at)
 
-  return (
-    <li
-      data-testid="agenda-item"
-      data-kind={item.kind}
-      className="flex items-start gap-2 rounded border border-zinc-700 bg-zinc-800/60 px-2 py-1.5"
-    >
+  const rowClass = 'flex items-start gap-2 rounded border border-zinc-700 bg-zinc-800/60 px-2 py-1.5'
+  const body = (
+    <>
       <span className="mt-0.5 flex-shrink-0 text-zinc-400">
         {item.kind === 'task' ? (
           item.done ? (
@@ -191,6 +203,26 @@ function AgendaRow({ item, timezone }: { item: AgendaItem; timezone: string }) {
       <span className="flex-shrink-0 text-xs text-zinc-400 tabular-nums">
         {time ?? t('agenda.allDay')}
       </span>
+    </>
+  )
+
+  // An event opens in the calendar's editor on its own day (gap list row 21,
+  // the bot's «открыть событие из списка»); a task has no such screen here.
+  if (item.kind === 'event') {
+    return (
+      <li data-testid="agenda-item" data-kind={item.kind}>
+        <Link
+          to={`/calendar?date=${localDayKey(item.at, timezone)}&event=${encodeURIComponent(item.id)}`}
+          className={`${rowClass} hover:bg-zinc-700/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400`}
+        >
+          {body}
+        </Link>
+      </li>
+    )
+  }
+  return (
+    <li data-testid="agenda-item" data-kind={item.kind} className={rowClass}>
+      {body}
     </li>
   )
 }

@@ -3,6 +3,7 @@ package tasks
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -58,6 +59,15 @@ func MarkOccurrenceHandler(w http.ResponseWriter, r *http.Request) {
 		// guessing which was meant is how a «done» becomes a «skipped».
 		util.RespondError(w, http.StatusBadRequest, "AMBIGUOUS_REQUEST",
 			"Send either state or postpone_days, not both")
+		return
+	}
+
+	// A ceiling (audit 25.09, M4): each postponed day is one INSERT, and
+	// nothing stopped a million of them in one request. The bot offers at most
+	// 365 (maxPostponeDays); a year, like ListOccurrences' range limit.
+	if req.PostponeDays > maxPostponeDays {
+		util.RespondError(w, http.StatusBadRequest, "POSTPONE_TOO_LONG",
+			fmt.Sprintf("Postpone at most %d days", maxPostponeDays))
 		return
 	}
 
@@ -117,6 +127,9 @@ func MarkOccurrenceHandler(w http.ResponseWriter, r *http.Request) {
 		"state":      state,
 	})
 }
+
+// maxPostponeDays bounds postpone_days: a year.
+const maxPostponeDays = 366
 
 // respondOccurrenceError maps each refusal to the status that describes it.
 //

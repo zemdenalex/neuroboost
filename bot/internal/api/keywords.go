@@ -1,6 +1,10 @@
 package api
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/zemdenalex/neuroboost-bot/parse"
+)
 
 // The user's own keyword vocabulary, Denis's ask of 15.09, in two halves:
 // «также должна быть возможность создавать свои слова для тегов», and then,
@@ -18,14 +22,9 @@ import "strings"
 // empty map is how everything disappears at once.
 
 // Keyword is one defined word: which characteristic it sets, and to what.
-//
-// Field is the stored NAME of the characteristic ("tag", "colour", "day"…),
-// not a parse.Field: this package must not depend on the parser, and a string
-// in the settings blob survives a renumbering of the enum.
-type Keyword struct {
-	Field string
-	Value string
-}
+// It is the parser's type — the blob is read in bot/parse, where the API's
+// POST /api/parse reads it too, so the two cannot disagree about its shape.
+type Keyword = parse.Keyword
 
 // BotKeywords reads the user's own vocabulary.
 //
@@ -40,44 +39,10 @@ func (c *Client) BotKeywords(token string) (map[string]Keyword, error) {
 	return keywordsFrom(settings), nil
 }
 
-// keywordsFrom reads both shapes the blob may hold.
-//
-// ⚠ A bare string is the FIRST shape this feature shipped with, where every
-// word was a tag. It is still read as one. Dropping it would silently empty the
-// vocabulary of anyone who used the version that stored it — and "silently" is
-// the part that makes it unacceptable, not "empty".
+// keywordsFrom reads both shapes the blob may hold — see
+// parse.KeywordsFromSettings, which the API's /api/parse shares.
 func keywordsFrom(settings map[string]any) map[string]Keyword {
-	out := map[string]Keyword{}
-	bot, ok := settings["bot"].(map[string]any)
-	if !ok {
-		return out
-	}
-	words, ok := bot["keywords"].(map[string]any)
-	if !ok {
-		return out
-	}
-
-	for word, raw := range words {
-		w := strings.ToLower(strings.TrimSpace(word))
-		if w == "" {
-			continue
-		}
-		switch v := raw.(type) {
-		case string:
-			if s := strings.ToLower(strings.TrimSpace(v)); s != "" {
-				out[w] = Keyword{Field: "tag", Value: s}
-			}
-		case map[string]any:
-			field, _ := v["field"].(string)
-			value, _ := v["value"].(string)
-			field = strings.ToLower(strings.TrimSpace(field))
-			if field == "" {
-				continue
-			}
-			out[w] = Keyword{Field: field, Value: strings.TrimSpace(value)}
-		}
-	}
-	return out
+	return parse.KeywordsFromSettings(settings)
 }
 
 // SetBotKeyword adds or replaces one word. An empty field removes it.
@@ -144,36 +109,5 @@ func (c *Client) ReminderPresets(token string) (map[string][]int, error) {
 }
 
 func presetsFrom(settings map[string]any) map[string][]int {
-	out := map[string][]int{}
-	reminders, ok := settings["reminders"].(map[string]any)
-	if !ok {
-		return out
-	}
-	presets, ok := reminders["presets"].(map[string]any)
-	if !ok {
-		return out
-	}
-	for name, raw := range presets {
-		list, ok := raw.([]any)
-		if !ok {
-			continue
-		}
-		offsets := make([]int, 0, len(list))
-		bad := false
-		for _, v := range list {
-			n, ok := v.(float64) // every number out of encoding/json is a float64
-			if !ok {
-				bad = true
-				break
-			}
-			offsets = append(offsets, int(n))
-		}
-		if bad {
-			continue
-		}
-		if n := strings.ToLower(strings.TrimSpace(name)); n != "" {
-			out[n] = offsets
-		}
-	}
-	return out
+	return parse.PresetsFromSettings(settings)
 }

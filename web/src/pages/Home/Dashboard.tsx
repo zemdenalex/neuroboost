@@ -1,16 +1,24 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { CalendarPlus, ListTodo, Timer, Clock } from 'lucide-react'
+import { CalendarPlus, ListTodo, Timer, Clock, Pin, Circle, CheckCircle2 } from 'lucide-react'
 import { useAuthContext } from '../../contexts/AuthContext'
 import { EmptyState } from '../../components/ui/EmptyState'
-import { getEvents, getTasks } from '../../api'
+import { getEvents, getTasks, updateTask } from '../../api'
+import { markOccurrence } from '../../api/tasks'
+import { listDays, type Day } from '../../api/dayTasks'
+import { readDayPrefs } from '../../lib/dayTasks/dayView'
+import { todayInZone } from '../../lib/dayTasks/dayColour'
+import { homeDayLine, homeTasks } from '../../lib/home/todayView'
+import { sidebarTick, sidebarTicked } from '../../components/TaskSidebar/sidebarTick'
+import { PriorityMark } from '../../components/PriorityMark'
 import type { NbEvent } from '../../types'
 import type { Task } from '../../types'
 import { dateLocale } from '../../utils/date'
+import { taskCounts } from '../../lib/home/taskCounts'
 
-function formatTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+function formatTime(iso: string, timeZone: string): string {
+  return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', timeZone })
 }
 
 function formatDate(date: Date, locale: string): string {
@@ -21,12 +29,6 @@ function formatDate(date: Date, locale: string): string {
   })
 }
 
-function isOverdue(task: Task): boolean {
-  if (!task.dueDate) return false
-  if (task.status === 'DONE' || task.status === 'CANCELLED') return false
-  return new Date(task.dueDate) < new Date()
-}
-
 export function Dashboard() {
   const { t, i18n } = useTranslation('home')
   const { user } = useAuthContext()
@@ -35,6 +37,18 @@ export function Dashboard() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [loadingEvents, setLoadingEvents] = useState(true)
   const [loadingTasks, setLoadingTasks] = useState(true)
+  const [day, setDay] = useState<Day | undefined>(undefined)
+  const timeZone = user?.timezone || 'Europe/Moscow'
+  const dayTasksOn = readDayPrefs(user?.settings).enabled
+
+  const loadTasks = useCallback(() => getTasks().then(setTasks).catch(() => setTasks([])), [])
+
+  // The day-tasks line, as the bot's «Сегодня» (gap list row 8). Off: no line.
+  useEffect(() => {
+    if (!dayTasksOn) return
+    const today = todayInZone(new Date(), timeZone)
+    listDays(today, today).then((days) => setDay(days[0])).catch(() => setDay(undefined))
+  }, [dayTasksOn, timeZone])
 
   useEffect(() => {
     const today = new Date()
@@ -46,11 +60,19 @@ export function Dashboard() {
       .catch(() => setEvents([]))
       .finally(() => setLoadingEvents(false))
 
-    getTasks()
-      .then(setTasks)
-      .catch(() => setTasks([]))
-      .finally(() => setLoadingTasks(false))
-  }, [])
+    loadTasks().finally(() => setLoadingTasks(false))
+  }, [loadTasks])
+
+  // A tick answers today for a series and toggles a one-off (lib/tasks/tickAction).
+  const tick = async (task: Task) => {
+    const action = sidebarTick(task)
+    try {
+      if (action.kind === 'occurrence') await markOccurrence(task.id, action.state, todayInZone(new Date(), timeZone))
+      else await updateTask(task.id, { status: action.next })
+    } finally {
+      void loadTasks()
+    }
+  }
 
   const displayName = user?.display_name || user?.tg_first_name || user?.email?.split('@')[0] || 'User'
   const today = new Date()
@@ -59,11 +81,11 @@ export function Dashboard() {
   const todayEvents = events
     .slice()
     .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime())
-    .slice(0, 6)
+  const { shown: shownTasks, more: moreTasks } = homeTasks(tasks)
+  const dayLine = dayTasksOn ? homeDayLine(day) : null
 
-  const todoCount = tasks.filter(t => t.status === 'TODO' || t.status === 'IN_PROGRESS' || t.status === 'SCHEDULED').length
-  const doneCount = tasks.filter(t => t.status === 'DONE').length
-  const overdueCount = tasks.filter(isOverdue).length
+  // Repeating tasks by their day, not their status (lib/home/taskCounts)
+  const { todo: todoCount, done: doneCount, overdue: overdueCount } = taskCounts(tasks)
 
   return (
     <div className="h-full overflow-y-auto bg-zinc-950 text-zinc-100">
@@ -74,6 +96,19 @@ export function Dashboard() {
             {t('dashboard.greeting', { name: displayName })}
           </h1>
           <p className="text-zinc-400 mt-1">{todayLabel}</p>
+          {dayLine && (
+            <div data-testid="home-day-line" className="mt-3 flex flex-wrap items-center gap-3">
+              <span className="font-mono text-sm text-zinc-200">
+                📌 {dayLine.kind === 'taken'
+                  ? t('dashboard.dayLine', { square: dayLine.square, done: dayLine.done, target: dayLine.target })
+                  : t('dashboard.dayNotTaken')}
+              </span>
+              <Link to="/day-tasks" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-zinc-700 bg-zinc-900 text-xs font-mono text-zinc-200 hover:border-zinc-500">
+                <Pin size={14} />
+                {t('dashboard.dayTasks')}
+              </Link>
+            </div>
+          )}
         </div>
 
         {/* Quick Actions */}
@@ -125,8 +160,10 @@ export function Dashboard() {
               <ul className="space-y-2">
                 {todayEvents.map(event => (
                   <li key={event.id} className="flex items-start gap-3">
-                    <span className="text-xs text-zinc-500 w-12 shrink-0 pt-0.5 font-mono">
-                      {event.allDay ? '——' : formatTime(event.startsAt)}
+                    <span className="text-xs text-zinc-500 w-24 shrink-0 pt-0.5 font-mono">
+                      {event.allDay
+                        ? t('dashboard.allDay')
+                        : `${formatTime(event.startsAt, timeZone)}–${formatTime(event.endsAt, timeZone)}`}
                     </span>
                     <span className="text-sm text-zinc-200 leading-snug">{event.title}</span>
                   </li>
@@ -161,6 +198,29 @@ export function Dashboard() {
                 className="py-6"
               />
             ) : (
+              <>
+              {/* The bot's «Сегодня»: five open tasks, most urgent first, then «и ещё N». */}
+              <ul data-testid="home-tasks" className="mb-4 space-y-1">
+                {shownTasks.map((task) => (
+                  <li key={task.id} className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => void tick(task)}
+                      aria-label={t('dashboard.tick', { title: task.title })}
+                      className="p-1 text-zinc-500 hover:text-green-400"
+                    >
+                      {sidebarTicked(task) ? <CheckCircle2 size={18} className="text-green-400" /> : <Circle size={18} />}
+                    </button>
+                    <PriorityMark priority={task.priority} />
+                    <Link to={`/tasks?task=${task.id}`} className="min-w-0 flex-1 truncate text-sm text-zinc-200 hover:text-white">
+                      {task.title}
+                    </Link>
+                  </li>
+                ))}
+                {moreTasks > 0 && (
+                  <li className="pl-9 text-xs text-zinc-500">{t('dashboard.more', { count: moreTasks })}</li>
+                )}
+              </ul>
               <div className="grid grid-cols-3 gap-3">
                 <div className="bg-zinc-800 rounded-lg p-4 text-center">
                   <div className="text-2xl font-bold text-blue-400">{todoCount}</div>
@@ -175,6 +235,7 @@ export function Dashboard() {
                   <div className="text-xs text-zinc-400 mt-1">{t('dashboard.overdue')}</div>
                 </div>
               </div>
+              </>
             )}
 
             <Link

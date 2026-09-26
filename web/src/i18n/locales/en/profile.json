@@ -30,5 +30,14 @@
   "badge.nightOwl.name": "Night Owl",
   "badge.nightOwl.description": "Complete a task after 10 PM",
   "activity.title": "Activity",
-  "activity.placeholder": "Activity heatmap coming soon..."
+  "activity.placeholder": "Activity heatmap coming soon...",
+  "real": {
+    "streak": "Day-task days in a row",
+    "streakNote": "taken days up to today",
+    "thisWeek": "{{count}} this week",
+    "fullDays": "Full days",
+    "taken": "of {{count}} taken",
+    "xp": "{{xp}} XP · {{into}} of {{need}} to the next",
+    "xpRule": "+10 per task done, +25 per full day-task day, +5 per reflection"
+  }
 }

@@ -27,6 +27,10 @@ type UserState struct {
 	// otherwise mean "re-read on every message".
 	Lang      string
 	LangKnown bool
+	// LangAt is when Lang was read or set. After a few minutes it is read
+	// again (langTTL), like the priority symbol: a process-long cache keeps a
+	// chat on a stale value until the next manual redeploy.
+	LangAt time.Time
 
 	// TZ is the user's IANA timezone, cached on the same terms as Lang.
 	TZ      string
@@ -59,6 +63,9 @@ type UserState struct {
 	// task list draws it (spec 21.09 §B). "" means «not chosen» — circles.
 	PriorityStyle      string
 	PriorityStyleKnown bool
+	// PriorityStyleAt: the web sets the style too (26.09), so it is re-read
+	// after a few minutes, like Lang.
+	PriorityStyleAt time.Time
 
 	// DayTasksOn caches settings.day_tasks_enabled (spec 2026-09-22 §11): the
 	// home keyboard draws it on every screen, so it is not read each time.
@@ -149,4 +156,9 @@ func (s *Store) ClearFlow(chatID int64) {
 		u.FlowStep = ""
 		u.FlowData = make(map[string]any)
 	}
+}
+
+// SetLang records the chat's interface language and when it was known.
+func (s *UserState) SetLang(lang string) {
+	s.Lang, s.LangKnown, s.LangAt = lang, true, time.Now()
 }

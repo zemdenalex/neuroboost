@@ -1308,3 +1308,166 @@ CI/CD: `concurrency` в `ci.yml` (два push'а подряд ломают e2e �
 - Ждёт Дениса: три прохода · релиз · сферы жизни · модуль долгов · вкус веба (спека §7). Факты initData уже в `E:/Projects/100 - Research/prochee/telegram-mini-app-initdata-2026-09-24.md`.
 - Незакрытое: `docs/tasks-nochnoy-2026-09-24.md`.
 - Скиллы: `superpowers:test-driven-development`, advisor перед крупным шагом, свежий ревьюер после сборки; релиз — как v0.4.11.5 (заметки `bot/internal/release/notes.go`, мерж, прод-бот руками, `/broadcast`).
+
+## [2026-09-24 11:26] consolidate | PRESERVED — transcript-20260924-111155.jsonl, 115 MB → .oversize/ (too large for one pass, kept for chunked consolidation)
+
+## [2026-09-24 11:26] consolidate | PRESERVED — transcript-20260924-112538.jsonl, 115 MB → .oversize/ (too large for one pass, kept for chunked consolidation)
+
+## [2026-09-25] recall | learning-shell-heredoc-scripts-break-escapes, learning-second-writer-breaks-whole-blob-save, learning-a-hidden-choice-must-stop-acting, decision-day-commitments-concept-21-09, preference-keep-sabotage-advisor-e2e-obsidian, preference-a-loop-does-not-stop-itself
+
+## [2026-09-25 08:30] handoff-auto (обычный режим) | месяц в вебе, релиз-PR, уборка веба
+
+**Сделано 24–25.09** (ветка `develop`; на staging до `a22e92b` + docs `1147b05`; **11 коммитов локально, не запушены** — ждут конца его прохода):
+- Веб, месяц: 5 вариантов (Список по умолчанию, Классика, Тепловая, Месяц+день, Только задачи дня), выбор в ⚙️, Неделя/Месяц, клик/двойной клик, перетаскивание по календарным дням; ревью opus 0 Critical · 5 Important (все закрыты) · 13 Minor (9 закрыты). Спека `docs/team/architecture/V003-20260924-arc-web-month-view.md`, задачи `docs/tasks-web-month.md`.
+- 🔴 Найдено и починено: квадраты задач дня в **неделе** стояли на день раньше восточнее UTC (узел `learning-a-test-fed-a-shape-the-producer-never-makes`).
+- Релиз v0.4.11.6 **только бот** (его выбор): ветка `release/v0.4.11.6` (worktree в scratchpad), PR https://github.com/zemdenalex/neuroboost/pull/10, CI зелёный, ничего не выкатил. Заметки в `bot/internal/release/notes.go` (дата «25.09.2026 · в проде» — поправить на день мержа).
+- Локально (не на staging): Escape в редакторе (дважды после ввода), ожидание клика 300 мс + ползунок, без длинных тире во всём вебе (тест на все locales), M9–M12 месяца, аудит Admin/Tools (`docs/team/research/V003-20260924-res-admin-tools-audit.md`), уборка по нему — `docs/tasks-web-cleanup.md`: Admin без импорта/Users, feedback с отправителем (optional JWT, api-go+web+бот), Profile только настоящие числа + XP (его формула), флаг Tools везде, Logs, Kanban.
+- Сервер 62.76.228.106: почищен build cache 31 ГБ (81% → 44% диска).
+
+**Ждёт Дениса:**
+- Его проход `docs/proverka-2026-09-24-bot-i-veb.md` (на 25.09 08:00 — 15 из 41, замечаний нет).
+- «Да» на мерж PR #10 → потом прод-бот руками на nl-2 (как v0.4.11.5) и `/broadcast`.
+
+## План следующей сессии (auto)
+
+- **Цель:** закрыть его проход → релиз бота v0.4.11.6 → push локальных 11 коммитов на staging → уборка веба дальше → Mini App.
+- **Первый шаг:** `grep -c '\- \[x\]' docs/proverka-2026-09-24-bot-i-veb.md` и прочитать его строки-замечания под пунктами (`git diff docs/proverka-2026-09-24-bot-i-veb.md`). Замечание → фикс с тестом. Всё зелёное → спросить «да» на PR #10.
+- **Не делать:** push `develop`, пока он проходит список (push пересобирает staging). После его прохода — `git push origin develop`, ждать CI (`gh run list --branch develop --limit 1`), e2e на staging должен быть зелёным (новые спеки: `month-view`, `profile-real`, `tools-flag`).
+- **Релиз по «да»:** `gh pr merge 10 --merge` (= прод-деплой API+веб v0.4.11.5-веб), поправить дату в notes.go на ветке до мержа, затем прод-бот: `/opt/neuroboost-bot-prod`, `git archive --prefix=src/ origin/main:bot`, `docker compose up -d --build bot`, логи только через sed-фильтр токена; `/broadcast` — сначала пробный.
+- **Дальше по его порядку** (24.09): уборка веба (`docs/tasks-web-cleanup.md`: 4.1, 4.2, 4.8, 4.9 Eisenhower со сроком, 4.10 «Бюджет времени», 4.11 повторы на странице Tasks, 🟡 4.3 версия — правка деплоя) → Telegram Mini App (разведка `docs/superpowers/specs/2026-09-24-mini-app-and-android-razvedka.md`, первый шаг — проверка `initData` в api-go по TDD) → сферы + долги (сначала его ответы) → Android (PWA).
+- **Разогрев:** `docs/tasks-web-cleanup.md` (что осталось, с его решениями) · `docs/tasks-web-month.md` (отложенное M2, инструмент `--preview`, настройки разделами) · `docs/agents/queue.md` · узлы `learning-a-test-fed-a-shape-the-producer-never-makes`, `learning-local-e2e-flakes-on-the-dev-server-not-the-code`, `learning-shell-heredoc-scripts-break-escapes`, `preference-keep-sabotage-advisor-e2e-obsidian`.
+- **Проверено:** все фиксы — тест красный→зелёный + сабботаж; e2e месяца 11/11 против production-сборки; api-go с тестовой БД (`nb-test-db`, строка — в памяти проекта) зелёный; бот зелёный.
+- **Опровергнуто:** «флак e2e = регрессия» — это dev-сервер (11/11 на сборке); «гейт упал» в 00:38 — машина спала 6.5 ч, перезапуск 766/766.
+- **Скрипты-ловушки:** Go-строки и регэкспы — только через Write+python, не heredoc (дважды за сессию).
+
+## [2026-09-25 17:07] consolidate | PRESERVED — transcript-precompact-04e1a014-20260925-170556.jsonl, 124 MB → .oversize/ (too large for one pass, kept for chunked consolidation)
+
+## [2026-09-25] recall | learning-shell-heredoc-scripts-break-escapes,learning-local-e2e-flakes-on-the-dev-server-not-the-code,learning-a-test-that-cannot-fail-guards-nothing,preference-keep-sabotage-advisor-e2e-obsidian,preference-a-loop-does-not-stop-itself
+
+## [2026-09-25 22:00] handoff-auto (loop) | Mini App, мобильный веб, светлая тема, финансирование
+
+**Луп:** «work in a loop to create telegram miniapp and fix mobile web» (Денис 25.09). Всё локально на `develop`, **48 коммитов не запушены** — Денис сказал не пушить, пока не решит (ответ 25.09: «make new doc … if you didn't push to dev»).
+
+**Сделано 25.09** (каждая правка: тест красный→зелёный + сабботаж; весь e2e против сборки — зелёный, кроме 2 спек Mini App: эндпоинта нет на staging до push):
+- Mini App: `POST /api/auth/telegram-webapp` (initData WebAppData HMAC, 1 ч, не из будущего, гонка tg_id → найти), веб-вход из hash, SDK только в Telegram + `__telegram__initParams`, BackButton, без «Выйти», start links `t-`/`dt`/`d-YYYY-MM-DD`, `/calendar?date=`, бот `WEBAPP_URL` → кнопка меню. Ревью opus: `docs/team/research/V003-20260925-res-review-miniapp-mobile.md`, I1–I3 + M1, M3, M4 закрыты.
+- Мобильный веб MW1–MW14: `docs/tasks-mobile-web.md`. Решения Дениса 25.09 (страница https://claude.ai/artifact/GqNKUBaqERKbD6vFzJRyBD): календарь A (подсказка 3 раза, полоса 20 px), строка задачи — все три варианта в ⚙️, тема Telegram (B), `@types/node` да.
+- Светлая тема LT1–LT8: `docs/tasks-light-theme.md`; тёмная сверена попиксельно; ⚙️ «Тема: Тёмная/Светлая/Как в системе» (Денис: «dark light system is fine», «more themes» — потом, LT9).
+- Документ для Дениса о версиях: `docs/relizy/plan-v0.4.11.6-i-v0.4.12.md` (прод v0.4.11.5; PR #10 = бот D3 + подзадачи; веб → v0.4.12).
+- Финансирование (задача корня): `docs/team/pitch/V003-20260925-pit-investor-pack.md`; Сбер500 и ФРИИ закрыты и только для юрлиц, Миелофонд исключён (отчуждение РИД). Ничего не подано.
+
+## План следующей сессии (auto, loop)
+
+- **Цель:** держать луп на очереди, пока Денис решает push/релиз; ничего наружу без его «да».
+- **Первый шаг:** `git -C "E:/Projects/007 - Ventures/V003 - NeuroBoost" rev-list --count origin/develop..develop` и `grep -c '\- \[x\]' docs/proverka-2026-09-24-bot-i-veb.md` — если Денис сказал «push»: `git push origin develop`, `gh run list --branch develop --limit 1` до зелёного (e2e Mini App должны позеленеть), затем `WEBAPP_URL=https://dev.neuroboost.website` в `/opt/neuroboost-bot/.env` на nl-2 и `scripts/deploy-dev-bot.sh`, логи только через sed-фильтр токена.
+- **Если его «да» на PR #10:** сначала он проходит раздел 3 (подзадачи); затем дата в `bot/internal/release/notes.go` на ветке `release/v0.4.11.6`, мерж, прод-бот руками (`/opt/neuroboost-bot-prod`), `/broadcast` пробный.
+- **Пока ждём (без Дениса, по очереди `docs/agents/queue.md`):**
+  1. `docs/tasks-web-cleanup.md` 4.1, 4.2, 4.8, 4.9 (Eisenhower: срочность из due_date), 4.10 («Бюджет времени» из рабочих часов), 4.11 (повторы на Tasks через occurrences)
+  2. Флак `e2e/month-view.spec.ts` «saves month_view_variant» (`Response has been disposed`)
+  3. Постоянная работа из очереди: тесты `api-go/internal/planning`, `reflections`; Lighthouse `/calendar`
+- **Разогрев:** `docs/relizy/plan-v0.4.11.6-i-v0.4.12.md` · `docs/tasks-mini-app.md` · `docs/tasks-mobile-web.md` · `docs/tasks-light-theme.md` · `docs/tasks-web-cleanup.md` · узлы `learning-e2e-specs-assume-the-screen-they-were-written-on`, `learning-eslint-last-line-counts-only-fixable`, `learning-shell-heredoc-scripts-break-escapes`.
+- **Проверено:** e2e на сборке (`web/scripts/e2e-local.sh --preview`), тур `NB_TOUR=1 [NB_TOUR_THEME=light] [NB_TOUR_DESKTOP=1]`. **Опровергнуто:** «drag-спеки сломал скролл логики» — ломалось предположение спек о первом экране; «тёмная тема изменилась» — различия были загрузкой.
+- **Ловушки:** Go/TS-строки и регэкспы — Write+python, не heredoc/sed (сегодня ещё 4 раза); lint проверять `grep -c " error "`, не `tail -1`; `pnpm add` только из `C:\E_Drive\…`.
+- **Незакрытое:** `docs/tasks-mini-app.md` (MA3b тема — сделано иначе, закрыть), `docs/tasks-mobile-web.md` (MW8 🟡, флак), `docs/tasks-light-theme.md` (LT9 потом), `docs/tasks-web-cleanup.md`.
+
+## [2026-09-25 23:05] handoff-auto (loop) | уборка веба: 4.1, 4.2, 4.9, 4.10
+
+**Сделано после прошлого handoff** (всё локально, не запушено; тест красный→зелёный + сабботаж):
+- 4.9 Eisenhower: срочность из срока (≤2 дней/просрочено), важность = приоритет 1–2, перетаскивание меняет только приоритет (`c7e3753`)
+- 4.10 «Бюджет времени»: день из рабочих часов аккаунта, разбивка в аккаунте `time_budget`, недели нет (`7e36703`)
+- 4.1/4.2 Admin: Overview по всему бэклогу, «Not saved» у строки (`ad3dc3f`)
+- Найдено: `isVisible({timeout})` в Playwright не ждёт — тест молча скипался; заменено на `waitFor`.
+
+## План следующей сессии (auto, loop)
+
+- **Цель:** оставшаяся уборка веба, потом постоянная работа по `docs/agents/queue.md`; push/релиз — только по слову Дениса.
+- **Первый шаг:** `docs/tasks-web-cleanup.md` 4.11 — галочка у повторяющейся задачи на странице Tasks закрывает всю серию (`web/src/pages/Tasks/Tasks.tsx` `handleStatusToggle`); повторить подход Kanban (`lib/tools/kanban.ts` `dropAction` + `markDayTaskDone`/occurrences API), сначала e2e-воспроизведение.
+- **Потом:** 4.8 Pomodoro (сначала воспроизвести), флак `e2e/month-view.spec.ts` «saves month_view_variant», тесты `api-go/internal/planning`/`reflections`.
+- **Ждёт Дениса:** push (документ `docs/relizy/plan-v0.4.11.6-i-v0.4.12.md`), раздел 3 + «да» PR #10, ООО или ИП-программы (`docs/team/pitch/V003-20260925-pit-investor-pack.md` §4b).
+- **Разогрев:** `docs/tasks-web-cleanup.md`, `web/src/lib/tools/kanban.ts`, узлы `learning-e2e-specs-assume-the-screen-they-were-written-on`, `learning-shell-heredoc-scripts-break-escapes`.
+
+## [2026-09-25 22:56] consolidate | PRESERVED — transcript-precompact-04e1a014-20260925-225452.jsonl, 141 MB → .oversize/ (too large for one pass, kept for chunked consolidation)
+
+## [2026-09-26] recall | learning-the-right-time-in-the-wrong-zone, learning-shell-heredoc-scripts-break-escapes, learning-a-test-fed-a-shape-the-producer-never-makes, learning-local-e2e-flakes-on-the-dev-server-not-the-code, preference-a-loop-does-not-stop-itself, learning-a-stale-local-ref-answers-confidently
+
+## [2026-09-26 02:30] handoff | ночь 25→26.09: луп Mini App + мобильный веб, аудиты, 96 коммитов не запушены
+
+**Сделано (всё на `develop`, НЕ запушено; `git rev-list --count origin/develop..develop` = 96 после handoff-коммита):**
+- Веб, дефекты: галочка серии закрывала всю серию (`731172a`, `7042f73`, API `state: "open"`) · Помодоро терял блок на задаче «только чтение» (`ede0741`) · рефлексия сбрасывала «не вовремя» (`f1e7533`) · планирование не считало повторы и резало неделю по UTC (`4097870`, `events.ListExpanded`) · главная: серия «просрочена» навсегда (`4dada35`) · подзадачи деревом в списке задач (`abfe30d`, N2) · рабочие часы «конец не позже начала» (`6472768`)
+- API из аудита «чьё сегодня» (`docs/team/research/V003-20260925-res-audit-today-and-scope.md`): I1, M1–M5 починены; M6 — вопрос Денису
+- Бот: «ℹ️ Что в меню» на последнем экране онбординга (`45d29a9`, `61def00`, N1) — на develop, не выкачено, НЕ в PR #10
+- Сборка: Go 1.26 + Alpine 3.22 в образах и CI (`66e429b`, решение Дениса 26.09 «With the next release») — образ API проверен на чистой базе
+- Тесты страниц без тестов, e2e без записей в аккаунт (`day-tasks-write`, `invite-and-link`, `work-hours`), замер `perf.spec.ts`, `e2e-local.sh` по умолчанию собирает сборку
+- Документы: `docs/relizy/plan-v0.4.11.6-i-v0.4.12.md` §3 (что меняется в API — прод-бот тоже увидит) и §8 (что проверить после push), `docs/INDEX.md`, `DOCS-MAP.md` §8, ROADMAP «Сейчас»
+
+**Не проверено:** дерево подзадач на 375px (прогон `--project mobile` прерван сессией) · запуск бот-образа на Go 1.26 (только собран)
+
+**Прочитать первым (узлы):** `preference-loop-goal-before-standing-work`, `learning-a-series-due-date-is-its-start`, `learning-a-page-showing-today-must-name-today`, `learning-checklist-lines-go-stale-check-git-first`, `learning-shell-heredoc-scripts-break-escapes`
+
+**Скиллы на следующую сессию:** `/loop` с промптом ниже · `superpowers:test-driven-development` · `pr-review-toolkit:code-reviewer` на diff перед «готово» · `/feature` для MA3b (варианты цветов Telegram)
+
+### План следующей сессии
+
+- **Цель (Денис 26.09, выбор в handoff):** *«Push and Mini App on staging»*, дальше — луп *«work in a loop to create telegram miniapp and fix mobile web»*, и по его рефлексии **больше Mini App и мобильного**, постоянная работа — только когда по цели остались одни его решения (`preference-loop-goal-before-standing-work`)
+- **Первый шаг:** проверить, что Денис закончил `docs/proverka-2026-09-24-bot-i-veb.md` (его выбор в handoff — пушить); затем шаги CI из `.github/workflows/ci.yml` локально → `git push origin develop` → дождаться CI + e2e (`gh run watch`) → `WEBAPP_URL=https://dev.neuroboost.website` в `.env` dev-бота на nl-2 + `scripts/deploy-dev-bot.sh` → отдать Денису `docs/proverka-mini-app.md` и §8 плана релиза
+- **После push:** e2e `mini-app.spec.ts` должен позеленеть (эндпоинт появится на staging); `subtasks-tree.spec.ts --project mobile`
+- **Потом по цели:** `docs/tasks-mini-app.md` MA3b (цвета из `themeParams` — варианты через `/feature`, выбор Дениса) · перенос из бота в веб остального (N2: статистика, задачи дня — что есть в боте и нет в вебе) · Android-разведка `docs/superpowers/specs/2026-09-24-mini-app-and-android-razvedka.md`
+- **Ждёт Дениса:** «да» на PR #10 (бот v0.4.11.6) · вопросы `graph/.questions-next.md` (ООО/ИП, M6 задачи дня viewer, рабочие часы через полночь, сирота графа) · веб-релиз v0.4.12 после его прохода · ⚠ корню отправлены: баг дат `docs_index.py` и его замечание про раунд подтверждений графа в `/handoff`
+- **Открытые `- [ ]`:** `docs/tasks-mini-app.md` (MA3b) · `docs/tasks-mobile-web.md` (MW8 — вкус) · `docs/tasks-light-theme.md` (LT9) · `docs/tasks-web-month.md` (19, 68) · `docs/tasks-web-cleanup.md` (4.3) · `docs/tasks-prohod3-2026-09-23.md` (N1 ℹ️ на шагах — решает он, N2) · `docs/tasks-nochnoy-2026-09-24.md` (push)
+- **Промпт лупа:** `/loop work in a loop to create telegram miniapp and fix mobile web (Denis 25.09, verbatim). Checklists: docs/tasks-mini-app.md, docs/tasks-mobile-web.md; queue: docs/agents/queue.md. Rules: E:/Projects/CLAUDE.md "Loops"; no merge to main; prod bot untouched.`
+
+## [2026-09-26 04:08] consolidate | PRESERVED — transcript-precompact-04e1a014-20260926-040754.jsonl, 147 MB → .oversize/ (too large for one pass, kept for chunked consolidation)
+
+## [2026-09-26 04:08] consolidate | PRESERVED — transcript-sessionend-20260926-040807-115936-56c5b3.jsonl, 148 MB → .oversize/ (too large for one pass, kept for chunked consolidation)
+
+## [2026-09-26 04:49] consolidate | PRESERVED — transcript-precompact-04e1a014-20260926-044802.jsonl, 149 MB → .oversize/ (too large for one pass, kept for chunked consolidation)
+
+## [2026-09-26] recall | preference-loop-goal-before-standing-work, learning-a-page-showing-today-must-name-today, learning-a-series-due-date-is-its-start, learning-local-e2e-flakes-on-the-dev-server-not-the-code, decision-release-small-and-in-his-order-21-09
+
+## [2026-09-26 13:30] handoff-auto (loop) | утро 26.09: push, Mini App на staging, строки списка дыр бот→веб
+
+**Сделано (всё на `develop`, запушено до `b49bcc8`):** push 98 коммитов ночи + WEBAPP_URL у dev-бота (Mini App на staging) · MA3b цвета темы Telegram (`3420004`, вариант 2 Дениса) · телефонный календарь рисует 1 день (`f545f2c`) · F1 галочка серии в панели календаря, F2 редактор события терял INTERVAL · один язык на человека (веб+бот+API) · строки списка дыр 2, 4, 7, 9, 11, 13, 14, 15, 16, 8 · нижняя панель телефона «Календарь · Добавить · Ещё» (решение Дениса, `decision-bottom-tabs-three-26-09`) · `GET /api/events` `[]` вместо `null` · листы над панелью (z-60).
+**Проверка Денису:** `docs/proverka-2026-09-26-staging.md` (разделы 1–10). Список дыр с прогрессом — `docs/team/research/V003-20260926-res-bot-vs-web-gaps.md`.
+**Узлы прочитать первыми:** `learning-a-push-carries-every-commit-on-the-branch`, `learning-a-question-to-denis-is-not-a-pause`, `learning-equal-z-index-lets-dom-order-decide`, `decision-bottom-tabs-three-26-09`, `preference-loop-goal-before-standing-work`.
+
+### План следующей сессии (auto)
+
+- **Цель:** луп *«work in a loop to create telegram miniapp and fix mobile web»* — дыры бот→веб и мобильный веб.
+- **Первый шаг:** прочитать результат CI для `b49bcc8` (`gh run list --branch develop --limit 2`) — в нём незапланированно уехали 4 коммита агента строки 1 (парсер): `07a42ba` `08e5c57` `777fe8c` `b49bcc8`, образ API теперь собирается из корня репозитория (`api-go/Dockerfile`, `docker-compose*.yml`). Если deploy-dev или e2e красные — чинить первым (staging!). Затем дождаться/прочитать отчёт агента строки 1 и сделать ревью его diff (`pr-review-toolkit:code-reviewer` на `git diff e4f0739..b49bcc8`), особенно: сборка прод-образа на сервере (`/opt/neuroboost` использует тот же compose?) — прод трогает только релиз, но ci.yml job `deploy` на main должен собраться.
+- **Ждёт Дениса:** строка 3 «месяц на телефоне» — страница вариантов https://claude.ai/artifact/NRbFMBYbLHj6yPkGMXmheo открыта ему (он попросил «show me visually»); строка 5 (экран «связать/перенести») — нарисовать страницу вариантов, не ждать; строки 10 (онбординг веба), 12 (статистика) — решения; `graph/.questions-next.md`.
+- **Дальше без Дениса:** страница вариантов строки 5 → после выбора строки 3 строить месяц на телефоне → строка 18 «после быстрого создания ↩️ Отменить / → Событие» и 17 «свои слова» (зависят от строки 1, парсер уже есть) → пункт проверки 10.x в чек-лист Дениса за каждую фичу.
+- **Разогрев (≈150k):** `CLAUDE.md` проекта (уже инжектится) · список дыр (прогресс, решения) · `docs/proverka-2026-09-26-staging.md` (что уже отдано Денису) · `web/e2e/task-repeat-field.spec.ts` (образец e2e без записи в аккаунт: catch-all route ПЕРВЫМ) · `web/src/pages/Tasks/Tasks.tsx` (центр правок) · этот блок.
+- **Проверено и чем:** e2e без записи в аккаунт на каждую фичу (перехват записи + отказ остальным); CI зелёный до `e4f0739` включительно; вывод e2e только через `sed` (токен!).
+- **Опровергнуто:** «локально прошло = ок» для наложения слоёв (z-index) — на CI было иначе.
+- **Не проверено:** Home и таб-бар на реальном телефоне в Telegram; строка 13 (повтор напоминания) вживую в боте.
+- **Открытые `- [ ]`:** `docs/tasks-mobile-web.md` (MW8 — вкус) · `docs/tasks-light-theme.md` · `docs/tasks-web-month.md`.
+- **К ротации (Денису в отчёт):** JWT e2e-сессии staging-аккаунта попал в транскрипт 26.09 (~30 дней жизни).
+- **Начать с вопросов:** нет
+- **Промпт лупа:** `/loop work in a loop to create telegram miniapp and fix mobile web (Denis 25.09, verbatim). Checklists: docs/tasks-mini-app.md, docs/tasks-mobile-web.md; queue: docs/agents/queue.md. Rules: E:/Projects/CLAUDE.md "Loops"; no merge to main; prod bot untouched.`
+
+
+### После handoff (журнал хуком)
+- 26.09 13:29 · NeuroBoost: this round pushed the web Home page, which now works like the bot's «Сегодня», but the same push also carried the parser agent's four unreviewed commits to staging. - **The Home change:** it shows the day-tasks line with a button, events with start and end time, and five open tasks you can tick plus «и ещё N». Checked at 375 px with your real data; nothing was written. I haven't seen i…
+- 26.09 13:34 · NeuroBoost: the agent has finished "type one line on the web" (row 1). Five of its seven commits are already on staging, pushed with my Home change before I reviewed them. CI for that push (`b49bcc8`) is still running, and a code review of all seven commits is running in the background. The last two commits stay local until both come back clean. **How it works:** - **Line without a time** (for exa…
+- 26.09 13:44 · NeuroBoost: typing a whole line into the task list now works on staging, read the same way the bot reads it. The change is pushed at `3aee803`; its CI run is still going, and I check it at the next wakeup (14:05). CI was green for the previous push, which included moving the parser into the API, and staging answers normally. - **Review fixes:** a review of that work found no deploy or security pro…
+- 26.09 14:31 · Loop report: the hook's numbers came out negative, so they can't be trusted. The real idle stretch was 09:48–12:55, when I waited on your answer instead of working. NeuroBoost: - **Live on staging:** the one-line input is live (`3aee803`), and CI passed fully, e2e included. - **Next, row 18:** after a quick create, a toast offers «Undo», which deletes the task just made, like the bot's «↩️ Отменит…
+- 26.09 14:34 · Loop report: the hook's numbers came out negative again, so I'm not relying on them. The real idle stretch was 09:48–12:55, when I waited on your answer instead of working. NeuroBoost: - **Undo after a quick add (gap list row 18):** pushed as `ca26055`. After saving a line, a toast offers «Отменить», which deletes the task just made, like the bot's «↩️ Отменить». CI for it is still running. - **Ro…
+
+## [2026-09-26] recall | decision-bottom-tabs-three-26-09, learning-a-push-carries-every-commit-on-the-branch, learning-a-question-to-denis-is-not-a-pause, decision-release-small-and-in-his-order-21-09
+
+## [2026-09-26 17:10] handoff | 26.09 день: 14 строк списка дыр бот→веб, парсер одной строки, релизы решены
+
+**Сделано (запушено до `b27fd57`, CI зелёный до `ca26055`):** строки списка дыр 1 (парсер бота через `POST /api/parse`), 2, 4, 6, 7, 8, 9, 11, 13, 14, 15, 16, 18 + F1/F2; нижняя панель телефона «Календарь · Добавить · Ещё»; `GET /api/events` → `[]`; листы над панелью. Проверка Денису — `docs/proverka-2026-09-26-staging.md` (10.1–10.15). Прогресс — `docs/team/research/V003-20260926-res-bot-vs-web-gaps.md`.
+**Не закоммичено (агент строки 17 оборвался с сессией):** `web/src/lib/settings/botKeywords.ts` + `.test.ts`, правки `saveSettings.ts` (`BotValue` — функция от серверного значения), `saveSettings.test.ts`, `AuthContext.tsx` — не проверено и не ревьюено.
+**Решения Дениса в handoff (узлы):** `decision-language-web-and-miniapp-shared-bot-own-26-09` (пересмотр утреннего «один язык»), `decision-one-line-parser-is-the-bots-26-09`, `decision-web-home-is-the-bots-today-26-09`, `decision-web-follows-bot-priority-symbol-26-09`, `decision-phone-month-three-variants-26-09` (A+C+D, выбор в ⚙️), `decision-task-event-link-sheet-and-steps-26-09` (A+B), `decision-release-11-6-then-12-0-26-09`, `decision-bottom-tabs-three-26-09` (подтверждён).
+**Рефлексия Дениса:** дороже всего стоило ожидание 09:48–12:55 (`learning-a-question-to-denis-is-not-a-pause`).
+
+### План следующей сессии
+
+- **Цель (Денис 26.09):** *«Prep for releases one by one, starting with 11.6»* → потом v0.4.12.0; луп Mini App/мобильного веба продолжается между проходами.
+- **Первый шаг:** `gh pr view 10` — PR #10 (v0.4.11.6, бот D3 + подзадачи) как есть: CI зелёный, мержится ли в `main` без конфликтов; собрать Денису короткий список проверки 11.6 (его раздел подзадач 5.1–5.8 уже есть в `docs/proverka-2026-09-26-staging.md`) → его «да» → мерж + прод-бот руками (`/opt/neuroboost-bot-prod`, `git archive`), `/broadcast`.
+- **Затем в коде (без Дениса):** (1) разделить язык по решению: убрать запись `locale` из `bot/internal/api/lang.go SetBotLang`, `bot.lang` из `saveSettings.language`, `startupLanguage` из `AuthContext` (оставить `language_code` для нового аккаунта Mini App); (2) доделать или откатить незакоммиченную строку 17 (`botKeywords.ts`) — ревью `pr-review-toolkit:code-reviewer`; (3) месяц на телефоне A+C+D с выбором в ⚙️; (4) связать/перенести A+B.
+- **v0.4.12.0 prep:** описание релиза из `docs/relizy/plan-v0.4.11.6-i-v0.4.12.md` (обновить: всё с 26.09), проход Дениса, 🔴 до мержа: `ssh … 'cd /opt/neuroboost && git status --short && ls -la .dockerignore'`.
+- **Ждёт Дениса:** «да» на PR #10; проход `docs/proverka-2026-09-26-staging.md`; `graph/.questions-next.md` (ООО/ИП, M6, ночные часы, сирота графа, строки 10 и 12).
+- **Скиллы:** `pr-review-toolkit:code-reviewer` перед каждым push; `/feature` для строк 10/12; e2e только с перехватом записи (образец `web/e2e/task-repeat-field.spec.ts`), вывод через `sed` (токен).
+- **К ротации:** JWT e2e-сессии staging-аккаунта Дениса попал в транскрипт 26.09.
+- **Начать с вопросов:** нет

@@ -8,7 +8,7 @@ import (
 	"github.com/zemdenalex/neuroboost-bot/internal/api"
 	"github.com/zemdenalex/neuroboost-bot/internal/format"
 	"github.com/zemdenalex/neuroboost-bot/internal/keyboards"
-	"github.com/zemdenalex/neuroboost-bot/internal/parse"
+	"github.com/zemdenalex/neuroboost-bot/parse"
 )
 
 // Quick save — Denis, 23.09: a line typed without a command becomes a task
@@ -19,20 +19,10 @@ import (
 // 📝 → Заметка under the saved task undo the guess when it was wrong, which
 // for a line with no clock time it rarely is.
 
-// plainTaskLine is a line that needs no question: no clock time (task or
-// event is a real choice there — a timed task is bound to an event), not a
-// list (one or many is a real choice), and no «повтор» without a frequency
-// (the card promises to ask). Returns what the task parser made of it.
+// plainTaskLine is a line that needs no question — parse.PlainTask, which the
+// API's /api/parse shares so the web saves the same lines at once.
 func (h *Handler) plainTaskLine(chatID int64, text string) (parse.TaskResult, bool) {
-	now := time.Now().In(h.location(chatID))
-	if parse.ParseLine(text, now).Draft.HasTime || parse.LooksLikeList(text, now) {
-		return parse.TaskResult{}, false
-	}
-	r := parse.ParseTask(text, now)
-	if r.RepeatAsked || strings.TrimSpace(r.Title) == "" {
-		return parse.TaskResult{}, false
-	}
-	return r, true
+	return parse.PlainTask(text, time.Now().In(h.location(chatID)))
 }
 
 // taskReqFrom is everything the task vocabulary understood, not just the

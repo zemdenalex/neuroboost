@@ -1,5 +1,7 @@
+import { launchedInTelegram } from '../../../lib/telegram/webApp'
 import { useState, useRef, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useDayTasksEnabled } from '../../../hooks/useDayTasksEnabled'
 import { useTranslation } from 'react-i18next'
 import { useAuthContext } from '../../../contexts/AuthContext'
 import { useFeatureFlags } from '../../../hooks/useFeatureFlags'
@@ -16,6 +18,8 @@ import {
   Shield,
   ChevronDown,
   Home,
+  Pin,
+  Sparkles,
 } from 'lucide-react'
 
 export default function HorizontalHeader() {
@@ -24,6 +28,7 @@ export default function HorizontalHeader() {
   const navigate = useNavigate()
   const { user, logout } = useAuthContext()
   const flags = useFeatureFlags()
+  const dayTasks = useDayTasksEnabled()
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
@@ -31,6 +36,7 @@ export default function HorizontalHeader() {
     { path: '/home', label: t('nav.home'), icon: Home, enabled: true },
     { path: '/calendar', label: t('nav.calendar'), icon: Calendar, enabled: true },
     { path: '/tasks', label: t('nav.tasks'), icon: CheckSquare, enabled: true },
+    { path: '/day-tasks', label: t('nav.dayTasks'), icon: Pin, enabled: dayTasks },
     { path: '/planning', label: t('nav.planning'), icon: LayoutGrid, enabled: true },
     { path: '/reflections', label: t('nav.reflections'), icon: BookOpen, enabled: true },
     { path: '/tools', label: t('nav.tools'), icon: Wrench, enabled: flags.tools },
@@ -61,7 +67,14 @@ export default function HorizontalHeader() {
     <header className="fixed top-0 left-0 right-0 bg-zinc-900 border-b border-zinc-800 z-50">
       <div className="px-4 py-2 flex items-center justify-between">
         {/* Logo */}
-        <Link to="/calendar" className="text-lg font-mono font-bold text-white hover:text-blue-400 transition-colors ml-10 md:ml-0">
+        {/* Room for the hamburger only when there is one (mobile_nav), not for
+            every phone: the default bottom tabs left a 40px hole (tour 25.09, MW7). */}
+        <Link
+          to="/calendar"
+          className={`text-lg font-mono font-bold text-white hover:text-blue-400 transition-colors md:ml-0 ${
+            user?.settings?.mobile_nav === 'hamburger' ? 'ml-10' : ''
+          }`}
+        >
           NeuroBoost
         </Link>
 
@@ -92,6 +105,7 @@ export default function HorizontalHeader() {
         {/* Profile Dropdown */}
         <div className="relative" ref={dropdownRef}>
           <button
+            data-testid="profile-menu"
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
             className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-zinc-800 transition-colors"
           >
@@ -103,7 +117,7 @@ export default function HorizontalHeader() {
                 className="w-7 h-7 rounded-full"
               />
             ) : (
-              <div className="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-xs font-mono text-white">
+              <div className="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-xs font-mono text-onaccent">
                 {initials}
               </div>
             )}
@@ -141,6 +155,15 @@ export default function HorizontalHeader() {
                 {t('nav.settings')}
               </Link>
 
+              <Link
+                to="/whats-new"
+                onClick={() => setIsDropdownOpen(false)}
+                className="flex items-center gap-2 px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-800 transition-colors"
+              >
+                <Sparkles className="w-4 h-4" />
+                {t('nav.whatsNew')}
+              </Link>
+
               {user?.is_admin && (
                 <Link
                   to="/admin"
@@ -152,7 +175,9 @@ export default function HorizontalHeader() {
                 </Link>
               )}
 
-              <div className="border-t border-zinc-800 mt-1 pt-1">
+              {/* Not inside the Telegram Mini App: the next launch signs the
+                  same person straight back in, so "sign out" would do nothing. */}
+              {!launchedInTelegram() && <div className="border-t border-zinc-800 mt-1 pt-1">
                 <button
                   onClick={handleLogout}
                   className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-zinc-800 transition-colors"
@@ -160,7 +185,7 @@ export default function HorizontalHeader() {
                   <LogOut className="w-4 h-4" />
                   {t('action.signOut')}
                 </button>
-              </div>
+              </div>}
             </div>
           )}
         </div>

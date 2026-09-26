@@ -1,11 +1,19 @@
 package handlers
 
 import (
+	"time"
+
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 
 	"github.com/zemdenalex/neuroboost-bot/internal/i18n"
 	"github.com/zemdenalex/neuroboost-bot/internal/keyboards"
 )
+
+// langTTL is how long a chat trusts a cached per-user setting (language,
+// priority symbol) before asking the API again: short enough that a change
+// made elsewhere (the priority symbol is also set in the web) reaches the chat
+// within minutes, long enough that a burst of keypresses costs one read.
+const langTTL = 5 * time.Minute
 
 // lang returns the interface language for this chat.
 //
@@ -15,14 +23,14 @@ import (
 // failure falls back for this one message and tries again on the next.
 func (h *Handler) lang(chatID int64) i18n.Lang {
 	us := h.store.GetOrCreate(chatID)
-	if us.LangKnown {
+	if us.LangKnown && time.Since(us.LangAt) < langTTL {
 		return i18n.Parse(us.Lang)
 	}
 	stored, err := h.api.BotLang(us.AuthToken)
 	if err != nil {
 		return i18n.Default
 	}
-	us.Lang, us.LangKnown = stored, true
+	us.SetLang(stored)
 	return i18n.Parse(stored)
 }
 
@@ -77,6 +85,6 @@ func (h *Handler) handleLanguageSet(chatID int64, messageID int, lang string) {
 			"❌ Could not save. Nothing was changed."), keyboards.SettingsMenu(h.lang(chatID)))
 		return
 	}
-	us.Lang, us.LangKnown = lang, true
+	us.SetLang(lang)
 	h.handleLanguage(chatID, messageID)
 }

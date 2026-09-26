@@ -39,7 +39,7 @@ func eventAPIHandler(t *testing.T) (*Handler, *fakeTelegram, int64) {
 	const chat = int64(9801)
 	h.store.SetAuth(chat, "jwt", time.Now().Add(time.Hour).Unix())
 	us := h.store.GetOrCreate(chat)
-	us.Lang, us.LangKnown = "ru", true
+	us.SetLang("ru")
 	return h, fake, chat
 }
 

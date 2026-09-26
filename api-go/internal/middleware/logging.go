@@ -21,6 +21,12 @@ func (sw *statusWriter) WriteHeader(code int) {
 func RequestLogger(log *slog.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// The Admin Logs tab polls this every 10 s; logging the poll filled
+			// the very buffer it shows (audit 24.09, A7).
+			if r.Method == http.MethodGet && r.URL.Path == "/api/admin/logs" {
+				next.ServeHTTP(w, r)
+				return
+			}
 			start := time.Now()
 
 			sw := &statusWriter{ResponseWriter: w, status: http.StatusOK}

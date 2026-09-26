@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/jackc/pgx/v5"
-
 	"neuroboost/api-go/internal/calendars"
 	"neuroboost/api-go/internal/recurrence"
 )
@@ -31,6 +29,9 @@ import (
 const (
 	StateDone    = "done"
 	StateSkipped = "skipped"
+	// StateOpen is not stored: it removes the day's row, putting the day
+	// back to «no answer» (the web's Undo after a tick, 4.11).
+	StateOpen = "open"
 )
 
 var (
@@ -96,24 +97,9 @@ func LocalDay(at time.Time, timezone string) time.Time {
 	return time.Date(l.Year(), l.Month(), l.Day(), 0, 0, 0, 0, loc)
 }
 
-// OccurrenceState reports what was done with one day: "", "done" or "skipped".
-func OccurrenceState(ctx context.Context, taskID string, day time.Time) (string, error) {
-	var state string
-	err := db.Pool.QueryRow(ctx,
-		`SELECT state FROM task_occurrence WHERE task_id = $1 AND occurrence = $2`,
-		taskID, day.Format("2006-01-02")).Scan(&state)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return "", nil
-	}
-	if err != nil {
-		return "", err
-	}
-	return state, nil
-}
-
 // MarkOccurrence records what happened to one day of a series.
 func MarkOccurrence(ctx context.Context, userID, taskID string, day time.Time, state string) error {
-	if state != StateDone && state != StateSkipped {
+	if state != StateDone && state != StateSkipped && state != StateOpen {
 		return fmt.Errorf("unknown occurrence state: %s", state)
 	}
 
@@ -123,6 +109,16 @@ func MarkOccurrence(ctx context.Context, userID, taskID string, day time.Time, s
 	}
 	if !recurrence.Occurs(rule, anchor, day) {
 		return ErrNotAnOccurrence
+	}
+
+	if state == StateOpen {
+		// Not filtered by user_id: a day of a shared series is one row for the
+		// calendar and keeps whoever answered first, so the other member's
+		// «open» would delete nothing. Write access was checked by repeatOf.
+		_, err = db.Pool.Exec(ctx,
+			`DELETE FROM task_occurrence WHERE task_id = $1 AND occurrence = $2`,
+			taskID, day.Format("2006-01-02"))
+		return err
 	}
 
 	_, err = db.Pool.Exec(ctx, `

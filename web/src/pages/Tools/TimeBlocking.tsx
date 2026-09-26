@@ -1,21 +1,13 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Link } from 'react-router-dom'
 import { Clock, Plus, Trash2, AlertTriangle } from 'lucide-react'
+import { useAuthContext } from '../../contexts/AuthContext'
+import { readBudgetCategories, workDayCount, workHoursPerDay, type TimeCategory } from '../../lib/tools/timeBudget'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-interface TimeCategory {
-  id: string
-  labelKey: string    // i18n key or empty for custom
-  customLabel: string // used when labelKey is ''
-  hours: number
-  color: string       // Tailwind bg- color class
-  isCustom: boolean
-}
-
 interface TimeBlockingState {
-  hoursPerDay: number
-  workDaysPerWeek: number
   categories: TimeCategory[]
 }
 
@@ -73,36 +65,19 @@ const CUSTOM_COLORS = [
   'bg-lime-500',
 ]
 
-// ─── localStorage ─────────────────────────────────────────────────────────────
+// ─── Where the split comes from ───────────────────────────────────────────────
 
-const LS_KEY = 'nb-time-blocking'
+// Until 25.09 the whole tool lived in this key of one browser. It is read once,
+// only when the account has no split yet, so nothing typed there is lost.
+const LEGACY_KEY = 'nb-time-blocking'
 
-function loadState(): TimeBlockingState {
+function legacyCategories(): TimeCategory[] | null {
   try {
-    const raw = localStorage.getItem(LS_KEY)
-    if (raw) {
-      const parsed = JSON.parse(raw) as TimeBlockingState
-      // Basic validation
-      if (
-        typeof parsed.hoursPerDay === 'number' &&
-        typeof parsed.workDaysPerWeek === 'number' &&
-        Array.isArray(parsed.categories)
-      ) {
-        return parsed
-      }
-    }
+    const raw = localStorage.getItem(LEGACY_KEY)
+    return raw ? readBudgetCategories((JSON.parse(raw) as { categories?: unknown }).categories) : null
   } catch {
-    // ignore
+    return null
   }
-  return {
-    hoursPerDay: 8,
-    workDaysPerWeek: 5,
-    categories: DEFAULT_CATEGORIES,
-  }
-}
-
-function saveState(state: TimeBlockingState) {
-  localStorage.setItem(LS_KEY, JSON.stringify(state))
 }
 
 // ─── Stacked bar ──────────────────────────────────────────────────────────────
@@ -222,59 +197,7 @@ function Summary({ totalAvailable, totalAllocated, utilization }: SummaryProps) 
   )
 }
 
-// ─── Weekly view ──────────────────────────────────────────────────────────────
-
-const DAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const
-
-interface WeeklyViewProps {
-  workDaysPerWeek: number
-  hoursPerDay: number
-  categories: TimeCategory[]
-  labelFn: (cat: TimeCategory) => string
-}
-
-function WeeklyView({ workDaysPerWeek, hoursPerDay, categories, labelFn }: WeeklyViewProps) {
-  const { t } = useTranslation('tools')
-  const totalAllocated = categories.reduce((s, c) => s + c.hours, 0)
-  const maxHours = Math.max(hoursPerDay, totalAllocated)
-
-  const activeDays = DAY_KEYS.slice(0, workDaysPerWeek)
-
-  return (
-    <div className="space-y-3">
-      <h3 className="text-sm font-semibold text-zinc-300">{t('timeBlocking.weeklyView')}</h3>
-      <div className="flex gap-2 items-end overflow-x-auto pb-1">
-        {activeDays.map((day) => (
-          <div key={day} className="flex-1 min-w-[36px] flex flex-col items-center gap-1.5">
-            {/* Bar */}
-            <div
-              className="w-full rounded-md overflow-hidden bg-zinc-800 border border-zinc-700 flex flex-col-reverse"
-              style={{ height: `${Math.round((hoursPerDay / 16) * 120) + 40}px` }}
-            >
-              {categories
-                .filter((c) => c.hours > 0)
-                .map((cat) => {
-                  const pct = (cat.hours / maxHours) * 100
-                  return (
-                    <div
-                      key={cat.id}
-                      className={`w-full ${cat.color} transition-all duration-300`}
-                      style={{ height: `${pct}%` }}
-                      title={`${labelFn(cat)}: ${cat.hours}h`}
-                    />
-                  )
-                })}
-            </div>
-            {/* Day label */}
-            <span className="text-[10px] text-zinc-500 uppercase tracking-wide">
-              {t(`timeBlocking.days.${day}`)}
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
+// ─── Main Page ────────────────────────────────────────────────────────────────
 
 // ─── Category row ─────────────────────────────────────────────────────────────
 
@@ -335,40 +258,44 @@ function CategoryRow({ cat, label, onHoursChange, onRemove }: CategoryRowProps) 
 export default function TimeBlocking() {
   const { t } = useTranslation('tools')
 
-  const [state, setState] = useState<TimeBlockingState>(loadState)
+  const { user, updateSettings } = useAuthContext()
+  const [state, setState] = useState<TimeBlockingState>(() => ({
+    categories: readBudgetCategories(user?.settings?.time_budget) ?? legacyCategories() ?? DEFAULT_CATEGORIES,
+  }))
   const [newCategoryLabel, setNewCategoryLabel] = useState('')
   const [showAddForm, setShowAddForm] = useState(false)
 
-  // Persist on change
+  // The day's length is the account's work hours (⚙️), not a number typed here.
+  const workHours = workHoursPerDay(user?.settings?.work_start, user?.settings?.work_end)
+  const hoursPerDay = workHours ?? 8
+  const workDays = workDayCount(user?.settings?.work_days)
+
+  // Saved to the account, a moment after the last change (typing hours would
+  // otherwise send a request per keystroke). The first render saves nothing.
+  const firstRender = useRef(true)
   useEffect(() => {
-    saveState(state)
-  }, [state])
+    if (firstRender.current) {
+      firstRender.current = false
+      return
+    }
+    const timer = window.setTimeout(() => {
+      void updateSettings({ time_budget: state.categories }).catch(() => undefined)
+    }, 700)
+    return () => window.clearTimeout(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- saves on the split changing only
+  }, [state.categories])
 
   const labelFn = useCallback(
     (cat: TimeCategory) => (cat.isCustom ? cat.customLabel : t(cat.labelKey)),
     [t]
   )
 
-  const totalAvailable = state.hoursPerDay
+  const totalAvailable = hoursPerDay
   const totalAllocated = state.categories.reduce((s, c) => s + c.hours, 0)
   const utilization = totalAvailable > 0 ? (totalAllocated / totalAvailable) * 100 : 0
   const overBudget = utilization > 100
 
   // ── Handlers ─────────────────────────────────────────────────────────────────
-
-  function handleHoursPerDay(e: React.ChangeEvent<HTMLInputElement>) {
-    const val = parseFloat(e.target.value)
-    if (!Number.isNaN(val) && val >= 1 && val <= 24) {
-      setState((prev) => ({ ...prev, hoursPerDay: val }))
-    }
-  }
-
-  function handleWorkDays(e: React.ChangeEvent<HTMLInputElement>) {
-    const val = parseInt(e.target.value, 10)
-    if (!Number.isNaN(val) && val >= 1 && val <= 7) {
-      setState((prev) => ({ ...prev, workDaysPerWeek: val }))
-    }
-  }
 
   function handleHoursChange(id: string, hours: number) {
     setState((prev) => ({
@@ -419,45 +346,23 @@ export default function TimeBlocking() {
           <h1 className="text-xl font-bold text-zinc-100">{t('timeBlocking.title')}</h1>
         </div>
 
-        {/* ── Available hours ── */}
-        <section className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 space-y-4">
+        {/* ── Available hours: the account's work hours ── */}
+        <section data-testid="time-budget-hours" className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 space-y-2">
           <h2 className="text-sm font-semibold text-zinc-300">{t('timeBlocking.availableHours')}</h2>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <label className="text-xs text-zinc-500">{t('timeBlocking.hoursPerDay')}</label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  min="1"
-                  max="24"
-                  step="0.5"
-                  value={state.hoursPerDay}
-                  onChange={handleHoursPerDay}
-                  className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm
-                    font-mono text-zinc-100 focus:outline-none focus:border-blue-500 transition-colors"
-                />
-                <span className="text-xs text-zinc-500 flex-shrink-0">h</span>
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs text-zinc-500">{t('timeBlocking.workDays')}</label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  min="1"
-                  max="7"
-                  step="1"
-                  value={state.workDaysPerWeek}
-                  onChange={handleWorkDays}
-                  className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm
-                    font-mono text-zinc-100 focus:outline-none focus:border-blue-500 transition-colors"
-                />
-                <span className="text-xs text-zinc-500 flex-shrink-0">{t('timeBlocking.days')}</span>
-              </div>
-            </div>
-          </div>
+          <p className="text-sm font-mono text-zinc-100">
+            {workHours === null
+              ? t('timeBlocking.noWorkHours')
+              : t('timeBlocking.fromWorkHours', {
+                  hours: hoursPerDay,
+                  start: user?.settings?.work_start,
+                  end: user?.settings?.work_end,
+                  days: workDays,
+                  week: Math.round(hoursPerDay * workDays * 10) / 10,
+                })}
+          </p>
+          <Link to="/settings" className="text-xs text-blue-400 hover:underline">
+            {t('timeBlocking.changeWorkHours')}
+          </Link>
         </section>
 
         {/* ── Time categories ── */}
@@ -541,15 +446,6 @@ export default function TimeBlocking() {
           utilization={utilization}
         />
 
-        {/* ── Weekly view ── */}
-        <section className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
-          <WeeklyView
-            workDaysPerWeek={state.workDaysPerWeek}
-            hoursPerDay={state.hoursPerDay}
-            categories={state.categories}
-            labelFn={labelFn}
-          />
-        </section>
       </div>
     </div>
   )

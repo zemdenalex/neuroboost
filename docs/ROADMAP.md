@@ -1,12 +1,23 @@
-<!-- паспорт: тип=документ | статус=действует | строк=426 | ~токенов=7043 | обновлён=по git -->
+<!-- паспорт: тип=документ | статус=действует | строк=446 | ~токенов=7468 | обновлён=по git -->
 
 # NeuroBoost Roadmap
 
-> **Single source of truth for status and versioning.** Updated: **2026-08-10** (сверка с кодом;
-> тело правилось 27–28.07, а шапка до 10.08 всё ещё говорила «2026-07-19» — источник истины врал
-> о собственной дате).
+> **Single source of truth for status and versioning.** Шапка обновлена **2026-09-25**: история
+> релизов досчитана по `git tag` до `v0.4.11.5`, добавлен блок «Сейчас». Разделы ниже про v0.4.4–v0.4.11
+> — история, писались 27.07–12.08 и по датам не правились.
 > Other docs lag; this one is maintained. `docs/NeuroBoost_v0_4_0_Feature_List.md` is a
 > historical planning artifact — do not read status from it.
+
+## Сейчас (25.09.2026)
+
+- **Что на проде, на staging и локально, и какие версии дальше** — `docs/relizy/plan-v0.4.11.6-i-v0.4.12.md`
+  (живой документ; счётчики в нём — на момент записи, пересчитывать командами из `CLAUDE.md` §Счётчики).
+- 🟡 **v0.4.11.6** (бот): D3 задачи дня (цвет дня в клетке месяца и на «📅 Сегодня», ⚙️ → 📌 Задачи дня,
+  шаг онбординга) + подзадачи на карточке задачи — PR #10 открыт, ждёт «да» Дениса.
+- 🟡 **v0.4.12** (веб): задачи дня в вебе (`/day-tasks`), месячный вид (5 вариантов), мобильный веб на 375px,
+  Telegram Mini App (вход по `initData`), светлая тема, уборка Admin/Tools (`docs/tasks-web-cleanup.md`).
+  На `develop`, частью только локально — ждёт конца прохода `docs/proverka-2026-09-24-bot-i-veb.md`.
+- Очередь следующей работы — `docs/agents/queue.md`.
 
 ## Versioning Convention
 
@@ -31,6 +42,15 @@ Tags are created on `main` after merging tested `develop` code.
 | `v0.4.1.1` | — | Admin patch |
 | `v0.4.2.0` | — | Profile page, calendar view, task creation, events |
 | `v0.4.3.0-beta` | — | Calendar page with old+new features, bilingual support |
+| `v0.4.4`–`v0.4.8` | 2026-04-09…11 | Sprint v0.4.4–v0.4.9 (see below) |
+| `v0.4.9` | 2026-04-24 | Polish: bug fixes, Settings/Planning rework, mobile Telegram login |
+| `v0.4.10` | 2026-08-18 | P1 quick capture, P2 Telegram notifications, P3 shared calendars (slices 1–4) |
+| `v0.4.11` | 2026-09-11 | Срез 1 (веб) + срез 2 (бот) — `docs/relizy/v0.4.11.md` |
+| `v0.4.11.1` | 2026-09-16 | Бот на естественном языке — `docs/relizy/v0.4.11.1.md` |
+| `v0.4.11.2` | 2026-09-17 | Бот: онбординг, быстрое добавление, свой период повтора, события на несколько дней — `docs/relizy/v0.4.11.2.md` |
+| `v0.4.11.3` | 2026-09-21 | Карточки со всеми полями, календари в боте, приглашение по ссылке, snooze починен |
+| `v0.4.11.4` | 2026-09-23 | Задача↔событие, статистика, символ приоритета, ℹ️ объяснения, правки прохода 3 |
+| `v0.4.11.5` | 2026-09-24 | Задачи дня в боте |
 
 ---
 

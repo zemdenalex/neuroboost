@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import { sidebarTicked } from './sidebarTick';
 import { Pencil } from 'lucide-react';
 import type { Task } from '../../types';
 import { describeDueDate, dueDateColorClass, formatDueDateLabel } from '../../lib/dueDate';
@@ -34,7 +35,7 @@ export function TaskItem({
   onStatusToggle,
 }: TaskItemProps) {
   const { t, i18n } = useTranslation('common');
-  const isDone = task.status === 'DONE';
+  const isDone = sidebarTicked(task);
   const isScheduled = task.status === 'SCHEDULED';
   const dueInfo = task.dueDate ? describeDueDate(task.dueDate) : null;
 

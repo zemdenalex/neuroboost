@@ -270,8 +270,33 @@ func TestAFailedMergeLeavesBothAccountsUntouched(t *testing.T) {
 		// timeout instead of hanging the whole CI job.
 		dropCtx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 		defer cancel()
-		if _, err := d.Pool.Exec(dropCtx,
-			`SET LOCAL lock_timeout = '10s'; DROP TABLE merge_rollback_probe`); err != nil {
+		// 🔴 Lock "user" before the DROP touches the probe table. `go test ./...`
+		// runs packages in parallel on one database, and their cleanups delete
+		// users: such a DELETE holds "user" and then needs the probe table (to
+		// check RESTRICT), while a bare DROP holds the probe table and then needs
+		// "user" (to remove the foreign key). Opposite order, deadlock 40P01 —
+		// CI run 36210239553, after the pool reset above was already in place.
+		// Taking "user" first means the DROP waits holding nothing the other
+		// side needs.
+		tx, err := d.Pool.Begin(dropCtx)
+		if err != nil {
+			t.Errorf("probe table left behind — it will fail the FK test: %v", err)
+			return
+		}
+		defer tx.Rollback(context.Background())
+		for _, stmt := range []string{
+			`SET LOCAL lock_timeout = '10s'`,
+			`LOCK TABLE "user" IN SHARE ROW EXCLUSIVE MODE`,
+			`DROP TABLE merge_rollback_probe`,
+		} {
+			if _, err = tx.Exec(dropCtx, stmt); err != nil {
+				break
+			}
+		}
+		if err == nil {
+			err = tx.Commit(dropCtx)
+		}
+		if err != nil {
 			t.Errorf("probe table left behind — it will fail the FK test: %v", err)
 		}
 	}()

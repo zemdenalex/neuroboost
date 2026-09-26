@@ -1,9 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
+import { showToast } from '../ui/Toast'
 import { useTranslation } from 'react-i18next'
-import { Plus, Loader2, ChevronDown } from 'lucide-react'
+import { Plus, Loader2, ChevronDown, CalendarDays } from 'lucide-react'
 import { useAuthContext } from '../../contexts/AuthContext'
 import { resolveQuickTaskSettings } from '../../lib/quickTask/settings'
 import { buildQuickTask, type QuickTaskFilters } from '../../lib/quickTask/buildQuickTask'
+import { taskFromParsed, eventFromParsed, describeParsedWhen } from '../../lib/quickTask/fromParsed'
+import { parseLine, type ParsedLine } from '../../api/parse'
+import { createEvent } from '../../api/events'
 import { QuickAddFields } from './QuickAddFields'
 import { nextParentId, type TrailEntry } from '../../lib/quickTask/indent'
 import type { BatchCreateResponse, CreateTaskRequest, Task } from '../../api/tasks'
@@ -12,6 +16,11 @@ type Level = 0 | 1 | 2
 
 interface QuickAddRowProps {
   onCreate: (request: CreateTaskRequest) => Promise<Task>
+  /**
+   * Takes back a task just made from the line (gap list row 18: the bot's
+   * «↩️ Отменить» after a quick save). Absent: no Undo is offered.
+   */
+  onUndo?: (task: Task) => Promise<void>
   /** Multi-line paste path — one request for the whole list. */
   onCreateMany: (requests: CreateTaskRequest[]) => Promise<BatchCreateResponse>
   /** Receives a draft pre-filled with the configured defaults, not a bare title. */
@@ -34,8 +43,14 @@ const MAX_PASTE_LINES = 100
  * Anything more elaborate lives behind the "full task" button, which hands the
  * already-typed title to the existing editor rather than discarding it.
  */
-export function QuickAddRow({ onCreate, onCreateMany, onOpenFull, filters, autoFocus = false }: QuickAddRowProps) {
-  const { t } = useTranslation('tasks')
+/** A clock time in the line («15:00», «9.30»): such a line is never saved unread. */
+export function hasClockTime(text: string): boolean {
+  return /(^|[^\d])([01]?\d|2[0-3])[:.][0-5]\d(?!\d)/.test(text)
+}
+
+export function QuickAddRow({ onCreate,
+  onUndo, onCreateMany, onOpenFull, filters, autoFocus = false }: QuickAddRowProps) {
+  const { t, i18n } = useTranslation('tasks')
   const { user } = useAuthContext()
   const [title, setTitle] = useState('')
   const [busy, setBusy] = useState(false)
@@ -49,6 +64,19 @@ export function QuickAddRow({ onCreate, onCreateMany, onOpenFull, filters, autoF
   // Tasks created in this session, oldest first — the basis for nesting.
   const [trail, setTrail] = useState<TrailEntry[]>([])
   const [parentId, setParentId] = useState<string | undefined>(undefined)
+  // A line with a clock time waits here: what will be created and when is
+  // shown first (gap list row 1). `text` is the line it was read from; any
+  // edit to the input drops it. `taskId` is a task already created for it by
+  // «as a task» whose event then failed, so a retry does not make a second one.
+  const [pending, setPending] = useState<{ text: string; parsed: ParsedLine; taskId?: string } | null>(null)
+  const [confirmError, setConfirmError] = useState<string | null>(null)
+  // The line being read by the parser: the input is read-only meanwhile, so
+  // nothing typed after Enter is wiped by the save (review of b49bcc8).
+  const [parsing, setParsing] = useState(false)
+  // A line with a clock time the parser could not read (down, slow): the first
+  // Enter says so, the second saves it as typed (review of b49bcc8: a timed
+  // line is never saved without a look, not even when the server is down).
+  const [unreadTimed, setUnreadTimed] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const settings = resolveQuickTaskSettings(user?.settings)
 
@@ -62,12 +90,52 @@ export function QuickAddRow({ onCreate, onCreateMany, onOpenFull, filters, autoF
 
   async function submit() {
     if (busy) return
+    // The second Enter on an unchanged line confirms what the first one showed.
+    // A line the bot would ask about waits for a choice on the panel: Enter
+    // does not guess for it.
+    if (pending && pending.text === title) {
+      if (pending.parsed.kind === 'event') await confirm(pending.parsed.is_task ? 'task' : 'event')
+      return
+    }
     const built = buildQuickTask({ title, settings, now: new Date(), filters, parentId })
     // Empty input: nothing to create, and the focus must not move.
     if (!built) return
-    // An explicitly typed field beats the default; the trimmed title always wins.
-    const request: CreateTaskRequest = { ...built, ...draft, title: built.title }
+    const typed = title
 
+    setBusy(true)
+    // The line is read by the bot's own parser on the server. Unreachable
+    // (an API without the route, offline, slow) gives null, and the line is
+    // saved as typed, exactly as before the parser existed — except a line
+    // with a clock time, which asks once first (below).
+    setParsing(true)
+    const parsed = await parseLine(typed)
+    setParsing(false)
+    if (!parsed && hasClockTime(typed) && unreadTimed !== typed) {
+      setUnreadTimed(typed)
+      setBusy(false)
+      inputRef.current?.focus()
+      return
+    }
+    setUnreadTimed(null)
+    // A clock time is never saved without a look: an event is confirmed, and
+    // a timed line the bot would ask about («встреча 15:00», no day) asks.
+    if (parsed && (parsed.kind === 'event' || (parsed.kind === 'ask' && parsed.has_time))) {
+      setPending({ text: typed, parsed })
+      setConfirmError(null)
+      setBusy(false)
+      inputRef.current?.focus()
+      return
+    }
+    // A line with no clock time is a task at once, as in the bot. Defaults,
+    // then what the line said, then a field typed in the expanded form. Other
+    // lines the bot would ask about (a list, «повтор» with no frequency) keep
+    // the old behaviour for now.
+    const base = parsed?.kind === 'task' ? taskFromParsed(built, parsed) : built
+    await saveTask({ ...base, ...draft, title: base.title }, typed)
+  }
+
+  /** Saves one task; on failure the typed line comes back into the input. */
+  async function saveTask(request: CreateTaskRequest, typed: string) {
     setBusy(true)
     // Clear optimistically so the next title can be typed while the request flies.
     setTitle('')
@@ -76,14 +144,77 @@ export function QuickAddRow({ onCreate, onCreateMany, onOpenFull, filters, autoF
       const created = await onCreate(request)
       setTrail(prev => [...prev, { id: created.id, parentId: request.parent_id }])
       setRecent(prev => [request.title, ...prev].slice(0, RECENT_LIMIT))
+      if (onUndo) {
+        showToast(t('quickAdd.created', { title: created.title }), {
+          label: t('toast.undo'),
+          onClick: () => void onUndo(created).catch(() => showToast(t('error.deleteFailed'))),
+        })
+      }
     } catch {
       // Put the text back rather than losing what was typed.
-      setTitle(request.title)
+      setTitle(typed)
       setDraft(draft)
     } finally {
       setBusy(false)
       inputRef.current?.focus()
     }
+  }
+
+  /**
+   * Creates the confirmed line. «Task» is what the bot makes of a timed task:
+   * a task, and an event bound to it by task_id, so it can be ticked off.
+   */
+  async function confirm(as: 'event' | 'task') {
+    if (!pending || busy) return
+    const { parsed, text } = pending
+    setBusy(true)
+    setConfirmError(null)
+    try {
+      // A task made by an earlier attempt is reused: the bot says «the task
+      // was created» rather than making it twice, and so does this.
+      let taskId = pending.taskId
+      if (as === 'task' && !taskId) {
+        const task = await onCreate({ title: parsed.title, status: 'TODO', tags: parsed.tags })
+        taskId = task.id
+        setPending({ text, parsed, taskId })
+      }
+      await createEvent(eventFromParsed(parsed, taskId))
+      setPending(null)
+      setTitle('')
+      setRecent(prev => [parsed.title, ...prev].slice(0, RECENT_LIMIT))
+    } catch (err) {
+      setConfirmError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setBusy(false)
+      inputRef.current?.focus()
+    }
+  }
+
+  /**
+   * «встреча 15:00» with no day: the day is added as a word and the line is
+   * read again by the server, so the date is computed where the bot computes
+   * it, in the user's zone, not in the browser.
+   */
+  async function pickDay(word: 'сегодня' | 'завтра') {
+    if (!pending || busy) return
+    const { text } = pending
+    setBusy(true)
+    setConfirmError(null)
+    const parsed = await parseLine(`${text} ${word}`)
+    if (parsed?.kind === 'event') setPending({ text, parsed })
+    else setConfirmError(t('quickAdd.confirm.dayFailed'))
+    setBusy(false)
+    inputRef.current?.focus()
+  }
+
+  /** The panel's way out: the line as typed, as a plain task, as before. */
+  async function saveAsTyped() {
+    if (!pending || busy) return
+    const built = buildQuickTask({ title: pending.text, settings, now: new Date(), filters, parentId })
+    if (!built) return
+    const typed = pending.text
+    setPending(null)
+    await saveTask({ ...built, ...draft, title: built.title }, typed)
   }
 
   /**
@@ -160,12 +291,24 @@ export function QuickAddRow({ onCreate, onCreateMany, onOpenFull, filters, autoF
         <input
           ref={inputRef}
           value={title}
-          onChange={e => setTitle(e.target.value)}
+          readOnly={parsing}
+          onChange={e => {
+            setTitle(e.target.value)
+            if (pending) setPending(null)
+            if (unreadTimed) setUnreadTimed(null)
+          }}
           onPaste={e => void handlePaste(e)}
           onKeyDown={e => {
             if (e.key === 'Enter') {
               e.preventDefault()
               void submit()
+            }
+            // Esc drops the confirmation and keeps the line; it must not also
+            // close the quick-capture overlay around this row.
+            if (e.key === 'Escape' && pending) {
+              e.preventDefault()
+              e.stopPropagation()
+              setPending(null)
             }
             // Not Tab: Tab is the browser's focus key, and capturing it here
             // would trap keyboard users inside the input (WCAG 2.1.2).
@@ -180,7 +323,7 @@ export function QuickAddRow({ onCreate, onCreateMany, onOpenFull, filters, autoF
           }}
           placeholder={t('quickAdd.placeholder')}
           aria-label={t('quickAdd.placeholder')}
-          className="w-full bg-transparent py-2 font-mono text-sm text-zinc-100 outline-none placeholder:text-zinc-600"
+          className="w-full bg-transparent py-2 font-mono text-sm text-zinc-100 outline-none focus-visible:outline-none placeholder:text-zinc-600"
         />
         {busy && <Loader2 className="h-4 w-4 shrink-0 animate-spin text-zinc-500" aria-hidden="true" />}
         <button
@@ -202,6 +345,119 @@ export function QuickAddRow({ onCreate, onCreateMany, onOpenFull, filters, autoF
         {t('quickAdd.full')}
       </button>
     </div>
+
+      {unreadTimed && unreadTimed === title && (
+        <p role="status" data-testid="quick-add-unread-time" className="mt-1 px-1 font-mono text-xs text-amber-400">
+          {t('quickAdd.unreadTime')}
+        </p>
+      )}
+
+      {pending && (
+        <div
+          role="group"
+          aria-label={t('quickAdd.confirm.label')}
+          data-testid="quick-add-confirm"
+          className="flex flex-wrap items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2"
+        >
+          <CalendarDays className="h-4 w-4 shrink-0 text-zinc-500" aria-hidden="true" />
+          {pending.parsed.kind === 'event' ? (
+            <>
+              <span className="font-mono text-sm text-zinc-100">
+                {pending.parsed.is_task || pending.taskId ? t('quickAdd.confirm.task') : t('quickAdd.confirm.event')}: {pending.parsed.title}
+              </span>
+              <span data-testid="quick-add-confirm-when" className="font-mono text-xs text-zinc-400">
+                {describeParsedWhen(pending.parsed, i18n.language)}
+                {pending.parsed.calendar_name ? ` · ${pending.parsed.calendar_name}` : ''}
+                {pending.parsed.rrule ? ` · ${t('quickAdd.confirm.repeats')}` : ''}
+              </span>
+            </>
+          ) : (
+            <>
+              <span className="font-mono text-sm text-zinc-100">{pending.parsed.title || pending.text}</span>
+              <span className="font-mono text-xs text-zinc-400">
+                {t(`quickAdd.confirm.missing.${pending.parsed.missing ?? 'other'}`, {
+                  defaultValue: t('quickAdd.confirm.missing.other'),
+                })}
+              </span>
+            </>
+          )}
+          <div className="flex w-full flex-wrap gap-2 sm:ml-auto sm:w-auto">
+            {pending.parsed.kind === 'event' ? (
+              <>
+                <button
+                  type="button"
+                  data-testid="quick-add-confirm-create"
+                  onClick={() => void confirm(pending.parsed.is_task ? 'task' : 'event')}
+                  className="rounded-lg border border-blue-500 px-3 py-1 font-mono text-sm text-zinc-100"
+                >
+                  {t('quickAdd.confirm.create')}
+                </button>
+                {!pending.taskId && (
+                  <button
+                    type="button"
+                    data-testid="quick-add-confirm-other"
+                    onClick={() => void confirm(pending.parsed.is_task ? 'event' : 'task')}
+                    className="rounded-lg border border-zinc-700 px-3 py-1 font-mono text-sm text-zinc-400 hover:border-blue-500 hover:text-zinc-100"
+                  >
+                    {pending.parsed.is_task ? t('quickAdd.confirm.asEvent') : t('quickAdd.confirm.asTask')}
+                  </button>
+                )}
+              </>
+            ) : (
+              <>
+                {pending.parsed.missing === 'date' && (
+                  <>
+                    <button
+                      type="button"
+                      data-testid="quick-add-day-today"
+                      onClick={() => void pickDay('сегодня')}
+                      className="rounded-lg border border-blue-500 px-3 py-1 font-mono text-sm text-zinc-100"
+                    >
+                      {t('quickAdd.confirm.today')}
+                    </button>
+                    <button
+                      type="button"
+                      data-testid="quick-add-day-tomorrow"
+                      onClick={() => void pickDay('завтра')}
+                      className="rounded-lg border border-blue-500 px-3 py-1 font-mono text-sm text-zinc-100"
+                    >
+                      {t('quickAdd.confirm.tomorrow')}
+                    </button>
+                  </>
+                )}
+                <button
+                  type="button"
+                  data-testid="quick-add-save-typed"
+                  onClick={() => void saveAsTyped()}
+                  className="rounded-lg border border-zinc-700 px-3 py-1 font-mono text-sm text-zinc-400 hover:border-blue-500 hover:text-zinc-100"
+                >
+                  {t('quickAdd.confirm.saveTyped')}
+                </button>
+              </>
+            )}
+            <button
+              type="button"
+              onClick={() => {
+                setPending(null)
+                inputRef.current?.focus()
+              }}
+              className="rounded-lg px-2 py-1 font-mono text-sm text-zinc-500 hover:text-zinc-200"
+            >
+              {t('quickAdd.confirm.cancel')}
+            </button>
+          </div>
+          <p className="w-full font-mono text-xs text-zinc-600">
+            {pending.parsed.kind === 'event' ? t('quickAdd.confirm.hint') : t('quickAdd.confirm.askHint')}
+          </p>
+          {confirmError && (
+            <p role="alert" className="w-full font-mono text-xs text-red-400">
+              {pending.taskId
+                ? t('quickAdd.confirm.taskKept', { message: confirmError })
+                : t('quickAdd.confirm.failed', { message: confirmError })}
+            </p>
+          )}
+        </div>
+      )}
 
       {level !== 0 && (
         <QuickAddFields

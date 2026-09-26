@@ -1,4 +1,6 @@
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { escapeStep } from './escapeStep';
 import { DateTimeFields } from './DateTimeFields';
 import { BasicFields } from './BasicFields';
 import { CalendarField } from './CalendarField';
@@ -8,6 +10,7 @@ import { ReflectionFields } from './ReflectionFields';
 import { useEditorForm } from './useEditorForm';
 import { useReminderSettings } from '../../../hooks/useReminderSettings';
 import type { EditorProps } from './editor.types';
+import { LinkSheet } from '../../LinkSheet/LinkSheet';
 
 export function EventEditor({ 
   range, 
@@ -17,10 +20,14 @@ export function EventEditor({
   onCreated, 
   onPatched, 
   onDelete,
-  withScope
+  withScope,
+  onConverted
 }: EditorProps) {
   const { t } = useTranslation('calendar');
   const { t: tc } = useTranslation('common');
+  const { t: tt } = useTranslation('tasks');
+  // «→ Задача»: the step sheet over the editor (gap list row 5).
+  const [linking, setLinking] = useState(false);
   const reminderSettings = useReminderSettings();
   const { state, actions, isEditing, hasReflection, canSave } = useEditorForm(
     draft, range, timezone, onCreated, onPatched, onDelete, withScope,
@@ -29,11 +36,44 @@ export function EventEditor({
     reminderSettings.presets[reminderSettings.default_event_preset] ?? []
   );
 
+  // Escape: close, but after typing the first press only warns (escapeStep).
+  // "Dirty" is any change the person made inside the editor, not a diff of
+  // the form: the form fills itself from the draft after mount, and that
+  // must not count as typing.
+  const dirtyRef = useRef(false);
+  const [armed, setArmed] = useState(false);
+  const onUserChange = () => {
+    dirtyRef.current = true;
+    setArmed(false);
+  };
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      const action = escapeStep({
+        dirty: dirtyRef.current,
+        armed,
+        otherModalOpen: document.querySelector('[role="dialog"][aria-modal="true"]') !== null,
+      });
+      if (action === 'close') onClose();
+      else if (action === 'arm') setArmed(true);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [armed, onClose]);
+
   return (
     <div 
+      data-testid="event-editor"
       className="bg-zinc-900 border border-zinc-700 rounded-lg p-4 sm:p-6 w-[95vw] sm:w-full max-w-md max-h-[85vh] overflow-y-auto"
       onClick={(e) => e.stopPropagation()}
+      onInputCapture={onUserChange}
+      onChangeCapture={onUserChange}
     >
+      {armed && (
+        <p role="status" data-testid="escape-hint" className="mb-3 px-2 py-1 text-xs rounded bg-amber-900/40 border border-amber-800 text-amber-200">
+          {t('escapeAgain')}
+        </p>
+      )}
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-semibold text-white">
@@ -48,22 +88,21 @@ export function EventEditor({
       </div>
       
       <div className="space-y-4">
-        {/* Date/Time fields (hidden for all-day events) */}
-        {!state.isAllDay && (
-          <DateTimeFields
-            startDate={state.startDateLocal}
-            endDate={state.endDateLocal}
-            startTime={state.startTimeInput}
-            endTime={state.endTimeInput}
-            validation={state.validation}
-            timezone={timezone}
-            onStartDateChange={actions.setStartDateLocal}
-            onEndDateChange={actions.setEndDateLocal}
-            onStartTimeChange={(v, p) => actions.handleTimeChange(v, p, true)}
-            onEndTimeChange={(v, p) => actions.handleTimeChange(v, p, false)}
-            onEndTimeEnter={actions.handleSave}
-          />
-        )}
+        {/* Date/Time fields; an all-day event gets its dates only (row 9) */}
+        <DateTimeFields
+          datesOnly={state.isAllDay}
+          startDate={state.startDateLocal}
+          endDate={state.endDateLocal}
+          startTime={state.startTimeInput}
+          endTime={state.endTimeInput}
+          validation={state.validation}
+          timezone={timezone}
+          onStartDateChange={actions.setStartDateLocal}
+          onEndDateChange={actions.setEndDateLocal}
+          onStartTimeChange={(v, p) => actions.handleTimeChange(v, p, true)}
+          onEndTimeChange={(v, p) => actions.handleTimeChange(v, p, false)}
+          onEndTimeEnter={actions.handleSave}
+        />
 
         {/* Basic fields (title always, description/location/tags when advanced) */}
         <BasicFields
@@ -107,6 +146,8 @@ export function EventEditor({
               repeatEndType={state.repeatEndType}
               repeatCount={state.repeatCount}
               repeatUntil={state.repeatUntil}
+              repeatInterval={state.repeatInterval}
+              onRepeatIntervalChange={actions.setRepeatInterval}
               onRepeatTypeChange={actions.setRepeatType}
               onRepeatEndTypeChange={actions.setRepeatEndType}
               onRepeatCountChange={actions.setRepeatCount}
@@ -137,8 +178,9 @@ export function EventEditor({
       </div>
 
       {/* Footer actions */}
-      <div className="flex items-center justify-between mt-6 pt-4 border-t border-zinc-700">
-        <div className="flex gap-2">
+      {/* Wraps on a phone: with «→ Задача» the left group no longer fits 375px in one line. */}
+      <div className="flex flex-wrap items-center justify-between gap-y-2 mt-6 pt-4 border-t border-zinc-700">
+        <div className="flex flex-wrap gap-x-3 gap-y-1">
           <button
             onClick={() => actions.setShowAdvanced(!state.showAdvanced)}
             className="text-sm text-zinc-400 hover:text-zinc-200"
@@ -153,6 +195,17 @@ export function EventEditor({
               className="text-sm text-red-400 hover:text-red-300 disabled:text-red-600"
             >
               {state.isDeleting ? t('deleting') : t('delete')}
+            </button>
+          )}
+
+          {isEditing && draft && onConverted && (
+            <button
+              type="button"
+              data-testid="event-to-task"
+              onClick={() => setLinking(true)}
+              className="text-sm text-zinc-400 hover:text-zinc-200"
+            >
+              {tt('link.toTask')}
             </button>
           )}
         </div>
@@ -173,6 +226,18 @@ export function EventEditor({
           </button>
         </div>
       </div>
+
+      {linking && draft && onConverted && (
+        <LinkSheet
+          source={{ kind: 'event', id: draft.id, title: draft.title, rrule: draft.rrule }}
+          timeZone={timezone}
+          onDone={(done) => {
+            setLinking(false);
+            onConverted(done);
+          }}
+          onClose={() => setLinking(false)}
+        />
+      )}
     </div>
   );
 }

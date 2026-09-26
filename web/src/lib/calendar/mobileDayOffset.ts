@@ -31,6 +31,12 @@ export function initialMobileDayOffset(
   weekOffset: number,
   timeZone: string,
   now: Date = new Date(),
+  focusDay?: string | null,
 ): number {
+  // A day asked for by name (?date=, a Mini App start link, the month view)
+  // opens itself: its weekday is its offset from the week's Monday.
+  if (focusDay && /^\d{4}-\d{2}-\d{2}$/.test(focusDay)) {
+    return (new Date(`${focusDay}T12:00:00Z`).getUTCDay() + 6) % 7;
+  }
   return weekOffset === 0 ? mondayBasedWeekday(timeZone, now) : 0;
 }

@@ -104,7 +104,7 @@ function LinkTelegram({ onLinked }: { onLinked: () => Promise<void> }) {
           type="button"
           disabled={digits.length !== 6 || state === 'sending'}
           onClick={submit}
-          className="rounded-md bg-blue-600 px-4 py-2 text-sm text-white disabled:opacity-40"
+          className="rounded-md bg-blue-600 px-4 py-2 text-sm text-onaccent disabled:opacity-40"
         >
           {state === 'sending' ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Привязать'}
         </button>
@@ -169,7 +169,7 @@ function SetCredentials({ onSaved }: { onSaved: () => Promise<void> }) {
           type="button"
           disabled={!ready || state === 'saving'}
           onClick={submit}
-          className="rounded-md bg-blue-600 px-4 py-2 text-sm text-white disabled:opacity-40"
+          className="rounded-md bg-blue-600 px-4 py-2 text-sm text-onaccent disabled:opacity-40"
         >
           {state === 'saving' ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Сохранить'}
         </button>

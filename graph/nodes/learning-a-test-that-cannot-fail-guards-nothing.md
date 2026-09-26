@@ -6,13 +6,17 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-08-12
 tags: [neuroboost, testing, review, method]
-weight: { importance: 5, connectivity: 45, access: 14, last_accessed: 2026-09-24 }
+weight: { importance: 5, connectivity: 49, access: 15, last_accessed: 2026-09-25 }
 sources:
   - command: "swap ErrCalendarNotFound/ErrNotCalendarOwner arms → FAIL ровно 2 теста; restore → ok"
   - file: "api-go/internal/calendars/handlers_test.go"
   - file: "api-go/internal/calendars/crud_test.go"
 stakes: high
 links:
+  - relates-to: "[[learning-eslint-last-line-counts-only-fixable]]"
+  - relates-to: "[[learning-theme-by-variables-verify-old-theme-pixel-identical]]"
+  - relates-to: "[[learning-e2e-specs-assume-the-screen-they-were-written-on]]"
+  - relates-to: "[[learning-a-test-fed-a-shape-the-producer-never-makes]]"
   - relates-to: "[[learning-a-stand-in-kinder-than-the-real-thing-is-not-a-test]]"
   - relates-to: "[[learning-green-because-skipped-proves-nothing]]"
   - relates-to: "[[entity-p3-slice2-calendar-crud]]"

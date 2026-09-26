@@ -65,7 +65,7 @@
     "home": {
       "quickAdd": {
         "title": "Quick actions",
-        "body": "Start here when something lands in your head. Capture it as a task if it has no time yet, or as an event if it does — deciding which is the only thinking this step needs, and doing it now is what keeps it out of your head."
+        "body": "Start here when something lands in your head. Capture it as a task if it has no time yet, or as an event if it does. Deciding which is the only thinking this step needs, and doing it now is what keeps it out of your head."
       },
       "schedule": {
         "title": "Today's schedule",
@@ -73,13 +73,13 @@
       },
       "tasks": {
         "title": "Task summary",
-        "body": "How much is waiting, split by priority. Use it as a pressure gauge, not a to-do list: a growing Emergency count means the plan is drifting, and the fix is on the calendar — schedule some of it — not in working faster."
+        "body": "How much is waiting, split by priority. Use it as a pressure gauge, not a to-do list: a growing Emergency count means the plan is drifting, and the fix is on the calendar (schedule some of it), not in working faster."
       }
     },
     "calendar": {
       "newEvent": {
         "title": "Add an event",
-        "body": "Creates a time block without hunting for the right slot first, which helps when you know what but not yet when. It lands at a default time and you drag it where it belongs — easier than picking a time from a blank form."
+        "body": "Creates a time block without hunting for the right slot first, which helps when you know what but not yet when. It lands at a default time and you drag it where it belongs. Easier than picking a time from a blank form."
       },
       "grid": {
         "title": "Your week",
@@ -93,11 +93,11 @@
     "tasks": {
       "new": {
         "title": "New task",
-        "body": "Write it down badly and quickly — the point is to stop carrying it, not to describe it well. Priority and duration can be wrong for now; you will fix both when you drag it onto the calendar and see what it actually costs."
+        "body": "Write it down badly and quickly: the point is to stop carrying it, not to describe it well. Priority and duration can be wrong for now; you will fix both when you drag it onto the calendar and see what it actually costs."
       },
       "schedule": {
         "title": "Schedule it",
-        "body": "Puts this task on the calendar as a block of real time. Do it as soon as a task matters, because scheduling is where you find out whether the day has room — a list will happily hold forty hours of work in one afternoon."
+        "body": "Puts this task on the calendar as a block of real time. Do it as soon as a task matters, because scheduling is where you find out whether the day has room. A list will happily hold forty hours of work in one afternoon."
       },
       "complete": {
         "title": "Mark it done",
@@ -111,7 +111,7 @@
       },
       "day": {
         "title": "Plan a day",
-        "body": "Drop a task here to give it a day without committing to an hour — a lighter decision than the calendar asks for. Open the day itself when you want to pin down the time, once you can see how full it already is."
+        "body": "Drop a task here to give it a day without committing to an hour, a lighter decision than the calendar asks for. Open the day itself when you want to pin down the time, once you can see how full it already is."
       }
     },
     "reflections": {
@@ -146,7 +146,7 @@
       "timeBlocking": {
         "grid": {
           "title": "Block out the week",
-          "body": "Assign whole stretches of the week to kinds of work rather than to single tasks — deep work here, admin there. New tasks then have an obvious home, so scheduling stops being a decision you make forty separate times a week."
+          "body": "Assign whole stretches of the week to kinds of work rather than to single tasks: deep work here, admin there. New tasks then have an obvious home, so scheduling stops being a decision you make forty separate times a week."
         }
       }
     },

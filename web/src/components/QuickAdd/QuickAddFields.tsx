@@ -3,6 +3,7 @@ import type { CreateTaskRequest } from '../../api/tasks'
 import { PRIORITY_LABELS } from '../../lib/priority'
 import { toDateTimeLocalValue, fromDateTimeLocalValue } from '../../lib/datetime/dateTimeLocal'
 import { ReminderOffsets } from '../ReminderOffsets/ReminderOffsets'
+import { TagsInput } from '../TagsInput/TagsInput'
 import { useReminderSettings } from '../../hooks/useReminderSettings'
 
 interface QuickAddFieldsProps {
@@ -67,10 +68,10 @@ export function QuickAddFields({ level, draft, onChange }: QuickAddFieldsProps) 
 
       <div>
         <label className="mb-1 block text-sm text-zinc-400" htmlFor="qa-tags">{t('quickAdd.tags')}</label>
-        <input
+        <TagsInput
           id="qa-tags"
-          value={(draft.tags ?? []).join(', ')}
-          onChange={e => onChange({ tags: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })}
+          tags={draft.tags}
+          onChange={tags => onChange({ tags })}
           placeholder={t('quickAdd.tagsPlaceholder')}
           className={FIELD_CLASS}
         />

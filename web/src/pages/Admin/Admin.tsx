@@ -1,10 +1,10 @@
+import { feedbackStats } from '../../lib/admin/feedbackStats'
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuthContext, useRequireAdmin } from '../../contexts/AuthContext'
 import {
   listFeedback,
   updateFeedback,
-  importFeedback,
   type Feedback,
   type FeedbackType,
   type FeedbackStatus,
@@ -14,7 +14,6 @@ import {
 import { getAdminHealth, getAdminLogs, type HealthResponse, type LogEntry } from '../../api/admin'
 import {
   Shield,
-  Users,
   Bug,
   Lightbulb,
   Palette,
@@ -29,7 +28,6 @@ import {
   RefreshCw,
   Activity,
   Search,
-  Upload,
   MessageSquarePlus,
   ArrowUpDown,
   ThumbsUp,
@@ -78,7 +76,7 @@ export function Admin() {
 
   const [feedback, setFeedback] = useState<Feedback[]>([])
   const [feedbackLoading, setFeedbackLoading] = useState(true)
-  const [selectedTab, setSelectedTab] = useState<'overview' | 'backlog' | 'health' | 'logs' | 'users'>('backlog')
+  const [selectedTab, setSelectedTab] = useState<'overview' | 'backlog' | 'health' | 'logs'>('backlog')
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
   // Filters
@@ -88,10 +86,6 @@ export function Admin() {
   const [searchText, setSearchText] = useState('')
   const [sortBy, setSortBy] = useState<ListFeedbackParams['sort_by']>('created_at')
   const [sortDir, setSortDir] = useState<ListFeedbackParams['sort_dir']>('desc')
-
-  // Import state
-  const [importing, setImporting] = useState(false)
-  const [importDone, setImportDone] = useState(false)
 
   const loadFeedback = useCallback(async () => {
     setFeedbackLoading(true)
@@ -114,11 +108,34 @@ export function Admin() {
     if (isAdmin) loadFeedback()
   }, [isAdmin, loadFeedback])
 
+  // Overview counts the whole backlog, not the Backlog tab's filtered list
+  // (audit A2, 4.1): with a «bug» filter «Total» used to mean «bugs».
+  const [allFeedback, setAllFeedback] = useState<Feedback[]>([])
+  useEffect(() => {
+    if (!isAdmin || selectedTab !== 'overview') return
+    listFeedback({})
+      .then(setAllFeedback)
+      .catch((err) => console.error('Failed to load feedback for the overview:', err))
+  }, [isAdmin, selectedTab])
+
+  // Rows whose last edit did not save (audit A4, 4.2): said at the row
+  // instead of only in the console.
+  const [unsaved, setUnsaved] = useState<Record<string, boolean>>({})
+  const markSaved = (id: string, ok: boolean) =>
+    setUnsaved((prev) => {
+      const next = { ...prev }
+      if (ok) delete next[id]
+      else next[id] = true
+      return next
+    })
+
   const handleStatusChange = async (id: string, status: FeedbackStatus) => {
     try {
       const updated = await updateFeedback(id, { status })
       setFeedback((prev) => prev.map((f) => (f.id === id ? updated : f)))
+      markSaved(id, true)
     } catch (err) {
+      markSaved(id, false)
       console.error('Failed to update status:', err)
     }
   }
@@ -127,7 +144,9 @@ export function Admin() {
     try {
       const updated = await updateFeedback(id, { priority })
       setFeedback((prev) => prev.map((f) => (f.id === id ? updated : f)))
+      markSaved(id, true)
     } catch (err) {
+      markSaved(id, false)
       console.error('Failed to update priority:', err)
     }
   }
@@ -138,23 +157,6 @@ export function Admin() {
     } else {
       setSortBy(col)
       setSortDir('asc')
-    }
-  }
-
-  const handleImport = async () => {
-    if (importing || importDone) return
-    setImporting(true)
-    try {
-      const items = generateImportItems()
-      const result = await importFeedback(items)
-      setImportDone(true)
-      alert(`Imported ${result.count} items`)
-      loadFeedback()
-    } catch (err) {
-      console.error('Import failed:', err)
-      alert('Import failed')
-    } finally {
-      setImporting(false)
     }
   }
 
@@ -175,7 +177,7 @@ export function Admin() {
           <p className="text-zinc-400 mb-6">You don&apos;t have permission to access the admin panel.</p>
           <Link
             to="/calendar"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-mono rounded-lg transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-onaccent font-mono rounded-lg transition-colors"
           >
             <ChevronLeft className="w-4 h-4" />
             Back to Calendar
@@ -186,19 +188,11 @@ export function Admin() {
   }
 
   // Stats
-  const statsByStatus = Object.fromEntries(
-    (Object.keys(STATUS_CONFIG) as FeedbackStatus[]).map((s) => [
-      s,
-      feedback.filter((f) => f.status === s).length,
-    ]),
-  ) as Record<FeedbackStatus, number>
-
-  const statsByType = Object.fromEntries(
-    (Object.keys(TYPE_CONFIG) as FeedbackType[]).map((t) => [
-      t,
-      feedback.filter((f) => f.type === t).length,
-    ]),
-  ) as Record<FeedbackType, number>
+  const {
+    total: statsTotal,
+    byStatus: statsByStatus,
+    byType: statsByType,
+  } = feedbackStats(allFeedback, Object.keys(STATUS_CONFIG) as FeedbackStatus[], Object.keys(TYPE_CONFIG) as FeedbackType[])
 
   return (
     <div className="min-h-screen bg-zinc-950">
@@ -230,14 +224,13 @@ export function Admin() {
             { id: 'backlog' as const, label: 'Backlog', icon: Bug },
             { id: 'health' as const, label: 'Health', icon: Heart },
             { id: 'logs' as const, label: 'Logs', icon: ScrollText },
-            { id: 'users' as const, label: 'Users', icon: Users },
           ].map(({ id, label, icon: Icon }) => (
             <button
               key={id}
               onClick={() => setSelectedTab(id)}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg font-mono text-sm transition-colors ${
                 selectedTab === id
-                  ? 'bg-blue-600 text-white'
+                  ? 'bg-blue-600 text-onaccent'
                   : 'bg-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-800'
               }`}
             >
@@ -293,7 +286,7 @@ export function Admin() {
             {/* Total */}
             <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-5">
               <p className="text-zinc-400 text-sm">Total Backlog Items</p>
-              <p className="text-4xl font-mono font-bold text-white mt-1">{feedback.length}</p>
+              <p data-testid="overview-total" className="text-4xl font-mono font-bold text-white mt-1">{statsTotal}</p>
             </div>
           </div>
         )}
@@ -361,15 +354,6 @@ export function Admin() {
               >
                 <RefreshCw className={`w-4 h-4 ${feedbackLoading ? 'animate-spin' : ''}`} />
               </button>
-
-              <button
-                onClick={handleImport}
-                disabled={importing || importDone}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-zinc-800 border border-zinc-700 rounded text-zinc-300 hover:text-white transition-colors disabled:opacity-50"
-              >
-                {importing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                {importDone ? 'Imported' : 'Import Features'}
-              </button>
             </div>
 
             {/* Headers and rows scroll together as one track, so a header never
@@ -402,6 +386,8 @@ export function Admin() {
                     onStatusChange={handleStatusChange}
                     onPriorityChange={handlePriorityChange}
                     onUpdate={(updated) => setFeedback((prev) => prev.map((f) => (f.id === updated.id ? updated : f)))}
+                    unsaved={!!unsaved[item.id]}
+                    onSaved={(ok) => markSaved(item.id, ok)}
                   />
                 ))}
               </div>
@@ -416,12 +402,6 @@ export function Admin() {
         {/* Logs Tab */}
         {selectedTab === 'logs' && <LogsTab />}
 
-        {/* Users Tab (placeholder) */}
-        {selectedTab === 'users' && (
-          <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-8 text-center text-zinc-500">
-            User management coming soon
-          </div>
-        )}
       </div>
     </div>
   )
@@ -464,6 +444,8 @@ function BacklogRow({
   onStatusChange,
   onPriorityChange,
   onUpdate,
+  unsaved,
+  onSaved,
 }: {
   item: Feedback
   isExpanded: boolean
@@ -471,6 +453,9 @@ function BacklogRow({
   onStatusChange: (id: string, status: FeedbackStatus) => void
   onPriorityChange: (id: string, priority: FeedbackPriority) => void
   onUpdate: (item: Feedback) => void
+  /** The row's last edit failed to save. */
+  unsaved: boolean
+  onSaved: (ok: boolean) => void
 }) {
   const [notes, setNotes] = useState(item.admin_notes)
   const [tagsInput, setTagsInput] = useState(item.tags.join(', '))
@@ -491,7 +476,9 @@ function BacklogRow({
         .filter(Boolean)
       const updated = await updateFeedback(item.id, { admin_notes: notes, tags })
       onUpdate(updated)
+      onSaved(true)
     } catch (err) {
+      onSaved(false)
       console.error('Failed to save:', err)
     } finally {
       setSaving(false)
@@ -523,7 +510,12 @@ function BacklogRow({
           <span className="text-xs text-zinc-400">{statusCfg.label}</span>
         </span>
         <span className="text-xs text-zinc-500">{item.source}</span>
-        <span className="text-xs text-zinc-500">{new Date(item.created_at).toLocaleDateString()}</span>
+        <span className="text-xs text-zinc-500">
+          {new Date(item.created_at).toLocaleDateString()}
+          {unsaved && (
+            <span data-testid="feedback-row-unsaved" className="ml-2 text-red-400">Not saved</span>
+          )}
+        </span>
       </div>
 
       {/* Expanded Detail */}
@@ -627,7 +619,7 @@ function BacklogRow({
               handleSaveDetails()
             }}
             disabled={saving}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 text-white text-sm font-mono rounded transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 text-onaccent text-sm font-mono rounded transition-colors"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             Save Notes & Tags
@@ -898,198 +890,6 @@ function LogsTab() {
       )}
     </div>
   )
-}
-
-// Import data: 117 features from the feature list
-function generateImportItems() {
-  type Item = {
-    title: string
-    description: string
-    type: FeedbackType
-    priority: FeedbackPriority
-    status: FeedbackStatus
-    tags: string[]
-    source: string
-  }
-
-  const items: Item[] = []
-  const src = 'imported'
-
-  function add(
-    title: string,
-    category: string,
-    phase: string,
-    priority: FeedbackPriority,
-    status: FeedbackStatus,
-    notes = '',
-  ) {
-    items.push({
-      title,
-      description: notes ? `${category} — ${phase}. ${notes}` : `${category} — ${phase}`,
-      type: 'feature',
-      priority,
-      status,
-      tags: [category.toLowerCase(), phase.toLowerCase().replace(/\s/g, '-')],
-      source: src,
-    })
-  }
-
-  // Phase 0: Infrastructure
-  add('Server setup (Ubuntu 22.04)', 'Infrastructure', 'Phase 0', 'critical', 'resolved', '62.76.228.106')
-  add('Docker + Docker Compose', 'Infrastructure', 'Phase 0', 'critical', 'resolved')
-  add('Nginx + SSL', 'Infrastructure', 'Phase 0', 'critical', 'resolved', 'Certbot done')
-  add('PostgreSQL container', 'Infrastructure', 'Phase 0', 'critical', 'resolved')
-  add('Database migrations (golang-migrate)', 'Infrastructure', 'Phase 0', 'critical', 'resolved')
-  add('Health check endpoint', 'Infrastructure', 'Phase 0', 'critical', 'resolved')
-  add('fail2ban + SSH hardening', 'Infrastructure', 'Phase 0', 'critical', 'resolved')
-  add('CI: Build & test', 'Infrastructure', 'Phase 0', 'high', 'resolved', 'GitHub Actions')
-  add('CI: Auto-deploy on merge', 'Infrastructure', 'Phase 0', 'high', 'open')
-  add('CI: Database backups', 'Infrastructure', 'Phase 0', 'high', 'open', 'Daily cron')
-  add('Error logging', 'Infrastructure', 'Phase 0', 'high', 'open', 'Structured JSON logs')
-
-  // Phase 0: Authentication
-  add('User table with auth fields', 'Auth', 'Phase 0', 'critical', 'resolved', 'Migration 000002')
-  add('Telegram Login Widget', 'Auth', 'Phase 0', 'critical', 'in_progress', 'Backend ready, need frontend')
-  add('Email/Password registration', 'Auth', 'Phase 0', 'critical', 'resolved')
-  add('Email/Password login', 'Auth', 'Phase 0', 'critical', 'resolved')
-  add('JWT token generation', 'Auth', 'Phase 0', 'critical', 'resolved', '30-day tokens')
-  add('JWT middleware (Go)', 'Auth', 'Phase 0', 'critical', 'resolved')
-  add('GET /api/auth/me', 'Auth', 'Phase 0', 'critical', 'resolved')
-  add('Login page (frontend)', 'Auth', 'Phase 0', 'critical', 'open')
-  add('Session refresh banner', 'Auth', 'Phase 0', 'medium', 'open')
-  add('Password reset (email)', 'Auth', 'Phase 0', 'high', 'open')
-  add('Email verification', 'Auth', 'Phase 0', 'medium', 'open')
-  add('Google OAuth', 'Auth', 'Phase 0', 'low', 'open')
-
-  // Phase 1: Admin Panel
-  add('Admin dashboard page', 'Admin', 'Phase 1', 'critical', 'open')
-  add('Admin authentication', 'Admin', 'Phase 1', 'critical', 'open', 'Role-based (is_admin flag)')
-  add('User management', 'Admin', 'Phase 1', 'high', 'open')
-  add('Health status view', 'Admin', 'Phase 1', 'high', 'open')
-  add('Feedback/bug reports view', 'Admin', 'Phase 1', 'critical', 'open')
-  add('IP ban management', 'Admin', 'Phase 1', 'medium', 'open')
-  add('System logs viewer', 'Admin', 'Phase 1', 'medium', 'open')
-  add('Basic analytics', 'Admin', 'Phase 1', 'medium', 'open')
-
-  // Phase 1: Feedback System
-  add('Feedback button (all pages)', 'Feedback', 'Phase 1', 'critical', 'open')
-  add('Bug report form', 'Feedback', 'Phase 1', 'critical', 'open')
-  add('Feature suggestion form', 'Feedback', 'Phase 1', 'critical', 'open')
-  add('Screenshot attachment', 'Feedback', 'Phase 1', 'medium', 'open')
-  add('Auto-capture context', 'Feedback', 'Phase 1', 'high', 'open')
-  add('POST /api/feedback', 'Feedback', 'Phase 1', 'critical', 'open')
-  add('GET /api/admin/feedback', 'Feedback', 'Phase 1', 'critical', 'open')
-  add('PATCH /api/admin/feedback/:id', 'Feedback', 'Phase 1', 'high', 'open')
-  add('Feedback table (DB)', 'Feedback', 'Phase 1', 'critical', 'open')
-  add('GitHub issue auto-create', 'Feedback', 'Phase 1', 'low', 'open')
-  add('Telegram notification', 'Feedback', 'Phase 1', 'high', 'open')
-
-  // Phase 2: Events
-  add('GET /api/events (list)', 'Events', 'Phase 2', 'critical', 'open')
-  add('POST /api/events (create)', 'Events', 'Phase 2', 'critical', 'open')
-  add('PATCH /api/events/:id', 'Events', 'Phase 2', 'critical', 'open')
-  add('DELETE /api/events/:id', 'Events', 'Phase 2', 'critical', 'open')
-  add('PATCH /api/events/:id/move', 'Events', 'Phase 2', 'critical', 'open', 'Drag & drop')
-  add('PATCH /api/events/:id/resize', 'Events', 'Phase 2', 'critical', 'open')
-  add('Recurring events (rrule)', 'Events', 'Phase 2', 'high', 'open', 'iCal format')
-  add('Event exceptions', 'Events', 'Phase 2', 'high', 'open')
-  add('Multi-day events', 'Events', 'Phase 2', 'high', 'open')
-  add('All-day events', 'Events', 'Phase 2', 'critical', 'open')
-  add('Calendar layers', 'Events', 'Phase 2', 'medium', 'open', 'Work/Personal/Health')
-
-  // Phase 2: Tasks
-  add('GET /api/tasks (list)', 'Tasks', 'Phase 2', 'critical', 'open')
-  add('POST /api/tasks', 'Tasks', 'Phase 2', 'critical', 'open')
-  add('PATCH /api/tasks/:id', 'Tasks', 'Phase 2', 'critical', 'open')
-  add('DELETE /api/tasks/:id', 'Tasks', 'Phase 2', 'critical', 'open')
-  add('POST /api/tasks/:id/schedule', 'Tasks', 'Phase 2', 'critical', 'open')
-  add('PATCH /api/tasks/bulk', 'Tasks', 'Phase 2', 'high', 'open')
-  add('Task priorities (0-5)', 'Tasks', 'Phase 2', 'critical', 'open')
-  add('Task categories', 'Tasks', 'Phase 2', 'high', 'open', 'EMERGENCY→BUFFER')
-  add('Task contexts (@home, @work)', 'Tasks', 'Phase 2', 'medium', 'open')
-  add('Task energy levels', 'Tasks', 'Phase 2', 'medium', 'open', '1-5 scale')
-  add('Task dependencies', 'Tasks', 'Phase 2', 'low', 'open')
-  add('Subtasks (parent/child)', 'Tasks', 'Phase 2', 'medium', 'open')
-  add('Time windows', 'Tasks', 'Phase 2', 'low', 'open')
-  add('Task aging/bumps', 'Tasks', 'Phase 2', 'low', 'open')
-
-  // Phase 2: Reflections
-  add('POST /api/reflections', 'Reflections', 'Phase 2', 'high', 'open')
-  add('GET /api/reflections', 'Reflections', 'Phase 2', 'high', 'open')
-  add('GET /api/stats/week', 'Reflections', 'Phase 2', 'high', 'open')
-  add('GET /api/stats/adherence', 'Reflections', 'Phase 2', 'medium', 'open')
-  add('Work hours tracking', 'Reflections', 'Phase 2', 'low', 'open')
-
-  // Phase 3: Calendar Frontend
-  add('WeekGrid component', 'Frontend', 'Phase 3', 'critical', 'open')
-  add('Drag to create events', 'Frontend', 'Phase 3', 'critical', 'open')
-  add('Drag to move events', 'Frontend', 'Phase 3', 'critical', 'open')
-  add('Resize events (bottom handle)', 'Frontend', 'Phase 3', 'critical', 'open')
-  add('Current time indicator', 'Frontend', 'Phase 3', 'critical', 'open')
-  add('All-day section', 'Frontend', 'Phase 3', 'critical', 'open')
-  add('15-minute snap grid', 'Frontend', 'Phase 3', 'critical', 'open')
-  add('Ghost preview on drag', 'Frontend', 'Phase 3', 'high', 'open')
-  add('MonthView component', 'Frontend', 'Phase 3', 'medium', 'open')
-  add('Week navigation', 'Frontend', 'Phase 3', 'critical', 'open')
-  add('Keyboard shortcuts', 'Frontend', 'Phase 3', 'medium', 'open')
-
-  // Phase 3: Task Management Frontend
-  add('TaskSidebar component', 'Frontend', 'Phase 3', 'critical', 'open')
-  add('Drag task to calendar', 'Frontend', 'Phase 3', 'critical', 'open')
-  add('Task list view', 'Frontend', 'Phase 3', 'high', 'open')
-  add('Quick task completion', 'Frontend', 'Phase 3', 'critical', 'open')
-  add('Task filtering', 'Frontend', 'Phase 3', 'high', 'open')
-  add('DeadlineTasks timeline', 'Frontend', 'Phase 3', 'medium', 'open')
-
-  // Phase 3: Event Editor
-  add('EventEditor modal', 'Frontend', 'Phase 3', 'critical', 'open')
-  add('Title, time inputs', 'Frontend', 'Phase 3', 'critical', 'open')
-  add('All-day toggle', 'Frontend', 'Phase 3', 'critical', 'open')
-  add('Recurrence settings', 'Frontend', 'Phase 3', 'medium', 'open')
-  add('Color picker', 'Frontend', 'Phase 3', 'medium', 'open')
-  add('Reflection sliders', 'Frontend', 'Phase 3', 'high', 'open')
-
-  // Phase 3: Layout
-  add('Replace MUI → Lucide icons', 'Frontend', 'Phase 3', 'critical', 'resolved')
-  add('Clean URLs (not hash)', 'Frontend', 'Phase 3', 'critical', 'resolved')
-  add('HorizontalHeader', 'Frontend', 'Phase 3', 'critical', 'resolved')
-  add('VerticalSidebar', 'Frontend', 'Phase 3', 'high', 'resolved')
-  add('Mobile responsive', 'Frontend', 'Phase 3', 'high', 'open')
-  add('Dark theme (default)', 'Frontend', 'Phase 3', 'critical', 'resolved')
-  add('Light theme toggle', 'Frontend', 'Phase 3', 'low', 'open')
-
-  // Phase 4: Bot
-  add('/start command', 'Bot', 'Phase 4', 'critical', 'open')
-  add('/help command', 'Bot', 'Phase 4', 'critical', 'open')
-  add('/tasks command', 'Bot', 'Phase 4', 'critical', 'open')
-  add('/newtask wizard', 'Bot', 'Phase 4', 'high', 'open')
-  add('/today command', 'Bot', 'Phase 4', 'critical', 'open')
-  add('/week command', 'Bot', 'Phase 4', 'medium', 'open')
-  add('/note command', 'Bot', 'Phase 4', 'high', 'open')
-  add('/stats command', 'Bot', 'Phase 4', 'medium', 'open')
-  add('/settings command', 'Bot', 'Phase 4', 'medium', 'open')
-  add('/feedback command', 'Bot', 'Phase 4', 'high', 'open')
-  add('Persistent reply keyboard', 'Bot', 'Phase 4', 'critical', 'open')
-  add('Inline keyboards', 'Bot', 'Phase 4', 'high', 'open')
-  add('MiniApp button', 'Bot', 'Phase 4', 'high', 'open')
-  add('Event reminders', 'Bot', 'Phase 4', 'critical', 'open', '30/10/5 min before')
-  add('Daily planning nudge', 'Bot', 'Phase 4', 'high', 'open')
-  add('Weekly planning nudge', 'Bot', 'Phase 4', 'high', 'open')
-  add('Task deadline alerts', 'Bot', 'Phase 4', 'high', 'open')
-  add('Quiet hours', 'Bot', 'Phase 4', 'high', 'open')
-  add('Rate limiting', 'Bot', 'Phase 4', 'high', 'open')
-  add('Snooze options', 'Bot', 'Phase 4', 'medium', 'open')
-  add('New feedback notification', 'Bot', 'Phase 4', 'high', 'open')
-
-  // Phase 5: Gamification
-  add('XP system', 'Gamification', 'Phase 5', 'medium', 'open')
-  add('Levels', 'Gamification', 'Phase 5', 'medium', 'open')
-  add('Streaks', 'Gamification', 'Phase 5', 'medium', 'open')
-  add('Basic badges', 'Gamification', 'Phase 5', 'medium', 'open')
-  add('Profile stats display', 'Gamification', 'Phase 5', 'medium', 'open')
-  add('Leaderboard', 'Gamification', 'Phase 5', 'low', 'open')
-
-  return items
 }
 
 export default Admin

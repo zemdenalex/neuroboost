@@ -4,6 +4,7 @@ import { Clock } from 'lucide-react'
 import { useAuthContext } from '../../../contexts/AuthContext'
 import { WEEK_DAYS, toggleWorkDay, normaliseWorkDays } from '../../../lib/settings/workDays'
 import type { UserSettings } from '../../../api/auth'
+import { workHoursPerDay } from '../../../lib/tools/timeBudget'
 
 const DEFAULT_START = '09:00'
 const DEFAULT_END = '17:00'
@@ -62,7 +63,7 @@ export function WorkHoursSection({ autoSave }: Props) {
   }
 
   return (
-    <section className="bg-zinc-900 border border-zinc-800 rounded-lg p-5">
+    <section data-testid="work-hours-section" className="bg-zinc-900 border border-zinc-800 rounded-lg p-5">
       <div className="flex items-center gap-2 mb-4">
         <Clock className="w-5 h-5 text-zinc-400" />
         <h2 className="text-lg font-mono font-semibold text-white">{t('workHours.title')}</h2>
@@ -78,7 +79,7 @@ export function WorkHoursSection({ autoSave }: Props) {
                 onClick={() => toggleDay(day)}
                 className={`px-3 py-1.5 rounded text-sm font-mono transition-colors ${
                   days.includes(day)
-                    ? 'bg-blue-600 text-white'
+                    ? 'bg-blue-600 text-onaccent'
                     : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
                 }`}
               >
@@ -114,6 +115,13 @@ export function WorkHoursSection({ autoSave }: Props) {
             />
           </div>
         </div>
+        {/* An end at or before the start makes a 0-hour day for Planning, the
+            time budget and the bot: said here, where it is set. */}
+        {start && end && workHoursPerDay(start, end) === null && (
+          <p data-testid="work-hours-invalid" role="status" className="mt-2 text-xs text-amber-400">
+            {t('workHours.endBeforeStart')}
+          </p>
+        )}
       </div>
     </section>
   )

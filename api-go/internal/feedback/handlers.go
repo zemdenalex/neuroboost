@@ -49,6 +49,18 @@ type CreateRequest struct {
 	Description string `json:"description"`
 	PageURL     string `json:"page_url,omitempty"`
 	UserAgent   string `json:"user_agent,omitempty"`
+	// Source is where the feedback was sent from: "web" or "bot". Anything
+	// else is stored as the old "user", so a caller cannot label its row "admin".
+	Source string `json:"source,omitempty"`
+}
+
+// sourceOf keeps the stored source to the known clients.
+func sourceOf(s string) string {
+	switch s {
+	case "web", "bot":
+		return s
+	}
+	return "user"
 }
 
 // UpdateRequest for updating feedback (admin)
@@ -57,22 +69,6 @@ type UpdateRequest struct {
 	Priority   *string   `json:"priority,omitempty"`
 	AdminNotes *string   `json:"admin_notes,omitempty"`
 	Tags       *[]string `json:"tags,omitempty"`
-}
-
-// ImportItem represents a single item in a bulk import
-type ImportItem struct {
-	Title       string   `json:"title"`
-	Description string   `json:"description"`
-	Type        string   `json:"type"`
-	Priority    string   `json:"priority"`
-	Status      string   `json:"status"`
-	Tags        []string `json:"tags"`
-	Source      string   `json:"source"`
-}
-
-// ImportRequest for bulk importing backlog items
-type ImportRequest struct {
-	Items []ImportItem `json:"items"`
 }
 
 var validTypes = map[string]bool{
@@ -162,10 +158,10 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 
 	row := h.db.Pool.QueryRow(r.Context(), `
 		INSERT INTO feedback (user_id, type, title, description, page_url, user_agent, source)
-		VALUES ($1, $2, $3, $4, $5, $6, 'user')
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
 		RETURNING `+allColumns,
 		userIDPtr, req.Type, req.Title, req.Description,
-		nullString(req.PageURL), nullString(req.UserAgent),
+		nullString(req.PageURL), nullString(req.UserAgent), sourceOf(req.Source),
 	)
 
 	feedback, err := scanFeedback(row)
@@ -342,71 +338,6 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	util.RespondJSON(w, http.StatusOK, f)
 }
 
-// Import handles POST /api/feedback/import — bulk import backlog items
-func (h *Handler) Import(w http.ResponseWriter, r *http.Request) {
-	userID := middleware.UserIDFromContext(r.Context())
-	if userID == "" {
-		util.RespondError(w, http.StatusUnauthorized, "NOT_AUTHENTICATED", "Authentication required")
-		return
-	}
-
-	isAdmin, err := h.isUserAdmin(r.Context(), userID)
-	if err != nil || !isAdmin {
-		util.RespondError(w, http.StatusForbidden, "NOT_ADMIN", "Admin access required")
-		return
-	}
-
-	var req ImportRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		util.RespondError(w, http.StatusBadRequest, "INVALID_REQUEST", "Invalid request body")
-		return
-	}
-
-	if len(req.Items) == 0 {
-		util.RespondError(w, http.StatusBadRequest, "EMPTY_IMPORT", "No items to import")
-		return
-	}
-
-	count := 0
-	for _, item := range req.Items {
-		if item.Title == "" {
-			continue
-		}
-		if !validTypes[item.Type] {
-			item.Type = "other"
-		}
-		if !validStatuses[item.Status] {
-			item.Status = "open"
-		}
-		if !validPriorities[item.Priority] {
-			item.Priority = "medium"
-		}
-		if item.Source == "" {
-			item.Source = "imported"
-		}
-		if item.Tags == nil {
-			item.Tags = []string{}
-		}
-
-		resolvedAt := (*time.Time)(nil)
-		if item.Status == "resolved" || item.Status == "closed" {
-			now := time.Now()
-			resolvedAt = &now
-		}
-
-		_, err := h.db.Pool.Exec(r.Context(), `
-			INSERT INTO feedback (type, title, description, status, priority, tags, source, resolved_at)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-		`, item.Type, item.Title, item.Description, item.Status, item.Priority, item.Tags, item.Source, resolvedAt)
-
-		if err != nil {
-			continue
-		}
-		count++
-	}
-
-	util.RespondJSON(w, http.StatusCreated, map[string]int{"count": count})
-}
 
 // Helper functions
 

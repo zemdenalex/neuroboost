@@ -3,11 +3,13 @@
   "nav.home": "Главная",
   "nav.calendar": "Календарь",
   "nav.tasks": "Задачи",
+  "nav.dayTasks": "Задачи дня",
   "nav.planning": "Планирование",
   "nav.reflections": "Рефлексия",
   "nav.tools": "Инструменты",
   "nav.settings": "Настройки",
   "nav.profile": "Профиль",
+  "nav.whatsNew": "Что нового",
   "nav.admin": "Админ-панель",
   "action.save": "Сохранить",
   "action.cancel": "Отмена",
@@ -47,5 +49,7 @@
   "agenda.allDay": "весь день",
   "agenda.untitled": "(без названия)",
   "agenda.loading": "Загружаю…",
-  "agenda.empty": "На ближайшие {{days}} дней ничего не запланировано."
+  "agenda.empty": "На ближайшие {{days}} дней ничего не запланировано.",
+  "agenda.more": "Ещё {{days}} дней",
+  "whatsNew.failed": "Не удалось загрузить. Попробуй позже."
 }

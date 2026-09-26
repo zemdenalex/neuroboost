@@ -57,7 +57,7 @@ func calendarHandler(t *testing.T) (*Handler, *fakeTelegram, int64) {
 	const chat = int64(7100)
 	h.store.SetAuth(chat, "jwt", time.Now().Add(time.Hour).Unix())
 	us := h.store.GetOrCreate(chat)
-	us.Lang, us.LangKnown = "ru", true
+	us.SetLang("ru")
 	return h, fake, chat
 }
 
@@ -351,6 +351,6 @@ func countingCalendarHandler(t *testing.T) (*Handler, *fakeTelegram, int64, func
 	const chat = int64(7150)
 	h.store.SetAuth(chat, "jwt", time.Now().Add(time.Hour).Unix())
 	us := h.store.GetOrCreate(chat)
-	us.Lang, us.LangKnown = "ru", true
+	us.SetLang("ru")
 	return h, fake, chat, func() int { return listCalls }
 }

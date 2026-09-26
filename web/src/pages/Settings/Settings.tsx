@@ -12,6 +12,12 @@ import { MobileNavSection } from './sections/MobileNavSection'
 import { UIScaleSection } from './sections/UIScaleSection'
 import { WorkHoursSection } from './sections/WorkHoursSection'
 import { FeatureTogglesSection } from './sections/FeatureTogglesSection'
+import { DayTasksSection } from './sections/DayTasksSection'
+import { MonthViewSection } from './sections/MonthViewSection'
+import { TaskRowSection } from './sections/TaskRowSection'
+import { PriorityStyleSection } from './sections/PriorityStyleSection'
+import { KeywordsSection } from './sections/KeywordsSection'
+import { ThemeSection } from './sections/ThemeSection'
 import { RecurringScopeSection } from './sections/RecurringScopeSection'
 import { DataSection } from './sections/DataSection'
 import { RemindersSection } from './sections/RemindersSection'
@@ -109,7 +115,7 @@ export default function Settings() {
 
 
   return (
-    <div className="max-w-3xl mx-auto p-6 space-y-8">
+    <div className="max-w-3xl mx-auto p-4 sm:p-6 space-y-6 sm:space-y-8">
         <div data-hint="settings.sections" className="flex items-center justify-between">
           <h1 className="text-2xl font-mono font-bold text-white">{t('title')}</h1>
         </div>
@@ -120,12 +126,20 @@ export default function Settings() {
           </div>
         )}
 
-        <LayoutStyleSection />
+        {/* Desktop only: a phone always has the top bar (lib/layout/headerVariant). */}
+        <ThemeSection />
+
+        {!isMobile && <LayoutStyleSection />}
 
         <HintStyleSection />
 
         {/* The isMobile gate stays here: it decides whether the section exists. */}
         {isMobile && <MobileNavSection />}
+        {isMobile && <TaskRowSection />}
+
+        <PriorityStyleSection />
+
+        <KeywordsSection />
 
         <UIScaleSection autoSave={autoSaveSettings} />
 
@@ -138,6 +152,11 @@ export default function Settings() {
         <CalendarsSection />
 
         <WorkHoursSection autoSave={autoSaveSettings} />
+
+        <DayTasksSection autoSave={autoSaveSettings} />
+
+        {/* Desktop only: the phone has no month in v1 (spec §3). */}
+        <MonthViewSection autoSave={autoSaveSettings} phoneOnly={isMobile} />
 
         <RegionalSection autoSaveProfile={autoSaveProfile} />
 

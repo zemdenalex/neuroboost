@@ -94,14 +94,13 @@ func TestCreateAcceptsAValidBodyAndReachesTheDatabase(t *testing.T) {
 	postFeedback(t, `{"type":"bug","title":"t","description":"d"}`, "")
 }
 
-// List, Update and Import are admin-only, and the check is the whole of their
+// List and Update are admin-only, and the check is the whole of their
 // security. Each must refuse an anonymous caller before touching anything.
 func TestAdminOnlyHandlersRefuseAnonymousCallers(t *testing.T) {
 	h := nilDBHandler()
 	for name, call := range map[string]func(http.ResponseWriter, *http.Request){
 		"List":   h.List,
 		"Update": h.Update,
-		"Import": h.Import,
 	} {
 		t.Run(name, func(t *testing.T) {
 			rec := httptest.NewRecorder()

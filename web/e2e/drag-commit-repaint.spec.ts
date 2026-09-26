@@ -1,3 +1,4 @@
+import { scrollGridToTop } from './fixtures/grid'
 import { test, expect } from './fixtures/auth'
 import { request as playwrightRequest, type APIRequestContext } from '@playwright/test'
 import { localMidnightUtc, localWeekday } from './fixtures/localTime'
@@ -81,6 +82,9 @@ test.describe('what the grid shows between drop and refetch', () => {
     const block = authedPage.locator(`[title^="${title}"]`).first()
     await expect(block).toBeVisible({ timeout: 15_000 })
 
+    // The grid opens near the current hour since MW11: back to 00:00, the
+    // screen this spec's time band was chosen for.
+    await scrollGridToTop(authedPage)
     const before = await block.boundingBox()
     expect(before, 'the event block must be on screen').not.toBeNull()
 
