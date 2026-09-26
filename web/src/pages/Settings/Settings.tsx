@@ -16,6 +16,7 @@ import { DayTasksSection } from './sections/DayTasksSection'
 import { MonthViewSection } from './sections/MonthViewSection'
 import { TaskRowSection } from './sections/TaskRowSection'
 import { PriorityStyleSection } from './sections/PriorityStyleSection'
+import { KeywordsSection } from './sections/KeywordsSection'
 import { ThemeSection } from './sections/ThemeSection'
 import { RecurringScopeSection } from './sections/RecurringScopeSection'
 import { DataSection } from './sections/DataSection'
@@ -137,6 +138,8 @@ export default function Settings() {
         {isMobile && <TaskRowSection />}
 
         <PriorityStyleSection />
+
+        <KeywordsSection />
 
         <UIScaleSection autoSave={autoSaveSettings} />
 

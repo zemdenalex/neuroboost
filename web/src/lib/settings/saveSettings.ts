@@ -5,6 +5,9 @@ export interface SettingsDeps {
   updateMe: (data: UpdateUserRequest) => Promise<User>
 }
 
+/** A bot-section value, or a function of the value the server holds now. */
+export type BotValue = unknown | ((current: unknown) => unknown)
+
 export interface SettingsSaver {
   (patch: Partial<UserSettings>): Promise<User>
   /**
@@ -16,8 +19,13 @@ export interface SettingsSaver {
   /**
    * One key of the bot section (settings.bot.*), merged into the section the
    * server holds now: it also keeps the keyword vocabulary and the language.
+   *
+   * A function value is called with the key's value AS THE SERVER HOLDS IT
+   * (read just before the write) and its result is written. The keyword
+   * vocabulary needs this: built from the tab's copy, it would erase a word
+   * the bot added while the tab was open.
    */
-  botSetting: (key: string, value: unknown) => Promise<User>
+  botSetting: (key: string, value: BotValue) => Promise<User>
 }
 
 /**
@@ -45,15 +53,16 @@ export function createSettingsSaver(deps: SettingsDeps): SettingsSaver {
   const save = ((patch: Partial<UserSettings>) =>
     queued((fresh) => ({ settings: { ...(fresh.settings ?? {}), ...patch } }))) as SettingsSaver
 
-  const withBot = (fresh: User, key: string, value: unknown): UserSettings => {
+  const withBot = (fresh: User, key: string, value: BotValue): UserSettings => {
     const settings = (fresh.settings ?? {}) as Record<string, unknown>
     const bot = (settings.bot && typeof settings.bot === 'object' ? settings.bot : {}) as Record<string, unknown>
-    return { ...settings, bot: { ...bot, [key]: value } } as UserSettings
+    const next = typeof value === 'function' ? (value as (current: unknown) => unknown)(bot[key]) : value
+    return { ...settings, bot: { ...bot, [key]: next } } as UserSettings
   }
 
   save.language = (locale: string) => inTurn(() => deps.updateMe({ locale }))
 
-  save.botSetting = (key: string, value: unknown) =>
+  save.botSetting = (key: string, value: BotValue) =>
     queued((fresh) => ({ settings: withBot(fresh, key, value) }))
 
   return save

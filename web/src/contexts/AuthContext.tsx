@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import i18n from '../i18n'
 import { errorMessage } from '../lib/errorMessage'
-import { createSettingsSaver } from '../lib/settings/saveSettings'
+import { createSettingsSaver, type BotValue } from '../lib/settings/saveSettings'
 import {
   User,
   UserSettings,
@@ -49,7 +49,8 @@ export interface AuthContextValue {
   /** Interface language of the web and the Mini App; the bot keeps its own. */
   updateLanguage: (locale: string) => Promise<void>
   /** One key of settings.bot (shared with the bot), merged on the server's copy. */
-  updateBotSetting: (key: string, value: unknown) => Promise<void>
+  /** A function value is applied to what the server holds now (saveSettings). */
+  updateBotSetting: (key: string, value: BotValue) => Promise<void>
 }
 
 // One saver for the app: its queue is what keeps two quick saves apart.
@@ -291,7 +292,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(await saveSettings.language(locale))
   }, [])
 
-  const updateBotSetting = useCallback(async (key: string, value: unknown) => {
+  const updateBotSetting = useCallback(async (key: string, value: BotValue) => {
     setUser(await saveSettings.botSetting(key, value))
   }, [])
 

@@ -102,3 +102,42 @@ describe('bot setting write', () => {
     expect(sent[0].locale).toBeUndefined()
   })
 })
+
+// Gap list row 17: the keyword vocabulary is rebuilt from what the server holds
+// at write time, so a word the bot added while this tab was open survives.
+describe('bot setting write from the current value', () => {
+  it('hands the updater the fresh value, not the tab copy', async () => {
+    const server = fakeServer({ bot: { lang: 'ru', keywords: { созвон: { field: 'calendar', value: 'Работа' } } } })
+    const save = createSettingsSaver(server.deps)
+    await save.botSetting('keywords', (current: unknown) => ({
+      ...(current as Record<string, unknown>),
+      спорт: { field: 'tag', value: 'спорт' },
+    }))
+    expect(server.settings).toEqual({
+      bot: {
+        lang: 'ru',
+        keywords: { созвон: { field: 'calendar', value: 'Работа' }, спорт: { field: 'tag', value: 'спорт' } },
+      },
+    })
+  })
+
+  it('passes undefined when the bot section has no such key', async () => {
+    const server = fakeServer({ work_start: '09:00' })
+    const save = createSettingsSaver(server.deps)
+    let seen: unknown = 'unset'
+    await save.botSetting('keywords', (current: unknown) => {
+      seen = current
+      return {}
+    })
+    expect(seen).toBeUndefined()
+    expect(server.settings).toEqual({ work_start: '09:00', bot: { keywords: {} } })
+  })
+
+  it('writes nothing when the read failed', async () => {
+    const server = fakeServer({ bot: { keywords: { a: 'b' } } })
+    server.failReads()
+    const save = createSettingsSaver(server.deps)
+    await expect(save.botSetting('keywords', () => ({}))).rejects.toThrow()
+    expect(server.writes).toEqual([])
+  })
+})
