@@ -1,9 +1,9 @@
 import { useState, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Calendar, CheckSquare, ListOrdered, PlusCircle, Settings, MoreHorizontal } from 'lucide-react'
+import { Calendar, PlusCircle, MoreHorizontal } from 'lucide-react'
 import { QuickAddDialog } from './QuickAddDialog'
-import { MoreMenu } from './MoreMenu'
+import { MoreMenu, MORE_PATHS } from './MoreMenu'
 
 export function BottomTabBar() {
   const { t } = useTranslation('common')
@@ -14,40 +14,26 @@ export function BottomTabBar() {
   const quickAddRef = useRef<HTMLButtonElement>(null)
   const moreRef = useRef<HTMLButtonElement>(null)
 
-  const tabs = [
-    { path: '/calendar', label: t('nav.calendar'), icon: Calendar },
-    // «Что дальше» sits next to the calendar rather than under «ещё»: it is
-    // the answer to the question a phone is usually taken out to ask, and a
-    // view nobody can find is a view nobody has.
-    { path: '/agenda', label: t('nav.agenda'), icon: ListOrdered },
-    { path: '/tasks', label: t('nav.tasks'), icon: CheckSquare },
-  ]
+  // Three tabs, symmetric: Calendar · Add · More (Denis 26.09: «3 or 5 at most
+  // by design principles… leave only calendar, add, more»). Everything else is
+  // in «Ещё» (MoreMenu); the tab is lit while the page shown is one of them.
+  const onCalendar = location.pathname === '/calendar'
+  const inMore = MORE_PATHS.some((p) => location.pathname.startsWith(p))
 
   return (
     <div className="fixed bottom-0 left-0 right-0 md:hidden bg-zinc-900 border-t border-zinc-800 z-50">
       <nav className="flex items-center justify-around h-16 px-2">
         {/* Calendar */}
-        {tabs.map(({ path, label, icon: Icon }) => {
-          const isActive = location.pathname === path
-          return (
-            <button
-              key={path}
-              onClick={() => navigate(path)}
-              className="flex flex-col items-center justify-center gap-0.5 flex-1 py-1"
-            >
-              <Icon
-                className={`w-5 h-5 ${isActive ? 'text-blue-400' : 'text-zinc-500'}`}
-              />
-              <span
-                className={`text-[10px] font-mono ${
-                  isActive ? 'text-blue-400' : 'text-zinc-500'
-                }`}
-              >
-                {label}
-              </span>
-            </button>
-          )
-        })}
+        <button
+          onClick={() => navigate('/calendar')}
+          data-testid="tab-calendar"
+          className="flex flex-col items-center justify-center gap-0.5 flex-1 py-1"
+        >
+          <Calendar className={`w-5 h-5 ${onCalendar ? 'text-blue-400' : 'text-zinc-500'}`} />
+          <span className={`text-[10px] font-mono ${onCalendar ? 'text-blue-400' : 'text-zinc-500'}`}>
+            {t('nav.calendar')}
+          </span>
+        </button>
 
         {/* Quick Add (+) — center, special styling */}
         <div className="relative flex flex-col items-center justify-center flex-1">
@@ -71,25 +57,6 @@ export function BottomTabBar() {
           </button>
         </div>
 
-        {/* Settings */}
-        <button
-          onClick={() => navigate('/settings')}
-          className="flex flex-col items-center justify-center gap-0.5 flex-1 py-1"
-        >
-          <Settings
-            className={`w-5 h-5 ${
-              location.pathname === '/settings' ? 'text-blue-400' : 'text-zinc-500'
-            }`}
-          />
-          <span
-            className={`text-[10px] font-mono ${
-              location.pathname === '/settings' ? 'text-blue-400' : 'text-zinc-500'
-            }`}
-          >
-            {t('nav.settings')}
-          </span>
-        </button>
-
         {/* More */}
         <div className="relative flex flex-col items-center justify-center flex-1">
           <MoreMenu
@@ -99,6 +66,7 @@ export function BottomTabBar() {
           />
           <button
             ref={moreRef}
+            data-testid="tab-more"
             onClick={() => {
               setQuickAddOpen(false)
               setMoreOpen((prev) => !prev)
@@ -106,11 +74,11 @@ export function BottomTabBar() {
             className="flex flex-col items-center justify-center gap-0.5 py-1"
           >
             <MoreHorizontal
-              className={`w-5 h-5 ${moreOpen ? 'text-blue-400' : 'text-zinc-500'}`}
+              className={`w-5 h-5 ${moreOpen || inMore ? 'text-blue-400' : 'text-zinc-500'}`}
             />
             <span
               className={`text-[10px] font-mono ${
-                moreOpen ? 'text-blue-400' : 'text-zinc-500'
+                moreOpen || inMore ? 'text-blue-400' : 'text-zinc-500'
               }`}
             >
               {t('action.more')}

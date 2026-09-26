@@ -425,6 +425,18 @@ test.describe('375px layout', () => {
     expect(top, 'day header sits under a 20px all-day strip').toBe(20)
   })
 
+  // Denis 26.09: the bar is «Календарь · Добавить · Ещё» — three tabs, the rest in «Ещё».
+  test('bottom bar: three tabs, the rest under «Ещё»', async ({ authedPage }) => {
+    await authedPage.goto('/calendar')
+    const bar = authedPage.locator('nav').filter({ has: authedPage.getByTestId('tab-more') })
+    await expect(bar.locator(':scope > *')).toHaveCount(3)
+    await authedPage.getByTestId('tab-more').click()
+    for (const name of [/^(Tasks|Задачи)$/, /^(Settings|Настройки)$/, /^(Agenda|Что дальше)$/]) {
+      await expect(authedPage.getByRole('button', { name }).last()).toBeVisible()
+    }
+    await authedPage.screenshot({ path: testInfo_shots('bottom-bar-more-375.png') })
+  })
+
   // Denis 25.09: task actions on a phone, all three variants, chosen in settings.
   test('task row: «⋯» by default, with the actions in its menu', async ({ authedPage }) => {
     await authedPage.goto('/tasks')
@@ -491,4 +503,8 @@ async function withSettings(page: Page, settings: Record<string, unknown>) {
       return new Response(JSON.stringify(body), { status: res.status, headers: { 'Content-Type': 'application/json' } })
     }
   }, settings)
+}
+
+function testInfo_shots(name: string): string {
+  return `C:/Users/zd/AppData/Local/Temp/claude/E--Projects-007---Ventures-V003---NeuroBoost/04e1a014-f855-4c44-926c-c4003cfaca56/scratchpad/sweep375/${name}`
 }

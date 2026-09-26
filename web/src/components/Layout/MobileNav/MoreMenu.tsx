@@ -2,8 +2,11 @@ import { useRef, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useDayTasksEnabled } from '../../../hooks/useDayTasksEnabled'
 import { useTranslation } from 'react-i18next'
-import { LayoutGrid, Wrench, BookOpen, User, Pin } from 'lucide-react'
+import { LayoutGrid, Wrench, BookOpen, User, Pin, ListOrdered, CheckSquare, Settings } from 'lucide-react'
 import { useFeatureFlags } from '../../../hooks/useFeatureFlags'
+
+/** Pages reached through «Ещё»: the bar lights the tab while one is shown. */
+export const MORE_PATHS = ['/agenda', '/tasks', '/day-tasks', '/planning', '/tools', '/reflections', '/profile', '/settings']
 
 interface MoreMenuProps {
   open: boolean
@@ -16,12 +19,17 @@ export function MoreMenu({ open, onClose, anchorRef }: MoreMenuProps) {
   const flags = useFeatureFlags()
   const dayTasks = useDayTasksEnabled()
 
+  // Everything but the calendar lives here (Denis 26.09: the bar is «Календарь ·
+  // Добавить · Ещё» only — 3 or 5 tabs, symmetric).
   const moreItems = [
+    { path: '/agenda', label: t('nav.agenda'), icon: ListOrdered, enabled: true },
+    { path: '/tasks', label: t('nav.tasks'), icon: CheckSquare, enabled: true },
     { path: '/day-tasks', label: t('nav.dayTasks'), icon: Pin, enabled: dayTasks },
     { path: '/planning', label: t('nav.planning'), icon: LayoutGrid, enabled: true },
     { path: '/tools', label: t('nav.tools'), icon: Wrench, enabled: flags.tools },
     { path: '/reflections', label: t('nav.reflections'), icon: BookOpen, enabled: true },
     { path: '/profile', label: t('nav.profile'), icon: User, enabled: true },
+    { path: '/settings', label: t('nav.settings'), icon: Settings, enabled: true },
   ].filter((item) => item.enabled)
   const menuRef = useRef<HTMLDivElement>(null)
   const navigate = useNavigate()
