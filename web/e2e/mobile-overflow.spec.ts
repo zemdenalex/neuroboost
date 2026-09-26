@@ -433,7 +433,9 @@ test.describe('375px layout', () => {
     await expect(row.getByRole('button', { name: /schedule|запланировать/i })).toHaveCount(0)
     await row.getByTestId('task-row-more').click()
     const menu = authedPage.getByTestId('task-row-menu')
-    await expect(menu.getByRole('menuitem')).toHaveCount(3)
+    // Schedule, edit, subtask, delete — and «📌 day tasks» when the account has them on.
+    for (const id of ['task-edit', 'task-add-subtask']) await expect(menu.getByTestId(id)).toBeVisible()
+    expect(await menu.getByRole('menuitem').count()).toBeGreaterThanOrEqual(4)
     await authedPage.keyboard.press('Escape')
     await expect(menu).toBeHidden()
   })
@@ -462,7 +464,9 @@ test.describe('375px layout', () => {
     await row.locator('.font-mono').first().click()
     const sheet = authedPage.getByTestId('task-action-sheet')
     await expect(sheet).toBeVisible()
-    await expect(sheet.getByRole('button')).toHaveCount(4)
+    // Close + schedule, edit, subtask, delete — and «📌 day tasks» when on.
+    await expect(sheet.getByRole('button', { name: /^(Add subtask|Подзадача)$/ })).toBeVisible()
+    expect(await sheet.getByRole('button').count()).toBeGreaterThanOrEqual(5)
     await authedPage.keyboard.press('Escape')
     await expect(sheet).toBeHidden()
   })

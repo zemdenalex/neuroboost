@@ -252,7 +252,7 @@ export function TaskActionSheet({
     fn()
   }
   return (
-    <div className="fixed inset-0 z-50 md:hidden" role="dialog" aria-modal="true" aria-label={title}>
+    <div className="fixed inset-0 z-[60] md:hidden" role="dialog" aria-modal="true" aria-label={title}>
       <button type="button" aria-label={tc('action.close')} className="absolute inset-0 bg-scrim/60" onClick={onClose} />
       <div
         data-testid="task-action-sheet"

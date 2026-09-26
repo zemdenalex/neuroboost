@@ -54,8 +54,10 @@ export function ScheduleChooser({
     ? `${whenShort(scheduleStart(slot, now, timeZone), now, timeZone, i18n.language)} · ${t('plan.howLong')}`
     : t('plan.when')
 
+  // z-[60]: above the phone tab bar (BottomTabBar, z-50). At equal z the DOM
+  // order decided, and on CI the bar took the taps (run 36223403483).
   return (
-    <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label={title}>
+    <div className="fixed inset-0 z-[60]" role="dialog" aria-modal="true" aria-label={title}>
       <button type="button" aria-label={tc('action.close')} className="absolute inset-0 bg-scrim/60" onClick={onClose} />
       <div
         data-testid="schedule-chooser"
