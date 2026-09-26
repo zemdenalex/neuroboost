@@ -27,6 +27,11 @@ type UserState struct {
 	// otherwise mean "re-read on every message".
 	Lang      string
 	LangKnown bool
+	// LangAt is when Lang was read or set. After a few minutes it is read
+	// again: the language can change in the web (one language per person,
+	// Denis 26.09), and a process-long cache kept the chat on the old one
+	// until the next manual redeploy.
+	LangAt time.Time
 
 	// TZ is the user's IANA timezone, cached on the same terms as Lang.
 	TZ      string
@@ -149,4 +154,9 @@ func (s *Store) ClearFlow(chatID int64) {
 		u.FlowStep = ""
 		u.FlowData = make(map[string]any)
 	}
+}
+
+// SetLang records the chat's interface language and when it was known.
+func (s *UserState) SetLang(lang string) {
+	s.Lang, s.LangKnown, s.LangAt = lang, true, time.Now()
 }

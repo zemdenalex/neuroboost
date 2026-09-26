@@ -43,7 +43,7 @@ func linkingHandler(t *testing.T) (*Handler, *fakeTelegram, int64, func() string
 	const chat = int64(7400)
 	h.store.SetAuth(chat, "jwt", time.Now().Add(time.Hour).Unix())
 	us := h.store.GetOrCreate(chat)
-	us.Lang, us.LangKnown = "ru", true
+	us.SetLang("ru")
 	return h, fake, chat, func() string { return hit }
 }
 

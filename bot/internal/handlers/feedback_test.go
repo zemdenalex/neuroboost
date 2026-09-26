@@ -35,7 +35,7 @@ func feedbackHandler(t *testing.T) (*Handler, *fakeTelegram, int64, func() map[s
 	const chat = int64(7300)
 	h.store.SetAuth(chat, "jwt", time.Now().Add(time.Hour).Unix())
 	us := h.store.GetOrCreate(chat)
-	us.Lang, us.LangKnown = "ru", true
+	us.SetLang("ru")
 	return h, fake, chat, func() map[string]any { return got }
 }
 

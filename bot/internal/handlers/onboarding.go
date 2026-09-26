@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+	"log"
 	"regexp"
 	"strconv"
 	"strings"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/zemdenalex/neuroboost-bot/internal/i18n"
 	"github.com/zemdenalex/neuroboost-bot/internal/keyboards"
+	"github.com/zemdenalex/neuroboost-bot/internal/logsafe"
 )
 
 // Onboarding — the first /start.
@@ -59,7 +61,13 @@ func (h *Handler) startOnboarding(chatID int64, messageID int, telegramLang stri
 		if strings.HasPrefix(strings.ToLower(telegramLang), "ru") {
 			guess = i18n.RU
 		}
-		us.Lang, us.LangKnown = string(guess), true
+		us.SetLang(string(guess))
+		// Saved at once, not only when a language is tapped: most people keep
+		// the pre-selected one, and an unsaved guess left the account's locale
+		// Russian, so the Mini App opened in Russian (review of 96c0d82).
+		if err := h.api.SetBotLang(us.AuthToken, string(guess)); err != nil {
+			log.Printf("onboarding: could not save the guessed language: %s", logsafe.Redact(err))
+		}
 	}
 	us.CurrentFlow, us.FlowStep, us.FlowData = onboardFlow, "lang", map[string]any{}
 	h.showOnboardLang(chatID, messageID)
@@ -275,7 +283,7 @@ func (h *Handler) handleOnboardCallback(chatID int64, messageID int, data string
 	switch {
 	case data == "ob_lang_ru" || data == "ob_lang_en":
 		lang := strings.TrimPrefix(data, "ob_lang_")
-		us.Lang, us.LangKnown = lang, true
+		us.SetLang(lang)
 		// Saved now, not at the end: a user who picks English and then skips
 		// has still chosen English.
 		_ = h.api.SetBotLang(us.AuthToken, lang)

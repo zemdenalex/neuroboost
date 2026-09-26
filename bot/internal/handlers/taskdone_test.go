@@ -46,7 +46,7 @@ func doneHandler(t *testing.T, task map[string]any) (*Handler, *fakeTelegram, in
 	const chat = int64(7600)
 	h.store.SetAuth(chat, "jwt", time.Now().Add(time.Hour).Unix())
 	us := h.store.GetOrCreate(chat)
-	us.Lang, us.LangKnown = "ru", true
+	us.SetLang("ru")
 	return h, fake, chat, func() []call { return calls }
 }
 
