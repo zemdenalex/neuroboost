@@ -1,3 +1,5 @@
+import type { TelegramThemeParams } from '../theme/telegramPalette'
+
 /**
  * Telegram Mini App glue: the same web app, opened by a bot button.
  *
@@ -29,6 +31,8 @@ export interface TgWebApp {
   BackButton: TgBackButton
   /** Telegram's current scheme; follows the person's theme switch. */
   colorScheme?: 'light' | 'dark'
+  /** The person's Telegram colours (MA3b); follows the theme switch too. */
+  themeParams?: TelegramThemeParams
   onEvent?: (event: 'themeChanged', cb: () => void) => void
   setHeaderColor?: (color: string) => void
   setBackgroundColor?: (color: string) => void

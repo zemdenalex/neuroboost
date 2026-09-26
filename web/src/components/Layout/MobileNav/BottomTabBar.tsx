@@ -65,7 +65,7 @@ export function BottomTabBar() {
             className="flex flex-col items-center justify-center gap-0.5 py-1"
           >
             <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center -mt-3">
-              <PlusCircle className="w-5 h-5 text-white" />
+              <PlusCircle className="w-5 h-5 text-onaccent" />
             </div>
             <span className="text-[10px] font-mono text-zinc-500">{t('action.add')}</span>
           </button>

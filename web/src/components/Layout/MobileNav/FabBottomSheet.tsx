@@ -108,7 +108,7 @@ export function FabBottomSheet() {
         }`}
         aria-label="Open navigation"
       >
-        <Plus className="w-6 h-6 text-white" />
+        <Plus className="w-6 h-6 text-onaccent" />
       </button>
 
       {/* Overlay backdrop */}

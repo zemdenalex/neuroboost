@@ -18,8 +18,18 @@ const zinc = Object.fromEntries(
 const ACCENTS = ['red', 'green', 'blue', 'amber', 'yellow', 'purple', 'emerald', 'orange', 'indigo', 'rose', 'sky', 'teal', 'violet', 'pink', 'cyan', 'lime']
 const FLIP = { 300: 700, 400: 600, 800: 200, 900: 100, 950: 50 }
 const rgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)).join(' ')
+// Blue's middle shades (buttons, focus rings) are variables too, the same hex
+// in both themes, so the Mini App can put the person's Telegram button colour
+// there (MA3b, src/lib/theme/telegramPalette.ts).
+const FIXED = { blue: [500, 600, 700] }
 const accentColors = Object.fromEntries(
-  ACCENTS.map((c) => [c, Object.fromEntries(Object.keys(FLIP).map((s) => [s, v(`${c}-${s}`)]))])
+  ACCENTS.map((c) => [
+    c,
+    Object.fromEntries([...Object.keys(FLIP), ...(FIXED[c] ?? [])].map((s) => [s, v(`${c}-${s}`)])),
+  ])
+)
+const fixedVars = Object.fromEntries(
+  Object.entries(FIXED).flatMap(([c, shades]) => shades.map((s) => [`--nb-${c}-${s}`, rgb(palette[c][s])]))
 )
 const accentVars = (light) =>
   Object.fromEntries(
@@ -44,7 +54,7 @@ export default {
   },
   plugins: [
     plugin(({ addBase }) => {
-      addBase({ ':root': accentVars(false), ':root[data-theme="light"]': accentVars(true) })
+      addBase({ ':root': { ...fixedVars, ...accentVars(false) }, ':root[data-theme="light"]': accentVars(true) })
     }),
   ],
 }
