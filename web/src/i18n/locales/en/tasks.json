@@ -180,6 +180,7 @@
   "link.lost.nag": "repeating an unanswered reminder",
   "link.lost.timeLog": "logged time",
   "link.lost.history": "the series' done and skipped days",
+  "link.lost.linkedEvent": "the link to its already scheduled event (that event stays in the calendar on its own)",
   "link.lostEvent.start_time": "⚠ start hour → tasks have none",
   "link.lostEvent.color": "⚠ colour → tasks have none",
   "link.lostEvent.location": "⚠ place → tasks have none",

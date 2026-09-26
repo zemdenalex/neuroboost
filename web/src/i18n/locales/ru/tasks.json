@@ -181,6 +181,7 @@
   "link.lost.nag": "повтор неотвеченного напоминания",
   "link.lost.timeLog": "записанное время",
   "link.lost.history": "отметки сделанных и пропущенных дней серии",
+  "link.lost.linkedEvent": "связь с уже запланированным событием (оно останется в календаре само по себе)",
   "link.lostEvent.start_time": "⚠ час начала → у задачи нет",
   "link.lostEvent.color": "⚠ цвет → у задачи нет",
   "link.lostEvent.location": "⚠ место → у задачи нет",

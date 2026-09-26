@@ -92,6 +92,12 @@ describe('an API refusal becomes the question that answers it', () => {
     expect(r.notice).toBe('repeats')
   })
 
+  it('REPEAT_CHOICE_REQUIRED on an event opened as a whole series offers the series only', () => {
+    // No day in its id: «only this once» would only earn OCCURRENCE_REQUIRED.
+    const r = afterError(event({ onceAllowed: false }), { mode: 'link' }, 'REPEAT_CHOICE_REQUIRED')!
+    expect(r.item.onceAllowed).toBe(false)
+  })
+
   it('NEEDS_TIME and NOT_AN_OCCURRENCE: ask when again', () => {
     const a = { mode: 'move' as const, repeat: 'once' as const, start: START, minutes: 30 }
     const item = task({ repeats: true })
@@ -132,6 +138,11 @@ describe('the move card: what a task loses (convert.go copies title, description
 
   it('a series move also loses the answered days; the rule itself goes along', () => {
     expect(taskMoveLoses(full, true, { mode: 'move', repeat: 'series' })).toEqual(['priority', 'contexts', 'energy', 'nag', 'timeLog', 'history'])
+  })
+
+  it('a move of an already scheduled task says its event stays, tied to nothing', () => {
+    expect(taskMoveLoses({ children: 0, linkedEvent: true }, false, { mode: 'move' })).toContain('linkedEvent')
+    expect(taskMoveLoses({ children: 0, linkedEvent: true }, false, { mode: 'link' })).toEqual([])
   })
 
   it('link and a one-day move lose nothing: the task stays', () => {

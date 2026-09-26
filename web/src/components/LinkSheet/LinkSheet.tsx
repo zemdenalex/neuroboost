@@ -38,7 +38,7 @@ import { eventToTask, type ToTaskResult } from '../../api/events'
 
 /** What the sheet turns: a task from the list, or the event open in the editor. */
 export type LinkSource =
-  | { kind: 'task'; task: Task; /** Subtasks under it in the list. */ children: number }
+  | { kind: 'task'; task: Task; /** Subtasks under it in the list. */ children: number; /** It already has a linked event. */ linkedEvent?: boolean }
   | { kind: 'event'; id: string; title: string; rrule?: string | null }
 
 export interface LinkDone {
@@ -378,7 +378,7 @@ function TaskCard({
   const { t, i18n } = useTranslation('tasks')
   const task = source.task
   const minutes = usableEstimate(item.estimate) ?? answers.minutes ?? 0
-  const facts = { ...task, children: source.children }
+  const facts = { ...task, children: source.children, linkedEvent: source.linkedEvent }
   const lost = taskMoveLoses(facts, item.repeats, answers)
   const freed = subtasksFreed(facts, item.repeats, answers)
   return (

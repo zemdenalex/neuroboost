@@ -10,7 +10,6 @@ import { test, expect } from './fixtures/auth'
  * real GETs, convert and to-task are answered here, every other write is refused.
  */
 const ZONE = 'Europe/Moscow'
-const SHOTS = 'C:/Users/zd/AppData/Local/Temp/claude/E--Projects-007---Ventures-V003---NeuroBoost/04e1a014-f855-4c44-926c-c4003cfaca56/scratchpad/row5'
 const now = new Date().toISOString()
 const base = { status: 'TODO', actual_minutes: 0, tags: [], contexts: [], reminder_offsets: [10], user_id: 'e2e', created_at: now, updated_at: now }
 const PLAIN = { ...base, id: 'e2e-link-plain', title: 'e2e связать с событием', priority: 2 }
@@ -91,7 +90,7 @@ test('a task is linked to an event: how, when, how long, the card, one confirm',
   await page.goto('/tasks')
   const sheet = await openToEvent(page, PLAIN.title, mobile)
   await expect(sheet.getByTestId('link-step')).toHaveText(/(Шаг|Step) 1 (из|of) 4/)
-  if (mobile) await page.screenshot({ path: `${SHOTS}/how-375.png` })
+  if (mobile) await page.screenshot({ path: test.info().outputPath('how-375.png') })
   await sheet.getByTestId('link-how-link').click()
 
   await expect(sheet.getByTestId('link-step')).toHaveText(/(Шаг|Step) 2 (из|of) 4/)
@@ -105,7 +104,7 @@ test('a task is linked to an event: how, when, how long, the card, one confirm',
   // A link loses nothing: the task stays.
   await expect(sheet.getByTestId('link-lost')).toHaveCount(0)
   if (mobile) {
-    await page.screenshot({ path: `${SHOTS}/card-375.png` })
+    await page.screenshot({ path: test.info().outputPath('card-375.png') })
     const tabBar = await page.getByTestId('tab-calendar').boundingBox()
     expect(tabBar, 'the phone tab bar is on screen under the sheet').not.toBeNull()
     // The sheet takes the taps, not the tab bar under it.

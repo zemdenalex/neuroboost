@@ -994,7 +994,7 @@ export default function Tasks() {
 
         {linkingTask && (
           <LinkSheet
-            source={{ kind: 'task', task: linkingTask, children: tasks.filter(x => x.parent_id === linkingTask.id).length }}
+            source={{ kind: 'task', task: linkingTask, children: tasks.filter(x => x.parent_id === linkingTask.id).length, linkedEvent: linked.has(linkingTask.id) }}
             timeZone={timeZone}
             onDone={(done) => linkedToEvent(linkingTask, done)}
             onClose={() => setLinkingTask(null)}

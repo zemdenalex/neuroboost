@@ -169,7 +169,10 @@ export function afterError(item: LinkItem, a: LinkAnswers, code: string | undefi
     case 'REPEAT_CHOICE_REQUIRED':
       // The list was older than the thing: it repeats now. Ask, never guess.
       return {
-        item: { ...item, repeats: true, onceAllowed: item.direction === 'toEvent' ? item.onceAllowed : true },
+        // A task's one day comes from the «when» step, so «only this once» is
+        // always open to it; an event's one day only when it was opened from
+        // that day (review of b271c65: this was the other way round).
+        item: { ...item, repeats: true, onceAllowed: item.direction === 'toEvent' ? true : item.onceAllowed },
         answers: clear('repeat', a),
         notice: 'repeats',
       }
@@ -206,10 +209,16 @@ export interface TaskFacts {
   tags?: string[]
   /** Subtasks in the list under this task. */
   children: number
+  /**
+   * The task already has a linked event («Запланировать», an earlier link).
+   * A move deletes the task, event.task_id is ON DELETE SET NULL, so that
+   * event stays in the calendar tied to nothing (review of b271c65).
+   */
+  linkedEvent?: boolean
 }
 
 /** Codes, worded by the sheet (tasks.json link.lost.*). */
-export type TaskLost = 'priority' | 'due' | 'contexts' | 'energy' | 'nag' | 'timeLog' | 'history'
+export type TaskLost = 'priority' | 'due' | 'contexts' | 'energy' | 'nag' | 'timeLog' | 'history' | 'linkedEvent'
 
 /**
  * What a MOVE of a task loses. Derived from convert.go: the event is built from
@@ -232,6 +241,7 @@ export function taskMoveLoses(task: TaskFacts, repeats: boolean, a: LinkAnswers)
   if (task.nag_minutes && task.nag_minutes > 0) lost.push('nag')
   if (task.actual_minutes && task.actual_minutes > 0) lost.push('timeLog')
   if (repeats) lost.push('history')
+  if (task.linkedEvent) lost.push('linkedEvent')
   return lost
 }
 
