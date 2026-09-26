@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-09-26
 tags: [web, api, recurrence]
-weight: { importance: 4, connectivity: 2, access: 1, last_accessed: 2026-09-26 }
+weight: { importance: 4, connectivity: 3, access: 2, last_accessed: 2026-09-26 }
 sources:
   - file: "web/src/pages/Tasks/Tasks.tsx setOccurrence"
   - file: "api-go/internal/tasks/occurrence_handlers.go"

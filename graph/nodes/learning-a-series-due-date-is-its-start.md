@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-09-26
 tags: [web, tasks, recurrence]
-weight: { importance: 4, connectivity: 2, access: 1, last_accessed: 2026-09-26 }
+weight: { importance: 4, connectivity: 3, access: 2, last_accessed: 2026-09-26 }
 sources:
   - file: "web/src/lib/home/taskCounts.ts"
   - file: "web/src/lib/tasks/tickAction.ts"

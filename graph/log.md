@@ -1443,3 +1443,31 @@ CI/CD: `concurrency` в `ci.yml` (два push'а подряд ломают e2e �
 - **К ротации (Денису в отчёт):** JWT e2e-сессии staging-аккаунта попал в транскрипт 26.09 (~30 дней жизни).
 - **Начать с вопросов:** нет
 - **Промпт лупа:** `/loop work in a loop to create telegram miniapp and fix mobile web (Denis 25.09, verbatim). Checklists: docs/tasks-mini-app.md, docs/tasks-mobile-web.md; queue: docs/agents/queue.md. Rules: E:/Projects/CLAUDE.md "Loops"; no merge to main; prod bot untouched.`
+
+
+### После handoff (журнал хуком)
+- 26.09 13:29 · NeuroBoost: this round pushed the web Home page, which now works like the bot's «Сегодня», but the same push also carried the parser agent's four unreviewed commits to staging. - **The Home change:** it shows the day-tasks line with a button, events with start and end time, and five open tasks you can tick plus «и ещё N». Checked at 375 px with your real data; nothing was written. I haven't seen i…
+- 26.09 13:34 · NeuroBoost: the agent has finished "type one line on the web" (row 1). Five of its seven commits are already on staging, pushed with my Home change before I reviewed them. CI for that push (`b49bcc8`) is still running, and a code review of all seven commits is running in the background. The last two commits stay local until both come back clean. **How it works:** - **Line without a time** (for exa…
+- 26.09 13:44 · NeuroBoost: typing a whole line into the task list now works on staging, read the same way the bot reads it. The change is pushed at `3aee803`; its CI run is still going, and I check it at the next wakeup (14:05). CI was green for the previous push, which included moving the parser into the API, and staging answers normally. - **Review fixes:** a review of that work found no deploy or security pro…
+- 26.09 14:31 · Loop report: the hook's numbers came out negative, so they can't be trusted. The real idle stretch was 09:48–12:55, when I waited on your answer instead of working. NeuroBoost: - **Live on staging:** the one-line input is live (`3aee803`), and CI passed fully, e2e included. - **Next, row 18:** after a quick create, a toast offers «Undo», which deletes the task just made, like the bot's «↩️ Отменит…
+- 26.09 14:34 · Loop report: the hook's numbers came out negative again, so I'm not relying on them. The real idle stretch was 09:48–12:55, when I waited on your answer instead of working. NeuroBoost: - **Undo after a quick add (gap list row 18):** pushed as `ca26055`. After saving a line, a toast offers «Отменить», which deletes the task just made, like the bot's «↩️ Отменить». CI for it is still running. - **Ro…
+
+## [2026-09-26] recall | decision-bottom-tabs-three-26-09, learning-a-push-carries-every-commit-on-the-branch, learning-a-question-to-denis-is-not-a-pause, decision-release-small-and-in-his-order-21-09
+
+## [2026-09-26 17:10] handoff | 26.09 день: 14 строк списка дыр бот→веб, парсер одной строки, релизы решены
+
+**Сделано (запушено до `b27fd57`, CI зелёный до `ca26055`):** строки списка дыр 1 (парсер бота через `POST /api/parse`), 2, 4, 6, 7, 8, 9, 11, 13, 14, 15, 16, 18 + F1/F2; нижняя панель телефона «Календарь · Добавить · Ещё»; `GET /api/events` → `[]`; листы над панелью. Проверка Денису — `docs/proverka-2026-09-26-staging.md` (10.1–10.15). Прогресс — `docs/team/research/V003-20260926-res-bot-vs-web-gaps.md`.
+**Не закоммичено (агент строки 17 оборвался с сессией):** `web/src/lib/settings/botKeywords.ts` + `.test.ts`, правки `saveSettings.ts` (`BotValue` — функция от серверного значения), `saveSettings.test.ts`, `AuthContext.tsx` — не проверено и не ревьюено.
+**Решения Дениса в handoff (узлы):** `decision-language-web-and-miniapp-shared-bot-own-26-09` (пересмотр утреннего «один язык»), `decision-one-line-parser-is-the-bots-26-09`, `decision-web-home-is-the-bots-today-26-09`, `decision-web-follows-bot-priority-symbol-26-09`, `decision-phone-month-three-variants-26-09` (A+C+D, выбор в ⚙️), `decision-task-event-link-sheet-and-steps-26-09` (A+B), `decision-release-11-6-then-12-0-26-09`, `decision-bottom-tabs-three-26-09` (подтверждён).
+**Рефлексия Дениса:** дороже всего стоило ожидание 09:48–12:55 (`learning-a-question-to-denis-is-not-a-pause`).
+
+### План следующей сессии
+
+- **Цель (Денис 26.09):** *«Prep for releases one by one, starting with 11.6»* → потом v0.4.12.0; луп Mini App/мобильного веба продолжается между проходами.
+- **Первый шаг:** `gh pr view 10` — PR #10 (v0.4.11.6, бот D3 + подзадачи) как есть: CI зелёный, мержится ли в `main` без конфликтов; собрать Денису короткий список проверки 11.6 (его раздел подзадач 5.1–5.8 уже есть в `docs/proverka-2026-09-26-staging.md`) → его «да» → мерж + прод-бот руками (`/opt/neuroboost-bot-prod`, `git archive`), `/broadcast`.
+- **Затем в коде (без Дениса):** (1) разделить язык по решению: убрать запись `locale` из `bot/internal/api/lang.go SetBotLang`, `bot.lang` из `saveSettings.language`, `startupLanguage` из `AuthContext` (оставить `language_code` для нового аккаунта Mini App); (2) доделать или откатить незакоммиченную строку 17 (`botKeywords.ts`) — ревью `pr-review-toolkit:code-reviewer`; (3) месяц на телефоне A+C+D с выбором в ⚙️; (4) связать/перенести A+B.
+- **v0.4.12.0 prep:** описание релиза из `docs/relizy/plan-v0.4.11.6-i-v0.4.12.md` (обновить: всё с 26.09), проход Дениса, 🔴 до мержа: `ssh … 'cd /opt/neuroboost && git status --short && ls -la .dockerignore'`.
+- **Ждёт Дениса:** «да» на PR #10; проход `docs/proverka-2026-09-26-staging.md`; `graph/.questions-next.md` (ООО/ИП, M6, ночные часы, сирота графа, строки 10 и 12).
+- **Скиллы:** `pr-review-toolkit:code-reviewer` перед каждым push; `/feature` для строк 10/12; e2e только с перехватом записи (образец `web/e2e/task-repeat-field.spec.ts`), вывод через `sed` (токен).
+- **К ротации:** JWT e2e-сессии staging-аккаунта Дениса попал в транскрипт 26.09.
+- **Начать с вопросов:** нет

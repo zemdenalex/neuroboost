@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-09-26
 tags: [method, loop]
-weight: { importance: 3, connectivity: 2, access: 1, last_accessed: 2026-09-26 }
+weight: { importance: 3, connectivity: 3, access: 2, last_accessed: 2026-09-26 }
 sources:
   - file: "transcript 04e1a014 (LOOP REPORT 12:55)"
 links:

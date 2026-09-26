@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-09-26
 tags: [web, mobile, mini-app, navigation]
-weight: { importance: 4, connectivity: 2, access: 1, last_accessed: 2026-09-26 }
+weight: { importance: 4, connectivity: 4, access: 2, last_accessed: 2026-09-26 }
 sources:
   - file: "transcript 04e1a014, AskUserQuestion о строке 16 списка дыр, 26.09 12:55"
 stakes: low

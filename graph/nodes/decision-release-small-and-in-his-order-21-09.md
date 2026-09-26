@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-09-21
 tags: [neuroboost, release, product, bot]
-weight: { importance: 5, connectivity: 14, access: 4, last_accessed: 2026-09-26 }
+weight: { importance: 5, connectivity: 15, access: 5, last_accessed: 2026-09-26 }
 sources:
   - file: "docs/relizy/plan-reliza-v0.4.11.3-2026-09-21.md"
   - file: "docs/superpowers/plans/2026-09-21-v04114-release-plan.md"
