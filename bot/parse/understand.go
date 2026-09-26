@@ -104,6 +104,33 @@ func Understand(line string, now time.Time, v Vocabulary) Understood {
 	return u
 }
 
+// Missing names what the card still has to ask before an event can be
+// created, in the order the user should be asked: "title", "freq", "date",
+// "span", "time" — or "" when nothing is missing.
+//
+// 🔴 A bare «повтор» is a question, not a default. Denis, 15.09: «поскольу
+// повтор я не написал частоту, тоже должен уточнить». Creating a one-off
+// because no frequency was given would be a silent answer to a question he
+// explicitly asked to be asked.
+func Missing(title string, d Draft) string {
+	switch {
+	case strings.TrimSpace(title) == "":
+		return "title"
+	case d.RepeatAsked && d.Repeat == "":
+		return "freq"
+	case !d.HasDay:
+		return "date"
+	case !d.EndDay.IsZero() && d.EndDay.Before(d.Day):
+		// 🔴 Denis, 17.09: ⚠ was shown and ✅ created it anyway; then the plain
+		// day question offered three buttons and no way to fix a SPAN.
+		return "span"
+	case !d.HasTime && !d.AllDay:
+		return "time"
+	default:
+		return ""
+	}
+}
+
 // PlainTask is a line that needs no question and is saved as a task at once
 // (Denis, 23.09: «seamless task creation»): no clock time (task or event is a
 // real choice there — a timed task is bound to an event), not a list (one or

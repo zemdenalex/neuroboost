@@ -108,3 +108,18 @@ func TestSettingsReadersReadBothKeywordShapes(t *testing.T) {
 		t.Errorf("presets = %+v", p)
 	}
 }
+
+func TestMissingNamesWhatTheCardStillHasToAsk(t *testing.T) {
+	cases := map[string]string{
+		"стоматолог завтра 15:00":    "",
+		"стоматолог 15:00":           "date",
+		"завтра 15:00":               "title",
+		"зарядка завтра 8:00 повтор": "freq",
+	}
+	for line, want := range cases {
+		u := Understand(line, understandNow, Vocabulary{})
+		if got := Missing(u.Title, u.Draft); got != want {
+			t.Errorf("%q: missing %q, want %q", line, got, want)
+		}
+	}
+}

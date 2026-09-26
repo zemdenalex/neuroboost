@@ -56,30 +56,12 @@ const (
 )
 
 // nextQuestion reports what still has to be answered before an event can be
-// created, in the order the user should be asked.
-//
-// 🔴 A bare «повтор» is a question, not a default. Denis, 15.09: «поскольу
-// повтор я не написал частоту, тоже должен уточнить». Creating a one-off
-// because no frequency was given would be a silent answer to a question he
-// explicitly asked to be asked — and on a repeating event, a wrong guess is
-// wrong once a week forever.
+// created — parse.Missing, which the API's /api/parse shares, as a card step.
 func nextQuestion(st draftState) string {
-	switch {
-	case strings.TrimSpace(st.Title) == "":
-		return askTitle
-	case st.D.RepeatAsked && st.D.Repeat == "":
-		return askFreq
-	case !st.D.HasDay:
-		return askDate
-	case !st.D.EndDay.IsZero() && st.D.EndDay.Before(st.D.Day):
-		// 🔴 Denis, 17.09: ⚠ was shown and ✅ created it anyway; then the plain
-		// day question offered three buttons and no way to fix a SPAN.
-		return askSpan
-	case !st.D.HasTime && !st.D.AllDay:
-		return askTime
-	default:
-		return askNothing
+	if q := parse.Missing(st.Title, st.D); q != "" {
+		return "ask:" + q
 	}
+	return askNothing
 }
 
 // weekdayName names the day on the card. Sunday first, because that is where
