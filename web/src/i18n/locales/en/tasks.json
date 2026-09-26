@@ -69,6 +69,8 @@
   "form.titlePlaceholder": "Task title",
   "form.description": "Description",
   "form.descriptionPlaceholder": "Optional description",
+  "form.tags": "Tags",
+  "form.tagsPlaceholder": "comma-separated: home, work",
   "form.priority": "Priority",
   "form.dueDate": "Due Date",
   "form.estimatedTime": "Estimated Time (minutes)",

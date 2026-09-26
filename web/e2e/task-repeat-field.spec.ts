@@ -13,7 +13,7 @@ test('a new task can be made to repeat every week', async ({ authedPage: page },
   await page.route('**/api/**', (route) =>
     ['GET', 'HEAD', 'OPTIONS'].includes(route.request().method()) ? route.fallback() : route.abort(),
   )
-  let sent: { title?: string; rrule?: string; nag_minutes?: number; due_date?: string; estimated_minutes?: number } | undefined
+  let sent: { title?: string; rrule?: string; nag_minutes?: number; due_date?: string; estimated_minutes?: number; tags?: string[] } | undefined
   await page.route('**/api/tasks', async (route) => {
     if (route.request().method() !== 'POST') return route.fallback()
     sent = route.request().postDataJSON()
@@ -35,11 +35,15 @@ test('a new task can be made to repeat every week', async ({ authedPage: page },
   await page.getByTestId('task-due-tomorrow').click()
   await page.getByTestId('task-estimate-30').click()
   await page.getByTestId('task-nag').selectOption('15')
+  // Gap list row 22: tags in the form, typed key by key; a comma used to vanish
+  // the moment it was typed, so a second tag could not be started.
+  await page.getByTestId('task-tags').pressSequentially('дом, работа')
   await page.getByRole('button', { name: /^(Save|Сохранить)$/ }).click()
 
   await expect.poll(() => sent?.rrule, { timeout: 10_000 }).toBe('FREQ=WEEKLY')
   expect(sent?.nag_minutes).toBe(15)
   expect(sent?.estimated_minutes).toBe(30)
+  expect(sent?.tags).toEqual(['дом', 'работа'])
   const dueInHours = (new Date(sent!.due_date!).getTime() - Date.now()) / 3600_000
   expect(dueInHours, 'tomorrow, same time of day').toBeGreaterThan(22)
   expect(dueInHours).toBeLessThan(26)

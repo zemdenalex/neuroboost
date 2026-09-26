@@ -65,6 +65,7 @@ import { PHONE_QUERY } from '../../lib/layout/headerVariant'
 import { readRowActions } from '../../lib/tasks/rowActions'
 import { RowActionsMenu, SwipeRow, TaskActionSheet } from '../../components/TaskRow/TaskRowActions'
 import { ScheduleChooser } from '../../components/TaskRow/ScheduleChooser'
+import { TagsInput } from '../../components/TagsInput/TagsInput'
 import { LinkSheet, type LinkDone } from '../../components/LinkSheet/LinkSheet'
 
 /** The bot's nag choices (keyboards.NagCodes); the API's floor is 5, ceiling a day. */
@@ -1029,6 +1030,20 @@ export default function Tasks() {
                   placeholder={t('form.descriptionPlaceholder')}
                   rows={3}
                   className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white font-mono focus:outline-none focus:border-blue-500 resize-none"
+                />
+              </div>
+
+              {/* Tags of an existing task too, as the bot's card (gap list row 22):
+                  the save already sent `tags`, but there was no field to change them. */}
+              <div>
+                <label htmlFor="task-tags" className="block text-sm text-zinc-400 mb-1">{t('form.tags')}</label>
+                <TagsInput
+                  key={editingTask.id ?? 'new'}
+                  id="task-tags"
+                  tags={editingTask.tags}
+                  onChange={(tags) => setEditingTask(prev => ({ ...prev!, tags }))}
+                  placeholder={t('form.tagsPlaceholder')}
+                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white font-mono focus:outline-none focus:border-blue-500"
                 />
               </div>
 

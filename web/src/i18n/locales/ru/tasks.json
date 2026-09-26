@@ -69,6 +69,8 @@
   "form.titlePlaceholder": "Название задачи",
   "form.description": "Описание",
   "form.descriptionPlaceholder": "Описание (необязательно)",
+  "form.tags": "Теги",
+  "form.tagsPlaceholder": "через запятую: дом, работа",
   "form.priority": "Приоритет",
   "form.dueDate": "Срок",
   "form.estimatedTime": "Оценка времени (минуты)",
