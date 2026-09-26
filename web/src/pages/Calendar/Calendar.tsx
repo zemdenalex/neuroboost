@@ -346,17 +346,31 @@ export function Calendar() {
     setSavedView('week');
   }, [timezone]);
 
-  // /calendar?date=YYYY-MM-DD opens that day (Mini App start link d-…),
-  // then the parameter is dropped so a reload does not pin the calendar to it.
+  // /calendar?date=YYYY-MM-DD opens that day (Mini App start link d-…), and
+  // &event=<id> then opens that event in the editor (a tap in «Что дальше»,
+  // gap list row 21: on a phone the event is otherwise dozens of swipes away).
+  // The parameters are dropped so a reload does not pin the calendar to them.
   const [searchParams, setSearchParams] = useSearchParams();
+  const [pendingEvent, setPendingEvent] = useState<string | null>(null);
   useEffect(() => {
     const day = searchParams.get('date');
     if (!day || !/^\d{4}-\d{2}-\d{2}$/.test(day)) return;
     handleOpenDay(day);
+    setPendingEvent(searchParams.get('event'));
     const next = new URLSearchParams(searchParams);
     next.delete('date');
+    next.delete('event');
     setSearchParams(next, { replace: true });
   }, [searchParams, setSearchParams, handleOpenDay]);
+  // Opened once its week has loaded; an id the week does not hold stays
+  // pending harmlessly until the next navigation replaces it.
+  useEffect(() => {
+    if (!pendingEvent) return;
+    const found = events.find(e => e.id === pendingEvent);
+    if (!found) return;
+    setPendingEvent(null);
+    handleSelect(found);
+  }, [events, pendingEvent, handleSelect]);
 
   const handleCreateOnDay = useCallback((day: string) => {
     const start = new Date(localTimeOn(day, user?.settings?.work_start ?? '09:00', timezone));

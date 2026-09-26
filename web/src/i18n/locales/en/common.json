@@ -48,5 +48,6 @@
   "agenda.allDay": "all day",
   "agenda.untitled": "(untitled)",
   "agenda.loading": "Loading…",
-  "agenda.empty": "Nothing scheduled for the next {{days}} days."
+  "agenda.empty": "Nothing scheduled for the next {{days}} days.",
+  "agenda.more": "{{days}} more days"
 }

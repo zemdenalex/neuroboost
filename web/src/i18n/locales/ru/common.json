@@ -48,5 +48,6 @@
   "agenda.allDay": "весь день",
   "agenda.untitled": "(без названия)",
   "agenda.loading": "Загружаю…",
-  "agenda.empty": "На ближайшие {{days}} дней ничего не запланировано."
+  "agenda.empty": "На ближайшие {{days}} дней ничего не запланировано.",
+  "agenda.more": "Ещё {{days}} дней"
 }
