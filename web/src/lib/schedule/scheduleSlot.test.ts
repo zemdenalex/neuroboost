@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { scheduleStart, scheduleDurations, whenShort, linkedStarts, SCHEDULE_SLOTS } from './scheduleSlot'
+import { scheduleStart, scheduleDurations, whenShort, linkedStarts, SCHEDULE_SLOTS, instantFromLocalValue, localValueOf } from './scheduleSlot'
 
 const MSK = 'Europe/Moscow' // UTC+3, no DST
 const BER = 'Europe/Berlin' // DST ends 2026-10-25 03:00 → 02:00
@@ -128,5 +128,15 @@ describe('linkedStarts (mirrors bot linked.go linkedEvents)', () => {
     expect(map.get('b')).toBe('2026-09-26T05:00:00Z')
     expect(map.has('c')).toBe(false)
     expect(map.size).toBe(2)
+  })
+})
+
+describe('a typed time (the link sheet\'s «другое время»)', () => {
+  it('is a wall time in the person\'s zone, not the browser\'s, and reads back the same', () => {
+    expect(instantFromLocalValue('2026-10-02T15:00', MSK)?.toISOString()).toBe('2026-10-02T12:00:00.000Z')
+    // Berlin after the DST change: +1, not the +2 of the day it was typed.
+    expect(instantFromLocalValue('2026-10-26T09:00', BER)?.toISOString()).toBe('2026-10-26T08:00:00.000Z')
+    expect(localValueOf(new Date('2026-10-02T12:00:00Z'), MSK)).toBe('2026-10-02T15:00')
+    expect(instantFromLocalValue('2026-10-02', MSK)).toBeNull()
   })
 })

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { ChevronLeft, X } from 'lucide-react'
 import { SheetButton } from './TaskRowActions'
 import {
@@ -9,6 +10,15 @@ import {
   whenShort,
   type ScheduleSlotKey,
 } from '../../lib/schedule/scheduleSlot'
+
+/** «45м», «1ч», «1ч 30м»: a length in the words of the schedule sheet (tasks.json plan.*). */
+export function lengthLabel(t: TFunction, m: number): string {
+  return m < 60
+    ? t('plan.minutes', { m })
+    : m % 60 === 0
+      ? t('plan.hours', { h: m / 60 })
+      : t('plan.hoursMinutes', { h: Math.floor(m / 60), m: m % 60 })
+}
 
 /**
  * «Запланировать» with a choice, as in the bot (gap list row 4): when first,
@@ -42,12 +52,7 @@ export function ScheduleChooser({
   }, [onClose])
 
   const { options, preferred } = scheduleDurations(estimatedMinutes)
-  const length = (m: number) =>
-    m < 60
-      ? t('plan.minutes', { m })
-      : m % 60 === 0
-        ? t('plan.hours', { h: m / 60 })
-        : t('plan.hoursMinutes', { h: Math.floor(m / 60), m: m % 60 })
+  const length = (m: number) => lengthLabel(t, m)
 
   const now = new Date()
   const question = slot

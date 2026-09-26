@@ -31,6 +31,8 @@ import { createTask } from '../../api';
 import { markOccurrence } from '../../api/tasks';
 import { ApiError } from '../../api/client';
 import { showToast } from '../../components/ui/Toast';
+import type { LinkDone } from '../../components/LinkSheet/LinkSheet';
+import { editorClosesAfter } from '../../lib/convert/linkFlow';
 import { listCalendars, type Calendar as NbCalendar } from '../../api/calendars';
 import { CalendarFilter } from '../../components/Calendars/CalendarFilter';
 import { CalendarPicker } from '../../components/Calendars/CalendarPicker';
@@ -58,6 +60,7 @@ const QUICK_TASK_CALENDAR_KEY = 'nb-quick-task-calendar';
 
 export function Calendar() {
   const { t } = useTranslation('calendar');
+  const { t: tt } = useTranslation('tasks');
   const navigate = useNavigate();
   const { user } = useAuthContext();
   const timezone = user?.timezone || 'Europe/Moscow';
@@ -392,6 +395,16 @@ export function Calendar() {
     handleEditorClose();
   }, [loadEvents, handleEditorClose]);
 
+  // «→ Задача» from the editor (gap list row 5): say what happened, reload the
+  // events and the task list, and close the editor when its event is gone or
+  // was detached (editorClosesAfter): a later Save would name a dead id.
+  const handleEditorConverted = useCallback(async (done: LinkDone) => {
+    const title = editorDraft?.title ?? '';
+    showToast(tt(done.answers.mode === 'link' ? 'link.done.toTaskLink' : 'link.done.toTaskMove', { title }));
+    if (editorClosesAfter(done.item, done.answers)) handleEditorClose();
+    await Promise.all([loadEvents(), loadTasks()]);
+  }, [editorDraft, tt, handleEditorClose, loadEvents, loadTasks]);
+
   const handleToggleSidebar = useCallback(() => {
     setTaskSidebarOpen(prev => {
       const next = !prev;
@@ -590,6 +603,7 @@ export function Calendar() {
             onPatched={handleEditorPatched}
             onDelete={handleDelete}
             withScope={withScope}
+            onConverted={handleEditorConverted}
           />
         </div>
       )}

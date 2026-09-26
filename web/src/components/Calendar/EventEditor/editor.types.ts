@@ -1,6 +1,7 @@
 import type { NbEvent } from '../../../types';
 import type { MutationScope } from '../../../lib/recurrence/scope';
 import type { RecurringAction } from '../RecurringScopeDialog';
+import type { LinkDone } from '../../LinkSheet/LinkSheet';
 
 export interface EditorProps {
   /** Time range for new event creation (null when editing) */
@@ -28,6 +29,12 @@ export interface EditorProps {
     run: (scope?: MutationScope) => Promise<void>,
     options?: { calendarChanged?: boolean },
   ) => Promise<void>;
+  /**
+   * After «→ Задача» went through (gap list row 5, components/LinkSheet). The
+   * calendar reloads, says what happened, and closes the editor when the event
+   * it holds is gone or detached. Absent: the action is not offered.
+   */
+  onConverted?: (done: LinkDone) => void;
 }
 
 export interface TimeValidation {

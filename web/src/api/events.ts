@@ -1,4 +1,5 @@
 import { api } from './client'
+import type { ToTaskBody } from '../lib/convert/linkFlow'
 
 export interface Event {
   id: string
@@ -78,4 +79,27 @@ export async function deleteEvent(id: string): Promise<void> {
   return api.delete(`/events/${id}`)
 }
 
+/** The task an event becomes, as POST /api/events/{id}/to-task words it (events/totask.go). */
+export interface ToTaskResult {
+  task: {
+    id?: string
+    title: string
+    due_date: string
+    estimated_minutes?: number
+    rrule?: string
+  }
+  /** Codes: start_time, color, location, reminders. */
+  lost: string[]
+  event_id: string | null
+  dry_run: boolean
+}
 
+/**
+ * Event → task. The id may be an occurrence («<uuid>:<YYYY-MM-DD>»), which is
+ * how «only this once» names its day, as the bot sends it. 🔴 Not
+ * encodeURIComponent: chi matches on the raw path, and «%3A» would reach the
+ * handler undecoded.
+ */
+export async function eventToTask(id: string, body: ToTaskBody): Promise<ToTaskResult> {
+  return api.post<ToTaskResult>(`/events/${id}/to-task`, body)
+}

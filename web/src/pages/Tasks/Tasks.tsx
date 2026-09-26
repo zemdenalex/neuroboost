@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
-import { onTasksChanged } from '../../lib/quickTask/tasksChanged'
+import { announceTasksChanged, onTasksChanged } from '../../lib/quickTask/tasksChanged'
 import { sortWithinPriority } from '../../lib/quickTask/sortTasks'
 import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'react-router-dom'
@@ -21,6 +21,7 @@ import {
   Filter,
   CalendarPlus,
   CalendarClock,
+  ArrowRightLeft,
 } from 'lucide-react'
 import { QuickAddRow } from '../../components/QuickAdd'
 import { showToast } from '../../components/ui/Toast'
@@ -64,6 +65,7 @@ import { PHONE_QUERY } from '../../lib/layout/headerVariant'
 import { readRowActions } from '../../lib/tasks/rowActions'
 import { RowActionsMenu, SwipeRow, TaskActionSheet } from '../../components/TaskRow/TaskRowActions'
 import { ScheduleChooser } from '../../components/TaskRow/ScheduleChooser'
+import { LinkSheet, type LinkDone } from '../../components/LinkSheet/LinkSheet'
 
 /** The bot's nag choices (keyboards.NagCodes); the API's floor is 5, ceiling a day. */
 const NAG_MINUTES = [0, 10, 15, 30, 60]
@@ -87,6 +89,8 @@ export default function Tasks() {
   // «Запланировать» asks when and how long first (gap list row 4, as the bot).
   const [schedulingTask, setSchedulingTask] = useState<Task | null>(null)
   const [pinningTask, setPinningTask] = useState<Task | null>(null)
+  // → Событие: link or move into the calendar, step by step (gap list row 5).
+  const [linkingTask, setLinkingTask] = useState<Task | null>(null)
   const dayTasksOn = readDayPrefs(user?.settings).enabled
   const timeZone = user?.timezone || 'Europe/Moscow'
   // taskId → start of its nearest linked event today or later, for «завтра 09:00» on the row.
@@ -400,6 +404,24 @@ export default function Tasks() {
         showToast(t('toast.scheduleFailed', { title: task.title }))
       }
     })
+  }
+
+  // After → Событие: say what happened and reload the list and the row times
+  // (announceTasksChanged refetches both). A moved task is gone, so it leaves
+  // the selection too, as in deleteFromRow.
+  const linkedToEvent = (task: Task, done: LinkDone) => {
+    setLinkingTask(null)
+    const when = done.start ? whenShort(done.start, new Date(), timeZone, i18n.language) : ''
+    showToast(t(done.answers.mode === 'link' ? 'link.done.toEventLink' : 'link.done.toEventMove', { when }))
+    if (done.answers.mode === 'move' && !(done.item.repeats && done.answers.repeat === 'once')) {
+      setTasks(prev => prev.filter(x => x.id !== task.id))
+      setSelected(prev => {
+        const next = new Set(prev)
+        next.delete(task.id)
+        return next
+      })
+    }
+    announceTasksChanged()
   }
 
   // A subtask from the row menu (gap list row 7): the editor opens with the
@@ -845,6 +867,7 @@ export default function Tasks() {
                                 onDelete={() => void deleteFromRow(task)}
                                 onAddSubtask={() => openSubtaskEditor(task)}
                                 onPinDay={dayTasksOn ? () => setPinningTask(task) : undefined}
+                                onToEvent={() => setLinkingTask(task)}
                               />
                             )}
                             {!phoneVariant && (
@@ -857,6 +880,15 @@ export default function Tasks() {
                                 className="p-1.5 text-zinc-500 hover:text-blue-400 hover:bg-zinc-700 rounded transition-colors"
                               >
                                 <CalendarPlus className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => setLinkingTask(task)}
+                                title={t('link.toEvent')}
+                                aria-label={t('link.toEvent')}
+                                data-testid="task-to-event"
+                                className="p-1.5 text-zinc-500 hover:text-blue-400 hover:bg-zinc-700 rounded transition-colors"
+                              >
+                                <ArrowRightLeft className="w-4 h-4" />
                               </button>
                               <button
                                 onClick={() => openEditor(task)}
@@ -935,6 +967,7 @@ export default function Tasks() {
             onDelete={() => void deleteFromRow(sheetTask)}
             onAddSubtask={() => openSubtaskEditor(sheetTask)}
             onPinDay={dayTasksOn ? () => setPinningTask(sheetTask) : undefined}
+            onToEvent={() => setLinkingTask(sheetTask)}
             onClose={() => setSheetTask(null)}
           />
         )}
@@ -956,6 +989,15 @@ export default function Tasks() {
             timeZone={timeZone}
             onPick={(slot, minutes) => void confirmSchedule(schedulingTask, slot, minutes)}
             onClose={() => setSchedulingTask(null)}
+          />
+        )}
+
+        {linkingTask && (
+          <LinkSheet
+            source={{ kind: 'task', task: linkingTask, children: tasks.filter(x => x.parent_id === linkingTask.id).length }}
+            timeZone={timeZone}
+            onDone={(done) => linkedToEvent(linkingTask, done)}
+            onClose={() => setLinkingTask(null)}
           />
         )}
 

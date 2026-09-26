@@ -12,6 +12,7 @@
  * blind rename during that very cleanup renamed a call to the wrong one.
  */
 import { api } from './client'
+import type { ConvertBody } from '../lib/convert/linkFlow'
 
 export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'SCHEDULED' | 'DONE' | 'CANCELLED'
 export type TaskCategory = 'EMERGENCY' | 'ASAP' | 'MUST_TODAY' | 'DEADLINE_SOON' | 'IF_POSSIBLE' | 'BUFFER'
@@ -188,6 +189,15 @@ export async function deleteTask(id: string): Promise<void> {
 
 export async function scheduleTask(id: string, data: ScheduleTaskRequest): Promise<ScheduledEvent> {
   return api.post<ScheduledEvent>(`/tasks/${id}/schedule`, data)
+}
+
+/**
+ * Task → event, linked or moved (api-go/internal/tasks/convert.go). Answers 201
+ * with the event; refusals carry codes the link sheet turns into a question
+ * (lib/convert/linkFlow afterError). There is no dry run on this endpoint.
+ */
+export async function convertTask(id: string, body: ConvertBody): Promise<ScheduledEvent> {
+  return api.post<ScheduledEvent>(`/tasks/${id}/convert`, body)
 }
 
 export async function logTaskTime(id: string, minutes: number): Promise<Task> {

@@ -10,6 +10,7 @@ import { ReflectionFields } from './ReflectionFields';
 import { useEditorForm } from './useEditorForm';
 import { useReminderSettings } from '../../../hooks/useReminderSettings';
 import type { EditorProps } from './editor.types';
+import { LinkSheet } from '../../LinkSheet/LinkSheet';
 
 export function EventEditor({ 
   range, 
@@ -19,10 +20,14 @@ export function EventEditor({
   onCreated, 
   onPatched, 
   onDelete,
-  withScope
+  withScope,
+  onConverted
 }: EditorProps) {
   const { t } = useTranslation('calendar');
   const { t: tc } = useTranslation('common');
+  const { t: tt } = useTranslation('tasks');
+  // «→ Задача»: the step sheet over the editor (gap list row 5).
+  const [linking, setLinking] = useState(false);
   const reminderSettings = useReminderSettings();
   const { state, actions, isEditing, hasReflection, canSave } = useEditorForm(
     draft, range, timezone, onCreated, onPatched, onDelete, withScope,
@@ -173,8 +178,9 @@ export function EventEditor({
       </div>
 
       {/* Footer actions */}
-      <div className="flex items-center justify-between mt-6 pt-4 border-t border-zinc-700">
-        <div className="flex gap-2">
+      {/* Wraps on a phone: with «→ Задача» the left group no longer fits 375px in one line. */}
+      <div className="flex flex-wrap items-center justify-between gap-y-2 mt-6 pt-4 border-t border-zinc-700">
+        <div className="flex flex-wrap gap-x-3 gap-y-1">
           <button
             onClick={() => actions.setShowAdvanced(!state.showAdvanced)}
             className="text-sm text-zinc-400 hover:text-zinc-200"
@@ -189,6 +195,17 @@ export function EventEditor({
               className="text-sm text-red-400 hover:text-red-300 disabled:text-red-600"
             >
               {state.isDeleting ? t('deleting') : t('delete')}
+            </button>
+          )}
+
+          {isEditing && draft && onConverted && (
+            <button
+              type="button"
+              data-testid="event-to-task"
+              onClick={() => setLinking(true)}
+              className="text-sm text-zinc-400 hover:text-zinc-200"
+            >
+              {tt('link.toTask')}
             </button>
           )}
         </div>
@@ -209,6 +226,18 @@ export function EventEditor({
           </button>
         </div>
       </div>
+
+      {linking && draft && onConverted && (
+        <LinkSheet
+          source={{ kind: 'event', id: draft.id, title: draft.title, rrule: draft.rrule }}
+          timeZone={timezone}
+          onDone={(done) => {
+            setLinking(false);
+            onConverted(done);
+          }}
+          onClose={() => setLinking(false)}
+        />
+      )}
     </div>
   );
 }

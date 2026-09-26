@@ -83,6 +83,24 @@ function instantOf(year: number, month: number, day: number, hour: number, minut
 }
 
 /**
+ * A «YYYY-MM-DDTHH:mm» typed in a datetime-local field, read as a wall time in
+ * the person's zone (not the browser's). Null for anything else.
+ */
+export function instantFromLocalValue(value: string, timeZone: string): Date | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(value)
+  if (!m) return null
+  const [, y, mo, d, h, mi] = m.map(Number)
+  return instantOf(y, mo, d, h, mi, timeZone)
+}
+
+/** The datetime-local value of an instant, as a wall time in the zone. */
+export function localValueOf(at: Date, timeZone: string): string {
+  const w = wall(at, timeZone)
+  const pad = (x: number) => String(x).padStart(2, '0')
+  return `${w.year}-${pad(w.month)}-${pad(w.day)}T${pad(w.hour)}:${pad(w.minute)}`
+}
+
+/**
  * When a slot starts, pressed at `now` (schedule.go scheduleStart).
  * «This evening» after 19:00 means the next one, as in the bot's event flow.
  */

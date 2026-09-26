@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CalendarPlus, Edit2, ListPlus, MoreHorizontal, Pin, Trash2, X } from 'lucide-react'
+import { ArrowRightLeft, CalendarPlus, Edit2, ListPlus, MoreHorizontal, Pin, Trash2, X } from 'lucide-react'
 import { SWIPE_ACTIONS_PX, swipeOffset, swipeSettle } from '../../lib/tasks/rowActions'
 
 /**
@@ -17,10 +17,12 @@ export interface RowActionHandlers {
   onAddSubtask?: () => void
   /** 📌 Put the task on a day (row 15); absent while day tasks are off. */
   onPinDay?: () => void
+  /** → Событие: link or move the task into the calendar (row 5, components/LinkSheet). */
+  onToEvent?: () => void
 }
 
 /** `menu`: one «⋯» button and a small menu; Delete set apart in red. */
-export function RowActionsMenu({ title, onSchedule, onEdit, onDelete, onAddSubtask, onPinDay }: RowActionHandlers & { title: string }) {
+export function RowActionsMenu({ title, onSchedule, onEdit, onDelete, onAddSubtask, onPinDay, onToEvent }: RowActionHandlers & { title: string }) {
   const { t } = useTranslation('tasks')
   const { t: tc } = useTranslation('common')
   const [open, setOpen] = useState(false)
@@ -77,6 +79,11 @@ export function RowActionsMenu({ title, onSchedule, onEdit, onDelete, onAddSubta
           {onPinDay && (
             <MenuItem icon={<Pin className="w-4 h-4" />} onClick={pick(onPinDay)} testId="task-pin-day">
               {t('pinDay')}
+            </MenuItem>
+          )}
+          {onToEvent && (
+            <MenuItem icon={<ArrowRightLeft className="w-4 h-4" />} onClick={pick(onToEvent)} testId="task-to-event">
+              {t('link.toEvent')}
             </MenuItem>
           )}
           <div className="my-1 border-t border-zinc-800" />
@@ -238,6 +245,7 @@ export function TaskActionSheet({
   onDelete,
   onAddSubtask,
   onPinDay,
+  onToEvent,
   onClose,
 }: RowActionHandlers & { title: string; meta?: ReactNode; onClose: () => void }) {
   const { t } = useTranslation('tasks')
@@ -282,6 +290,11 @@ export function TaskActionSheet({
           {onPinDay && (
             <SheetButton icon={<Pin className="w-5 h-5" />} onClick={pick(onPinDay)}>
               {t('pinDay')}
+            </SheetButton>
+          )}
+          {onToEvent && (
+            <SheetButton icon={<ArrowRightLeft className="w-5 h-5" />} onClick={pick(onToEvent)} testId="task-to-event">
+              {t('link.toEvent')}
             </SheetButton>
           )}
           <SheetButton icon={<Trash2 className="w-5 h-5" />} onClick={pick(onDelete)} danger>
