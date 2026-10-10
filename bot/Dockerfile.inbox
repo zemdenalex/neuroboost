@@ -1,0 +1,14 @@
+# The inbox bot (bot/cmd/inbox). Same module as the main bot, its own binary
+# and image: bot/Dockerfile builds ./cmd/main.go only.
+FROM golang:1.26-alpine AS builder
+WORKDIR /build
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+RUN CGO_ENABLED=0 GOOS=linux go build -o inbox ./cmd/inbox
+
+FROM alpine:3.22
+RUN apk add --no-cache ca-certificates tzdata
+WORKDIR /app
+COPY --from=builder /build/inbox .
+CMD ["./inbox"]

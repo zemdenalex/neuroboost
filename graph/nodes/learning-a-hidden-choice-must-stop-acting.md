@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-09-24
 tags: [neuroboost, bot, settings, ux]
-weight: { importance: 4, connectivity: 2, access: 1, last_accessed: 2026-09-24 }
+weight: { importance: 4, connectivity: 3, access: 2, last_accessed: 2026-09-25 }
 sources:
   - file: "bot/internal/handlers/calcell.go — applyCell(cell, dayOn, …): off → полоска остаётся"
   - command: "TestAColourOnlyMonthWithDayTasksOffDrawsBars + сабботаж dayOn=true → красный"

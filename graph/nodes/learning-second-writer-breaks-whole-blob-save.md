@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-09-24
 tags: [neuroboost, web, settings, gotcha-21]
-weight: { importance: 5, connectivity: 2, access: 1, last_accessed: 2026-09-24 }
+weight: { importance: 5, connectivity: 2, access: 2, last_accessed: 2026-09-25 }
 sources:
   - file: "web/src/lib/settings/saveSettings.ts — createSettingsSaver: GET перед PATCH, очередь"
   - file: "web/src/contexts/AuthContext.tsx — updateSettings через saveSettings"

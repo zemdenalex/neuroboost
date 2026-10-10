@@ -1,9 +1,25 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { taskDeepLinkTo } from '../../lib/tasks/taskDeepLink';
 import { ListTodo } from 'lucide-react';
 import { WeekGrid } from '../../components/Calendar/WeekGrid';
+import { MonthView } from '../../components/MonthView';
+import { ViewSwitch } from '../../components/MonthView/ViewSwitch';
+import { useMediaQuery } from '../../hooks/useMediaQuery';
+import { monthGrid, monthOfWeek, shiftMonth, weekOffset } from '../../lib/calendar/monthGrid';
+import { daysBetween, localTimeOn, shiftByDays } from '../../lib/calendar/shiftDays';
+import { readClickWait } from '../../lib/calendar/monthClick';
+import {
+  readCalendarView,
+  readMonthVariant,
+  readPhoneMonthVariant,
+  saveCalendarView,
+  type CalendarView,
+  type MonthVariant,
+} from '../../lib/calendar/monthVariant';
+import { todayInZone } from '../../lib/dayTasks/dayColour';
+import { createLatestOnly } from '../../lib/async/latestOnly';
 import { TaskSidebar } from '../../components/TaskSidebar';
 import { MobileTaskPanel } from '../../components/TaskSidebar/MobileTaskPanel';
 import { EventEditor } from '../../components/Calendar/EventEditor';
@@ -12,6 +28,11 @@ import { useAuthContext } from '../../contexts/AuthContext';
 import { computeWeekRange } from '../../lib/calendar/weekRange';
 import { shouldRefetchOnReturn } from '../../lib/calendar/refetchOnReturn';
 import { createTask } from '../../api';
+import { markOccurrence } from '../../api/tasks';
+import { ApiError } from '../../api/client';
+import { showToast } from '../../components/ui/Toast';
+import type { LinkDone } from '../../components/LinkSheet/LinkSheet';
+import { editorClosesAfter } from '../../lib/convert/linkFlow';
 import { listCalendars, type Calendar as NbCalendar } from '../../api/calendars';
 import { CalendarFilter } from '../../components/Calendars/CalendarFilter';
 import { CalendarPicker } from '../../components/Calendars/CalendarPicker';
@@ -39,6 +60,7 @@ const QUICK_TASK_CALENDAR_KEY = 'nb-quick-task-calendar';
 
 export function Calendar() {
   const { t } = useTranslation('calendar');
+  const { t: tt } = useTranslation('tasks');
   const navigate = useNavigate();
   const { user } = useAuthContext();
   const timezone = user?.timezone || 'Europe/Moscow';
@@ -57,6 +79,34 @@ export function Calendar() {
   // re-render per load would be pure noise.
   const lastLoadedAtRef = useRef(0);
   const [currentWeekOffset, setCurrentWeekOffset] = useState(0);
+  // The day a link or the month view asked for; a phone opens on it.
+  const [focusDay, setFocusDay] = useState<string | null>(null);
+  const currentWeekOffsetRef = useRef(0);
+  currentWeekOffsetRef.current = currentWeekOffset;
+  const [latestEvents] = useState(createLatestOnly);
+
+  // Week or month (spec V003-20260924-arc-web-month-view). The choice is kept
+  // on this device. A phone's month is its own choice of three (Denis 26.09,
+  // A + C + D); C, the week strip, is the day grid with the week over it.
+  const isMobile = useMediaQuery('(max-width: 767px)');
+  const [savedView, setSavedView] = useState<CalendarView>(readCalendarView);
+  const view = savedView;
+  const changeView = useCallback((next: CalendarView) => {
+    saveCalendarView(next);
+    setSavedView(next);
+    // Week → Month opens the month of the week being looked at, not today's.
+    if (next === 'month') setMonthCursor(monthOfWeek(todayInZone(new Date(), timezone), currentWeekOffsetRef.current));
+  }, [timezone]);
+  const phoneMonth = readPhoneMonthVariant(user?.settings);
+  const stripMonth = isMobile && view === 'month' && phoneMonth === 'strip';
+  const monthVariant: MonthVariant = isMobile
+    ? (phoneMonth === 'heat' ? 'heat' : 'split')
+    : readMonthVariant(user?.settings);
+  const clickWaitMs = readClickWait(user?.settings);
+  const [monthCursor, setMonthCursor] = useState(() => {
+    const today = todayInZone(new Date(), timezone);
+    return { year: Number(today.slice(0, 4)), month: Number(today.slice(5, 7)) };
+  });
   const [editorOpen, setEditorOpen] = useState(false);
   const [editorRange, setEditorRange] = useState<{ start: Date; end: Date; allDay?: boolean } | null>(null);
   const [editorDraft, setEditorDraft] = useState<NbEvent | null>(null);
@@ -134,14 +184,24 @@ export function Calendar() {
 
   // Load events for current week
   const loadEvents = useCallback(async () => {
-    const { start, end } = getWeekRange(currentWeekOffset);
+    let { start, end } = getWeekRange(currentWeekOffset);
+    if (view === 'month' && !stripMonth) {
+      // The 42 grid days, padded by 14 hours each side so that whatever the
+      // zone, its first and last local day are whole; cells file by local day.
+      const days = monthGrid(monthCursor.year, monthCursor.month);
+      const PAD = 14 * 60 * 60 * 1000;
+      start = new Date(Date.parse(days[0] + 'T00:00:00Z') - PAD);
+      end = new Date(Date.parse(days[days.length - 1] + 'T00:00:00Z') + 24 * 60 * 60 * 1000 + PAD);
+    }
     try {
-      const data = await getEvents(start.toISOString(), end.toISOString());
-      setEvents(data);
+      // Latest request wins: paging months fast, or month → week, must not
+      // let an older, slower answer repaint the newer range.
+      const data = await latestEvents(getEvents(start.toISOString(), end.toISOString()));
+      if (data) setEvents(data);
     } catch (error) {
       console.error('Failed to load events:', error);
     }
-  }, [currentWeekOffset, getWeekRange]);
+  }, [currentWeekOffset, getWeekRange, view, stripMonth, monthCursor, latestEvents]);
 
   // Load tasks
   const loadTasks = useCallback(async () => {
@@ -258,9 +318,80 @@ export function Calendar() {
     }
   }, [loadTasks]);
 
+  // A tick on a repeating task in the task panel answers TODAY, named in the
+  // user's zone (a page that shows today must name today, 731172a review).
+  const handleAnswerDay = useCallback(async (task: Task, state: 'done' | 'open') => {
+    try {
+      await markOccurrence(task.id, state, todayInZone(new Date(), timezone));
+      await loadTasks();
+    } catch (error) {
+      if (error instanceof ApiError && error.code === 'NOT_AN_OCCURRENCE') {
+        showToast(t('tasks:toast.notToday', { title: task.title }));
+      } else {
+        console.error('Failed to mark the day:', error);
+      }
+    }
+  }, [loadTasks, timezone, t]);
+
   const handleWeekChange = useCallback((offset: number) => {
     setCurrentWeekOffset(offset);
   }, []);
+
+  // Month: a click opens that day's week, a double click creates an event
+  // there at the start of the working day, a drop moves by calendar days.
+  const handleOpenDay = useCallback((day: string) => {
+    setCurrentWeekOffset(weekOffset(todayInZone(new Date(), timezone), day));
+    setFocusDay(day);
+    // Not saved: a look at one week keeps "month" as the view to come back to.
+    setSavedView('week');
+  }, [timezone]);
+
+  // /calendar?date=YYYY-MM-DD opens that day (Mini App start link d-…), and
+  // &event=<id> then opens that event in the editor (a tap in «Что дальше»,
+  // gap list row 21: on a phone the event is otherwise dozens of swipes away).
+  // The parameters are dropped so a reload does not pin the calendar to them.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [pendingEvent, setPendingEvent] = useState<string | null>(null);
+  useEffect(() => {
+    const day = searchParams.get('date');
+    if (!day || !/^\d{4}-\d{2}-\d{2}$/.test(day)) return;
+    handleOpenDay(day);
+    setPendingEvent(searchParams.get('event'));
+    const next = new URLSearchParams(searchParams);
+    next.delete('date');
+    next.delete('event');
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams, handleOpenDay]);
+  // Opened once its week has loaded; an id the week does not hold stays
+  // pending harmlessly until the next navigation replaces it.
+  useEffect(() => {
+    if (!pendingEvent) return;
+    const found = events.find(e => e.id === pendingEvent);
+    if (!found) return;
+    setPendingEvent(null);
+    handleSelect(found);
+  }, [events, pendingEvent, handleSelect]);
+
+  const handleCreateOnDay = useCallback((day: string) => {
+    const start = new Date(localTimeOn(day, user?.settings?.work_start ?? '09:00', timezone));
+    setEditorRange({ start, end: new Date(start.getTime() + 60 * 60 * 1000), allDay: false });
+    setEditorDraft(null);
+    setEditorOpen(true);
+  }, [timezone, user?.settings?.work_start]);
+
+  const handleMoveToDay = useCallback((event: NbEvent, fromDay: string, toDay: string) => {
+    const moved = shiftByDays(event.startsAt, event.endsAt, daysBetween(fromDay, toDay), timezone);
+    void handleMoveOrResize({ id: event.id, ...moved });
+  }, [timezone, handleMoveOrResize]);
+
+  const handleMonthShift = useCallback((by: number) => {
+    setMonthCursor(c => shiftMonth(c.year, c.month, by));
+  }, []);
+
+  const handleMonthToday = useCallback(() => {
+    const today = todayInZone(new Date(), timezone);
+    setMonthCursor({ year: Number(today.slice(0, 4)), month: Number(today.slice(5, 7)) });
+  }, [timezone]);
 
   const handleEditorClose = useCallback(() => {
     setEditorOpen(false);
@@ -277,6 +408,16 @@ export function Calendar() {
     await loadEvents();
     handleEditorClose();
   }, [loadEvents, handleEditorClose]);
+
+  // «→ Задача» from the editor (gap list row 5): say what happened, reload the
+  // events and the task list, and close the editor when its event is gone or
+  // was detached (editorClosesAfter): a later Save would name a dead id.
+  const handleEditorConverted = useCallback(async (done: LinkDone) => {
+    const title = editorDraft?.title ?? '';
+    showToast(tt(done.answers.mode === 'link' ? 'link.done.toTaskLink' : 'link.done.toTaskMove', { title }));
+    if (editorClosesAfter(done.item, done.answers)) handleEditorClose();
+    await Promise.all([loadEvents(), loadTasks()]);
+  }, [editorDraft, tt, handleEditorClose, loadEvents, loadTasks]);
 
   const handleToggleSidebar = useCallback(() => {
     setTaskSidebarOpen(prev => {
@@ -360,19 +501,51 @@ export function Calendar() {
           onSelectTask={handleSelectTask}
           onEditTask={handleEditTask}
           onUpdateTask={handleTaskUpdate}
+          onAnswerDay={handleAnswerDay}
           onCreateTask={handleCreateTask}
         />
       </div>
 
       {/* Main calendar area */}
       <div data-testid="calendar-main" className="flex-1 flex flex-col min-w-0">
+        {view === 'month' && !stripMonth ? (
+          <MonthView
+            year={monthCursor.year}
+            month={monthCursor.month}
+            variant={monthVariant}
+            clickWaitMs={clickWaitMs}
+            events={shownEvents}
+            timezone={timezone}
+            calendarColors={calendarColors}
+            onPrev={() => handleMonthShift(-1)}
+            onNext={() => handleMonthShift(1)}
+            onToday={handleMonthToday}
+            onOpenDay={handleOpenDay}
+            onCreateOnDay={handleCreateOnDay}
+            onMoveToDay={handleMoveToDay}
+            headerExtra={
+              <>
+                <ViewSwitch view={view} onChange={changeView} />
+                <CalendarFilter
+                  calendars={calendars}
+                  hidden={hiddenCalendars}
+                  onToggle={handleToggleCalendar}
+                  onCalendarsChanged={setCalendars}
+                />
+              </>
+            }
+          />
+        ) : (
         <WeekGrid
+          focusDay={focusDay}
+          weekStrip={stripMonth}
           events={shownEvents}
           currentWeekOffset={currentWeekOffset}
           timezone={timezone}
           calendarColors={calendarColors}
           headerExtra={
             <>
+              <ViewSwitch view={view} onChange={changeView} />
               {/* 🔴 Creating a task from the calendar used to live ONLY in the
                   task sidebar's header — and the sidebar is collapsed by
                   default, so on a first visit it was two clicks behind an
@@ -402,6 +575,7 @@ export function Calendar() {
           onTaskDrop={handleTaskDrop}
           onWeekChange={handleWeekChange}
         />
+        )}
       </div>
 
       {/* Mobile task toggle */}
@@ -422,14 +596,17 @@ export function Calendar() {
         onSelectTask={handleSelectTask}
         onEditTask={handleEditTask}
         onUpdateTask={handleTaskUpdate}
+        onAnswerDay={handleAnswerDay}
         onCreateTask={handleCreateTask}
       />
 
       {/* Event editor modal */}
       {editorOpen && (
         <div
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-          onClick={handleEditorClose}
+          className="fixed inset-0 bg-scrim/50 flex items-center justify-center z-50 p-4"
+          // detail > 1: the third click of a triple click on a month day lands
+          // here, on a backdrop that appeared under the second one.
+          onClick={e => { if (e.detail <= 1) handleEditorClose(); }}
         >
           <EventEditor
             range={editorRange}
@@ -440,6 +617,7 @@ export function Calendar() {
             onPatched={handleEditorPatched}
             onDelete={handleDelete}
             withScope={withScope}
+            onConverted={handleEditorConverted}
           />
         </div>
       )}
@@ -454,7 +632,7 @@ export function Calendar() {
       {/* Quick task creation modal */}
       {quickTaskOpen && (
         <div
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          className="fixed inset-0 bg-scrim/50 flex items-center justify-center z-50 p-4"
           onClick={() => setQuickTaskOpen(false)}
         >
           <div
@@ -490,7 +668,7 @@ export function Calendar() {
               <button
                 onClick={handleQuickTaskSubmit}
                 disabled={!quickTaskTitle.trim()}
-                className="px-3 py-1.5 text-xs font-mono bg-blue-600 hover:bg-blue-700 disabled:bg-zinc-700 text-white rounded"
+                className="px-3 py-1.5 text-xs font-mono bg-blue-600 hover:bg-blue-700 disabled:bg-zinc-700 disabled:text-zinc-500 text-onaccent rounded"
               >
                 {t('create')}
               </button>

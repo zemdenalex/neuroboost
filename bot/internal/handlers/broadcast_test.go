@@ -17,7 +17,7 @@ import (
 	"github.com/zemdenalex/neuroboost-bot/internal/config"
 	"github.com/zemdenalex/neuroboost-bot/internal/i18n"
 	"github.com/zemdenalex/neuroboost-bot/internal/keyboards"
-	"github.com/zemdenalex/neuroboost-bot/internal/release"
+	"github.com/zemdenalex/neuroboost-bot/release"
 	"github.com/zemdenalex/neuroboost-bot/internal/state"
 )
 

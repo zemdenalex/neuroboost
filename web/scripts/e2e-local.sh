@@ -1,12 +1,19 @@
 #!/usr/bin/env bash
 # e2e-local.sh — run Playwright specs from this machine in one command.
 #
-#   web/scripts/e2e-local.sh [--staging] [--project desktop|mobile] [spec ...]
+#   web/scripts/e2e-local.sh [--staging|--dev] [--project desktop|mobile] [spec ...]
 #
-# Default: THIS working tree's web app (vite on localhost:5173) against the
-# staging API — the way to see a fix go green before it is pushed.
+# Default: THIS working tree's web app, built (`vite build` + `vite preview` on
+# localhost:5173), against the staging API — the way to see a fix go green
+# before it is pushed.
 # --staging: no local build, specs run against https://dev.neuroboost.website,
 # i.e. what CI's e2e job sees — the way to see a defect red before fixing it.
+# --dev: the vite dev server instead of a build. Not the default since 26.09:
+# on this machine the dev server compiles on demand and its HMR socket never
+# lets the network go idle, so 2-4 of 11 specs flaked on first load (24.09)
+# while the same specs passed 11/11 on a build
+# (graph: learning-local-e2e-flakes-on-the-dev-server-not-the-code).
+# --preview: accepted and ignored, the old name of today's default.
 #
 # Why a script (22.09): doing this by hand took ten tool calls, and every one of
 # them was a trap that looked like a test failure:
@@ -22,11 +29,14 @@
 set -euo pipefail
 
 STAGING=0
+PREVIEW=1
 PROJECT_ARGS=()
 SPECS=()
 while [ $# -gt 0 ]; do
   case "$1" in
     --staging) STAGING=1 ;;
+    --preview) PREVIEW=1 ;;
+    --dev) PREVIEW=0 ;;
     --project) PROJECT_ARGS=(--project "$2"); shift ;;
     *) SPECS+=("$1") ;;
   esac
@@ -72,8 +82,15 @@ else
   fi
   trap stop_vite EXIT
   LOG="$(mktemp)"
-  VITE_API_URL=https://dev.neuroboost.website/api \
-    npx vite --host 127.0.0.1 --port 5173 --strictPort >"$LOG" 2>&1 &
+  if [ "$PREVIEW" = 1 ]; then
+    echo "▶ vite build (preview mode)"
+    VITE_API_URL=https://dev.neuroboost.website/api npx vite build >"$LOG" 2>&1 \
+      || { echo "❌ vite build failed:" >&2; tail -20 "$LOG" >&2; exit 2; }
+    npx vite preview --host 127.0.0.1 --port 5173 --strictPort >"$LOG" 2>&1 &
+  else
+    VITE_API_URL=https://dev.neuroboost.website/api \
+      npx vite --host 127.0.0.1 --port 5173 --strictPort >"$LOG" 2>&1 &
+  fi
   for _ in $(seq 1 30); do
     code="$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:5173/ || true)"
     [ "$code" = 200 ] && break

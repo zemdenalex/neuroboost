@@ -130,7 +130,7 @@ func dayHandler(t *testing.T, a *dayAPI) (*Handler, *fakeTelegram, int64) {
 	const chat = int64(9901)
 	h.store.SetAuth(chat, "jwt", time.Now().Add(time.Hour).Unix())
 	us := h.store.GetOrCreate(chat)
-	us.Lang, us.LangKnown = "ru", true
+	us.SetLang("ru")
 	return h, fake, chat
 }
 

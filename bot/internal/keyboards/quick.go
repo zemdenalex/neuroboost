@@ -58,6 +58,8 @@ func OnboardNext(lang i18n.Lang) tgbotapi.InlineKeyboardMarkup {
 		),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "⚙️ Настройки", "⚙️ Settings"), "settings_menu"),
+			// N1, pass 3: «или хотя бы кнопку что это».
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "ℹ️ Что в меню", "ℹ️ What is in the menu"), MenuTourOpen),
 		),
 	)
 }

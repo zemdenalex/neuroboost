@@ -39,6 +39,10 @@ type TelegramLoginRequest struct {
 	PhotoURL  string `json:"photo_url,omitempty"`
 	AuthDate  int64  `json:"auth_date"`
 	Hash      string `json:"hash"`
+	// LanguageCode comes only from Mini App initData (the Login Widget has no
+	// such field and verifyTelegramAuth does not sign it); it sets the language
+	// of an account created there.
+	LanguageCode string `json:"-"`
 }
 
 // RegisterRequest for email/password registration

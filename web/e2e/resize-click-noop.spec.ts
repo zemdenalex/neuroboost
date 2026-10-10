@@ -1,3 +1,4 @@
+import { scrollGridToTop } from './fixtures/grid'
 import { test, expect } from './fixtures/auth'
 import { request as playwrightRequest, type APIRequestContext } from '@playwright/test'
 import { localMidnightUtc } from './fixtures/localTime'
@@ -94,6 +95,9 @@ test.describe('clicking a resize handle', () => {
     await expect(block).toBeVisible({ timeout: 15_000 })
 
     const handle = block.locator('div.cursor-ns-resize').last()
+    // The grid opens near the current hour since MW11: back to 00:00, the
+    // screen this spec's time band was chosen for.
+    await scrollGridToTop(authedPage)
     const handleBox = await handle.boundingBox()
     expect(handleBox, 'the event must expose a bottom resize handle').not.toBeNull()
     const x = handleBox!.x + handleBox!.width / 2

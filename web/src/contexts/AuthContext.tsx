@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import i18n from '../i18n'
 import { errorMessage } from '../lib/errorMessage'
+import { createSettingsSaver, type BotValue } from '../lib/settings/saveSettings'
 import {
   User,
   UserSettings,
@@ -8,6 +9,7 @@ import {
   login as emailLogin,
   register as registerUser,
   telegramLogin,
+  telegramWebAppLogin,
   getMe,
   logout as apiLogout,
   updateMe,
@@ -19,6 +21,8 @@ import {
   setStoredToken,
   clearStoredToken,
 } from '../api/client'
+import { applyCurrentTheme, readThemeChoice, storeThemeChoice } from '../lib/theme/theme'
+import { launchedInTelegram, loadWebApp, pickStartupAuth, prepareWebApp, sessionFitsLaunch } from '../lib/telegram/webApp'
 
 /**
  * AuthContextValue defines the shape of the authentication context.  In addition
@@ -42,7 +46,15 @@ export interface AuthContextValue {
   refreshUser: () => Promise<void>
   updateSettings: (settings: Partial<UserSettings>) => Promise<void>
   updateProfile: (data: { display_name?: string; timezone?: string; locale?: string }) => Promise<void>
+  /** Interface language of the web and the Mini App; the bot keeps its own. */
+  updateLanguage: (locale: string) => Promise<void>
+  /** One key of settings.bot (shared with the bot), merged on the server's copy. */
+  /** A function value is applied to what the server holds now (saveSettings). */
+  updateBotSetting: (key: string, value: BotValue) => Promise<void>
 }
+
+// One saver for the app: its queue is what keeps two quick saves apart.
+const saveSettings = createSettingsSaver({ getMe, updateMe })
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined)
 
@@ -62,15 +74,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // On mount, attempt to restore session from localStorage
   useEffect(() => {
     const checkAuth = async () => {
+      // Telegram Mini App: the launch hash carries a signed identity, so the
+      // person lands in the app without a login screen. A failed exchange
+      // falls through to the ordinary path below rather than stranding them.
+      const initData = launchedInTelegram()
+      void loadWebApp().then((wa) => wa && prepareWebApp(wa))
+      const storedTokenValid = Boolean(getStoredToken()) && !isTokenExpired()
+      if (pickStartupAuth({ initData, storedTokenValid }) === 'webapp' && initData) {
+        try {
+          const response = await telegramWebAppLogin(initData)
+          setStoredToken(response.token, response.expires_at)
+        } catch {
+          // A stored session survives only if it is this person's: checked
+          // against the launch below (sessionFitsLaunch, review I2).
+        }
+      }
       const token = getStoredToken()
       if (token && !isTokenExpired()) {
         try {
           const userData = await getMe()
+          if (!sessionFitsLaunch(initData, userData.tg_id)) {
+            // Somebody else's session in this WebView: drop it, show the login.
+            clearStoredToken()
+            setLoading(false)
+            return
+          }
           setUser(userData)
           if (userData.settings) {
             applySettingsToLocalStorage(userData.settings)
           }
-          // Sync user's language preference to i18n
+          // The web and the Mini App share the account's locale; the bot
+          // keeps its own language (Denis 26.09).
           if (userData.locale && i18n.language !== userData.locale) {
             i18n.changeLanguage(userData.locale)
             localStorage.setItem('neuroboost-locale', userData.locale)
@@ -204,11 +238,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const updateSettings = useCallback(
     async (settings: Partial<UserSettings>) => {
       if (!user) return
-      // Fall back to an empty object if user.settings is null/undefined
-      const prevSettings = user.settings ?? {}
-      const newSettings = { ...prevSettings, ...settings }
       try {
-        const updatedUser = await updateMe({ settings: newSettings })
+        // Merged over what the server holds now, not over this tab's copy:
+        // the bot writes settings too (see saveSettings.ts).
+        const updatedUser = await saveSettings(settings)
         setUser(updatedUser)
         if (updatedUser.settings) {
           applySettingsToLocalStorage(updatedUser.settings)
@@ -255,6 +288,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [user]
   )
 
+  const updateLanguage = useCallback(async (locale: string) => {
+    setUser(await saveSettings.language(locale))
+  }, [])
+
+  const updateBotSetting = useCallback(async (key: string, value: BotValue) => {
+    setUser(await saveSettings.botSetting(key, value))
+  }, [])
+
   /**
    * Reset the current error state.
    */
@@ -276,6 +317,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     refreshUser,
     updateSettings,
     updateProfile,
+    updateLanguage,
+    updateBotSetting,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
@@ -322,6 +365,10 @@ export function useRequireAdmin() {
  * settings are updated or loaded.
  */
 function applySettingsToLocalStorage(settings: UserSettings) {
+  // The account's theme choice, mirrored on the device for the next first frame.
+  const theme = readThemeChoice(settings)
+  storeThemeChoice(theme)
+  applyCurrentTheme(theme)
   if (settings.header_variant) {
     localStorage.setItem('neuroboost-header-variant', settings.header_variant)
   }

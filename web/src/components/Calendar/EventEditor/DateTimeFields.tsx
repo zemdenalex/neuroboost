@@ -15,6 +15,8 @@ interface DateTimeFieldsProps {
   onEndTimeChange: (value: string, parsed: string | null) => void;
   onStartTimeEnter?: () => void;
   onEndTimeEnter?: () => void;
+  /** All-day event: dates only, the second one is the last day (row 9, 26.09). */
+  datesOnly?: boolean;
 }
 
 export function DateTimeFields({
@@ -30,6 +32,7 @@ export function DateTimeFields({
   onEndTimeChange,
   onStartTimeEnter,
   onEndTimeEnter,
+  datesOnly = false,
 }: DateTimeFieldsProps) {
   const { t } = useTranslation('calendar');
 
@@ -50,15 +53,17 @@ export function DateTimeFields({
           <label className="block text-xs text-zinc-400 mb-1">{t('dateTime.startDate')}</label>
           <input
             type="date"
+            data-testid="event-start-date"
             value={startDate}
             onChange={(e) => onStartDateChange(e.target.value)}
             className="w-full px-2 py-1 bg-zinc-800 border border-zinc-600 rounded text-white text-sm focus:outline-none focus:border-zinc-400"
           />
         </div>
         <div>
-          <label className="block text-xs text-zinc-400 mb-1">{t('dateTime.endDate')}</label>
+          <label className="block text-xs text-zinc-400 mb-1">{t(datesOnly ? 'dateTime.lastDay' : 'dateTime.endDate')}</label>
           <input
             type="date"
+            data-testid="event-end-date"
             value={endDate}
             onChange={(e) => onEndDateChange(e.target.value)}
             className="w-full px-2 py-1 bg-zinc-800 border border-zinc-600 rounded text-white text-sm focus:outline-none focus:border-zinc-400"
@@ -67,6 +72,7 @@ export function DateTimeFields({
       </div>
 
       {/* Time inputs */}
+      {!datesOnly && (
       <div className="grid grid-cols-2 gap-2">
         <TimeInput
           value={startTime}
@@ -85,6 +91,7 @@ export function DateTimeFields({
           timezone={timezone}
         />
       </div>
+      )}
 
       {/* Validation error */}
       {!validation.dateRangeValid && validation.dateRangeError && (
@@ -94,7 +101,7 @@ export function DateTimeFields({
       )}
 
       {/* Cross-midnight indicator */}
-      {isCrossMidnight && (
+      {!datesOnly && isCrossMidnight && (
         <div className="text-xs text-purple-400 bg-purple-900/20 px-2 py-1 rounded">
           {t('crossMidnight', { start: validation.startParsed, end: validation.endParsed })}
         </div>

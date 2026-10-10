@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { statusToColumn, COLUMN_TO_STATUS, type KanbanColumnId } from './kanban'
+import { statusToColumn, COLUMN_TO_STATUS, dropAction, type KanbanColumnId } from './kanban'
 import type { TaskStatus } from '../../api/tasks'
 
 describe('statusToColumn', () => {
@@ -27,7 +27,7 @@ describe('statusToColumn', () => {
   // does not catch that (the default is the point), but it does catch a case
   // being deleted.
   it('never returns a column outside the board', () => {
-    const columns: KanbanColumnId[] = ['INBOX', 'TODO', 'IN_PROGRESS', 'SCHEDULED', 'DONE']
+    const columns: KanbanColumnId[] = ['TODO', 'IN_PROGRESS', 'SCHEDULED', 'DONE']
     for (const [status] of cases) {
       expect(columns).toContain(statusToColumn(status))
     }
@@ -41,26 +41,40 @@ describe('statusToColumn', () => {
 })
 
 describe('COLUMN_TO_STATUS', () => {
-  it('writes TODO for the INBOX column, which the backend has no status for', () => {
-    expect(COLUMN_TO_STATUS.INBOX).toBe('TODO')
-  })
-
   it('covers every column', () => {
     // A missing entry would be sent to the API as undefined.
-    const columns: KanbanColumnId[] = ['INBOX', 'TODO', 'IN_PROGRESS', 'SCHEDULED', 'DONE']
+    const columns: KanbanColumnId[] = ['TODO', 'IN_PROGRESS', 'SCHEDULED', 'DONE']
     for (const c of columns) {
       expect(typeof COLUMN_TO_STATUS[c], `${c} has no status`).toBe('string')
     }
   })
 
-  it('keeps a task in the column it was dropped into, except for INBOX', () => {
+  it('keeps a task in the column it was dropped into', () => {
     // Otherwise the card jumps elsewhere on drop and the move looks broken.
     const columns: KanbanColumnId[] = ['TODO', 'IN_PROGRESS', 'SCHEDULED', 'DONE']
     for (const c of columns) {
       expect(statusToColumn(COLUMN_TO_STATUS[c]), `dropping into ${c}`).toBe(c)
     }
-    // INBOX is the documented exception: it is a staging view, and a task
-    // dropped there becomes a plain TODO and renders in the TODO column.
-    expect(statusToColumn(COLUMN_TO_STATUS.INBOX)).toBe('TODO')
+  })
+})
+
+describe('dropAction', () => {
+  const today = '2026-09-25'
+
+  it('does nothing when dropped back into its own column', () => {
+    expect(dropAction({ status: 'TODO' }, 'TODO', today)).toEqual({ kind: 'none' })
+  })
+
+  it('does not schedule by drop: that needs a time in the calendar', () => {
+    expect(dropAction({ status: 'TODO' }, 'SCHEDULED', today)).toEqual({ kind: 'none' })
+  })
+
+  it('closes only today for a repeating task dropped on Done', () => {
+    expect(dropAction({ status: 'TODO', rrule: 'FREQ=DAILY' }, 'DONE', today)).toEqual({ kind: 'occurrence', date: today })
+  })
+
+  it('writes the status for a one-off task', () => {
+    expect(dropAction({ status: 'TODO' }, 'DONE', today)).toEqual({ kind: 'status', status: 'DONE' })
+    expect(dropAction({ status: 'TODO', rrule: 'FREQ=DAILY' }, 'IN_PROGRESS', today)).toEqual({ kind: 'status', status: 'IN_PROGRESS' })
   })
 })

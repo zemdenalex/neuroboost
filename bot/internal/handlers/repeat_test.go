@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zemdenalex/neuroboost-bot/internal/parse"
+	"github.com/zemdenalex/neuroboost-bot/parse"
 )
 
 func onboardedHandler(t *testing.T) (*Handler, *fakeTelegram, int64, *fakeAccount) {

@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Inbox — варианты</title>
+<style>
+:root{--bg:#0f1419;--card:#182029;--line:#2a3542;--fg:#e6edf3;--muted:#8b98a5;--acc:#4ea1ff;--ok:#3fb950;--warn:#d29922;--bad:#f85149;--r:6px}
+@media (prefers-color-scheme: light){:root:not([data-theme="dark"]){--bg:#f4f6f8;--card:#fff;--line:#d7dde3;--fg:#1b232c;--muted:#5b6672;--acc:#0b63ce}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif;padding:24px 16px}
+main{max-width:1180px;margin:0 auto}h1{font-size:22px;margin:0 0 4px}h2{font-size:17px;margin:0 0 6px}
+.q{color:var(--muted);border-left:3px solid var(--line);padding:4px 12px;margin:12px 0 20px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:14px;align-items:stretch}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px;display:flex;flex-direction:column;gap:10px}
+.card.rec{border-color:var(--acc)}.tag{font-size:12px;color:var(--acc);font-weight:600}
+.size{font-family:ui-monospace,Consolas,monospace;font-size:13px;color:var(--muted)}
+pre{background:var(--bg);border:1px solid var(--line);border-radius:var(--r);padding:10px;margin:0;font:12.5px/1.45 ui-monospace,Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere}
+ul{margin:0;padding-left:18px}li{margin:2px 0}.muted{color:var(--muted)}
+section{margin-top:28px}table{border-collapse:collapse;width:100%;font-size:14px}td,th{border:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+</style>
+</head>
+<body><main>
+<h1>NeuroBoost Inbox — заметки, идеи, фидбэк из Telegram</h1>
+<div class="q">Денис, 10.10: «simple bot without ai that stores notes, ideas and feedback from telegram with tags … so when I have time, we can go through together, without wasting tokens or intellect» · «I would love for it to be in neuroboost actually, just for me».<br>
+Его ответы: #теги в тексте, без тега — кнопки (тип idea / link / feedback / reflection / note + проект), без тега вообще → inbox · текст, ссылки, пересылки с источником, фото, голос (без расшифровки) · статус new → discussed → done / dropped · без LLM.</div>
+
+<p class="muted">Что уже есть в коде: флаг <code>is_admin</code> у пользователя (<code>api-go/internal/admin</code>) — им и закрываем «только для меня»; режимы бота — <code>CurrentFlow</code> в <code>bot/internal/handlers/flows.go</code>. 🔴 Главное ограничение: сейчас <b>любой свободный текст в боте становится задачей/событием</b> (quick add), а фото и голос бот не принимает вовсе. Значит вопрос — как отличить «запиши в inbox» от «создай задачу».</p>
+
+<div class="grid">
+
+<div class="card">
+<div class="tag">0 — как есть</div>
+<h2>Saved Messages / ничего не делать</h2>
+<pre>Telegram → Избранное
+  #idea статья про …
+  [пересылка из канала X]
+→ при разборе: копировать руками в сессию</pre>
+<ul><li>Агент заметки не видит, статусов нет</li><li>Разбор = Денис пересказывает, тратит токены</li></ul>
+<div class="size">0 мин</div>
+</div>
+
+<div class="card rec">
+<div class="tag">A — рекомендую</div>
+<h2>Режим «📥 Inbox» в основном боте</h2>
+<pre>Меню (только is_admin): [📥 Inbox]
+ ├ «Режим записи: вкл» — всё входящее → заметка
+ │   текст / ссылка / пересылка / фото / голос
+ │   #idea #avocar → сохранено ✅  (id 142)
+ │   без тегов → [idea][link][feedback][reflection][note]
+ │               [avocar][archifex][harness][graph][—]
+ │               (не нажал → inbox)
+ ├ «Выйти» → бот снова создаёт задачи
+ └ Списки: new по типу / проекту, сменить статус</pre>
+<ul><li>Один бот, один токен, деплой как обычно (dev-скрипт, прод — по «да»)</li><li>⚠ Надо помнить, в каком режиме бот; режим живёт в памяти бота — после рестарта сбрасывается в обычный (безопасно: худшее — задача вместо заметки)</li></ul>
+<div class="size">~80 мин · ~160k</div>
+</div>
+
+<div class="card">
+<div class="tag">B</div>
+<h2>Отдельный бот @…_inbox_bot, тот же бэкенд</h2>
+<pre>@NeuroBoost_inbox_bot (только твой tg id)
+  любое сообщение → заметка, без режимов
+  #idea … → ✅ 142
+  без тегов → те же кнопки
+Код: bot/cmd/inbox, общий api-клиент
+Контейнер №3 на nl-2</pre>
+<ul><li>Нулевое трение: «просто кинул» — пересылки сюда из любого чата</li><li>Нужен твой шаг: BotFather → токен (1 действие)</li><li>Ещё один контейнер, который CI не деплоит</li></ul>
+<div class="size">~105 мин · ~200k + токен от тебя</div>
+</div>
+
+<div class="card">
+<div class="tag">C</div>
+<h2>Основной бот без режима, по признакам</h2>
+<pre>пересылка          → inbox
+текст с #тегом     → inbox
+фото / голос       → inbox
+обычный текст      → задача (как сейчас)
+«Ужин завтра 19:00» → событие</pre>
+<ul><li>Ничего не переключать</li><li>🔴 Своя мысль без тега уходит в задачи; «#» в задаче уже значит тег задачи (<code>edit_task_tags</code>) — конфликт смыслов</li></ul>
+<div class="size">~85 мин · ~170k</div>
+</div>
+
+</div>
+
+<section>
+<h2>Общее для A / B / C — хранение и доступ агента</h2>
+<pre>Telegram → бот (nl-2) → POST /api/inbox  (is_admin)  → таблица inbox_note (миграция 000023)
+   id · type · project · text · source (откуда переслано, ссылка) · media_path · status · created_at
+
+ПК (сессия Claude) → scripts/inbox.py pull   → E:/Projects/docs/inbox/
+                                                 idea.md · link.md · feedback.md · reflection.md · note.md
+                                                 by-project/avocar.md …   (кэш, правда — в базе)
+                     scripts/inbox.py set 142 discussed|done|dropped
+                     голос → media/142.ogg → локальный Whisper при разборе</pre>
+<table>
+<tr><th>Решение</th><th>Предлагаю</th><th>Почему</th></tr>
+<tr><td>Где правда</td><td>База NeuroBoost, markdown — выгрузка</td><td>Статусы меняются из бота и из сессии; два источника правды разъедутся</td></tr>
+<tr><td>Фото/голос</td><td>Бот скачивает файл на nl-2 и шлёт в API (хранится на диске API)</td><td>С основного хоста Telegram недоступен, а токен бота на ПК держать не нужно</td></tr>
+<tr><td>Доступ скрипта</td><td>Твой JWT / сервисный токен из локальной памяти, не из git</td><td>Правило «ключи не в репозитории»</td></tr>
+<tr><td>Среда</td><td>Строим на dev-боте/staging, жить начинаешь на проде после «да»</td><td>Заметки на staging — тестовые, staging пересобирается</td></tr>
+</table>
+<p class="muted">Не входит (во всех вариантах): веб-страница /inbox, расшифровка голоса в боте, LLM-разметка, общий inbox для других пользователей.</p>
+</section>
+</main></body></html>

@@ -28,7 +28,7 @@ export function WelcomeCard({
   }, [onSkip])
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-scrim/60 p-4">
       <div
         role="dialog"
         aria-modal="true"
@@ -49,7 +49,7 @@ export function WelcomeCard({
           <button
             ref={startRef}
             onClick={onStart}
-            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-onaccent transition-colors hover:bg-blue-700"
           >
             {t('welcome.getStarted')}
           </button>

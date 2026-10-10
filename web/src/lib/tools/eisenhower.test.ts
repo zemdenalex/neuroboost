@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { priorityToQuadrant, QUADRANT_TO_PRIORITY, type QuadrantId } from './eisenhower'
+import { dropPriority, priorityToQuadrant, QUADRANT_TO_PRIORITY, taskQuadrant, type QuadrantId } from './eisenhower'
 
 describe('priorityToQuadrant', () => {
   // The whole scale, spelled out. A table is the point here: the mapping is
@@ -58,5 +58,41 @@ describe('QUADRANT_TO_PRIORITY', () => {
     // dragged out of Do First and back returns as 1.
     expect(priorityToQuadrant(2)).toBe('q1')
     expect(QUADRANT_TO_PRIORITY.q1).toBe(1)
+  })
+})
+
+// Denis 25.09 (docs/tasks-web-cleanup.md 4.9): urgency from the due date
+// (within two days, or overdue), importance from priority 1-2; a drop changes
+// only the priority. Until then both axes came from `priority` alone.
+
+describe('taskQuadrant', () => {
+  const today = '2026-09-25'
+  it.each([
+    [{ priority: 1, due_date: '2026-09-26' }, 'q1', 'important, due tomorrow'],
+    [{ priority: 2, due_date: '2026-09-20' }, 'q1', 'important, overdue'],
+    [{ priority: 2, due_date: '2026-10-10' }, 'q2', 'important, due later'],
+    [{ priority: 1, due_date: null }, 'q2', 'important, no date'],
+    [{ priority: 4, due_date: '2026-09-27' }, 'q3', 'not important, due in two days'],
+    [{ priority: 3, due_date: '2026-09-28' }, 'q4', 'not important, due in three days'],
+    [{ priority: 0, due_date: undefined }, 'q4', 'buffer, no date'],
+  ] as const)('%o → %s (%s)', (task, quadrant, _label) => {
+    void _label
+    expect(taskQuadrant(task, today)).toBe(quadrant)
+  })
+  it('reads a full timestamp by its date', () => {
+    expect(taskQuadrant({ priority: 1, due_date: '2026-09-26T21:00:00Z' }, today)).toBe('q1')
+  })
+})
+
+describe('dropPriority', () => {
+  it('into an important quadrant makes an unimportant task priority 2, keeps 1 and 2', () => {
+    expect(dropPriority(4, 'q1')).toBe(2)
+    expect(dropPriority(1, 'q2')).toBe(1)
+    expect(dropPriority(2, 'q1')).toBe(2)
+  })
+  it('into an unimportant quadrant makes an important task priority 3, keeps the rest', () => {
+    expect(dropPriority(1, 'q3')).toBe(3)
+    expect(dropPriority(5, 'q4')).toBe(5)
+    expect(dropPriority(0, 'q3')).toBe(0)
   })
 })

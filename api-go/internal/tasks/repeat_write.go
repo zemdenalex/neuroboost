@@ -129,10 +129,21 @@ func repeatUpdates(ctx context.Context, userID, taskID string, req UpdateTaskReq
 			// An existing anchor is kept when only the rule's text changes, so
 			// editing «каждый день» into «через день» does not silently restart
 			// the count.
+			// The due date this same PATCH sets, when it sets one: the stored
+			// value is read before the UPDATE and would be the OLD date (audit
+			// 25.09: «каждый понедельник» with a Monday due date on a Thursday
+			// task repeated on Thursdays).
 			var due *time.Time
-			_ = db.Pool.QueryRow(ctx, `
-				-- recurrence-agnostic: the series' own deadline, to anchor it.
-				SELECT due_date FROM task WHERE id = $1`, taskID).Scan(&due)
+			if req.DueDate != nil && *req.DueDate != "" {
+				if t, err := time.Parse(time.RFC3339, *req.DueDate); err == nil {
+					due = &t
+				}
+			}
+			if due == nil {
+				_ = db.Pool.QueryRow(ctx, `
+					-- recurrence-agnostic: the series' own deadline, to anchor it.
+					SELECT due_date FROM task WHERE id = $1`, taskID).Scan(&due)
+			}
 			sets = append(sets,
 				fmt.Sprintf("rrule = $%d", argNum),
 				fmt.Sprintf("repeat_anchor = COALESCE(repeat_anchor, $%d)", argNum+1))

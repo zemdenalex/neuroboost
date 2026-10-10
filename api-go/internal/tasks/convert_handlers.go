@@ -57,8 +57,10 @@ func ConvertHandler(w http.ResponseWriter, r *http.Request) {
 			util.RespondError(w, http.StatusBadRequest, "NOT_AN_OCCURRENCE", "That day is not in the series")
 		case errors.Is(err, ErrInvalidRepeat):
 			util.RespondError(w, http.StatusBadRequest, "REPEAT_UNSUPPORTED", "The task's repeat rule cannot be copied")
-		case errors.Is(err, calendars.ErrCalendarNotFound):
-			util.RespondError(w, http.StatusNotFound, "CALENDAR_NOT_FOUND", "Calendar not found")
+		case errors.Is(err, calendars.ErrCalendarNotFound), errors.Is(err, calendars.ErrNotCalendarOwner):
+			// Read-only destination: 403, not 500 (audit 25.09, M3).
+			status, code, msg := calendarWriteError(err, "CONVERT_ERROR", "Failed to convert the task")
+			util.RespondError(w, status, code, msg)
 		default:
 			util.RespondError(w, http.StatusInternalServerError, "CONVERT_ERROR", "Failed to convert the task")
 		}

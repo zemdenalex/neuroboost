@@ -5,6 +5,8 @@ import { ToastHost } from '../ui/Toast'
 import { OnboardingProvider } from '../../contexts/OnboardingContext'
 import { OnboardingOverlay } from '../Onboarding/OnboardingOverlay'
 import { HintsLayer } from '../Hints/HintsLayer'
+import { useMediaQuery } from '../../hooks/useMediaQuery'
+import { effectiveHeaderVariant, PHONE_QUERY } from '../../lib/layout/headerVariant'
 
 type HeaderVariant = 'horizontal' | 'vertical'
 
@@ -36,13 +38,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
+  const shown = effectiveHeaderVariant(variant, useMediaQuery(PHONE_QUERY))
+
   return (
     <OnboardingProvider>
       <div className="min-h-screen bg-zinc-950 text-zinc-100 font-mono">
         <Header />
         <main
           className={
-            variant === 'horizontal'
+            shown === 'horizontal'
               ? 'pt-14 pb-16 md:pb-0' // Top padding for horizontal header, bottom padding for mobile nav
               // The sidebar is hidden below md, so its left padding must be too —
               // unconditional pl-56 squeezed a 375px screen down to 129px of

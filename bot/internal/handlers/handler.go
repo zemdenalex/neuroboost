@@ -308,6 +308,9 @@ func (h *Handler) HandleCallback(cb *tgbotapi.CallbackQuery) {
 
 	// «ℹ️ Что это?» can sit on any screen, onboarding and the card included,
 	// so it is asked before any of them claims its prefix.
+	if h.handleMenuTour(chatID, cb.Message.MessageID, data, cb.Message) {
+		return
+	}
 	if strings.HasPrefix(data, "help_") {
 		h.handleHelp(chatID, cb.Message.MessageID, data, cb.Message)
 		return

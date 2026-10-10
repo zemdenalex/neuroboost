@@ -13,6 +13,8 @@ import {
   ChevronUp,
 } from 'lucide-react'
 import { listTasks, type Task } from '../../api/tasks'
+import { listCalendars } from '../../api/calendars'
+import { linkableTasks } from '../../lib/pomodoro/linkableTasks'
 import { usePomodoro } from '../../contexts/PomodoroContext'
 import type { TimerMode, WidgetStyle } from '../../lib/pomodoro/types'
 import { summarizeToday, loadHistory } from '../../lib/pomodoro/history'
@@ -40,8 +42,9 @@ export default function Pomodoro() {
   const [showSettings, setShowSettings] = useState(false)
 
   useEffect(() => {
-    listTasks()
-      .then((data) => setTasks(data.filter((t) => t.status !== 'DONE' && t.status !== 'CANCELLED')))
+    // Only tasks a block can log time to: not ones shared read-only (4.8).
+    Promise.all([listTasks(), listCalendars()])
+      .then(([data, calendars]) => setTasks(linkableTasks(data, calendars)))
       .catch(console.error)
   }, [])
 

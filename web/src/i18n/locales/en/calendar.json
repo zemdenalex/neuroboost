@@ -88,5 +88,26 @@
     "hideManage": "Hide management",
     "empty": "No calendars yet."
   },
-  "taskShort": "Task"
+  "taskShort": "Task",
+  "view": {
+    "week": "Week",
+    "month": "Month",
+    "label": "Calendar view"
+  },
+  "month": {
+    "more": "+{{count}} more",
+    "prev": "Previous month",
+    "next": "Next month",
+    "dayTasksOff": "Day tasks are off",
+    "openSettings": "Turn on in settings",
+    "openWeek": "Open week",
+    "free": "Free"
+  },
+  "escapeAgain": "Changes are not saved. Press Escape again to close without saving",
+  "dateTime.lastDay": "Last day",
+  "repeat.yearly": "Yearly",
+  "repeat.every": "Every",
+  "repeat.unitDays": "day(s)",
+  "repeat.unitWeeks": "week(s)",
+  "repeat.unitMonths": "month(s)"
 }

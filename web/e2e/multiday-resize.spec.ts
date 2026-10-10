@@ -1,3 +1,4 @@
+import { scrollGridToTop } from './fixtures/grid'
 import { test, expect } from './fixtures/auth'
 import { request as playwrightRequest, type APIRequestContext } from '@playwright/test'
 
@@ -92,6 +93,9 @@ test.describe('multi-day resize', () => {
     // screenshot was the only thing that said so.
     const lastSegment = blocks.last()
     const handle = lastSegment.locator('div.cursor-ns-resize').last()
+    // The grid opens near the current hour since MW11: back to 00:00, the
+    // screen this spec's time band was chosen for.
+    await scrollGridToTop(authedPage)
     const box = await handle.boundingBox()
     expect(box, 'the last segment must expose a bottom resize handle on screen').not.toBeNull()
 

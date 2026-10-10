@@ -1,8 +1,9 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getTimezoneOffsetMs } from './weekgrid.utils';
 import { DAY_MS } from './weekgrid.constants';
 import { dateLocale } from '../../../utils/date';
+import { takeCalendarHint } from '../../../lib/calendar/calendarChrome';
 
 interface WeekHeaderProps {
   mondayUtc0: number;
@@ -31,6 +32,16 @@ export function WeekHeader({
   headerExtra,
 }: WeekHeaderProps) {
   const { t, i18n } = useTranslation('calendar');
+  // On a phone the tip shows on the first three opens, then lives under «?»
+  // (Denis 25.09, variant A). Counted once per mount, not per render.
+  const [mobileHint] = useState(() =>
+    // Accessors, not window.localStorage itself: touching it can throw when
+    // storage is blocked, and the throw must land inside takeCalendarHint's try.
+    takeCalendarHint({
+      getItem: (k) => window.localStorage.getItem(k),
+      setItem: (k, v) => window.localStorage.setItem(k, v),
+    })
+  );
   const locale = dateLocale(i18n.language);
 
   const offset = getTimezoneOffsetMs(timezone);
@@ -39,9 +50,11 @@ export function WeekHeader({
 
   const weekLabel = (() => {
     if (visibleDays === 1) {
+      // Short on a phone: beside the arrows and buttons the long form
+      // ("Friday, September 25") broke onto two lines (mobile tour 25.09, MW4).
       return startDate.toLocaleDateString(locale, {
-        weekday: 'long',
-        month: 'long',
+        weekday: isMobile ? 'short' : 'long',
+        month: isMobile ? 'short' : 'long',
         day: 'numeric'
       });
     } else if (visibleDays === 3) {
@@ -53,7 +66,12 @@ export function WeekHeader({
 
   return (
     <div className="px-2 py-2 border-b border-zinc-700 bg-zinc-900">
-      <div className="flex items-center justify-between mb-2">
+      {/* Wraps rather than overflows: on a 320px phone arrows, title, Today,
+          + Task and the calendar filter do not fit on one line and the last
+          buttons ran off the screen (26.09). The right group keeps ml-auto so
+          a wrapped row still ends at the right edge, where the filter panel
+          (absolute right-0) expects its anchor. */}
+      <div className="flex flex-wrap items-center justify-between gap-y-2 mb-2">
         <div className="flex items-center gap-2">
           {(onWeekChange || onMobileNav) && (
             <>
@@ -85,10 +103,10 @@ export function WeekHeader({
               </button>
             </>
           )}
-          <h2 className="font-semibold text-sm md:text-lg">{weekLabel}</h2>
+          <h2 data-testid="calendar-period-title" className="whitespace-nowrap font-semibold text-sm md:text-lg">{weekLabel}</h2>
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="ml-auto flex items-center gap-2">
           {(currentWeekOffset !== 0 || onMobileNav) && (onWeekChange || onToday) && (
             <button
               onClick={() => {
@@ -123,9 +141,11 @@ export function WeekHeader({
         </div>
       </div>
       
-      <div className="text-xs text-zinc-400">
-        {isMobile ? t('helpMobile') : t('helpDesktop')}
-      </div>
+      {(!isMobile || mobileHint) && (
+        <div data-testid="calendar-hint" className="text-xs text-zinc-400">
+          {isMobile ? t('helpMobile') : t('helpDesktop')}
+        </div>
+      )}
     </div>
   );
 }

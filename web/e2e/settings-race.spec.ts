@@ -110,7 +110,10 @@ test('a change made during a save is not overwritten when that save answers', as
       'the digest time typed while the previous save was in flight was overwritten by that save\'s response',
     ).toBe('07:11')
   } finally {
-    await authedPage.unroute('**/api/auth/me')
+    // 'wait': saves run one at a time since 24.09 (lib/settings/saveSettings.ts),
+    // so the last delayed PATCH can outlive the test body; a plain unroute
+    // left its handler calling continue() on a route already let go.
+    await authedPage.unrouteAll({ behavior: 'wait' })
     // Let anything still queued finish before putting the account back, or the
     // restore would be overwritten by a late save.
     await authedPage.waitForTimeout(2000)

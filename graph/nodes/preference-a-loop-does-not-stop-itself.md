@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-09-24
 tags: [neuroboost, method, loop, denis]
-weight: { importance: 5, connectivity: 3, access: 1, last_accessed: 2026-09-24 }
+weight: { importance: 5, connectivity: 5, access: 4, last_accessed: 2026-09-26 }
 sources:
   - quote: "start the loop, work on the bot update… or you can work on the android app or telegram mini-app. So a lot to do, just don't stop and don't wait for me"
   - quote: "so you basically worked for like fucking 30 minutes… there's so much to do and you decided to do nothing"
@@ -14,6 +14,7 @@ sources:
   - file: "docs/agents/queue.md"
 stakes: high
 links:
+  - relates-to: "[[preference-loop-goal-before-standing-work]]"
   - relates-to: "[[preference-keep-sabotage-advisor-e2e-obsidian]]"
   - relates-to: "[[preference-do-the-work-hand-over-only-what-eyes-must-settle]]"
   - relates-to: "[[workitem-night-loop-2026-08-10]]"

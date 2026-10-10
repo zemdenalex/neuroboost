@@ -3,11 +3,13 @@
   "nav.home": "Home",
   "nav.calendar": "Calendar",
   "nav.tasks": "Tasks",
+  "nav.dayTasks": "Day tasks",
   "nav.planning": "Planning",
   "nav.reflections": "Reflections",
   "nav.tools": "Tools",
   "nav.settings": "Settings",
   "nav.profile": "Profile",
+  "nav.whatsNew": "What's new",
   "nav.admin": "Admin Panel",
   "action.save": "Save",
   "action.cancel": "Cancel",
@@ -47,5 +49,7 @@
   "agenda.allDay": "all day",
   "agenda.untitled": "(untitled)",
   "agenda.loading": "Loading…",
-  "agenda.empty": "Nothing scheduled for the next {{days}} days."
+  "agenda.empty": "Nothing scheduled for the next {{days}} days.",
+  "agenda.more": "{{days}} more days",
+  "whatsNew.failed": "Could not load. Try again later."
 }

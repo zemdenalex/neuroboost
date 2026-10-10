@@ -13,7 +13,7 @@ import (
 
 	"github.com/zemdenalex/neuroboost-bot/internal/i18n"
 	"github.com/zemdenalex/neuroboost-bot/internal/keyboards"
-	"github.com/zemdenalex/neuroboost-bot/internal/release"
+	"github.com/zemdenalex/neuroboost-bot/release"
 )
 
 // The «что нового» broadcast and the way out of it (spec 21.09 §D).

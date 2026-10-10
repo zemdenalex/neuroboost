@@ -1,4 +1,7 @@
+import { launchedInTelegram } from '../../../lib/telegram/webApp'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useDayTasksEnabled } from '../../../hooks/useDayTasksEnabled'
+import { useFeatureFlags } from '../../../hooks/useFeatureFlags'
 import { useAuthContext } from '../../../contexts/AuthContext'
 import { HelpButton } from '../../Help/HelpButton'
 import {
@@ -12,12 +15,14 @@ import {
   Shield,
   Home,
   User,
+  Pin,
 } from 'lucide-react'
 
 const navItems = [
   { path: '/home', label: 'Home', icon: Home },
   { path: '/calendar', label: 'Calendar', icon: Calendar },
   { path: '/tasks', label: 'Tasks', icon: CheckSquare },
+  { path: '/day-tasks', label: 'Day tasks', icon: Pin },
   { path: '/planning', label: 'Planning', icon: LayoutGrid },
   { path: '/reflections', label: 'Reflections', icon: BookOpen },
   { path: '/tools', label: 'Tools', icon: Wrench },
@@ -29,6 +34,9 @@ export default function VerticalSidebar() {
   const location = useLocation()
   const navigate = useNavigate()
   const { user, logout } = useAuthContext()
+  const dayTasks = useDayTasksEnabled()
+  // Tools can be switched off in Settings; every menu honours it (audit 24.09 T0c).
+  const flags = useFeatureFlags()
 
   const handleLogout = async () => {
     await logout()
@@ -54,7 +62,7 @@ export default function VerticalSidebar() {
       {/* Navigation */}
       <nav className="flex-1 p-3 overflow-y-auto">
         <div className="flex flex-col gap-1">
-          {navItems.map(({ path, label, icon: Icon }) => {
+          {navItems.filter((i) => (dayTasks || i.path !== '/day-tasks') && (flags.tools || i.path !== '/tools')).map(({ path, label, icon: Icon }) => {
             const isActive = location.pathname === path
             return (
               <Link
@@ -100,7 +108,7 @@ export default function VerticalSidebar() {
               className="w-8 h-8 rounded-full"
             />
           ) : (
-            <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-xs font-mono text-white">
+            <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-xs font-mono text-onaccent">
               {initials}
             </div>
           )}
@@ -113,14 +121,15 @@ export default function VerticalSidebar() {
         {/* Contextual help for the current page */}
         <HelpButton variant="sidebar" />
 
-        {/* Logout button */}
-        <button
+        {/* Logout button; not in the Telegram Mini App, where the next
+            launch signs the same person straight back in */}
+        {!launchedInTelegram() && <button
           onClick={handleLogout}
           className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-mono text-red-400 hover:bg-zinc-800 transition-colors"
         >
           <LogOut className="w-4 h-4" />
           Sign out
-        </button>
+        </button>}
       </div>
     </aside>
   )
