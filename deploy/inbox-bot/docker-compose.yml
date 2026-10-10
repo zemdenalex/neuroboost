@@ -1,0 +1,10 @@
+# The inbox bot on nl-2: /opt/neuroboost-inbox-bot/{docker-compose.yml,.env,src/}.
+# src/ is `git archive <ref>:bot`, put there by scripts/deploy-inbox-bot.sh.
+services:
+  inbox:
+    build:
+      context: ./src
+      dockerfile: Dockerfile.inbox
+    container_name: neuroboost-inbox-bot
+    restart: unless-stopped
+    env_file: .env

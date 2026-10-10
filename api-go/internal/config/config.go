@@ -14,6 +14,9 @@ type Config struct {
 	// is deliberately no default: a default service token is a backdoor, and
 	// an unset one closes the endpoints rather than opening them.
 	ServiceToken string
+	// InboxToken guards /api/inbox (the inbox bot and scripts/inbox.py).
+	// Unset keeps the inbox closed.
+	InboxToken string
 	Environment  string
 }
 
@@ -25,6 +28,7 @@ func Load() *Config {
 		TelegramBotToken:  os.Getenv("TELEGRAM_BOT_TOKEN"),
 		TelegramNotifyBot: os.Getenv("TELEGRAM_NOTIFICATION_BOT_TOKEN"),
 		ServiceToken:      os.Getenv("SERVICE_TOKEN"),
+		InboxToken:        os.Getenv("INBOX_API_TOKEN"),
 		Environment:       getEnv("NODE_ENV", "development"),
 	}
 }

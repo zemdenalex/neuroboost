@@ -15,6 +15,7 @@ import (
 	"neuroboost/api-go/internal/config"
 	"neuroboost/api-go/internal/database"
 	"neuroboost/api-go/internal/daytasks"
+	"neuroboost/api-go/internal/inbox"
 	"neuroboost/api-go/internal/lineparse"
 	"neuroboost/api-go/internal/releasenotes"
 	"neuroboost/api-go/internal/logger"
@@ -135,6 +136,10 @@ func main() {
 		sr.Get("/broadcast/recipients", broadcast.RecipientsHandler)
 		sr.Post("/broadcast/mark", broadcast.MarkHandler)
 	})
+
+	// Inbox (spec V003-20261010-arc-inbox-bot): its own secret, not the
+	// notifier's — the PC script holds it, and it should open nothing else.
+	inbox.NewHandler(db).Routes(r, cfg.InboxToken)
 
 	// Protected routes (JWT required)
 	r.Group(func(r chi.Router) {

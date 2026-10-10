@@ -1,0 +1,2 @@
+DROP TABLE IF EXISTS inbox_media;
+DROP TABLE IF EXISTS inbox_note;
