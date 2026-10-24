@@ -22,7 +22,7 @@ import { request as playwrightRequest } from '@playwright/test'
  * the empty array. The assertion below therefore covers events specifically.
  */
 
-const API_BASE = process.env.E2E_API_URL ?? process.env.E2E_BASE_URL ?? 'https://dev.neuroboost.website'
+const API_BASE = process.env.E2E_API_URL ?? process.env.E2E_BASE_URL ?? 'https://dev.neuroboost.space'
 
 test.describe('default reminder preset', () => {
   // One viewport: this creates an event on the shared test account and deletes

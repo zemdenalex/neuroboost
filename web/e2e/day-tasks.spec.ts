@@ -1,7 +1,7 @@
 import { test, expect } from './fixtures/auth'
 import { request as playwrightRequest } from '@playwright/test'
 
-const API_BASE = process.env.E2E_API_URL ?? process.env.E2E_BASE_URL ?? 'https://dev.neuroboost.website'
+const API_BASE = process.env.E2E_API_URL ?? process.env.E2E_BASE_URL ?? 'https://dev.neuroboost.space'
 
 /**
  * Day tasks on the web (spec docs/superpowers/specs/2026-09-24-web-day-tasks-design.md).

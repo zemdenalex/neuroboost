@@ -23,7 +23,7 @@ import { request as playwrightRequest } from '@playwright/test'
  * would only be a test that happens to pass.
  */
 
-const API_BASE = process.env.E2E_API_URL ?? process.env.E2E_BASE_URL ?? 'https://dev.neuroboost.website'
+const API_BASE = process.env.E2E_API_URL ?? process.env.E2E_BASE_URL ?? 'https://dev.neuroboost.space'
 
 /** The whole settings blob, so the account is left exactly as it was found. */
 async function readSettings(token: string): Promise<unknown> {

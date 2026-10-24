@@ -13,7 +13,7 @@ import { createHash, createHmac } from 'node:crypto'
  * run", never a red that gets ignored into meaninglessness.
  */
 
-const API_BASE = process.env.E2E_API_URL ?? process.env.E2E_BASE_URL ?? 'https://dev.neuroboost.website'
+const API_BASE = process.env.E2E_API_URL ?? process.env.E2E_BASE_URL ?? 'https://dev.neuroboost.space'
 
 export const TOKEN_KEY = 'nb_token'
 // Unix SECONDS, matching the API's expires_at verbatim. isTokenExpired() in

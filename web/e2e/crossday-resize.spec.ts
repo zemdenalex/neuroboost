@@ -18,7 +18,7 @@ import { localMidnightUtc, localWeekday } from './fixtures/localTime'
  * what the ghost drew. The assertion is against the API, not the DOM.
  */
 
-const API_BASE = process.env.E2E_API_URL ?? process.env.E2E_BASE_URL ?? 'https://dev.neuroboost.website'
+const API_BASE = process.env.E2E_API_URL ?? process.env.E2E_BASE_URL ?? 'https://dev.neuroboost.space'
 const HOUR = 3600 * 1000
 
 async function apiContext(token: string): Promise<APIRequestContext> {

@@ -11,7 +11,7 @@ import { localMidnightUtc } from './fixtures/localTime'
  * Nothing is written to the account: the event is added to the page's own
  * events answer and its PATCH is caught here; every other write is refused.
  */
-const API_BASE = process.env.E2E_API_URL ?? process.env.E2E_BASE_URL ?? 'https://dev.neuroboost.website'
+const API_BASE = process.env.E2E_API_URL ?? process.env.E2E_BASE_URL ?? 'https://dev.neuroboost.space'
 const ID = 'e2e-allday-span'
 const TITLE = 'e2e отпуск'
 const DAY = 24 * 60 * 60 * 1000

@@ -11,7 +11,7 @@ import (
 
 // Settings in the bot, instead of a link to the web app.
 //
-// ⚙️ Settings used to be four lines pointing at https://neuroboost.website/
+// ⚙️ Settings used to be four lines pointing at https://neuroboost.space/
 // settings — a button that answers "not here". For "usable from the phone
 // without opening the laptop" that is the single worst shape a control can
 // take: it costs a tap to learn nothing.
@@ -42,7 +42,7 @@ func settingsText(lang i18n.Lang, start, end string) string {
 	return i18n.T(lang, "⚙️ <b>Настройки</b>\n\n", "⚙️ <b>Settings</b>\n\n") +
 		fmt.Sprintf(i18n.T(lang, "🕘 Рабочие часы: <b>%s – %s</b>\n\n", "🕘 Work hours: <b>%s – %s</b>\n\n"), start, end) +
 		i18n.T(lang, "Остальное (тема, масштаб, пресеты напоминаний) пока в вебе:\n", "The rest (theme, scale, reminder presets) is still on the web:\n") +
-		"https://neuroboost.website/settings"
+		"https://neuroboost.space/settings"
 }
 
 // workHours reads the two values, falling back to the same defaults the web

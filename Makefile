@@ -8,7 +8,7 @@ SHELL := /bin/bash
 SERVER       := 62.76.228.106
 SERVER_USER  := root
 SERVER_DIR   := /root/neuroboost
-PROD_URL     := https://neuroboost.website
+PROD_URL     := https://neuroboost.space
 BRANCH_MAIN  := main
 BRANCH_DEV   := develop
 

@@ -14,7 +14,7 @@ import { request as playwrightRequest, type APIRequestContext } from '@playwrigh
  * Before the fix this event collapsed onto the grabbed day.
  */
 
-const API_BASE = process.env.E2E_API_URL ?? process.env.E2E_BASE_URL ?? 'https://dev.neuroboost.website'
+const API_BASE = process.env.E2E_API_URL ?? process.env.E2E_BASE_URL ?? 'https://dev.neuroboost.space'
 const HOUR_PX = 44
 
 async function apiContext(token: string): Promise<APIRequestContext> {

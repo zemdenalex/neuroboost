@@ -327,7 +327,7 @@ jobs:
           curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
             -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
             -d parse_mode=HTML \
-            -d text="🔧 <b>NeuroBoost DEV deployed</b>%0ACommit: <code>${{ github.sha }}</code>%0ABranch: develop%0ABy: ${{ github.actor }}%0AURL: https://dev.neuroboost.website"
+            -d text="🔧 <b>NeuroBoost DEV deployed</b>%0ACommit: <code>${{ github.sha }}</code>%0ABranch: develop%0ABy: ${{ github.actor }}%0AURL: https://dev.neuroboost.space"
 
       - name: Notify Telegram (failure)
         if: failure()
@@ -406,7 +406,7 @@ jobs:
 
       - name: Run e2e against staging
         env:
-          E2E_BASE_URL: https://dev.neuroboost.website
+          E2E_BASE_URL: https://dev.neuroboost.space
           E2E_TG_BOT_TOKEN: ${{ secrets.E2E_TG_BOT_TOKEN }}
           E2E_TG_ID: ${{ secrets.E2E_TG_ID }}
         run: |

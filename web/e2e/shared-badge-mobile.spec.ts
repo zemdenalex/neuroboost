@@ -47,7 +47,7 @@ import { localMidnightUtc } from './fixtures/localTime'
  * runs anywhere the API is reachable.
  */
 
-const API_BASE = process.env.E2E_API_URL ?? process.env.E2E_BASE_URL ?? 'https://dev.neuroboost.website'
+const API_BASE = process.env.E2E_API_URL ?? process.env.E2E_BASE_URL ?? 'https://dev.neuroboost.space'
 
 // Long enough to overflow any block, and recognisable in a failure screenshot.
 const LONG_NAME = 'Александра Константинопольская-Верещагина'

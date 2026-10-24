@@ -15,7 +15,7 @@ import (
 //
 // and, an hour later, during the М9 outage:
 //
-//	❌ Не удалось создать: Post "https://dev.neuroboost.website/api/tasks":
+//	❌ Не удалось создать: Post "https://dev.neuroboost.space/api/tasks":
 //	context deadline exceeded (Client.Timeout exceeded while awaiting headers)
 //
 // Both are true. Neither tells the reader whether to press again, fix the

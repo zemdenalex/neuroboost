@@ -6,7 +6,7 @@
 # Default: THIS working tree's web app, built (`vite build` + `vite preview` on
 # localhost:5173), against the staging API — the way to see a fix go green
 # before it is pushed.
-# --staging: no local build, specs run against https://dev.neuroboost.website,
+# --staging: no local build, specs run against https://dev.neuroboost.space,
 # i.e. what CI's e2e job sees — the way to see a defect red before fixing it.
 # --dev: the vite dev server instead of a build. Not the default since 26.09:
 # on this machine the dev server compiles on demand and its HMR socket never
@@ -62,7 +62,7 @@ if [ -z "${E2E_TG_BOT_TOKEN:-}" ]; then
   [ -n "$E2E_TG_BOT_TOKEN" ] || { echo "❌ could not read the dev bot token from nl-2" >&2; exit 2; }
 fi
 export E2E_TG_ID E2E_TG_BOT_TOKEN
-export E2E_API_URL=https://dev.neuroboost.website
+export E2E_API_URL=https://dev.neuroboost.space
 
 stop_vite() {
   # On Windows the pid bash holds is not vite's node process; kill whoever
@@ -73,7 +73,7 @@ stop_vite() {
 }
 
 if [ "$STAGING" = 1 ]; then
-  export E2E_BASE_URL=https://dev.neuroboost.website
+  export E2E_BASE_URL=https://dev.neuroboost.space
   echo "▶ against staging (what CI sees)"
 else
   if netstat -ano 2>/dev/null | grep ':5173 ' | grep -q LISTENING; then
@@ -84,11 +84,11 @@ else
   LOG="$(mktemp)"
   if [ "$PREVIEW" = 1 ]; then
     echo "▶ vite build (preview mode)"
-    VITE_API_URL=https://dev.neuroboost.website/api npx vite build >"$LOG" 2>&1 \
+    VITE_API_URL=https://dev.neuroboost.space/api npx vite build >"$LOG" 2>&1 \
       || { echo "❌ vite build failed:" >&2; tail -20 "$LOG" >&2; exit 2; }
     npx vite preview --host 127.0.0.1 --port 5173 --strictPort >"$LOG" 2>&1 &
   else
-    VITE_API_URL=https://dev.neuroboost.website/api \
+    VITE_API_URL=https://dev.neuroboost.space/api \
       npx vite --host 127.0.0.1 --port 5173 --strictPort >"$LOG" 2>&1 &
   fi
   for _ in $(seq 1 30); do

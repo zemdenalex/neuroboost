@@ -23,16 +23,16 @@ if [ ! -f "$DEV_DIR/.env" ]; then
   cp /root/neuroboost/.env "$DEV_DIR/.env"
   # Adjust env for dev
   sed -i 's/POSTGRES_DB=neuroboost$/POSTGRES_DB=neuroboost_dev/' "$DEV_DIR/.env"
-  sed -i 's|FRONTEND_URL=https://neuroboost.website|FRONTEND_URL=https://dev.neuroboost.website|' "$DEV_DIR/.env"
+  sed -i 's|FRONTEND_URL=https://neuroboost.space|FRONTEND_URL=https://dev.neuroboost.space|' "$DEV_DIR/.env"
   sed -i 's/NODE_ENV=production/NODE_ENV=development/' "$DEV_DIR/.env"
   echo "Created .env for dev (review it: $DEV_DIR/.env)"
 fi
 
 # 3. Setup nginx for dev subdomain
-cat > /etc/nginx/sites-available/dev.neuroboost.website << 'NGINX'
+cat > /etc/nginx/sites-available/dev.neuroboost.space << 'NGINX'
 server {
     listen 80;
-    server_name dev.neuroboost.website;
+    server_name dev.neuroboost.space;
 
     location /api/ {
         proxy_pass http://127.0.0.1:8081;
@@ -51,16 +51,16 @@ server {
 NGINX
 
 # Enable site
-ln -sf /etc/nginx/sites-available/dev.neuroboost.website /etc/nginx/sites-enabled/
+ln -sf /etc/nginx/sites-available/dev.neuroboost.space /etc/nginx/sites-enabled/
 
 # Test and reload nginx
 nginx -t && systemctl reload nginx
-echo "Nginx configured for dev.neuroboost.website"
+echo "Nginx configured for dev.neuroboost.space"
 
 # 4. Get SSL cert
 echo "Getting SSL certificate..."
-certbot --nginx -d dev.neuroboost.website --non-interactive --agree-tos --redirect \
-  || echo "Certbot failed — run manually: certbot --nginx -d dev.neuroboost.website"
+certbot --nginx -d dev.neuroboost.space --non-interactive --agree-tos --redirect \
+  || echo "Certbot failed — run manually: certbot --nginx -d dev.neuroboost.space"
 
 # 5. Start dev stack
 echo "Starting dev stack..."
@@ -75,6 +75,6 @@ curl -fsS http://127.0.0.1:8081/api/health && echo "Dev API healthy!" || echo "A
 
 echo ""
 echo "=== Dev environment ready ==="
-echo "URL: https://dev.neuroboost.website"
+echo "URL: https://dev.neuroboost.space"
 echo "Dir: $DEV_DIR"
 echo "Logs: docker-compose -f $DEV_DIR/docker-compose.dev.yml logs -f"

@@ -140,7 +140,7 @@ func humanTTL(lang i18n.Lang, seconds int) string {
 // webBase is where the website lives, as far as this bot is concerned.
 //
 // ⚠ Taken from API_BASE, which for both deployed bots IS the site
-// (https://dev.neuroboost.website and https://neuroboost.website — gotcha 19).
+// (https://dev.neuroboost.space and https://neuroboost.space — gotcha 19).
 // Locally API_BASE is a docker address and the link will not open in a browser;
 // that is a local-development fact, not a defect to code around, and inventing
 // a second variable would be one more thing to set wrong on the server.

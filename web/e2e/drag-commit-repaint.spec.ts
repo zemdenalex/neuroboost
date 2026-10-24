@@ -21,7 +21,7 @@ import { localMidnightUtc, localWeekday } from './fixtures/localTime'
  * measure; without that the window is a few hundred milliseconds.
  */
 
-const API_BASE = process.env.E2E_API_URL ?? process.env.E2E_BASE_URL ?? 'https://dev.neuroboost.website'
+const API_BASE = process.env.E2E_API_URL ?? process.env.E2E_BASE_URL ?? 'https://dev.neuroboost.space'
 const HOUR_PX = 44
 const HOUR = 3600 * 1000
 const API_DELAY_MS = 2500

@@ -27,7 +27,7 @@ func (f *fakeBot) MakeRequest(endpoint string, params tgbotapi.Params) (*tgbotap
 // shape is what Telegram documents: menu_button = MenuButtonWebApp JSON.
 func TestSetSendsAWebAppMenuButton(t *testing.T) {
 	b := &fakeBot{}
-	if err := Set(b, "https://dev.neuroboost.website/calendar", "Календарь"); err != nil {
+	if err := Set(b, "https://dev.neuroboost.space/calendar", "Календарь"); err != nil {
 		t.Fatal(err)
 	}
 	if b.endpoint != "setChatMenuButton" {
@@ -43,7 +43,7 @@ func TestSetSendsAWebAppMenuButton(t *testing.T) {
 	if err := json.Unmarshal([]byte(b.params["menu_button"]), &got); err != nil {
 		t.Fatalf("menu_button is not JSON: %q", b.params["menu_button"])
 	}
-	if got.Type != "web_app" || got.Text != "Календарь" || got.WebApp.URL != "https://dev.neuroboost.website/calendar" {
+	if got.Type != "web_app" || got.Text != "Календарь" || got.WebApp.URL != "https://dev.neuroboost.space/calendar" {
 		t.Fatalf("menu_button = %+v", got)
 	}
 	if _, ok := b.params["chat_id"]; ok {
@@ -54,7 +54,7 @@ func TestSetSendsAWebAppMenuButton(t *testing.T) {
 // Telegram only opens https Mini Apps; an http or empty URL is refused here
 // rather than silently installing a button that shows an error.
 func TestSetRefusesANonHTTPSURL(t *testing.T) {
-	for _, u := range []string{"", "http://dev.neuroboost.website", "dev.neuroboost.website"} {
+	for _, u := range []string{"", "http://dev.neuroboost.space", "dev.neuroboost.space"} {
 		b := &fakeBot{}
 		if err := Set(b, u, "x"); err == nil {
 			t.Fatalf("%q accepted", u)

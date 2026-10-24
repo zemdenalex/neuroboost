@@ -17,7 +17,7 @@ import { localMidnightUtc, localWeekday } from './fixtures/localTime'
  * (`learning-md2-lived-in-untested-producers`). Asserted against the API.
  */
 
-const API_BASE = process.env.E2E_API_URL ?? process.env.E2E_BASE_URL ?? 'https://dev.neuroboost.website'
+const API_BASE = process.env.E2E_API_URL ?? process.env.E2E_BASE_URL ?? 'https://dev.neuroboost.space'
 const HOUR_PX = 44
 const HOUR = 3600 * 1000
 

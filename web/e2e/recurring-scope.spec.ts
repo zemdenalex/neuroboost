@@ -12,7 +12,7 @@ import { request as playwrightRequest, type APIRequestContext } from '@playwrigh
  * is.
  */
 
-const API_BASE = process.env.E2E_API_URL ?? process.env.E2E_BASE_URL ?? 'https://dev.neuroboost.website'
+const API_BASE = process.env.E2E_API_URL ?? process.env.E2E_BASE_URL ?? 'https://dev.neuroboost.space'
 
 // Both locales, because the app follows the account's language and the point
 // of the assertion is "the right dialog appeared", not "the app is in English".

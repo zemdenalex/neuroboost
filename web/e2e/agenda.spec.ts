@@ -10,7 +10,7 @@ import { test, expect } from './fixtures/auth'
  * that it does not fit the screen.
  */
 
-const API_BASE = process.env.E2E_API_URL ?? process.env.E2E_BASE_URL ?? 'https://dev.neuroboost.website'
+const API_BASE = process.env.E2E_API_URL ?? process.env.E2E_BASE_URL ?? 'https://dev.neuroboost.space'
 
 test.describe('agenda', () => {
   test('is reachable from the phone and lists what is coming', async ({ authedPage, session }) => {

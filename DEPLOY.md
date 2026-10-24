@@ -107,7 +107,7 @@ docker compose logs -f api
 
 ```bash
 # Check health
-curl -s https://neuroboost.website/api/health | jq
+curl -s https://neuroboost.space/api/health | jq
 
 # Expected output:
 # {
@@ -122,7 +122,7 @@ docker compose ps
 # All should show "healthy"
 
 # Test auth endpoint
-curl -s https://neuroboost.website/api/auth/me
+curl -s https://neuroboost.space/api/auth/me
 # Should return 401 (no token)
 ```
 
@@ -132,7 +132,7 @@ In Telegram, message @BotFather:
 ```
 /setdomain
 Select @NeuroBoost_assistant_bot
-Enter: neuroboost.website
+Enter: neuroboost.space
 ```
 
 ## Auth Endpoints
@@ -151,21 +151,21 @@ After deployment, these endpoints are available:
 
 **Register:**
 ```bash
-curl -X POST https://neuroboost.website/api/auth/register \
+curl -X POST https://neuroboost.space/api/auth/register \
   -H "Content-Type: application/json" \
   -d '{"email":"test@example.com","password":"password123","name":"Test User"}'
 ```
 
 **Login:**
 ```bash
-curl -X POST https://neuroboost.website/api/auth/login \
+curl -X POST https://neuroboost.space/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"test@example.com","password":"password123"}'
 ```
 
 **Get Me (with token):**
 ```bash
-curl https://neuroboost.website/api/auth/me \
+curl https://neuroboost.space/api/auth/me \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 

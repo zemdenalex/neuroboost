@@ -1,5 +1,5 @@
 # Dev environment — separate containers, ports, volumes from production
-# Deployed from 'develop' branch to dev.neuroboost.website
+# Deployed from 'develop' branch to dev.neuroboost.space
 
 services:
   db:
@@ -40,7 +40,7 @@ services:
       SERVICE_TOKEN: ${SERVICE_TOKEN}
       # Guards /api/inbox (inbox bot + scripts/inbox.py). Unset closes it with 503.
       INBOX_API_TOKEN: ${INBOX_API_TOKEN}
-      FRONTEND_URL: ${FRONTEND_URL:-https://dev.neuroboost.website}
+      FRONTEND_URL: ${FRONTEND_URL:-https://dev.neuroboost.space}
     depends_on:
       db:
         condition: service_healthy
@@ -59,7 +59,7 @@ services:
       context: ./web
       dockerfile: Dockerfile
       args:
-        VITE_API_URL: ${FRONTEND_URL:-https://dev.neuroboost.website}/api
+        VITE_API_URL: ${FRONTEND_URL:-https://dev.neuroboost.space}/api
     container_name: neuroboost-dev-web
     depends_on:
       - api
