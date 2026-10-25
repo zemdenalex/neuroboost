@@ -234,5 +234,9 @@
   "keywords.error.field": "Выбери, что означает слово.",
   "keywords.error.value.text": "Напиши значение.",
   "keywords.error.value.colour": "Выбери цвет.",
-  "keywords.error.value.repeat": "Выбери, как часто повторять."
+  "keywords.error.value.repeat": "Выбери, как часто повторять.",
+  "telegram.title": "Telegram",
+  "telegram.fullscreen": "Полный экран",
+  "telegram.fullscreen.hint": "Открывает NeuroBoost на весь экран внутри Telegram. Сохраняется только на этом устройстве.",
+  "telegram.fullscreen.unsupported": "Это приложение Telegram не умеет полный экран."
 }

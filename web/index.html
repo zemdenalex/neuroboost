@@ -11,6 +11,14 @@
          the SPA fallback answers 404, which is a console error on every single
          view. An SVG rather than an .ico so the file is readable and diffable. -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- Installable (Add to Home Screen): opens as its own window without browser
+         bars. (No viewport-fit=cover: the layout is not padded for notches
+         outside Telegram's full screen, see .tg-fullscreen in index.css.) -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
+    <meta name="theme-color" content="#18181b" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
     <title>NeuroBoost</title>
   </head>
   <body class="bg-black text-zinc-100">

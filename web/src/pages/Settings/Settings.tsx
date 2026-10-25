@@ -18,6 +18,7 @@ import { TaskRowSection } from './sections/TaskRowSection'
 import { PriorityStyleSection } from './sections/PriorityStyleSection'
 import { KeywordsSection } from './sections/KeywordsSection'
 import { ThemeSection } from './sections/ThemeSection'
+import { TelegramSection } from './sections/TelegramSection'
 import { RecurringScopeSection } from './sections/RecurringScopeSection'
 import { DataSection } from './sections/DataSection'
 import { RemindersSection } from './sections/RemindersSection'
@@ -128,6 +129,8 @@ export default function Settings() {
 
         {/* Desktop only: a phone always has the top bar (lib/layout/headerVariant). */}
         <ThemeSection />
+
+        <TelegramSection />
 
         {!isMobile && <LayoutStyleSection />}
 

@@ -234,5 +234,9 @@
   "keywords.error.field": "Pick what the word means.",
   "keywords.error.value.text": "Write a value.",
   "keywords.error.value.colour": "Pick a colour.",
-  "keywords.error.value.repeat": "Pick how often."
+  "keywords.error.value.repeat": "Pick how often.",
+  "telegram.title": "Telegram",
+  "telegram.fullscreen": "Full screen",
+  "telegram.fullscreen.hint": "Opens NeuroBoost over the whole screen inside Telegram. Saved on this device only.",
+  "telegram.fullscreen.unsupported": "This Telegram app does not offer full screen."
 }

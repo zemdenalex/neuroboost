@@ -107,3 +107,56 @@ test('a forged launch falls back to the login screen', async ({ page }) => {
   await expect(page).toHaveURL(/\/login|\/$/, { timeout: 20_000 })
   expect(await page.evaluate(() => localStorage.getItem('nb_token'))).toBeFalsy()
 })
+
+// Full screen (Bot API 8.0): the choice lives in Settings, is kept on the device,
+// and is asked of Telegram at the next launch. Telegram's script is replaced by a
+// recorder, so this proves the page's side of the door, not Telegram's.
+test('full screen is offered in Telegram, asked for, and asked again at the next launch', async ({ page }) => {
+  const botToken = process.env.E2E_TG_BOT_TOKEN
+  const tgId = process.env.E2E_TG_ID
+  test.skip(!botToken || !tgId, 'E2E_TG_BOT_TOKEN and E2E_TG_ID are required')
+
+  await page.route('https://telegram.org/**', (r) => r.abort())
+  await page.addInitScript(() => {
+    localStorage.setItem('neuroboost-onboarding-welcome-seen', 'true')
+    localStorage.setItem('neuroboost-onboarding-checklist-dismissed', 'true')
+    const calls: string[] = []
+    ;(window as unknown as { __tgCalls: string[] }).__tgCalls = calls
+    const handlers: Record<string, Array<() => void>> = {}
+    const wa = {
+      version: '8.0', initData: '', isFullscreen: false,
+      ready() {}, expand() {}, disableVerticalSwipes() {},
+      isVersionAtLeast: () => true,
+      BackButton: { show() {}, hide() {}, onClick() {}, offClick() {} },
+      onEvent(e: string, cb: () => void) { (handlers[e] ||= []).push(cb) },
+      requestFullscreen() { calls.push('request'); wa.isFullscreen = true; handlers.fullscreenChanged?.forEach((f) => f()) },
+      exitFullscreen() { calls.push('exit'); wa.isFullscreen = false; handlers.fullscreenChanged?.forEach((f) => f()) },
+    }
+    ;(window as unknown as { Telegram: unknown }).Telegram = { WebApp: wa }
+  })
+  const initData = signInitData(botToken!, {
+    auth_date: String(Math.floor(Date.now() / 1000)),
+    user: JSON.stringify({ id: Number(tgId), first_name: 'E2E' }),
+  })
+  const hash = `#tgWebAppData=${encodeURIComponent(initData)}&tgWebAppVersion=8.0&tgWebAppPlatform=android`
+  const calls = () => page.evaluate(() => (window as unknown as { __tgCalls: string[] }).__tgCalls)
+
+  // Settings is read-only for this test: no setting is written (the choice is localStorage).
+  await page.goto(`/settings${hash}`)
+  const box = page.getByTestId('telegram-fullscreen')
+  await expect(box).toBeVisible({ timeout: 20_000 })
+  expect(await calls(), 'nothing is requested until the person chooses').toEqual([])
+
+  await box.check()
+  await expect.poll(calls).toEqual(['request'])
+  await expect(page.locator('html')).toHaveClass(/tg-fullscreen/)
+
+  await box.uncheck()
+  await expect.poll(calls).toEqual(['request', 'exit'])
+  await expect(page.locator('html')).not.toHaveClass(/tg-fullscreen/)
+
+  await box.check()
+  await page.reload()
+  await expect(page.getByTestId('telegram-fullscreen')).toBeChecked({ timeout: 20_000 })
+  await expect.poll(calls, 'the saved choice is asked of Telegram at launch').toContain('request')
+})

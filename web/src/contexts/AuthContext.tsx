@@ -23,6 +23,7 @@ import {
 } from '../api/client'
 import { applyCurrentTheme, readThemeChoice, storeThemeChoice } from '../lib/theme/theme'
 import { launchedInTelegram, loadWebApp, pickStartupAuth, prepareWebApp, sessionFitsLaunch } from '../lib/telegram/webApp'
+import { applyFullscreenAtLaunch, watchFullscreen } from '../lib/telegram/fullscreen'
 
 /**
  * AuthContextValue defines the shape of the authentication context.  In addition
@@ -78,7 +79,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // person lands in the app without a login screen. A failed exchange
       // falls through to the ordinary path below rather than stranding them.
       const initData = launchedInTelegram()
-      void loadWebApp().then((wa) => wa && prepareWebApp(wa))
+      void loadWebApp().then((wa) => {
+        if (!wa) return
+        prepareWebApp(wa)
+        watchFullscreen(wa, document.documentElement)
+        applyFullscreenAtLaunch(wa, window.localStorage)
+      })
       const storedTokenValid = Boolean(getStoredToken()) && !isTokenExpired()
       if (pickStartupAuth({ initData, storedTokenValid }) === 'webapp' && initData) {
         try {
