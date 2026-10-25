@@ -39,6 +39,8 @@ interface DayColumnProps {
     /** Minute the cursor sits on, unsnapped. Move only. */
     grabMin?: number
   ) => void;
+  /** A finger held on an event until it was picked up: begin a touch move. */
+  onTouchMoveStart: (day: DayInfo, event: ProcessedEvent, grabMin: number) => void;
   onTouchStart: (info: TouchStart) => void;
   onTouchEnd: (day: DayInfo, startMin: number) => void;
   startAutoScroll: (direction: 'up' | 'down') => void;
@@ -64,6 +66,7 @@ export const DayColumn = memo(function DayColumn({
   onSelect,
   onSelectId,
   onDragStart,
+  onTouchMoveStart,
   onTouchStart,
   onTouchEnd,
   startAutoScroll,
@@ -150,6 +153,22 @@ export const DayColumn = memo(function DayColumn({
     ev.stopPropagation();
   };
 
+  // The finger version of the body branch of handleEventMouseDown: same drag
+  // meta, same grab point, so the maths downstream cannot tell which one it was.
+  const handleEventTouchLift = (el: HTMLElement, clientY: number, event: ProcessedEvent) => {
+    if (!event.id) return;
+    onSelectId(event.id);
+    const track = el.parentElement;
+    if (!track) return;
+    const rect = track.getBoundingClientRect();
+    dragMeta.current = {
+      colTop: rect.top,
+      scrollStart: scrollContainer.current?.scrollTop ?? 0,
+    };
+    const grabYLocal = clientY - rect.top;
+    onTouchMoveStart(day, event, topToMins(grabYLocal));
+  };
+
   const handleTouchStart = (e: React.TouchEvent) => {
     const touch = e.touches[0];
     onTouchStart({ x: touch.clientX, y: touch.clientY, time: Date.now() });
@@ -233,6 +252,7 @@ export const DayColumn = memo(function DayColumn({
             onSelect={onSelect}
             onClick={() => event.id && onSelectId(event.id)}
             onMouseDown={(e) => handleEventMouseDown(e, event)}
+            onTouchLift={(el, _x, y) => handleEventTouchLift(el, y, event)}
           />
         ))}
         

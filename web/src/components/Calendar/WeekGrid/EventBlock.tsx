@@ -3,6 +3,7 @@ import { Users } from 'lucide-react';
 import type { ProcessedEvent, NbEvent } from './weekgrid.types';
 import { formatTimeFromUtc } from './weekgrid.utils';
 import { resolveColor } from '../../../lib/calendar/palette';
+import { TouchHoldBinder } from './TouchHoldBinder';
 
 interface EventBlockProps {
   event: ProcessedEvent;
@@ -12,6 +13,11 @@ interface EventBlockProps {
   onSelect: (event: NbEvent) => void;
   onClick: () => void;
   onMouseDown: (e: React.MouseEvent) => void;
+  /**
+   * A finger held on this block until it was picked up (TOUCH_HOLD_MS, still).
+   * Receives the block's element and the finger's position, and starts the move.
+   */
+  onTouchLift: (el: HTMLElement, clientX: number, clientY: number) => void;
 }
 
 export const EventBlock = memo(function EventBlock({
@@ -22,6 +28,7 @@ export const EventBlock = memo(function EventBlock({
   onSelect,
   onClick,
   onMouseDown,
+  onTouchLift,
 }: EventBlockProps) {
   const isMultiDaySegment = event.span && event.span.spanDays > 1;
   const isFirstSegment = event.span?.isFirstSegment;
@@ -89,6 +96,9 @@ export const EventBlock = memo(function EventBlock({
         left: `calc(${(event.leftPct ?? 0) * 100}% + 2px)`,
         width: `calc(${(event.widthPct ?? 1) * 100}% - 4px)`,
         borderRadius,
+        // iOS Safari raises a callout / magnifier on a long press; picking the event up
+        // is what a long press means here.
+        WebkitTouchCallout: 'none',
         // displayColor already resolved the event-over-calendar precedence AND
         // turned the stored value into paintable CSS (lib/calendar/eventColor.ts).
         // The fallback is for callers that build a ProcessedEvent without going
@@ -106,6 +116,7 @@ export const EventBlock = memo(function EventBlock({
         isMobile ? 'Tap to edit' : 'Click to select, double-click to edit'
       }`}
     >
+      <TouchHoldBinder onLift={onTouchLift} />
       {/* Resize handles */}
       {!isMultiDaySegment && (
         <>

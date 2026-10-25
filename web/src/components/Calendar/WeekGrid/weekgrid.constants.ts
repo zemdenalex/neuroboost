@@ -11,6 +11,14 @@ export const DAY_MS = 24 * 60 * 60 * 1000;
  */
 export const DRAG_THRESHOLD_PX = 5;
 
+/**
+ * Touch: how long a finger must stay on an event before it is picked up, and how
+ * far it may drift meanwhile. Past the slop it is a scroll, not a hold. Our own
+ * choice (Apple and Google publish no number); to become a setting.
+ */
+export const TOUCH_HOLD_MS = 400;
+export const TOUCH_SLOP_PX = 8;
+
 // Auto-scroll settings
 export const EDGE_THRESHOLD = 24;
 export const SCROLL_SPEED = 8;

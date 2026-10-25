@@ -23,7 +23,18 @@ export function useWeekGridDrag({
 }: UseDragProps) {
   const [drag, setDrag] = useState<DragState>(null);
   const dragMeta = useRef<DragMeta | null>(null);
-  const { startAutoScroll, stopAutoScroll } = useAutoScroll(scrollRef);
+  // The last pointer position, so the ghost can be recomputed when the grid
+  // scrolls under a pointer that is standing still (see useAutoScroll).
+  const lastPoint = useRef<{ clientX: number; clientY: number } | null>(null);
+  const moveRef = useRef<((p: { clientX: number; clientY: number }) => void) | null>(null);
+  // Declared here, used by the tick below: whether the drag in progress is a finger's.
+  const touchOwned = useRef(false);
+  const { startAutoScroll, stopAutoScroll } = useAutoScroll(scrollRef, () => {
+    // Fingers only. A mouse parked at the edge has always stopped scrolling on its
+    // next move, and desktop specs (crossday-resize) rely on a parked cursor not
+    // dragging the range along; a finger cannot be parked without being held.
+    if (touchOwned.current && lastPoint.current) moveRef.current?.(lastPoint.current);
+  });
 
   const startCreate = useCallback((day: DayInfo, startMin: number, allDay = false) => {
     setDrag({ kind: 'create', startDayUtc0: day.dayUtc0, endDayUtc0: day.dayUtc0, startMin, curMin: startMin, allDay });
@@ -57,12 +68,28 @@ export function useWeekGridDrag({
     setDrag(buildResizeState('resize-end', day.dayUtc0, event, timezone));
   }, [timezone]);
 
-  const cancelDrag = useCallback(() => { setDrag(null); stopAutoScroll(); }, [stopAutoScroll]);
+  // touchOwned (declared above): true while the drag in progress was begun by a
+  // finger (a completed hold on an event). Only then do the touch listeners below
+  // act: a stray touch must not steer a drag the mouse owns, or finish one a
+  // long-press on an empty slot left waiting (DayColumn.handleTouchEnd → startCreate).
+
+  const startTouchMove = useCallback((day: DayInfo, event: ProcessedEvent, grabMin?: number) => {
+    touchOwned.current = true;
+    startMove(day, event, grabMin);
+  }, [startMove]);
+
+  const cancelDrag = useCallback(() => {
+    touchOwned.current = false;
+    setDrag(null);
+    stopAutoScroll();
+  }, [stopAutoScroll]);
 
   useEffect(() => {
     if (!drag) return;
 
-    const onMove = (ev: MouseEvent) => {
+    // A mouse event and a touch share the two fields the maths needs.
+    const onMove = (ev: { clientX: number; clientY: number }) => {
+      lastPoint.current = { clientX: ev.clientX, clientY: ev.clientY };
       if (!dragMeta.current || !scrollRef.current || !containerRef.current) return;
 
       // Drag threshold, for move AND both resizes. Resize had none, so a plain
@@ -149,6 +176,8 @@ export function useWeekGridDrag({
       });
     };
 
+    moveRef.current = onMove;
+
     const onUp = () => {
       // A drag still pending never cleared the threshold: it was a click.
       const stillPending = drag !== null && drag.kind !== 'create' && drag.pending === true;
@@ -156,13 +185,60 @@ export function useWeekGridDrag({
         stopAutoScroll();
         handleDragComplete(drag, callbacks.onCreate, callbacks.onMoveOrResize);
       }
+      touchOwned.current = false;
       setDrag(null);
+    };
+
+    // The finger. `preventDefault` is only honoured because EventBlock keeps its own
+    // non-passive touchmove listener from touchstart on (a listener added after the
+    // gesture began would be ignored by the browser) — it is what stops the page
+    // scrolling under a lifted event.
+    const onTouchMove = (ev: TouchEvent) => {
+      if (!touchOwned.current) return;
+      const t = ev.touches[0];
+      if (!t) return;
+      if (ev.cancelable) ev.preventDefault();
+      onMove(t);
+    };
+    const onTouchEnd = (ev: TouchEvent) => {
+      if (!touchOwned.current) return;
+      if (ev.cancelable) ev.preventDefault(); // no compatibility mouse events after a drag
+      onUp();
+    };
+    // The browser or the OS took the gesture (a call, an edge swipe): commit nothing.
+    const onTouchCancel = () => {
+      if (!touchOwned.current) return;
+      touchOwned.current = false;
+      setDrag(null);
+      stopAutoScroll();
     };
 
     document.addEventListener('mousemove', onMove);
     document.addEventListener('mouseup', onUp);
-    return () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); stopAutoScroll(); };
+    document.addEventListener('touchmove', onTouchMove, { passive: false });
+    document.addEventListener('touchend', onTouchEnd, { passive: false });
+    document.addEventListener('touchcancel', onTouchCancel);
+    return () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      document.removeEventListener('touchmove', onTouchMove);
+      document.removeEventListener('touchend', onTouchEnd);
+      document.removeEventListener('touchcancel', onTouchCancel);
+      // This cleanup runs after EVERY pointer move (the drag state changes, so the
+      // effect re-registers). For the mouse that has always stopped the edge scroll
+      // each time (kept: see the tick above). A finger that stands still sends no
+      // moves, so its edge scroll must survive the re-registration and stop only
+      // when the drag ends, below.
+      if (!touchOwned.current) stopAutoScroll();
+    };
   }, [drag, mondayUtc0, visibleDays, callbacks, startAutoScroll, stopAutoScroll, scrollRef, containerRef]);
 
-  return { drag, dragMeta, startCreate, startMove, startResizeStart, startResizeEnd, cancelDrag, startAutoScroll, stopAutoScroll };
+  // The drag ended (or the grid went away): stop any edge scroll still running.
+  const dragging = drag !== null;
+  useEffect(() => {
+    if (!dragging) { stopAutoScroll(); lastPoint.current = null; moveRef.current = null; }
+  }, [dragging, stopAutoScroll]);
+  useEffect(() => stopAutoScroll, [stopAutoScroll]);
+
+  return { drag, dragMeta, startCreate, startMove, startTouchMove, startResizeStart, startResizeEnd, cancelDrag, startAutoScroll, stopAutoScroll };
 }
