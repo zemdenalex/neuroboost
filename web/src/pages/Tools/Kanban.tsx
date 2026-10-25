@@ -4,16 +4,19 @@ import { Plus, Settings, X, GripVertical, Clock, Calendar } from 'lucide-react'
 import { listTasks, createTask, updateTask } from '../../api/tasks'
 import type { Task } from '../../api/tasks'
 import { PRIORITY_DOT_COLORS } from '../../lib/priority'
+import { PriorityMark } from '../../components/PriorityMark'
 import { describeDueDate, dueDateColorClass, formatDueDateLabel } from '../../lib/dueDate'
 // Column rules live in a leaf module so they can be tested; this page renders
 // them. KanbanColumnId stays derived from COLUMN_DEFS below, so if the two
 // ever disagree the compiler says so instead of the board quietly misfiling.
-import { COLUMN_TO_STATUS, statusToColumn } from '../../lib/tools/kanban'
+import { COLUMN_TO_STATUS, dropAction, statusToColumn } from '../../lib/tools/kanban'
+import { markDayTaskDone } from '../../api/dayTasks'
+import { todayInZone } from '../../lib/dayTasks/dayColour'
+import { useAuthContext } from '../../contexts/AuthContext'
 
 // ─── Column definitions ──────────────────────────────────────────────────────
 
 const COLUMN_DEFS = [
-  { id: 'INBOX' as const, labelKey: 'kanban.col.inbox', color: 'zinc' },
   { id: 'TODO' as const, labelKey: 'kanban.col.todo', color: 'blue' },
   { id: 'IN_PROGRESS' as const, labelKey: 'kanban.col.inProgress', color: 'yellow' },
   { id: 'SCHEDULED' as const, labelKey: 'kanban.col.scheduled', color: 'purple' },
@@ -26,8 +29,8 @@ type KanbanColumnId = typeof COLUMN_DEFS[number]['id']
 // Colors come from lib/priority (shared across Tasks, calendar, sidebar, Eisenhower).
 
 function PriorityDot({ priority }: { priority: number }) {
-  const color = PRIORITY_DOT_COLORS[priority] ?? PRIORITY_DOT_COLORS[3]
-  return <span className={`inline-block w-2 h-2 rounded-full flex-shrink-0 ${color}`} />
+  // The person's priority style (dot, «●1», «—»), as in the bot (gap list row 16).
+  return <PriorityMark priority={priority} circleClass={PRIORITY_DOT_COLORS[priority] ?? PRIORITY_DOT_COLORS[3]} />
 }
 
 // ─── Column header accent ─────────────────────────────────────────────────────
@@ -166,6 +169,8 @@ interface QuickAddProps {
 }
 
 function QuickAdd({ onAdd, onCancel, placeholder }: QuickAddProps) {
+  const { t } = useTranslation('tools')
+  const addText = t('kanban.add')
   const [value, setValue] = useState('')
   const [loading, setLoading] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -210,7 +215,7 @@ function QuickAdd({ onAdd, onCancel, placeholder }: QuickAddProps) {
           className="flex-1 text-xs bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed
             text-white rounded-md py-1.5 transition-colors"
         >
-          {loading ? '...' : 'Add'}
+          {loading ? '...' : addText}
         </button>
         <button
           type="button"
@@ -282,14 +287,16 @@ function KanbanColumn({
             {tasks.length}
           </span>
         </div>
-        <button
+        {/* Scheduled is view-only: a task gets there by having a time in the
+            calendar, not by a status (lib/tools/kanban.ts dropAction). */}
+        {colDef.id !== 'SCHEDULED' && <button
           onClick={() => onStartAdd(colDef.id)}
           className="w-6 h-6 rounded-md flex items-center justify-center text-zinc-500
             hover:text-zinc-300 hover:bg-zinc-700 transition-colors"
           title={addLabel}
         >
           <Plus className="w-4 h-4" />
-        </button>
+        </button>}
       </div>
 
       {/* Cards */}
@@ -386,6 +393,8 @@ function FilterBar({ priorityFilter, onPriorityChange }: FilterBarProps) {
 
 export default function Kanban() {
   const { t } = useTranslation('tools')
+  const { user } = useAuthContext()
+  const timeZone = user?.timezone || 'Europe/Moscow'
 
   // Tasks state
   const [tasks, setTasks] = useState<Task[]>([])
@@ -408,7 +417,6 @@ export default function Kanban() {
 
   // Translated column labels
   const colLabels: Record<KanbanColumnId, string> = {
-    INBOX: t('kanban.col.inbox'),
     TODO: t('kanban.col.todo'),
     IN_PROGRESS: t('kanban.col.inProgress'),
     SCHEDULED: t('kanban.col.scheduled'),
@@ -464,22 +472,35 @@ export default function Kanban() {
     dragTaskRef.current = null
     if (!task) return
 
-    const newStatus = COLUMN_TO_STATUS[targetColId]
-    const currentColumn = statusToColumn(task.status)
-    if (currentColumn === targetColId) return
+    const action = dropAction(task, targetColId, todayInZone(new Date(), timeZone))
+    if (action.kind === 'none') return
+
+    if (action.kind === 'occurrence') {
+      // A repeating task: today is done, the series stays (lib/tools/kanban.ts).
+      try {
+        await markDayTaskDone(task, action.date)
+        setError(null)
+      } catch {
+        setError(t('kanban.error.move'))
+      }
+      return
+    }
 
     // Optimistic update
+    const newStatus = action.status
     setTasks((prev) =>
       prev.map((t) => (t.id === task.id ? { ...t, status: newStatus } : t))
     )
 
     try {
       await updateTask(task.id, { status: newStatus })
+      setError(null)
     } catch {
-      // Revert on error
+      // Revert, and say so: a card that silently jumps back reads as a bug.
       setTasks((prev) =>
         prev.map((t) => (t.id === task.id ? { ...t, status: task.status } : t))
       )
+      setError(t('kanban.error.move'))
     }
   }
 
@@ -492,12 +513,7 @@ export default function Kanban() {
   }
 
   // ── Grouping & filtering ────────────────────────────────────────────────────
-  // INBOX is a create-only column — tasks created there get TODO status,
-  // but are rendered in the TODO column to avoid duplication.
   function getColumnTasksActual(colId: KanbanColumnId): Task[] {
-    if (colId === 'INBOX') {
-      return []
-    }
     return tasks
       .filter((t) => statusToColumn(t.status) === colId)
       .filter((t) => priorityFilter === null || t.priority === priorityFilter)

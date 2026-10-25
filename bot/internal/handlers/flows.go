@@ -8,7 +8,7 @@ import (
 	"github.com/zemdenalex/neuroboost-bot/internal/api"
 	"github.com/zemdenalex/neuroboost-bot/internal/format"
 	"github.com/zemdenalex/neuroboost-bot/internal/keyboards"
-	"github.com/zemdenalex/neuroboost-bot/internal/parse"
+	"github.com/zemdenalex/neuroboost-bot/parse"
 )
 
 func (h *Handler) startNoteFlow(chatID int64) {

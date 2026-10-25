@@ -100,7 +100,7 @@ export function HintsBubbles() {
           ref={gotItRef}
           type="button"
           onClick={hideHints}
-          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-mono text-white shadow-lg transition-colors hover:bg-blue-700"
+          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-mono text-onaccent shadow-lg transition-colors hover:bg-blue-700"
         >
           {t('hints.gotIt')}
         </button>

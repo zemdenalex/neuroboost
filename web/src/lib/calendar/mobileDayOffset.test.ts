@@ -42,3 +42,14 @@ describe('initialMobileDayOffset', () => {
     expect(initialMobileDayOffset(0, MSK, at(10))).toBe(0);
   });
 });
+
+describe('initialMobileDayOffset with a named day', () => {
+  it('opens the named day, whatever today is', () => {
+    // 2026-09-27 is a Sunday; 2026-09-21 a Monday.
+    expect(initialMobileDayOffset(0, 'Europe/Moscow', new Date('2026-09-23T10:00:00Z'), '2026-09-27')).toBe(6)
+    expect(initialMobileDayOffset(3, 'Europe/Moscow', new Date('2026-09-23T10:00:00Z'), '2026-09-21')).toBe(0)
+  })
+  it('ignores a malformed day', () => {
+    expect(initialMobileDayOffset(1, 'Europe/Moscow', new Date('2026-09-23T10:00:00Z'), 'soon')).toBe(0)
+  })
+})

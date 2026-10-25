@@ -38,22 +38,16 @@ export interface ListFeedbackParams {
   sort_dir?: 'asc' | 'desc'
 }
 
-export interface ImportItem {
-  title: string
-  description: string
-  type: FeedbackType
-  priority: FeedbackPriority
-  status: FeedbackStatus
-  tags: string[]
-  source: string
-}
 
 export async function createFeedback(data: CreateFeedbackRequest): Promise<Feedback> {
   return api.post<Feedback>('/feedback', {
     ...data,
     page_url: data.page_url || window.location.href,
     user_agent: navigator.userAgent,
-  }, false) // Allow anonymous feedback
+    source: 'web',
+    // The token goes along when there is one, so the feedback carries its
+    // sender (Denis 25.09). Without a token the API still takes it, anonymous.
+  })
 }
 
 export async function listFeedback(params?: ListFeedbackParams): Promise<Feedback[]> {
@@ -81,6 +75,3 @@ export async function updateFeedback(
   return api.patch<Feedback>(`/feedback/${id}`, data)
 }
 
-export async function importFeedback(items: ImportItem[]): Promise<{ count: number }> {
-  return api.post<{ count: number }>('/feedback/import', { items })
-}

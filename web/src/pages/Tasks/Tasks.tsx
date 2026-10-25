@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
-import { onTasksChanged } from '../../lib/quickTask/tasksChanged'
+import { announceTasksChanged, onTasksChanged } from '../../lib/quickTask/tasksChanged'
 import { sortWithinPriority } from '../../lib/quickTask/sortTasks'
 import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'react-router-dom'
@@ -20,6 +20,8 @@ import {
   Search,
   Filter,
   CalendarPlus,
+  CalendarClock,
+  ArrowRightLeft,
 } from 'lucide-react'
 import { QuickAddRow } from '../../components/QuickAdd'
 import { showToast } from '../../components/ui/Toast'
@@ -31,6 +33,7 @@ import {
   createTask,
   createTasksBatch,
   updateTask,
+  markOccurrence,
   deleteTask,
   scheduleTask,
   Task,
@@ -41,18 +44,79 @@ import {
   CONTEXT_ICONS,
 } from '../../api/tasks'
 import { answeredToday } from '../../types'
-import { defaultScheduleSlot } from '../../lib/schedule/defaultScheduleSlot'
+import { tickAction, tickedToday, undoOccurrence } from '../../lib/tasks/tickAction'
+import { nestGroups, subtaskProgress } from '../../lib/tasks/taskTree'
+import { todayInZone } from '../../lib/dayTasks/dayColour'
+import { matchesStatusFilter } from '../../lib/tasks/statusFilter'
+import { DayPinSheet } from '../../components/TaskRow/DayPinSheet'
+import { PriorityMark } from '../../components/PriorityMark'
+import { errorKey, readDayPrefs, shiftDay } from '../../lib/dayTasks/dayView'
+import { addDayTask } from '../../api/dayTasks'
+import { REPEAT_CHOICES, repeatChoiceOf, rruleForSave, withRepeatChoice, type RepeatChoice } from '../../lib/tasks/repeatField'
+import { ApiError } from '../../api/client'
+import { linkedStarts, scheduleStart, whenShort, type ScheduleSlotKey } from '../../lib/schedule/scheduleSlot'
+import { listEvents } from '../../api/events'
 import { toDateTimeLocalValue, fromDateTimeLocalValue } from '../../lib/datetime/dateTimeLocal'
 import { ReminderOffsets } from '../../components/ReminderOffsets/ReminderOffsets'
 import { useReminderSettings } from '../../hooks/useReminderSettings'
+import { useAuthContext } from '../../contexts/AuthContext'
+import { useMediaQuery } from '../../hooks/useMediaQuery'
+import { PHONE_QUERY } from '../../lib/layout/headerVariant'
+import { readRowActions } from '../../lib/tasks/rowActions'
+import { RowActionsMenu, SwipeRow, TaskActionSheet } from '../../components/TaskRow/TaskRowActions'
+import { ScheduleChooser } from '../../components/TaskRow/ScheduleChooser'
+import { TagsInput } from '../../components/TagsInput/TagsInput'
+import { LinkSheet, type LinkDone } from '../../components/LinkSheet/LinkSheet'
+
+/** The bot's nag choices (keyboards.NagCodes); the API's floor is 5, ceiling a day. */
+const NAG_MINUTES = [0, 10, 15, 30, 60]
+/** The bot's card buttons (tasks.go dueOffsets, keyboards estimateRow). */
+const DUE_CHIPS = [{ days: 0, key: 'today' }, { days: 1, key: 'tomorrow' }, { days: 7, key: 'week' }]
+const ESTIMATE_CHIPS = [15, 30, 60, 120]
 
 export default function Tasks() {
-  const { t } = useTranslation('tasks')
+  const { t, i18n } = useTranslation('tasks')
   const { t: tc } = useTranslation('common')
+  const { t: td } = useTranslation('daytasks')
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
   const [showEditor, setShowEditor] = useState(false)
   const [editingTask, setEditingTask] = useState<Partial<Task> | null>(null)
+  // Phone task rows: the actions variant chosen in settings (Denis 25.09).
+  const { user } = useAuthContext()
+  const isPhone = useMediaQuery(PHONE_QUERY)
+  const rowActions = readRowActions(user?.settings)
+  const [sheetTask, setSheetTask] = useState<Task | null>(null)
+  // «Запланировать» asks when and how long first (gap list row 4, as the bot).
+  const [schedulingTask, setSchedulingTask] = useState<Task | null>(null)
+  const [pinningTask, setPinningTask] = useState<Task | null>(null)
+  // → Событие: link or move into the calendar, step by step (gap list row 5).
+  const [linkingTask, setLinkingTask] = useState<Task | null>(null)
+  const dayTasksOn = readDayPrefs(user?.settings).enabled
+  const timeZone = user?.timezone || 'Europe/Moscow'
+  // taskId → start of its nearest linked event today or later, for «завтра 09:00» on the row.
+  const [linked, setLinked] = useState<Map<string, string>>(new Map())
+  const openEditor = (task: Task) => {
+    setEditingTask(task)
+    setShowEditor(true)
+  }
+  const deleteFromRow = async (task: Task) => {
+    if (!confirm(t('confirmDelete', { title: task.title }))) return
+    try {
+      await deleteTask(task.id)
+      setTasks(prev => prev.filter(x => x.id !== task.id))
+      // As in the editor's delete: a deleted id left selected miscounts the bulk bar.
+      setSelected(prev => {
+        const next = new Set(prev)
+        next.delete(task.id)
+        return next
+      })
+    } catch (error) {
+      // Keep the row (setTasks is skipped on throw) and avoid an
+      // unhandled rejection. List-level error UI is a follow-up.
+      console.error('Failed to delete task:', error)
+    }
+  }
   const [saving, setSaving] = useState(false)
   const [editorError, setEditorError] = useState<string | null>(null)
   const reminderSettings = useReminderSettings()
@@ -96,6 +160,28 @@ export default function Tasks() {
     const off = onTasksChanged(() => fetchTasks(false))
     return () => { cancelled = true; off() }
   }, [])
+
+  // When each task is on the calendar: ONE events fetch over today … +60 days,
+  // as the bot's linkedFor, never a request per task. Decoration: a failure
+  // leaves the rows without times and the list is not held up by it.
+  useEffect(() => {
+    let cancelled = false
+    const fetchLinked = async () => {
+      const now = new Date()
+      try {
+        const events = await listEvents(
+          startOfLocalDay(now, timeZone, 0).toISOString(),
+          startOfLocalDay(now, timeZone, 60).toISOString(),
+        )
+        if (!cancelled) setLinked(linkedStarts(Array.isArray(events) ? events : [], now, timeZone))
+      } catch (error) {
+        console.error('Failed to load scheduled times:', error)
+      }
+    }
+    void fetchLinked()
+    const off = onTasksChanged(() => void fetchLinked())
+    return () => { cancelled = true; off() }
+  }, [timeZone])
 
   // Arriving from the calendar with one task named.
   //
@@ -153,7 +239,7 @@ export default function Tasks() {
   // Filter and group tasks
   const filteredTasks = useMemo(() => {
     return tasks.filter(task => {
-      if (filterStatus !== 'ALL' && task.status !== filterStatus) return false
+      if (!matchesStatusFilter(task.status, filterStatus)) return false
       // 🔴 A repeating task answered today is not outstanding.
       //
       // Denis, 18.09: «if completed for the day it should stop being in the
@@ -196,8 +282,12 @@ export default function Tasks() {
       groups.set(priority, sortWithinPriority(list))
     }
 
-    return groups
+    // Subtasks under their parent, indented (lib/tasks/taskTree, N2 of pass 3).
+    return nestGroups(groups)
   }, [filteredTasks])
+
+  // «✓ 1/3» on a parent, from every task: a filter must not change the count.
+  const progress = useMemo(() => subtaskProgress(tasks), [tasks])
 
   // Handlers
   const toggleGroup = (priority: number) => {
@@ -228,9 +318,43 @@ export default function Tasks() {
     }
   }
 
+  // A running series answers today's day, not its status (4.11, lib/tasks/tickAction).
+  // 🔴 The date is named: without one the server picks the day the series is
+  // on, which for a Friday task on a Wednesday is Friday, while this row shows
+  // today (review of 731172a, 25.09).
+  const setOccurrence = async (task: Task, state: 'done' | 'skipped' | 'open') => {
+    const previous = task.occurrence_state
+    const shown = state === 'open' ? undefined : state
+    const today = todayInZone(new Date(), user?.timezone || 'Europe/Moscow')
+    setTasks(prev => prev.map(t => (t.id === task.id ? { ...t, occurrence_state: shown } : t)))
+    try {
+      await markOccurrence(task.id, state, today)
+      return true
+    } catch (error) {
+      setTasks(prev => prev.map(t => (t.id === task.id ? { ...t, occurrence_state: previous } : t)))
+      if (error instanceof ApiError && error.code === 'NOT_AN_OCCURRENCE') {
+        showToast(t('toast.notToday', { title: task.title }))
+      } else {
+        console.error('Failed to mark the day:', error)
+      }
+      return false
+    }
+  }
+
   const handleStatusToggle = async (task: Task) => {
+    const action = tickAction(task)
+    if (action.kind === 'occurrence') {
+      const ok = await setOccurrence(task, action.state)
+      if (ok && action.state === 'done') {
+        showToast(t('toast.closedToday', { title: task.title }), {
+          label: t('toast.undo'),
+          onClick: () => void setOccurrence({ ...task, occurrence_state: 'done' }, undoOccurrence(task.occurrence_state)),
+        })
+      }
+      return
+    }
     const previous = task.status
-    const next: TaskStatus = previous === 'DONE' ? 'TODO' : 'DONE'
+    const next = action.next
     const ok = await setStatus(task, next)
     if (ok && next === 'DONE') {
       showToast(t('toast.closed', { title: task.title }), {
@@ -240,18 +364,76 @@ export default function Tasks() {
     }
   }
 
-  // Tap-friendly alternative to drag-scheduling: drop the task on the calendar
-  // at a sensible default slot. Optimistically reflect the SCHEDULED status.
-  const handleScheduleTask = (task: Task) => {
-    const slot = defaultScheduleSlot(new Date(), task.estimated_minutes)
+  // Tap-friendly alternative to drag-scheduling: ask when and how long, as the
+  // bot does (ScheduleChooser), then put the task on the calendar.
+  const handleScheduleTask = (task: Task) => setSchedulingTask(task)
+
+  // 📌 to a day from the task (gap list row 15), as the bot's card does.
+  const pinToDay = async (task: Task, day: string) => {
+    setPinningTask(null)
+    const today = todayInZone(new Date(), user?.timezone || 'Europe/Moscow')
+    try {
+      await addDayTask(day, task.id)
+      const when = day === today ? td('pin.today') : day === shiftDay(today, 1) ? td('pin.tomorrow') : day
+      showToast(td('pin.added', { day: when }))
+    } catch (error) {
+      showToast(td(errorKey(error)))
+    }
+  }
+
+  // The start is resolved at the final tap, like the bot's handleTaskSchedule:
+  // «через час» means an hour from now, not from when the sheet opened.
+  const confirmSchedule = (task: Task, slot: ScheduleSlotKey, minutes: number) => {
+    setSchedulingTask(null)
     return scheduleGuard(async () => {
+      const now = new Date()
+      const start = scheduleStart(slot, now, timeZone)
+      const end = new Date(start.getTime() + minutes * 60_000)
       try {
-        await scheduleTask(task.id, { starts_at: slot.startsAt, ends_at: slot.endsAt, all_day: false })
+        const event = await scheduleTask(task.id, { starts_at: start.toISOString(), ends_at: end.toISOString(), all_day: false })
         setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: 'SCHEDULED' } : t))
+        // From the answer, not a refetch: the row shows its time at once.
+        const startsAt = event?.starts_at || start.toISOString()
+        setLinked(prev => {
+          const current = prev.get(task.id)
+          if (current && Date.parse(current) <= Date.parse(startsAt)) return prev
+          return new Map(prev).set(task.id, startsAt)
+        })
+        showToast(t('toast.scheduled', { when: whenShort(new Date(startsAt), now, timeZone, i18n.language) }))
       } catch (error) {
         console.error('Failed to schedule task:', error)
+        showToast(t('toast.scheduleFailed', { title: task.title }))
       }
     })
+  }
+
+  // After → Событие: say what happened and reload the list and the row times
+  // (announceTasksChanged refetches both). A moved task is gone, so it leaves
+  // the selection too, as in deleteFromRow.
+  const linkedToEvent = (task: Task, done: LinkDone) => {
+    setLinkingTask(null)
+    const when = done.start ? whenShort(done.start, new Date(), timeZone, i18n.language) : ''
+    showToast(t(done.answers.mode === 'link' ? 'link.done.toEventLink' : 'link.done.toEventMove', { when }))
+    if (done.answers.mode === 'move' && !(done.item.repeats && done.answers.repeat === 'once')) {
+      setTasks(prev => prev.filter(x => x.id !== task.id))
+      setSelected(prev => {
+        const next = new Set(prev)
+        next.delete(task.id)
+        return next
+      })
+    }
+    announceTasksChanged()
+  }
+
+  // A subtask from the row menu (gap list row 7): the editor opens with the
+  // parent set, in the parent's calendar — a subtask of a shared task is shared
+  // too (bot pass 3.7), and the server otherwise files it in the personal one.
+  const openSubtaskEditor = (parent: Task) => {
+    setEditingTask({
+      title: '', priority: parent.priority, contexts: [], tags: [], parent_id: parent.id,
+      ...(parent.calendar_id ? { calendar_id: parent.calendar_id } : {}),
+    })
+    setShowEditor(true)
   }
 
   const handleSaveTask = () => {
@@ -275,6 +457,10 @@ export default function Tasks() {
             contexts: editingTask.contexts,
             tags: editingTask.tags,
             reminder_offsets: editingTask.reminder_offsets,
+            rrule: rruleForSave(tasks.find(t => t.id === editingTask.id)?.rrule, editingTask.rrule),
+            // Sent only when changed; 0 stops the nagging (gap list row 13).
+            ...((editingTask.nag_minutes ?? 0) !== (tasks.find(t => t.id === editingTask.id)?.nag_minutes ?? 0)
+              ? { nag_minutes: editingTask.nag_minutes ?? 0 } : {}),
           })
           setTasks(prev => prev.map(t => t.id === updated.id ? updated : t))
         } else {
@@ -293,6 +479,9 @@ export default function Tasks() {
             // Omitted entirely when untouched, so the backend applies the
             // user's default preset. An explicit [] means "deliberately none".
             reminder_offsets: editingTask.reminder_offsets,
+            ...(editingTask.rrule ? { rrule: editingTask.rrule } : {}),
+            ...(editingTask.parent_id ? { parent_id: editingTask.parent_id } : {}),
+            ...(editingTask.nag_minutes ? { nag_minutes: editingTask.nag_minutes } : {}),
           })
           setTasks(prev => [...prev, created])
         }
@@ -349,7 +538,7 @@ export default function Tasks() {
   // Rows in the order they are rendered, so a Shift+click range matches what
   // is on screen rather than the order the data happens to be in.
   const visibleIds = useMemo(
-    () => Array.from(tasksByPriority.values()).flat().map(task => task.id),
+    () => Array.from(tasksByPriority.values()).flat().map(row => row.task.id),
     [tasksByPriority],
   )
 
@@ -370,9 +559,11 @@ export default function Tasks() {
   const selectedTasks = () => tasks.filter(task => selected.has(task.id))
 
   const handleBulkClose = async () => {
-    const batch = selectedTasks().filter(task => task.status !== 'DONE')
+    const batch = selectedTasks().filter(task => !tickedToday(task))
     setSelected(new Set())
-    await Promise.all(batch.map(task => setStatus(task, 'DONE')))
+    await Promise.all(
+      batch.map(task => (tickAction(task).kind === 'occurrence' ? setOccurrence(task, 'done') : setStatus(task, 'DONE'))),
+    )
     if (batch.length > 0) showToast(t('toast.bulkClosed', { count: batch.length }))
   }
 
@@ -404,7 +595,7 @@ export default function Tasks() {
   return (
     <div className="flex flex-col h-full">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-zinc-800 bg-zinc-900">
+        <div className="px-4 sm:px-6 py-4 border-b border-zinc-800 bg-zinc-900">
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-xl font-mono font-semibold text-white">{t('title')}</h1>
             <button
@@ -413,7 +604,7 @@ export default function Tasks() {
                 setEditingTask({ title: '', priority: 3, contexts: [], tags: [] })
                 setShowEditor(true)
               }}
-              className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-mono rounded-lg transition-colors"
+              className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-onaccent text-sm font-mono rounded-lg transition-colors"
             >
               <Plus className="w-4 h-4" />
               {t('newTask')}
@@ -421,18 +612,18 @@ export default function Tasks() {
           </div>
 
           {/* Stats */}
-          <div className="flex items-center gap-6 text-sm">
-            <span className="text-zinc-400">
+          <div data-testid="task-stats" className="flex flex-wrap items-center gap-x-6 gap-y-1 text-sm">
+            <span className="whitespace-nowrap text-zinc-400">
               {t('stat.total')} <strong className="text-white">{stats.total}</strong>
             </span>
-            <span className="text-zinc-400">
+            <span className="whitespace-nowrap text-zinc-400">
               {t('stat.done')} <strong className="text-green-400">{stats.done}</strong>
             </span>
-            <span className="text-zinc-400">
+            <span className="whitespace-nowrap text-zinc-400">
               {t('stat.todo')} <strong className="text-blue-400">{stats.todo}</strong>
             </span>
             {stats.overdue > 0 && (
-              <span className="text-zinc-400">
+              <span className="whitespace-nowrap text-zinc-400">
                 {t('stat.overdue')} <strong className="text-red-400">{stats.overdue}</strong>
               </span>
             )}
@@ -441,7 +632,7 @@ export default function Tasks() {
                 them would make the morning's work disappear — which is the
                 opposite of the point. Denis asked for «✅ сегодня: N». */}
             {answeredCount > 0 && (
-              <span className="text-zinc-400" data-testid="answered-today">
+              <span className="whitespace-nowrap text-zinc-400" data-testid="answered-today">
                 {t('stat.answeredToday')} <strong className="text-green-400">{answeredCount}</strong>
               </span>
             )}
@@ -480,7 +671,7 @@ export default function Tasks() {
         </div>
 
         {/* Task List */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
           {selected.size > 0 && (
             <div className="flex items-center gap-3 rounded-lg border border-blue-900 bg-blue-950/40 px-4 py-2">
               <span className="font-mono text-sm text-blue-200">{t('bulk.count', { count: selected.size })}</span>
@@ -510,6 +701,10 @@ export default function Tasks() {
           <QuickAddRow
             autoFocus
             onCreate={handleQuickCreate}
+            onUndo={async (task) => {
+              await deleteTask(task.id)
+              setTasks(prev => prev.filter(x => x.id !== task.id))
+            }}
             onCreateMany={handleQuickCreateMany}
             onOpenFull={(draft) => {
               setEditingTask({ contexts: [], tags: [], ...draft })
@@ -550,7 +745,7 @@ export default function Tasks() {
                       ) : (
                         <ChevronRight className="w-4 h-4 text-zinc-500" />
                       )}
-                      <div className={`w-3 h-3 rounded-full ${PRIORITY_COLORS[priority]}`} />
+                      <PriorityMark priority={Number(priority)} size="md" circleClass={PRIORITY_COLORS[priority]} />
                       <span className="font-mono font-medium text-white">
                         {t(`priority.${priority}`)}
                       </span>
@@ -561,137 +756,203 @@ export default function Tasks() {
                   {/* Tasks */}
                   {expandedGroups.has(priority) && (
                     <div className="border-t border-zinc-800">
-                      {priorityTasks.map(task => (
-                        <div
-                          key={task.id}
-                          id={`task-${task.id}`}
-                          className={`flex items-center gap-3 px-4 py-3 border-b border-zinc-800/50 last:border-b-0 transition-colors group ${
-                            highlightId === task.id ? 'bg-blue-900/30 ring-1 ring-blue-500' : selected.has(task.id) ? 'bg-blue-950/40' : 'hover:bg-zinc-800/30'
-                          }`}
-                        >
-                          {/* Selection — Shift+click extends from the last plain click.
-                              Hidden at rest so the row shows ONE control and the
-                              "done" circle is unambiguous; it fades in on hover, on
-                              keyboard focus, and stays up for every row while a
-                              selection exists.
-                              Opacity rather than `hidden`: a display:none checkbox
-                              leaves the Tab order, which would make bulk selection
-                              unreachable without a mouse. */}
-                          <input
-                            type="checkbox"
-                            checked={selected.has(task.id)}
-                            onChange={() => {}}
-                            onClick={(e) => handleRowSelect(task.id, e.shiftKey)}
-                            aria-label={t('bulk.select', { title: task.title })}
-                            className={`shrink-0 accent-blue-500 transition-opacity focus-visible:opacity-100 ${
-                              selected.size > 0 ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100'
-                            }`}
-                          />
-                          {/* Status toggle */}
-                          <button
-                            data-hint="tasks.complete"
-                            onClick={() => handleStatusToggle(task)}
-                            className="shrink-0"
-                          >
-                            {task.status === 'DONE' ? (
-                              <CheckCircle className="w-5 h-5 text-green-500" />
-                            ) : (
-                              <Circle className="w-5 h-5 text-zinc-600 hover:text-zinc-400" />
+                      {priorityTasks.map(({ task, depth }) => {
+                        const sub = progress.get(task.id)
+                        const phoneVariant = isPhone ? rowActions : null
+                        const rowTone =
+                          highlightId === task.id ? 'bg-blue-900/30 ring-1 ring-blue-500' : selected.has(task.id) ? 'bg-blue-950/40' : 'hover:bg-zinc-800/30'
+                        const body = (
+                          <>
+                            {depth > 0 && (
+                              <span
+                                aria-hidden
+                                data-testid="subtask-indent"
+                                className="shrink-0 self-stretch border-l border-zinc-700"
+                                style={{ marginLeft: (depth - 1) * 20, width: 12 }}
+                              />
                             )}
-                          </button>
-
-                          {/* Task content */}
-                          <div className="flex-1 min-w-0">
-                            <div className={`font-mono text-sm ${task.status === 'DONE' ? 'text-zinc-500 line-through' : 'text-white'}`}>
-                              {task.title}
-                            </div>
-                            
-                            {/* Meta info */}
-                            <div className="flex items-center gap-3 mt-1">
-                              {task.due_date && (
-                                <span className={`flex items-center gap-1 text-xs ${
-                                  new Date(task.due_date) < new Date() && task.status !== 'DONE'
-                                    ? 'text-red-400'
-                                    : 'text-zinc-500'
-                                }`}>
-                                  <Calendar className="w-3 h-3" />
-                                  {new Date(task.due_date).toLocaleDateString()}
-                                </span>
-                              )}
-                              {task.estimated_minutes && (
-                                <span className="flex items-center gap-1 text-xs text-zinc-500">
-                                  <Clock className="w-3 h-3" />
-                                  {task.estimated_minutes}m
-                                </span>
-                              )}
-                              {task.contexts?.map(ctx => (
-                                <span key={ctx} className="text-xs text-zinc-500">
-                                  {CONTEXT_ICONS[ctx] || ''} {ctx}
-                                </span>
-                              ))}
-                              {task.tags?.map(tag => (
-                                <span key={tag} className="flex items-center gap-1 text-xs text-zinc-500">
-                                  <Tag className="w-3 h-3" />
-                                  {tag}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-
-                          {/* Actions — always visible on touch (no hover), hover-revealed on desktop */}
-                          <div className="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                            {/* Selection — Shift+click extends from the last plain click.
+                                Hidden at rest so the row shows ONE control and the
+                                "done" circle is unambiguous; it fades in on hover, on
+                                keyboard focus, and stays up for every row while a
+                                selection exists.
+                                Opacity rather than `hidden`: a display:none checkbox
+                                leaves the Tab order, which would make bulk selection
+                                unreachable without a mouse. */}
+                            <input
+                              type="checkbox"
+                              checked={selected.has(task.id)}
+                              onChange={() => {}}
+                              onClick={(e) => handleRowSelect(task.id, e.shiftKey)}
+                              aria-label={t('bulk.select', { title: task.title })}
+                              className={`shrink-0 accent-blue-500 transition-opacity focus-visible:opacity-100 ${
+                                selected.size > 0
+                                  ? 'opacity-100'
+                                  : // A phone has no hover, so there it would be an invisible
+                                    // control taking the row's width that a tap beside the
+                                    // circle silently ticks (tour 25.09, MW10): not drawn.
+                                    'hidden md:block opacity-0 group-hover:opacity-100 group-focus-within:opacity-100'
+                              }`}
+                            />
+                            {/* Status toggle */}
                             <button
-                              data-hint="tasks.schedule"
-                              onClick={() => handleScheduleTask(task)}
-                              title={t('schedule')}
-                              aria-label={t('schedule')}
-                              className="p-1.5 text-zinc-500 hover:text-blue-400 hover:bg-zinc-700 rounded transition-colors"
+                              data-hint="tasks.complete"
+                              onClick={() => handleStatusToggle(task)}
+                              data-testid="task-tick"
+                              className="shrink-0"
                             >
-                              <CalendarPlus className="w-4 h-4" />
+                              {tickedToday(task) ? (
+                                <CheckCircle className="w-5 h-5 text-green-500" />
+                              ) : (
+                                <Circle className="w-5 h-5 text-zinc-600 hover:text-zinc-400" />
+                              )}
                             </button>
-                            <button
-                              onClick={() => {
-                                setEditingTask(task)
-                                setShowEditor(true)
-                              }}
-                              // Icon-only, like its neighbours — but unlike them
-                              // it carried no accessible name at all, so screen
-                              // readers announced it as an unlabelled button.
-                              title={t('editTask')}
-                              aria-label={t('editTask')}
-                              // Addressable by something that does not change
-                              // with the interface language. The accessible
-                              // name is the right thing for a screen reader and
-                              // the wrong thing for a test: e2e looked for
-                              // "Edit Task" and staging rendered "Редактировать
-                              // задачу", because the account's language comes
-                              // from server settings and outranks anything the
-                              // spec seeds into localStorage.
-                              data-testid="task-edit"
-                              className="p-1.5 text-zinc-500 hover:text-white hover:bg-zinc-700 rounded transition-colors"
-                            >
-                              <Edit2 className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={async () => {
-                                if (confirm(t('confirmDelete', { title: task.title }))) {
-                                  try {
-                                    await deleteTask(task.id)
-                                    setTasks(prev => prev.filter(t => t.id !== task.id))
-                                  } catch (error) {
-                                    // Keep the row (setTasks is skipped on throw) and avoid an
-                                    // unhandled rejection. List-level error UI is a follow-up.
-                                    console.error('Failed to delete task:', error)
+
+                            {/* Task content */}
+                            <div className="flex-1 min-w-0">
+                              <div className={`font-mono text-sm ${tickedToday(task) ? 'text-zinc-500 line-through' : 'text-white'}`}>
+                                {task.title}
+                                {sub && (
+                                  <span data-testid="subtask-progress" className="ml-2 text-xs text-zinc-500">
+                                    ✓ {sub.done}/{sub.total}
+                                  </span>
+                                )}
+                              </div>
+                              
+                              {/* Meta info */}
+                              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
+                                {task.due_date && (
+                                  <span className={`flex items-center gap-1 text-xs ${
+                                    // A running series' due_date is the day it began: never «overdue».
+                                    new Date(task.due_date) < new Date() && task.status !== 'DONE' && !task.rrule
+                                      ? 'text-red-400'
+                                      : 'text-zinc-500'
+                                  }`}>
+                                    <Calendar className="w-3 h-3" />
+                                    {new Date(task.due_date).toLocaleDateString()}
+                                  </span>
+                                )}
+                                {task.estimated_minutes && (
+                                  <span className="flex items-center gap-1 text-xs text-zinc-500">
+                                    <Clock className="w-3 h-3" />
+                                    {task.estimated_minutes}m
+                                  </span>
+                                )}
+                                {linked.has(task.id) && (
+                                  <span data-testid="task-scheduled-at" className="flex items-center gap-1 text-xs text-blue-400">
+                                    <CalendarClock className="w-3 h-3" />
+                                    {whenShort(new Date(linked.get(task.id)!), new Date(), timeZone, i18n.language)}
+                                  </span>
+                                )}
+                                {task.contexts?.map(ctx => (
+                                  <span key={ctx} className="text-xs text-zinc-500">
+                                    {CONTEXT_ICONS[ctx] || ''} {ctx}
+                                  </span>
+                                ))}
+                                {task.tags?.map(tag => (
+                                  <span key={tag} className="flex items-center gap-1 text-xs text-zinc-500">
+                                    <Tag className="w-3 h-3" />
+                                    {tag}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Actions. Desktop: icons revealed on hover. Phone: the variant
+                                chosen in settings (lib/tasks/rowActions; Denis 25.09). */}
+                            {phoneVariant === 'menu' && (
+                              <RowActionsMenu
+                                title={task.title}
+                                onSchedule={() => handleScheduleTask(task)}
+                                onEdit={() => openEditor(task)}
+                                onDelete={() => void deleteFromRow(task)}
+                                onAddSubtask={() => openSubtaskEditor(task)}
+                                onPinDay={dayTasksOn ? () => setPinningTask(task) : undefined}
+                                onToEvent={() => setLinkingTask(task)}
+                              />
+                            )}
+                            {!phoneVariant && (
+                            <div className="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                              <button
+                                data-hint="tasks.schedule"
+                                onClick={() => handleScheduleTask(task)}
+                                title={t('schedule')}
+                                aria-label={t('schedule')}
+                                className="p-1.5 text-zinc-500 hover:text-blue-400 hover:bg-zinc-700 rounded transition-colors"
+                              >
+                                <CalendarPlus className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => setLinkingTask(task)}
+                                title={t('link.toEvent')}
+                                aria-label={t('link.toEvent')}
+                                data-testid="task-to-event"
+                                className="p-1.5 text-zinc-500 hover:text-blue-400 hover:bg-zinc-700 rounded transition-colors"
+                              >
+                                <ArrowRightLeft className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => openEditor(task)}
+                                // Icon-only, like its neighbours — but unlike them
+                                // it carried no accessible name at all, so screen
+                                // readers announced it as an unlabelled button.
+                                title={t('editTask')}
+                                aria-label={t('editTask')}
+                                // Addressable by something that does not change
+                                // with the interface language. The accessible
+                                // name is the right thing for a screen reader and
+                                // the wrong thing for a test: e2e looked for
+                                // "Edit Task" and staging rendered "Редактировать
+                                // задачу", because the account's language comes
+                                // from server settings and outranks anything the
+                                // spec seeds into localStorage.
+                                data-testid="task-edit"
+                                className="p-1.5 text-zinc-500 hover:text-white hover:bg-zinc-700 rounded transition-colors"
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => void deleteFromRow(task)}
+                                className="p-1.5 text-zinc-500 hover:text-red-400 hover:bg-zinc-700 rounded transition-colors"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                            )}
+                          </>
+                        )
+                        if (phoneVariant === 'swipe') {
+                          return (
+                            <div key={task.id} id={`task-${task.id}`} className="border-b border-zinc-800/50 last:border-b-0">
+                              <SwipeRow
+                                onSchedule={() => handleScheduleTask(task)}
+                                onDelete={() => void deleteFromRow(task)}
+                                onTap={() => openEditor(task)}
+                              >
+                                <div className={`flex items-center gap-3 px-4 py-3 group ${rowTone}`}>{body}</div>
+                              </SwipeRow>
+                            </div>
+                          )
+                        }
+                        return (
+                          <div
+                            key={task.id}
+                            id={`task-${task.id}`}
+                            data-testid={phoneVariant === 'card' ? 'task-row-card' : undefined}
+                            onClick={
+                              phoneVariant === 'card'
+                                ? (e) => {
+                                    // The row opens its sheet; its own controls keep their job.
+                                    if (!(e.target as HTMLElement).closest('button, input, a')) setSheetTask(task)
                                   }
-                                }
-                              }}
-                              className="p-1.5 text-zinc-500 hover:text-red-400 hover:bg-zinc-700 rounded transition-colors"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+                                : undefined
+                            }
+                            className={`flex items-center gap-3 px-4 py-3 border-b border-zinc-800/50 last:border-b-0 transition-colors group ${rowTone}`}
+                          >
+                            {body}
                           </div>
-                        </div>
-                      ))}
+                        )
+                      })}
                     </div>
                   )}
                 </div>
@@ -699,9 +960,51 @@ export default function Tasks() {
           )}
         </div>
 
+        {sheetTask && (
+          <TaskActionSheet
+            title={sheetTask.title}
+            onSchedule={() => handleScheduleTask(sheetTask)}
+            onEdit={() => openEditor(sheetTask)}
+            onDelete={() => void deleteFromRow(sheetTask)}
+            onAddSubtask={() => openSubtaskEditor(sheetTask)}
+            onPinDay={dayTasksOn ? () => setPinningTask(sheetTask) : undefined}
+            onToEvent={() => setLinkingTask(sheetTask)}
+            onClose={() => setSheetTask(null)}
+          />
+        )}
+
+        {pinningTask && (
+          <DayPinSheet
+            title={pinningTask.title}
+            today={todayInZone(new Date(), user?.timezone || 'Europe/Moscow')}
+            tomorrow={shiftDay(todayInZone(new Date(), user?.timezone || 'Europe/Moscow'), 1)}
+            onPick={(day) => void pinToDay(pinningTask, day)}
+            onClose={() => setPinningTask(null)}
+          />
+        )}
+
+        {schedulingTask && (
+          <ScheduleChooser
+            title={schedulingTask.title}
+            estimatedMinutes={schedulingTask.estimated_minutes}
+            timeZone={timeZone}
+            onPick={(slot, minutes) => void confirmSchedule(schedulingTask, slot, minutes)}
+            onClose={() => setSchedulingTask(null)}
+          />
+        )}
+
+        {linkingTask && (
+          <LinkSheet
+            source={{ kind: 'task', task: linkingTask, children: tasks.filter(x => x.parent_id === linkingTask.id).length, linkedEvent: linked.has(linkingTask.id) }}
+            timeZone={timeZone}
+            onDone={(done) => linkedToEvent(linkingTask, done)}
+            onClose={() => setLinkingTask(null)}
+          />
+        )}
+
         {/* Task Editor Modal */}
         {showEditor && editingTask && (
-          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+          <div className="fixed inset-0 bg-scrim/60 flex items-center justify-center z-50">
             <div className="bg-zinc-900 border border-zinc-700 rounded-lg w-full max-w-lg p-6 space-y-4 max-h-[90vh] overflow-y-auto">
               <h2 className="text-lg font-mono font-semibold text-white">
                 {editingTask.id ? t('editTask') : t('newTask')}
@@ -727,6 +1030,20 @@ export default function Tasks() {
                   placeholder={t('form.descriptionPlaceholder')}
                   rows={3}
                   className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white font-mono focus:outline-none focus:border-blue-500 resize-none"
+                />
+              </div>
+
+              {/* Tags of an existing task too, as the bot's card (gap list row 22):
+                  the save already sent `tags`, but there was no field to change them. */}
+              <div>
+                <label htmlFor="task-tags" className="block text-sm text-zinc-400 mb-1">{t('form.tags')}</label>
+                <TagsInput
+                  key={editingTask.id ?? 'new'}
+                  id="task-tags"
+                  tags={editingTask.tags}
+                  onChange={(tags) => setEditingTask(prev => ({ ...prev!, tags }))}
+                  placeholder={t('form.tagsPlaceholder')}
+                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white font-mono focus:outline-none focus:border-blue-500"
                 />
               </div>
 
@@ -765,7 +1082,44 @@ export default function Tasks() {
                     onChange={(e) => setEditingTask(prev => ({ ...prev!, due_date: e.target.value ? fromDateTimeLocalValue(e.target.value) : undefined }))}
                     className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white font-mono focus:outline-none focus:border-blue-500"
                   />
+                  {/* One tap instead of a date wheel (gap list row 14), as the
+                      bot's card: now plus 0, 1 or 7 days. */}
+                  <div className="mt-1.5 flex flex-wrap gap-1.5">
+                    {DUE_CHIPS.map(({ days, key }) => (
+                      <button
+                        key={key}
+                        type="button"
+                        data-testid={`task-due-${key}`}
+                        onClick={() => {
+                          const due = new Date()
+                          due.setDate(due.getDate() + days)
+                          setEditingTask(prev => ({ ...prev!, due_date: due.toISOString() }))
+                        }}
+                        className="px-2 py-1 rounded border border-zinc-700 bg-zinc-800 text-xs font-mono text-zinc-300 hover:border-zinc-500"
+                      >
+                        {t(`due.${key}`)}
+                      </button>
+                    ))}
+                  </div>
                 </div>
+              </div>
+
+              <div>
+                <label htmlFor="task-repeat" className="block text-sm text-zinc-400 mb-1">{t('form.repeat')}</label>
+                <select
+                  id="task-repeat"
+                  data-testid="task-repeat"
+                  value={repeatChoiceOf(editingTask.rrule)}
+                  onChange={(e) => {
+                    const original = tasks.find(t => t.id === editingTask.id)?.rrule
+                    setEditingTask(prev => ({ ...prev!, rrule: withRepeatChoice(original, e.target.value as RepeatChoice) }))
+                  }}
+                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white font-mono focus:outline-none focus:border-blue-500"
+                >
+                  {REPEAT_CHOICES.map((c) => (
+                    <option key={c} value={c}>{t(`repeat.${c}`)}</option>
+                  ))}
+                </select>
               </div>
 
               <div>
@@ -777,6 +1131,22 @@ export default function Tasks() {
                   placeholder={t('form.estimatedPlaceholder')}
                   className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white font-mono focus:outline-none focus:border-blue-500"
                 />
+                <div className="mt-1.5 flex flex-wrap gap-1.5">
+                  {ESTIMATE_CHIPS.map((m) => (
+                    <button
+                      key={m}
+                      type="button"
+                      data-testid={`task-estimate-${m}`}
+                      aria-pressed={editingTask.estimated_minutes === m}
+                      onClick={() => setEditingTask(prev => ({ ...prev!, estimated_minutes: m }))}
+                      className={`px-2 py-1 rounded border text-xs font-mono hover:border-zinc-500 ${
+                        editingTask.estimated_minutes === m ? 'border-blue-500 bg-zinc-800 text-white' : 'border-zinc-700 bg-zinc-800 text-zinc-300'
+                      }`}
+                    >
+                      {m < 60 ? `${m}m` : `${m / 60}h`}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {/* Reminders count back from due_date, so without one there is
@@ -792,6 +1162,21 @@ export default function Tasks() {
                   presets={reminderSettings.presets}
                   disabled={!editingTask.due_date}
                 />
+                {/* How often an unanswered reminder comes back, as the bot's
+                    task card (gap list row 13): per task, same values, 0 = once. */}
+                <label htmlFor="task-nag" className="block text-sm text-zinc-400 mt-3 mb-1">{t('form.nag')}</label>
+                <select
+                  id="task-nag"
+                  data-testid="task-nag"
+                  value={editingTask.nag_minutes ?? 0}
+                  disabled={!editingTask.due_date}
+                  onChange={(e) => setEditingTask(prev => ({ ...prev!, nag_minutes: Number(e.target.value) }))}
+                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white font-mono focus:outline-none focus:border-blue-500 disabled:opacity-50"
+                >
+                  {NAG_MINUTES.map((m) => (
+                    <option key={m} value={m}>{m === 0 ? t('nag.off') : m === 60 ? t('nag.hour') : t('nag.minutes', { m })}</option>
+                  ))}
+                </select>
               </div>
 
               <div>
@@ -810,7 +1195,7 @@ export default function Tasks() {
                       }}
                       className={`px-3 py-1.5 rounded-lg text-sm font-mono transition-colors ${
                         editingTask.contexts?.includes(ctx)
-                          ? 'bg-blue-600 text-white'
+                          ? 'bg-blue-600 text-onaccent'
                           : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
                       }`}
                     >
@@ -851,7 +1236,7 @@ export default function Tasks() {
                   <button
                     onClick={handleSaveTask}
                     disabled={!editingTask.title || saving}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-zinc-700 disabled:text-zinc-500 text-white rounded-lg transition-colors"
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-zinc-700 disabled:text-zinc-500 text-onaccent rounded-lg transition-colors"
                   >
                     {tc('action.save')}
                   </button>

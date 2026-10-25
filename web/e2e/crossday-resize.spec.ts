@@ -1,3 +1,4 @@
+import { scrollGridToTop } from './fixtures/grid'
 import { test, expect } from './fixtures/auth'
 import { request as playwrightRequest, type APIRequestContext } from '@playwright/test'
 import { localMidnightUtc, localWeekday } from './fixtures/localTime'
@@ -17,7 +18,7 @@ import { localMidnightUtc, localWeekday } from './fixtures/localTime'
  * what the ghost drew. The assertion is against the API, not the DOM.
  */
 
-const API_BASE = process.env.E2E_API_URL ?? process.env.E2E_BASE_URL ?? 'https://dev.neuroboost.website'
+const API_BASE = process.env.E2E_API_URL ?? process.env.E2E_BASE_URL ?? 'https://dev.neuroboost.space'
 const HOUR = 3600 * 1000
 
 async function apiContext(token: string): Promise<APIRequestContext> {
@@ -95,6 +96,9 @@ test.describe('cross-day resize', () => {
     const dayWidth = gridBox!.width / 7
 
     const handle = block.locator('div.cursor-ns-resize').last()
+    // The grid opens near the current hour since MW11: back to 00:00, the
+    // screen this spec's time band was chosen for.
+    await scrollGridToTop(authedPage)
     const handleBox = await handle.boundingBox()
     expect(handleBox, 'the event must expose a bottom resize handle').not.toBeNull()
 

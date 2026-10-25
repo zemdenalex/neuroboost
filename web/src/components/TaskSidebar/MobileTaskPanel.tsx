@@ -12,6 +12,7 @@ interface MobileTaskPanelProps {
   onSelectTask: (task: Task) => void;
   onEditTask: (task: Task) => void;
   onUpdateTask: (id: string, updates: Partial<Task>) => Promise<void>;
+  onAnswerDay: (task: Task, state: 'done' | 'open') => Promise<void>;
   onCreateTask?: () => void;
 }
 
@@ -23,6 +24,7 @@ export function MobileTaskPanel({
   onSelectTask,
   onEditTask,
   onUpdateTask,
+  onAnswerDay,
   onCreateTask,
 }: MobileTaskPanelProps) {
   const { t } = useTranslation('tasks');
@@ -105,7 +107,7 @@ export function MobileTaskPanel({
     <div className="lg:hidden fixed inset-0 z-40 font-mono">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/50"
+        className="absolute inset-0 bg-scrim/50"
         onClick={onClose}
       />
 
@@ -138,6 +140,7 @@ export function MobileTaskPanel({
             onSelectTask={onSelectTask}
             onEditTask={onEditTask}
             onUpdateTask={onUpdateTask}
+            onAnswerDay={onAnswerDay}
             onCreateTask={onCreateTask}
           />
         </div>

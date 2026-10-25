@@ -5,12 +5,13 @@ type: learning
 status: verified
 verified_at: 2026-08-10
 tags: [neuroboost, verification, process, loop]
-weight: { importance: 5, connectivity: 4, access: 1, last_accessed: 2026-09-23 }
+weight: { importance: 5, connectivity: 6, access: 1, last_accessed: 2026-09-26 }
 sources:
   - file: ".remember/night-loop-2026-08-10.md §9-бис против §9 шаг 6"
   - file: "E:/Projects/.claude/rules/source-registry.md — слой 5"
 stakes: medium
 links:
+  - relates-to: "[[learning-govulncheck-measures-the-local-toolchain]]"
   - relates-to: "[[entity-e2e-playwright-harness]]"
   - relates-to: "[[learning-checkbox-in-a-plan-is-a-claim-not-evidence]]"
 ---

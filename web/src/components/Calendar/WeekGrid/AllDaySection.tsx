@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { Users } from 'lucide-react';
-import { ALL_DAY_HEIGHT, DAY_MS } from './weekgrid.constants';
+import { DAY_MS } from './weekgrid.constants';
+import { ALL_DAY_FULL } from '../../../lib/calendar/calendarChrome';
 import type { ProcessedEvent, DragState, NbEvent, DayInfo } from './weekgrid.types';
 import { getTimezoneOffsetMs, formatAllDayGhostLabel } from './weekgrid.utils';
 import { resolveColor } from '../../../lib/calendar/palette';
@@ -16,6 +17,8 @@ interface AllDaySectionProps {
   onSelect: (event: NbEvent) => void;
   onSelectId: (id: string) => void;
   onDragStart: (dayUtc0: number, eventId?: string, span?: number) => void;
+  /** Bar height: thin on a phone while empty (lib/calendar/calendarChrome). */
+  height: number;
 }
 
 export function AllDaySection({
@@ -29,6 +32,7 @@ export function AllDaySection({
   onSelect,
   onSelectId,
   onDragStart,
+  height,
 }: AllDaySectionProps) {
   const { t, i18n } = useTranslation('calendar');
   const offset = getTimezoneOffsetMs(timezone);
@@ -36,7 +40,7 @@ export function AllDaySection({
   return (
     <div 
       className="col-span-full sticky top-0 z-30 bg-zinc-900 border-b border-zinc-700"
-      style={{ height: ALL_DAY_HEIGHT }}
+      style={{ height }}
     >
       <div className={`grid gap-px h-full ${
         visibleDays === 1 ? 'grid-cols-1' : 
@@ -181,7 +185,7 @@ function AllDayCreateGhost({
       className="absolute bg-emerald-400/40 border border-emerald-400/60 pointer-events-none transition-all duration-150 flex items-center justify-center"
       style={{
         top: 25,
-        height: ALL_DAY_HEIGHT - 30,
+        height: ALL_DAY_FULL - 30,
         left: `calc(${leftPercent}% + 4px)`,
         width: `calc(${widthPercent}% - 8px)`,
         borderRadius: '6px',
@@ -203,7 +207,7 @@ function SingleAllDayGhost({ drag, mondayUtc0, visibleDays, offset, language }: 
   
   return (
     <div className="absolute bg-emerald-400/40 border border-emerald-400/60 pointer-events-none flex items-center justify-center"
-      style={{ top: 25, height: ALL_DAY_HEIGHT - 30, left: `calc(${(dayIndex / visibleDays) * 100}% + 4px)`,
+      style={{ top: 25, height: ALL_DAY_FULL - 30, left: `calc(${(dayIndex / visibleDays) * 100}% + 4px)`,
         width: `calc(${(1 / visibleDays) * 100}% - 8px)`, borderRadius: '6px', zIndex: 50 }}>
       <span className="text-xs font-mono text-emerald-100 bg-emerald-800/90 px-1 rounded">{label}</span>
     </div>

@@ -13,11 +13,13 @@ interface UseDragProps {
   timezone: string;
   scrollRef: React.RefObject<HTMLDivElement>;
   containerRef: React.RefObject<HTMLDivElement>;
+  /** Current all-day bar height; a ref because the bar's height depends on this hook's own drag. */
+  allDayHeightRef?: React.MutableRefObject<number>;
   callbacks: Pick<WeekGridCallbacks, 'onCreate' | 'onMoveOrResize'>;
 }
 
 export function useWeekGridDrag({
-  mondayUtc0, visibleDays, timezone, scrollRef, containerRef, callbacks,
+  mondayUtc0, visibleDays, timezone, scrollRef, containerRef, callbacks, allDayHeightRef,
 }: UseDragProps) {
   const [drag, setDrag] = useState<DragState>(null);
   const dragMeta = useRef<DragMeta | null>(null);
@@ -82,8 +84,9 @@ export function useWeekGridDrag({
       const containerRect = containerRef.current.getBoundingClientRect();
       
       // Auto-scroll
-      const yInScroll = ev.clientY - scrollRect.top - ALL_DAY_HEIGHT - DAY_HEADER_HEIGHT;
-      const timeGridHeight = scrollRect.height - ALL_DAY_HEIGHT - DAY_HEADER_HEIGHT;
+      const allDay = allDayHeightRef?.current ?? ALL_DAY_HEIGHT;
+      const yInScroll = ev.clientY - scrollRect.top - allDay - DAY_HEADER_HEIGHT;
+      const timeGridHeight = scrollRect.height - allDay - DAY_HEADER_HEIGHT;
       if (yInScroll < EDGE_THRESHOLD && scrollRef.current.scrollTop > 0) startAutoScroll('up');
       else if (yInScroll > timeGridHeight - EDGE_THRESHOLD) startAutoScroll('down');
       else stopAutoScroll();

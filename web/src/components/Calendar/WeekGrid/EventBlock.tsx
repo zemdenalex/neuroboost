@@ -76,7 +76,7 @@ export const EventBlock = memo(function EventBlock({
       className={`absolute rounded border font-mono overflow-hidden
         ${selected ? 'cursor-grab' : 'cursor-pointer'}
         ${selected
-          ? 'border-blue-400 ring-2 ring-blue-400/50 bg-blue-600/90 text-white shadow-lg shadow-blue-500/20'
+          ? 'border-blue-400 ring-2 ring-blue-400/50 bg-blue-600/90 text-onaccent shadow-lg shadow-blue-500/20'
           : 'border-zinc-600 bg-zinc-800/95 hover:bg-zinc-700/95 text-zinc-100'
         }
         ${isMultiDaySegment ? 'border-l-4 border-l-purple-400' : ''}

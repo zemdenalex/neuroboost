@@ -39,11 +39,11 @@ func linkingHandler(t *testing.T) (*Handler, *fakeTelegram, int64, func() string
 	t.Cleanup(srv.Close)
 
 	bot, fake := newFakeTelegram(t)
-	h := New(bot, api.NewClient(srv.URL), state.NewStore(), config.Config{APIBase: "https://dev.neuroboost.website"})
+	h := New(bot, api.NewClient(srv.URL), state.NewStore(), config.Config{APIBase: "https://dev.neuroboost.space"})
 	const chat = int64(7400)
 	h.store.SetAuth(chat, "jwt", time.Now().Add(time.Hour).Unix())
 	us := h.store.GetOrCreate(chat)
-	us.Lang, us.LangKnown = "ru", true
+	us.SetLang("ru")
 	return h, fake, chat, func() string { return hit }
 }
 
@@ -88,7 +88,7 @@ func TestTheLoginLinkPointsAtTheWebsite(t *testing.T) {
 		t.Fatalf("the bot asked %q", hit())
 	}
 	text := fake.last(t).Text
-	if !strings.Contains(text, "https://dev.neuroboost.website/login/link?t=tok-abc123") {
+	if !strings.Contains(text, "https://dev.neuroboost.space/login/link?t=tok-abc123") {
 		t.Errorf("the message does not contain a usable link: %q", text)
 	}
 	// ⚠ Ten minutes must be SAID. A link that silently stops working is

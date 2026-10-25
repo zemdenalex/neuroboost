@@ -11,20 +11,22 @@ import (
 func TestBackwardsSpanOffersASwap(t *testing.T) {
 	h, fake, chat := quickHandler(t)
 	h.startNewEventFlow(chat)
-	say(h, chat, "отпуск с 29.10 по 14.10")
+	late, _ := moscowDay(18)
+	early, _ := moscowDay(3)
+	say(h, chat, "отпуск с "+late+" по "+early)
 	press(h, chat, "dr_ok")
 
 	ask := fake.last(t)
 	if !strings.Contains(ask.Markup, "dr_swap") {
 		t.Fatalf("no swap offered: %s / %q", ask.Markup, ask.Text)
 	}
-	if !strings.Contains(ask.Text, "14.10") || !strings.Contains(ask.Text, "29.10") {
+	if !strings.Contains(ask.Text, early) || !strings.Contains(ask.Text, late) {
 		t.Errorf("the question does not show both dates: %q", ask.Text)
 	}
 
 	press(h, chat, "dr_swap")
 	card := fake.last(t).Text
-	if !strings.Contains(card, "14.10 – 29.10") || strings.Contains(card, "⚠ проверь") {
+	if !strings.Contains(card, early+" – "+late) || strings.Contains(card, "⚠ проверь") {
 		t.Errorf("after the swap the card is still wrong:\n%s", card)
 	}
 }

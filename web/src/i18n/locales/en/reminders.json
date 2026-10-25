@@ -24,7 +24,7 @@
     "label": "New reminder offset",
     "placeholder": "30, 2h, 3d, 1w",
     "button": "Add",
-    "invalid": "Use minutes, or a number with m / h / d / w — up to 1 month"
+    "invalid": "Use minutes, or a number with m / h / d / w, up to 1 month"
   },
   "settings": {
     "title": "Reminders",
@@ -34,7 +34,7 @@
     "digestEnabled": "Send a daily digest",
     "digestAt": "Digest time",
     "quietHoursRespected": "Respect quiet hours",
-    "quietHoursHint": "Reminders landing in quiet hours are delayed to the end of the window. Reminders with 15 minutes' notice or less are skipped instead — delaying those would deliver them after the thing they warn about.",
+    "quietHoursHint": "Reminders landing in quiet hours are delayed to the end of the window. Reminders with 15 minutes' notice or less are skipped instead: delaying those would deliver them after the thing they warn about.",
     "presetsTitle": "Presets",
     "presetsHint": "Each preset is a list of offsets you can apply in one click.",
     "presetAdd": "Add preset",
@@ -46,7 +46,7 @@
       "empty": "Give the preset a name.",
       "duplicate": "A preset by that name already exists.",
       "unknown": "That preset no longer exists.",
-      "last": "This is the last preset — an empty list is read as “not set” and brings the built-in presets back."
+      "last": "This is the last preset. An empty list is read as “not set” and brings the built-in presets back."
     }
   },
   "presetName": {

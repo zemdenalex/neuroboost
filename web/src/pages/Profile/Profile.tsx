@@ -1,17 +1,20 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuthContext } from '../../contexts/AuthContext'
 import { AccountLinking } from './AccountLinking'
 import { dateLocale } from '../../utils/date'
 import { resolveDisplayName } from '../../lib/profile/resolveDisplayName'
+import { levelOf, loadAllDays, profileStats, xpOf, type ProfileStats } from '../../lib/profile/profileStats'
+import { todayInZone } from '../../lib/dayTasks/dayColour'
+import { listDays } from '../../api/dayTasks'
+import { getTasks } from '../../api'
+import { getReflections } from '../../api/reflections'
 import {
   Mail,
   Calendar,
-  Award,
   Flame,
   Target,
-  TrendingUp,
-  Clock,
+  Pin,
   CheckCircle,
   Edit2,
   Save,
@@ -26,27 +29,28 @@ export default function Profile() {
   const [displayName, setDisplayName] = useState(user?.display_name || '')
   const [saving, setSaving] = useState(false)
 
-  // Mock gamification stats (will be real when backend supports it)
-  const stats = {
-    xp: 1250,
-    level: 5,
-    streakDays: 7,
-    longestStreak: 14,
-    tasksCompleted: 42,
-    eventsCompleted: 28,
-    reflectionsCount: 15,
-    weeklyGoalProgress: 68,
-  }
-
-  // Mock badges
-  const badges = [
-    { id: '1', nameKey: 'badge.earlyBird.name', icon: '🌅', descKey: 'badge.earlyBird.description', earned: true },
-    { id: '2', nameKey: 'badge.streakStarter.name', icon: '🔥', descKey: 'badge.streakStarter.description', earned: true },
-    { id: '3', nameKey: 'badge.reflector.name', icon: '🪞', descKey: 'badge.reflector.description', earned: true },
-    { id: '4', nameKey: 'badge.taskMaster.name', icon: '✅', descKey: 'badge.taskMaster.description', earned: false },
-    { id: '5', nameKey: 'badge.weekWarrior.name', icon: '⚔️', descKey: 'badge.weekWarrior.description', earned: false },
-    { id: '6', nameKey: 'badge.nightOwl.name', icon: '🦉', descKey: 'badge.nightOwl.description', earned: false },
-  ]
+  // Real numbers only (Denis 25.09: «real numbers, remove mock data»). Until
+  // 25.09 this page showed XP 1250, level 5, a 7-day streak and badges to
+  // every user, all invented. Each read fails soft: a missing source shows
+  // "—" for its figures instead of a zero that looks true.
+  const [stats, setStats] = useState<ProfileStats | null>(null)
+  const timeZone = user?.timezone || 'Europe/Moscow'
+  useEffect(() => {
+    let live = true
+    const today = todayInZone(new Date(), timeZone)
+    void Promise.all([
+      getTasks().catch(() => null),
+      // All of it, not a window: XP must not shrink as old days leave it.
+      loadAllDays(today, listDays).catch(() => null),
+      getReflections().catch(() => null),
+    ]).then(([tasks, days, reflections]) => {
+      if (!live || !tasks || !days || !reflections) return
+      setStats(profileStats({ today, timeZone, tasks, days, reflections: reflections.length }))
+    })
+    return () => {
+      live = false
+    }
+  }, [timeZone])
 
   const handleSaveName = async () => {
     if (!displayName.trim()) return
@@ -67,33 +71,26 @@ export default function Profile() {
     year: 'numeric'
   }) : t('unknownDate')
 
-  // Calculate level progress (XP needed for next level)
-  const xpForCurrentLevel = (stats.level - 1) * 500
-  const xpForNextLevel = stats.level * 500
-  const levelProgress = ((stats.xp - xpForCurrentLevel) / (xpForNextLevel - xpForCurrentLevel)) * 100
-
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-8">
+    <div className="max-w-4xl mx-auto p-4 sm:p-6 space-y-6 sm:space-y-8">
         {/* Profile Header */}
-        <div data-hint="profile.identity" className="bg-gradient-to-r from-zinc-900 via-zinc-900 to-blue-900/20 border border-zinc-800 rounded-lg p-6">
-          <div className="flex items-start gap-6">
+        <div data-hint="profile.identity" className="bg-gradient-to-r from-zinc-900 via-zinc-900 to-blue-900/20 border border-zinc-800 rounded-lg p-4 sm:p-6">
+          {/* Column on a phone: beside a 96px avatar the text had ~135px of a
+              375px screen and the XP line broke into four (tour 25.09, MW2). */}
+          <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-6">
             {/* Avatar */}
             <div className="relative shrink-0">
               {user?.tg_photo_url ? (
                 <img
                   src={user.tg_photo_url}
                   alt={userName}
-                  className="w-24 h-24 rounded-full border-4 border-blue-600"
+                  className="w-16 h-16 sm:w-24 sm:h-24 rounded-full border-4 border-blue-600"
                 />
               ) : (
-                <div className="w-24 h-24 rounded-full bg-blue-600 flex items-center justify-center text-3xl font-mono text-white border-4 border-blue-500">
+                <div className="w-16 h-16 sm:w-24 sm:h-24 rounded-full bg-blue-600 flex items-center justify-center text-2xl sm:text-3xl font-mono text-onaccent border-4 border-blue-500">
                   {userName.slice(0, 2).toUpperCase()}
                 </div>
               )}
-              {/* Level badge */}
-              <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-yellow-500 flex items-center justify-center text-sm font-bold text-black border-2 border-zinc-900">
-                {stats.level}
-              </div>
             </div>
 
             {/* User info.
@@ -105,7 +102,7 @@ export default function Profile() {
                 Found by e2e on 17.08, and only because the run used a real
                 account: the CI test account's address is short enough to fit,
                 so the same spec had been passing on the same defect. */}
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 w-full">
               <div className="flex min-w-0 items-center gap-2 mb-1">
                 {isEditingName ? (
                   <div className="flex items-center gap-2">
@@ -168,19 +165,25 @@ export default function Profile() {
                 </span>
               </div>
 
-              {/* XP Progress bar */}
-              <div className="mt-4">
-                <div className="flex items-center justify-between text-sm mb-1">
-                  <span className="text-zinc-400">{t('level', { level: stats.level })}</span>
-                  <span className="text-zinc-400">{t('xp', { current: stats.xp, max: xpForNextLevel })}</span>
-                </div>
-                <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-blue-600 to-blue-400 transition-all duration-500"
-                    style={{ width: `${levelProgress}%` }}
-                  />
-                </div>
-              </div>
+              {/* XP from real actions (Denis 25.09, «Day tasks drive it»):
+                  +10 a done task, +25 a full day-task day, +5 a reflection. */}
+              {stats && (() => {
+                const xp = xpOf(stats)
+                const lv = levelOf(xp)
+                return (
+                  <div className="mt-4" data-testid="profile-xp" title={t('real.xpRule')}>
+                    <div className="flex flex-wrap items-center justify-between gap-x-3 text-sm mb-1">
+                      <span className="text-zinc-300">{t('level', { level: lv.level })}</span>
+                      <span className="text-zinc-400 tabular-nums">{t('real.xp', { xp, into: lv.into, need: lv.need })}</span>
+                    </div>
+                    <div className="h-2 bg-zinc-800 rounded overflow-hidden">
+                      <div className="h-full bg-blue-500" style={{ width: `${(lv.into / lv.need) * 100}%` }} />
+                    </div>
+                    <p className="text-xs text-zinc-500 mt-1">{t('real.xpRule')}</p>
+                  </div>
+                )
+              })()}
+
             </div>
           </div>
         </div>
@@ -191,99 +194,32 @@ export default function Profile() {
             report. */}
         <AccountLinking />
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {/* Stats Grid: counts over real data, "—" while loading or when a read failed */}
+        <div data-testid="profile-stats" className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <StatCard
             icon={<Flame className="w-6 h-6 text-orange-400" />}
-            label={t('streak.current')}
-            value={t('streak.days', { count: stats.streakDays })}
-            subValue={t('streak.best', { days: stats.longestStreak })}
+            label={t('real.streak')}
+            value={stats ? t('streak.days', { count: stats.takenStreak }) : '—'}
+            subValue={t('real.streakNote')}
           />
           <StatCard
             icon={<CheckCircle className="w-6 h-6 text-green-400" />}
             label={t('tasksCompleted')}
-            value={stats.tasksCompleted.toString()}
-            subValue={t('tasksCompletedMonth', { count: 12 })}
+            value={stats ? String(stats.tasksDone) : '—'}
+            subValue={stats ? t('real.thisWeek', { count: stats.tasksDoneThisWeek }) : ''}
           />
           <StatCard
-            icon={<Clock className="w-6 h-6 text-blue-400" />}
-            label={t('eventsCompleted')}
-            value={stats.eventsCompleted.toString()}
-            subValue={t('eventsCompletedMonth', { count: 8 })}
+            icon={<Pin className="w-6 h-6 text-blue-400" />}
+            label={t('real.fullDays')}
+            value={stats ? String(stats.daysFull) : '—'}
+            subValue={stats ? t('real.taken', { count: stats.daysTaken }) : ''}
           />
           <StatCard
             icon={<Target className="w-6 h-6 text-purple-400" />}
             label={t('reflections')}
-            value={stats.reflectionsCount.toString()}
-            subValue={t('reflectionsAvg', { percent: 78 })}
+            value={stats ? String(stats.reflections) : '—'}
+            subValue=""
           />
-        </div>
-
-        {/* Weekly Goal Progress */}
-        <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-5">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-zinc-400" />
-              <h2 className="text-lg font-mono font-semibold text-white">{t('weeklyProgress.title')}</h2>
-            </div>
-            <span className="text-2xl font-bold text-blue-400">{stats.weeklyGoalProgress}%</span>
-          </div>
-          <div className="h-3 bg-zinc-800 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-green-600 to-green-400 transition-all duration-500"
-              style={{ width: `${stats.weeklyGoalProgress}%` }}
-            />
-          </div>
-          <div className="flex justify-between mt-2 text-xs text-zinc-500">
-            <span>0%</span>
-            <span>{t('weeklyProgress.goal', { percent: 80 })}</span>
-            <span>100%</span>
-          </div>
-        </div>
-
-        {/* Badges */}
-        <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-5">
-          <div className="flex items-center gap-2 mb-4">
-            <Award className="w-5 h-5 text-zinc-400" />
-            <h2 className="text-lg font-mono font-semibold text-white">{t('badges.title')}</h2>
-            <span className="text-sm text-zinc-500">
-              {t('badges.count', { earned: badges.filter(b => b.earned).length, total: badges.length })}
-            </span>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            {badges.map((badge) => (
-              <div
-                key={badge.id}
-                className={`p-3 rounded-lg border transition-all ${
-                  badge.earned
-                    ? 'bg-zinc-800/50 border-zinc-700'
-                    : 'bg-zinc-900/50 border-zinc-800 opacity-50'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl">{badge.icon}</span>
-                  <div>
-                    <p className={`font-mono text-sm ${badge.earned ? 'text-white' : 'text-zinc-500'}`}>
-                      {t(badge.nameKey)}
-                    </p>
-                    <p className="text-xs text-zinc-500">{t(badge.descKey)}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Activity Calendar Placeholder */}
-        <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-5">
-          <div className="flex items-center gap-2 mb-4">
-            <Calendar className="w-5 h-5 text-zinc-400" />
-            <h2 className="text-lg font-mono font-semibold text-white">{t('activity.title')}</h2>
-          </div>
-          <div className="h-32 flex items-center justify-center text-zinc-500 border border-dashed border-zinc-700 rounded-lg">
-            <p className="text-sm">{t('activity.placeholder')}</p>
-          </div>
         </div>
     </div>
   )

@@ -18,7 +18,11 @@ func TestValidTimezone(t *testing.T) {
 		}
 	}
 
-	invalid := []string{"", "Not/AZone", "garbage", "Mars/Phobos", "Moscow"}
+	// "Local" is Go's name for the server's own zone: time.LoadLocation takes
+	// it, Postgres answers «time zone "Local" not recognized» (checked 25.09 on
+	// postgres:16). Stored, it made every task list 500 for that user forever
+	// (audit 25.09, M1).
+	invalid := []string{"", "Not/AZone", "garbage", "Mars/Phobos", "Moscow", "Local"}
 	for _, tz := range invalid {
 		if validTimezone(tz) {
 			t.Errorf("validTimezone(%q) = true, want false", tz)

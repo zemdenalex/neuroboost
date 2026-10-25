@@ -3,45 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { Loader2, Calendar, CheckCircle, XCircle, Clock, BookOpen } from 'lucide-react'
 import { getReflections, type Reflection } from '../../api/reflections'
-
-// ─── Helpers ────────────────────────────────────────────────────────────────
-
-/** Returns the ISO week number (1-53) and year for a date */
-function isoWeekKey(dateStr: string): string {
-  const d = new Date(dateStr)
-  // Thursday of the current week determines the ISO year
-  const thursday = new Date(d)
-  thursday.setDate(d.getDate() - ((d.getDay() + 6) % 7) + 3)
-  const firstThursday = new Date(thursday.getFullYear(), 0, 4)
-  const weekNum =
-    1 +
-    Math.round(
-      ((thursday.getTime() - firstThursday.getTime()) / 86400000 -
-        3 +
-        ((firstThursday.getDay() + 6) % 7)) /
-        7,
-    )
-  return `${thursday.getFullYear()}-W${String(weekNum).padStart(2, '0')}`
-}
-
-/** Returns the Monday of the ISO week for display */
-function weekStart(weekKey: string): Date {
-  const [yearStr, weekStr] = weekKey.split('-W')
-  const year = parseInt(yearStr, 10)
-  const week = parseInt(weekStr, 10)
-  // Jan 4 is always in week 1
-  const jan4 = new Date(year, 0, 4)
-  const monday = new Date(jan4)
-  monday.setDate(jan4.getDate() - ((jan4.getDay() + 6) % 7) + (week - 1) * 7)
-  return monday
-}
-
-/** Average of non-null values, returns null if none */
-function average(values: (number | null)[]): number | null {
-  const nums = values.filter((v): v is number => v !== null)
-  if (nums.length === 0) return null
-  return Math.round((nums.reduce((a, b) => a + b, 0) / nums.length) * 10) / 10
-}
+import { isoWeekKey, weekStart, average, isWithinRange, type FilterRange } from '../../lib/reflections/weeks'
 
 // ─── Score Bar ───────────────────────────────────────────────────────────────
 
@@ -199,24 +161,7 @@ function WeeklySummary({ weekKey, reflections, t }: WeeklySummaryProps) {
 
 // ─── Filter types ─────────────────────────────────────────────────────────────
 
-type FilterRange = 'all' | 'week' | 'month'
 
-function isWithinRange(createdAt: string, range: FilterRange): boolean {
-  if (range === 'all') return true
-  const now = new Date()
-  const d = new Date(createdAt)
-  if (range === 'week') {
-    const weekAgo = new Date(now)
-    weekAgo.setDate(now.getDate() - 7)
-    return d >= weekAgo
-  }
-  if (range === 'month') {
-    const monthAgo = new Date(now)
-    monthAgo.setMonth(now.getMonth() - 1)
-    return d >= monthAgo
-  }
-  return true
-}
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
@@ -282,7 +227,7 @@ export default function Reflections() {
               onClick={() => setFilterRange(range)}
               className={`px-3 py-1.5 text-sm font-mono rounded-lg transition-colors ${
                 filterRange === range
-                  ? 'bg-blue-600 text-white'
+                  ? 'bg-blue-600 text-onaccent'
                   : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white'
               }`}
             >
@@ -313,7 +258,7 @@ export default function Reflections() {
             <p className="text-sm text-zinc-500 max-w-sm mb-6">{t('noReflectionsHint')}</p>
             <Link
               to="/calendar"
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-mono rounded-lg transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-onaccent text-sm font-mono rounded-lg transition-colors"
             >
               <Calendar className="w-4 h-4" />
               {t('goToCalendar')}

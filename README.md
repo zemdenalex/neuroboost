@@ -3,7 +3,7 @@
 > Calendar-first productivity app for neurodivergent users
 
 **Status:** v0.4.9 released · v0.4.10 in development  
-**Live:** [neuroboost.website](https://neuroboost.website) · **Staging:** [dev.neuroboost.website](https://dev.neuroboost.website)
+**Live:** [neuroboost.space](https://neuroboost.space) · **Staging:** [dev.neuroboost.space](https://dev.neuroboost.space)
 
 ---
 

@@ -155,6 +155,8 @@ type CreateFeedbackReq struct {
 	Type        string `json:"type"`
 	Title       string `json:"title"`
 	Description string `json:"description"`
+	// Source is set by SubmitFeedback; the API keeps "bot" and "web".
+	Source string `json:"source,omitempty"`
 }
 
 func (c *Client) get(path string, token string, params url.Values, result any) error {
@@ -424,6 +426,7 @@ func (c *Client) WeekPlan(token string) (WeekPlanResult, error) {
 }
 
 func (c *Client) SubmitFeedback(token string, req CreateFeedbackReq) error {
+	req.Source = "bot"
 	return c.post("/api/feedback", token, req, nil)
 }
 

@@ -6,7 +6,7 @@ status: verified
 verified_by: session-04e1a014
 verified_at: 2026-09-21
 tags: [neuroboost, product, concept, statistics]
-weight: { importance: 5, connectivity: 3, access: 2, last_accessed: 2026-09-23 }
+weight: { importance: 5, connectivity: 4, access: 3, last_accessed: 2026-09-25 }
 sources:
   - file: "ref/feedback/bot-proverka-v04114-prohod2-otvet-denisa-2026-09-21.md"
 stakes: medium

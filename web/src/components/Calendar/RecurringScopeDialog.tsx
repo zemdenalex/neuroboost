@@ -57,7 +57,7 @@ export function RecurringScopeDialog({ open, action, calendarChanged = false, on
   const destructive = action === 'delete'
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onCancel}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-scrim/60 p-4" onClick={onCancel}>
       <div
         role="dialog"
         aria-modal="true"

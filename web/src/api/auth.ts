@@ -35,6 +35,28 @@ export interface UserSettings {
    * only the type system was unaware; naming it removes both casts.
    */
   recurring_scope?: 'ask' | 'occurrence' | 'series'
+  /**
+   * Day tasks (spec 2026-09-22 §11). Top-level, written by the bot and the
+   * web alike. No key = on, 5 a day, days before the start not coloured.
+   */
+  day_tasks_enabled?: boolean
+  day_tasks_target?: number
+  day_tasks_paint_before?: boolean
+  /**
+   * Web month view variant (spec V003-20260924-arc-web-month-view): list,
+   * classic, heat, split or commit. Unknown or missing = list.
+   */
+  month_view_variant?: string
+  /** Phone month: split (A) · strip (C) · heat (D). */
+  phone_month_variant?: string
+  /** Month view: how long a click waits for a second click, ms (150–800, default 300). */
+  month_click_wait_ms?: number
+  /** Phone task rows: 'menu' | 'swipe' | 'card' (lib/tasks/rowActions, Denis 25.09). */
+  task_row_actions?: string
+  /** Web theme: 'dark' | 'light' | 'system' (lib/theme/theme, Denis 25.09). */
+  theme?: string
+  /** «Бюджет времени» split (lib/tools/timeBudget, Denis 25.09); read through readBudgetCategories. */
+  time_budget?: unknown
   quiet_hours_start?: string
   quiet_hours_end?: string
   quick_task?: {
@@ -96,6 +118,11 @@ export interface UpdateUserRequest {
 
 export async function telegramLogin(telegramUser: TelegramUser): Promise<AuthResponse> {
   return api.post<AuthResponse>('/auth/telegram', telegramUser)
+}
+
+/** Sign-in from inside the Telegram Mini App: the raw initData string, untouched. */
+export async function telegramWebAppLogin(initData: string): Promise<AuthResponse> {
+  return api.post<AuthResponse>('/auth/telegram-webapp', { init_data: initData })
 }
 
 export async function register(data: RegisterRequest): Promise<AuthResponse> {

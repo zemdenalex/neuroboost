@@ -166,3 +166,32 @@ func TestRepeatCanBeTurnedOnAndOff(t *testing.T) {
 		t.Errorf("renaming the task changed its repeat: %v", renamed.Rrule)
 	}
 }
+
+// Audit 25.09 (docs/team/research/V003-20260925-res-audit-today-and-scope.md):
+// a PATCH that turns repeat on AND moves the due date anchored the series on
+// the OLD due date, read before the UPDATE. «Каждый понедельник», set together
+// with a Monday due date on a task due Thursday, repeated on Thursdays. No
+// client sends both today (the bot's repeat edit sends rrule alone), so latent.
+func TestTurningRepeatOnWithANewDueDateAnchorsOnTheNewDate(t *testing.T) {
+	d, ctx, user := repeatDB(t)
+
+	thursday := time.Date(2026, 10, 1, 9, 0, 0, 0, time.UTC)
+	thu := thursday.Format(time.RFC3339)
+	task, err := insertTask(ctx, user, CreateTaskRequest{Title: "отчёт", DueDate: &thu}, &thursday)
+	if err != nil {
+		t.Fatalf("create: %v", err)
+	}
+	t.Cleanup(func() { _, _ = d.Pool.Exec(ctx, `DELETE FROM task WHERE id = $1`, task.ID) })
+
+	monday := time.Date(2026, 10, 5, 9, 0, 0, 0, time.UTC).Format(time.RFC3339)
+	if _, err := updateTask(ctx, user, task.ID, UpdateTaskRequest{Rrule: str("FREQ=WEEKLY"), DueDate: &monday}); err != nil {
+		t.Fatalf("update: %v", err)
+	}
+	var anchor time.Time
+	if err := d.Pool.QueryRow(ctx, `SELECT repeat_anchor FROM task WHERE id = $1`, task.ID).Scan(&anchor); err != nil {
+		t.Fatalf("anchor: %v", err)
+	}
+	if got := anchor.Format("2006-01-02"); got != "2026-10-05" {
+		t.Errorf("anchor %s, want 2026-10-05: the due date sent in the same PATCH", got)
+	}
+}

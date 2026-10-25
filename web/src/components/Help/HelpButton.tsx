@@ -66,7 +66,7 @@ export function HelpButton({ variant = 'icon' }: { variant?: 'icon' | 'sidebar' 
 
       {open && (
         <div
-          className="fixed inset-0 z-50 flex justify-end bg-black/50"
+          className="fixed inset-0 z-50 flex justify-end bg-scrim/50"
           onClick={() => setOpen(false)}
         >
           <aside

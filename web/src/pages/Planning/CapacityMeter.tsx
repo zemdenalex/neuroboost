@@ -11,7 +11,7 @@ export function CapacityMeter({ scheduledHours, availableHours }: Props) {
   const overloaded = pct > 100
 
   return (
-    <div className="flex items-center gap-3 px-4 py-3 bg-zinc-900 border border-zinc-800 rounded-lg">
+    <div data-testid="capacity-meter" className="flex items-center gap-3 px-4 py-3 bg-zinc-900 border border-zinc-800 rounded-lg">
       <span className="text-xs uppercase tracking-wider text-zinc-500 shrink-0">
         {t('capacity')}
       </span>

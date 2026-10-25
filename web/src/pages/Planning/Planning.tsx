@@ -7,12 +7,13 @@ import {
   AlertCircle,
   Loader2,
 } from 'lucide-react'
-import { getWeekPlan, WeekPlan, PlanningTask, PlanningEvent } from '../../api/planning'
+import { getWeekPlan, WeekPlan, PlanningTask } from '../../api/planning'
 import { scheduleTask } from '../../api/tasks'
 import { toLocalDateKey, startOfWeek, dateLocale } from '../../utils/date'
 import { UnscheduledList } from './UnscheduledList'
 import { CapacityMeter } from './CapacityMeter'
 import { WeekOverviewGrid } from './WeekOverviewGrid'
+import { weekDays as buildWeekDays } from '../../lib/planning/weekDays'
 
 export default function Planning() {
   const { t, i18n } = useTranslation('planning')
@@ -65,34 +66,8 @@ export default function Planning() {
     return `${startLabel} – ${endLabel}`
   }, [monday, sunday, i18n.language])
 
-  // Build 7-day array with events bucketed by local date
-  const weekDays = useMemo(() => {
-    if (!plan) return []
-    const buckets: Record<string, PlanningEvent[]> = {}
-    const hours: Record<string, number> = {}
-    for (const ev of plan.weekEvents) {
-      const start = new Date(ev.starts_at)
-      const key = toLocalDateKey(start)
-      if (!buckets[key]) buckets[key] = []
-      buckets[key].push(ev)
-      if (!ev.all_day) {
-        const duration = (new Date(ev.ends_at).getTime() - start.getTime()) / 3600000
-        hours[key] = (hours[key] || 0) + duration
-      }
-    }
-    const days: { date: Date; scheduledHours: number; events: PlanningEvent[] }[] = []
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(monday)
-      d.setDate(monday.getDate() + i)
-      const key = toLocalDateKey(d)
-      days.push({
-        date: d,
-        scheduledHours: hours[key] || 0,
-        events: buckets[key] || [],
-      })
-    }
-    return days
-  }, [plan, monday])
+  // Seven columns, events on their local day in time order (lib/planning/weekDays)
+  const weekDays = useMemo(() => (plan ? buildWeekDays(plan.weekEvents, monday) : []), [plan, monday])
 
   const handleTaskDragStart = useCallback(
     (e: React.DragEvent, task: PlanningTask) => {
@@ -152,7 +127,7 @@ export default function Planning() {
             onClick={() => setWeekOffset(0)}
             className={`px-3 py-1.5 font-mono text-sm rounded-lg transition-colors ${
               isCurrentWeek
-                ? 'bg-blue-600 text-white'
+                ? 'bg-blue-600 text-onaccent'
                 : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
             }`}
           >
@@ -193,7 +168,11 @@ export default function Planning() {
       {/* Two-pane body */}
       {plan && !loading && !error && (
         <div className="flex-1 flex flex-col lg:flex-row gap-3 min-h-0">
-          <div className="lg:w-1/3 lg:min-w-[280px] max-h-[40vh] lg:max-h-none">
+          {/* flex + min-h-0: the list must shrink to the 40vh cap and scroll
+              inside it. With a plain block wrapper its h-full had no height
+              to resolve against, so it grew by content and ran on under
+              the capacity meter (mobile tour 25.09, MW1). */}
+          <div className="flex flex-col min-h-0 lg:w-1/3 lg:min-w-[280px] max-h-[40vh] lg:max-h-none">
             <UnscheduledList
               tasks={plan.unscheduledTasks}
               scheduledHours={plan.scheduledHours}

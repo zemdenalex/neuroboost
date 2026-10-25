@@ -18,10 +18,11 @@ import type { Page } from '@playwright/test'
  * overflow you already thought of. The document either scrolls sideways or it
  * does not, and no element can hide from that.
  *
- * `window.innerWidth` is deliberately NOT the comparison — it is the viewport
- * and stays 375 whatever overflows, so `scrollWidth > innerWidth` would be
- * true for the same reason `scrollWidth > clientWidth` is, but only by luck.
- * clientWidth says what the reader can see, which is the actual claim.
+ * `window.innerWidth` is deliberately NOT the comparison. ⚠ This comment used
+ * to say it "stays 375 whatever overflows"; on this project's mobile emulation
+ * (isMobile: true) it does not: it is the VISUAL viewport, and it read 457
+ * while a seven-column first frame overflowed the page (26.09). clientWidth
+ * stays 375, and it says what the reader can see, which is the actual claim.
  */
 
 const VIEWPORT_WIDTH = 375
@@ -203,4 +204,307 @@ test.describe('375px layout', () => {
       )
     }
   })
+
+  // Tour 25.09 (MW1): the unscheduled list ran on under the capacity meter.
+  // Its wrapper capped the height at 40vh but the list inside sized itself by
+  // content, so the meter below painted over the lower tasks.
+  test('planning: the unscheduled list ends above the capacity meter', async ({ authedPage }) => {
+    await authedPage.goto('/planning')
+    const list = authedPage.locator('[data-hint="planning.unscheduled"]')
+    const meter = authedPage.getByTestId('capacity-meter')
+    await expect(meter).toBeVisible()
+    const a = await list.boundingBox()
+    const b = await meter.boundingBox()
+    expect(a && b, 'both boxes measured').toBeTruthy()
+    expect(a!.y + a!.height, 'list bottom vs meter top').toBeLessThanOrEqual(b!.y + 1)
+  })
+
+  // Tour 25.09 (MW2): beside a 96px avatar the XP line had ~135px and broke
+  // into four lines ("Level1" glued together). On a phone it goes under it.
+  test('profile: the XP block gets the card width, not a side column', async ({ authedPage }) => {
+    await authedPage.goto('/profile')
+    const xp = authedPage.getByTestId('profile-xp')
+    await expect(xp).toBeVisible()
+    const box = await xp.boundingBox()
+    expect(box!.width, 'XP block width at 375px').toBeGreaterThanOrEqual(260)
+  })
+
+  // Tour 25.09 (MW3): the counters broke mid-label ("To / Do:") and the
+  // focused quick-add drew a second outline inside its own focus ring.
+  test('tasks: each counter stays on one line, quick-add has one focus ring', async ({ authedPage }) => {
+    await authedPage.goto('/tasks')
+    const stats = authedPage.getByTestId('task-stats').locator(':scope > span')
+    await expect(stats.first()).toBeVisible()
+    for (const box of await stats.evaluateAll((els) => els.map((e) => e.getBoundingClientRect().height))) {
+      expect(box, 'a counter wrapped onto two lines').toBeLessThan(30)
+    }
+    const input = authedPage.getByRole('textbox', { name: /new task/i }).first()
+    await input.focus()
+    await authedPage.keyboard.press('a')
+    // Tailwind's outline-none is `2px solid transparent`, so the style alone
+    // says nothing: the question is whether a painted outline is visible.
+    const outline = await input.evaluate((e) => {
+      const cs = getComputedStyle(e)
+      return cs.outlineStyle === 'none' || cs.outlineColor === 'rgba(0, 0, 0, 0)' ? 'invisible' : cs.outlineColor
+    })
+    expect(outline, 'a second focus outline inside the row').toBe('invisible')
+  })
+
+  // Tour 25.09 (MW4): "Friday, September 25" broke onto two lines beside the
+  // arrows and buttons, pushing the grid down another 30px.
+  test('calendar: the date title fits on one line', async ({ authedPage }) => {
+    await authedPage.goto('/calendar')
+    const title = authedPage.getByTestId('calendar-period-title')
+    await expect(title).toBeVisible()
+    const box = await title.boundingBox()
+    expect(box!.height, 'title wrapped').toBeLessThan(30)
+  })
+
+  // CI 26.09 (run 36210478748): the grid counted its days from innerWidth,
+  // which a zoomed-out phone reports wider than the phone, and drew three
+  // 83px days at 375px. lib/calendar/visibleDays asks a media query instead.
+  test('calendar: a phone draws one day', async ({ authedPage }) => {
+    await authedPage.goto('/calendar')
+    await expect(authedPage.getByTestId('week-day-header').first()).toBeVisible({ timeout: 15_000 })
+    await expect(authedPage.getByTestId('week-day-header'), 'a 375px phone drew more than one day').toHaveCount(1)
+  })
+
+  // The narrowest phones still sold are 320px wide. The header row (arrows,
+  // title, Today, + Task, calendars) did not fit there and pushed the last
+  // buttons off the screen; it wraps now, right group kept on the right so the
+  // filter panel keeps its anchor (see WeekHeader).
+  test('calendar: every header button stays on a 320px screen', async ({ authedPage }) => {
+    await authedPage.setViewportSize({ width: 320, height: 640 })
+    await authedPage.goto('/calendar')
+    const title = authedPage.getByTestId('calendar-period-title')
+    await expect(title).toBeVisible({ timeout: 15_000 })
+    const header = title.locator('xpath=ancestor::div[contains(@class,"border-b")][1]')
+    const buttons = header.getByRole('button')
+    expect(await buttons.count(), 'no header buttons found, this test would prove nothing').toBeGreaterThan(2)
+    for (const box of await buttons.evaluateAll(els => els.map(e => {
+      const r = e.getBoundingClientRect()
+      return { text: e.textContent?.trim() || e.getAttribute('aria-label') || '?', left: r.left, right: r.right }
+    }))) {
+      expect(box.right, `«${box.text}» runs off the right edge`).toBeLessThanOrEqual(321)
+      expect(box.left, `«${box.text}» runs off the left edge`).toBeGreaterThanOrEqual(-1)
+    }
+    expect(await horizontalOverflow(authedPage), 'the calendar scrolls sideways at 320px').toBe(0)
+  })
+
+  // Tour 25.09 (MW5): the "vertical sidebar" layout is hidden below md, so a
+  // phone with that setting (it syncs from the account, e.g. chosen on a
+  // desktop) had no top bar at all: no avatar menu, no help.
+  test('a phone keeps its top bar even with the sidebar layout saved', async ({ authedPage }) => {
+    // The account's settings are applied over localStorage on load, so the
+    // saved variant is substituted in the /auth/me answer; writes are blocked
+    // so the real account never gets it (it is Denis's staging account).
+    await authedPage.route('**/api/auth/me', (route) =>
+      route.request().method() === 'PATCH' ? route.abort() : route.fallback(),
+    )
+    await authedPage.addInitScript(() => {
+      localStorage.setItem('neuroboost-header-variant', 'vertical')
+      const orig = window.fetch.bind(window)
+      window.fetch = async (input, init) => {
+        const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url
+        const res = await orig(input, init)
+        if (!url.includes('/api/auth/me') || (init?.method && init.method !== 'GET')) return res
+        const body = await res.clone().json()
+        body.data.settings = { ...(body.data.settings ?? {}), header_variant: 'vertical' }
+        return new Response(JSON.stringify(body), { status: res.status, headers: { 'Content-Type': 'application/json' } })
+      }
+    })
+    await authedPage.goto('/calendar')
+    await expect(authedPage.getByTestId('calendar-period-title')).toBeVisible({ timeout: 15_000 })
+    await expect(authedPage.locator('header').first(), 'no top bar on the phone').toBeVisible()
+    await authedPage.goto('/settings')
+    // Wait for the page itself: a count of 0 is true before a lazy page renders.
+    await expect(authedPage.getByTestId('settings-hint-section')).toBeVisible({ timeout: 15_000 })
+    await expect(authedPage.getByTestId('settings-layout-section')).toHaveCount(0)
+  })
+
+  // Tour 25.09 (MW7): the logo sat 40px in from the edge for a hamburger
+  // button that only exists when mobile_nav is 'hamburger'.
+  test('the logo starts at the edge, and clears the hamburger when there is one', async ({ authedPage }) => {
+    await authedPage.goto('/calendar')
+    const logo = authedPage.locator('header a', { hasText: 'NeuroBoost' }).first()
+    await expect(logo).toBeVisible({ timeout: 15_000 })
+    expect((await logo.boundingBox())!.x, 'gap without a hamburger').toBeLessThan(24)
+
+    await withSettings(authedPage, { mobile_nav: 'hamburger' })
+    await authedPage.goto('/calendar')
+    await expect(authedPage.getByTestId('calendar-period-title')).toBeVisible({ timeout: 15_000 })
+    const burger = await authedPage.getByRole('button', { name: /menu/i }).first().boundingBox()
+    const moved = await logo.boundingBox()
+    expect(moved!.x, 'logo under the hamburger').toBeGreaterThanOrEqual(burger!.x + burger!.width)
+  })
+
+  // Tour 25.09 (MW6): page padding 24px plus card padding 20-24px took ~96px
+  // of 375. On a phone the page keeps 16px a side.
+  for (const [route, selector] of [
+    ['/settings', '[data-testid="settings-hint-section"]'],
+    ['/tools', 'main a[href="/tools/pomodoro"]'],
+    ['/tasks', '[data-testid="task-stats"]'],
+  ] as const) {
+    test(`${route}: the first block spans the phone, not 24px in`, async ({ authedPage }) => {
+      await authedPage.goto(route)
+      const el = authedPage.locator(selector).first()
+      await expect(el).toBeVisible({ timeout: 15_000 })
+      const box = await el.boundingBox()
+      expect(box!.x, `${route} left gutter`).toBeLessThanOrEqual(19)
+    })
+  }
+
+  // Tour 25.09, second pass (MW10): the bulk-select checkbox is opacity-0
+  // until hover, and a phone has no hover. It took the row's width for an
+  // invisible control that a tap left of the circle silently ticked.
+  test('tasks: no invisible select box in a phone row', async ({ authedPage }) => {
+    await authedPage.goto('/tasks')
+    const row = authedPage.locator('[id^="task-"]').first()
+    await expect(row).toBeVisible({ timeout: 15_000 })
+    await expect(row.locator('input[type="checkbox"]')).toBeHidden()
+  })
+
+  // Tour 25.09, second pass (MW11): the day opened at 00:00, a screen of empty
+  // small hours with "00:00" half under the sticky header.
+  test('calendar: the day opens near the current hour, not at midnight', async ({ authedPage }) => {
+    const hour = Number(
+      new Intl.DateTimeFormat('en-GB', { hour: 'numeric', hourCycle: 'h23', timeZone: 'Europe/Moscow' }).format(new Date()),
+    )
+    test.skip(hour < 2, 'before 02:00 an hour before now is the top anyway')
+    await authedPage.goto('/calendar')
+    await expect(authedPage.getByTestId('week-day-header').first()).toBeVisible({ timeout: 15_000 })
+    const top = await authedPage.evaluate(() => {
+      const header = document.querySelector('[data-testid="week-day-header"]')
+      let el = header?.parentElement ?? null
+      while (el && getComputedStyle(el).overflowY !== 'auto') el = el.parentElement
+      return el?.scrollTop ?? -1
+    })
+    expect(top, 'opened at midnight').toBeGreaterThan(0)
+  })
+
+  // MA8b: /calendar?date= (a Mini App start link d-YYYY-MM-DD lands here)
+  // opens that very day on a phone, not today or the week's Monday.
+  test('calendar: ?date= opens that day on a phone', async ({ authedPage }) => {
+    // Two days on, in Moscow terms; the week may roll over, which is the point.
+    const target = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Moscow' }).format(new Date(Date.now() + 2 * 864e5))
+    await authedPage.goto(`/calendar?date=${target}`)
+    const header = authedPage.getByTestId('week-day-header').first()
+    await expect(header).toHaveAttribute('data-day', target, { timeout: 15_000 })
+    await expect(authedPage).not.toHaveURL(/date=/)
+    // Review M4: another day opens at the start of the working day (08:00 = 8 * 44px),
+    // not at "now minus an hour", which belongs to today.
+    await expect
+      .poll(() =>
+        authedPage.evaluate(() => {
+          let el = document.querySelector('[data-testid="week-day-header"]')?.parentElement ?? null
+          while (el && getComputedStyle(el).overflowY !== 'auto') el = el.parentElement
+          return el?.scrollTop ?? -1
+        }),
+      )
+      .toBe(8 * 44)
+  })
+
+  // Denis 25.09, variant A: on a phone the tip shows on the first three opens,
+  // and an empty all-day bar is a 20px strip. A far-future day is empty in any
+  // account, so the bar's height does not depend on whose calendar this is.
+  test('calendar: thin all-day strip on an empty day, tip only the first three times', async ({ authedPage }) => {
+    const shown: boolean[] = []
+    for (let i = 0; i < 4; i++) {
+      await authedPage.goto('/calendar?date=2031-01-15')
+      await expect(authedPage.getByTestId('week-day-header').first()).toHaveAttribute('data-day', '2031-01-15', {
+        timeout: 15_000,
+      })
+      shown.push(await authedPage.getByTestId('calendar-hint').isVisible())
+    }
+    expect(shown, 'tip on opens 1-4').toEqual([true, true, true, false])
+    const bar = authedPage.locator('[data-testid="week-day-header"]').first()
+    const top = await bar.evaluate((el) => {
+      const header = el.parentElement as HTMLElement
+      return parseFloat(getComputedStyle(header).top)
+    })
+    expect(top, 'day header sits under a 20px all-day strip').toBe(20)
+  })
+
+  // Denis 26.09: the bar is «Календарь · Добавить · Ещё» — three tabs, the rest in «Ещё».
+  test('bottom bar: three tabs, the rest under «Ещё»', async ({ authedPage }) => {
+    await authedPage.goto('/calendar')
+    const bar = authedPage.locator('nav').filter({ has: authedPage.getByTestId('tab-more') })
+    await expect(bar.locator(':scope > *')).toHaveCount(3)
+    await authedPage.getByTestId('tab-more').click()
+    for (const name of [/^(Tasks|Задачи)$/, /^(Settings|Настройки)$/, /^(Agenda|Что дальше)$/]) {
+      await expect(authedPage.getByRole('button', { name }).last()).toBeVisible()
+    }
+    await authedPage.screenshot({ path: testInfo_shots('bottom-bar-more-375.png') })
+  })
+
+  // Denis 25.09: task actions on a phone, all three variants, chosen in settings.
+  test('task row: «⋯» by default, with the actions in its menu', async ({ authedPage }) => {
+    await authedPage.goto('/tasks')
+    const row = authedPage.locator('[id^="task-"]').first()
+    await expect(row).toBeVisible({ timeout: 15_000 })
+    await expect(row.getByRole('button', { name: /schedule|запланировать/i })).toHaveCount(0)
+    await row.getByTestId('task-row-more').click()
+    const menu = authedPage.getByTestId('task-row-menu')
+    // Schedule, edit, subtask, delete — and «📌 day tasks» when the account has them on.
+    for (const id of ['task-edit', 'task-add-subtask']) await expect(menu.getByTestId(id)).toBeVisible()
+    expect(await menu.getByRole('menuitem').count()).toBeGreaterThanOrEqual(4)
+    await authedPage.keyboard.press('Escape')
+    await expect(menu).toBeHidden()
+  })
+
+  test('task row: swipe left uncovers the actions', async ({ authedPage }) => {
+    await withSettings(authedPage, { task_row_actions: 'swipe' })
+    await authedPage.goto('/tasks')
+    const swipe = authedPage.getByTestId('task-row-swipe').first()
+    await expect(swipe).toBeVisible({ timeout: 15_000 })
+    const box = (await swipe.boundingBox())!
+    const y = box.y + box.height / 2
+    await authedPage.mouse.move(box.x + box.width - 20, y)
+    await authedPage.mouse.down()
+    await authedPage.mouse.move(box.x + box.width - 160, y, { steps: 8 })
+    await authedPage.mouse.up()
+    await expect(swipe).toHaveAttribute('data-open', 'true')
+    await expect(authedPage.getByRole('dialog')).toHaveCount(0)
+  })
+
+  test('task row: a tap opens the card with the actions', async ({ authedPage }) => {
+    await withSettings(authedPage, { task_row_actions: 'card' })
+    await authedPage.goto('/tasks')
+    const row = authedPage.getByTestId('task-row-card').first()
+    await expect(row).toBeVisible({ timeout: 15_000 })
+    // The title, not the done circle: the circle keeps its own job.
+    await row.locator('.font-mono').first().click()
+    const sheet = authedPage.getByTestId('task-action-sheet')
+    await expect(sheet).toBeVisible()
+    // Close + schedule, edit, subtask, delete — and «📌 day tasks» when on.
+    await expect(sheet.getByRole('button', { name: /^(Add subtask|Подзадача)$/ })).toBeVisible()
+    expect(await sheet.getByRole('button').count()).toBeGreaterThanOrEqual(5)
+    await authedPage.keyboard.press('Escape')
+    await expect(sheet).toBeHidden()
+  })
 })
+
+/**
+ * Substitutes account settings in the /auth/me answer for this page only, and
+ * blocks settings writes: the e2e account is a real person's staging account.
+ */
+async function withSettings(page: Page, settings: Record<string, unknown>) {
+  await page.route('**/api/auth/me', (route) =>
+    route.request().method() === 'PATCH' ? route.abort() : route.fallback(),
+  )
+  await page.addInitScript((extra) => {
+    const orig = window.fetch.bind(window)
+    window.fetch = async (input, init) => {
+      const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url
+      const res = await orig(input, init)
+      if (!url.includes('/api/auth/me') || (init?.method && init.method !== 'GET')) return res
+      const body = await res.clone().json()
+      body.data.settings = { ...(body.data.settings ?? {}), ...extra }
+      return new Response(JSON.stringify(body), { status: res.status, headers: { 'Content-Type': 'application/json' } })
+    }
+  }, settings)
+}
+
+function testInfo_shots(name: string): string {
+  return `C:/Users/zd/AppData/Local/Temp/claude/E--Projects-007---Ventures-V003---NeuroBoost/04e1a014-f855-4c44-926c-c4003cfaca56/scratchpad/sweep375/${name}`
+}

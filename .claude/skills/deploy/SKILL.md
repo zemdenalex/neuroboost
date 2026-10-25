@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 # Deploy NeuroBoost to Production
 
-Deploy the current branch to production at neuroboost.website.
+Deploy the current branch to production at neuroboost.space.
 
 ## Pre-flight Checks
 
@@ -45,7 +45,7 @@ Deploy the current branch to production at neuroboost.website.
    sleep 10
 
    # Check health endpoint
-   curl -s https://neuroboost.website/api/health | jq .
+   curl -s https://neuroboost.space/api/health | jq .
 
    # Check all containers are running
    docker compose ps
@@ -55,7 +55,7 @@ Deploy the current branch to production at neuroboost.website.
    docker compose logs --tail=20 web
    ```
 
-6. **Verify in browser:** Open https://neuroboost.website and check:
+6. **Verify in browser:** Open https://neuroboost.space and check:
    - Page loads without errors
    - Login works
    - Console has no errors

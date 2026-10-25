@@ -21,7 +21,7 @@ import { request as playwrightRequest, type APIRequestContext } from '@playwrigh
  * question and the answer.
  */
 
-const API_BASE = process.env.E2E_API_URL ?? process.env.E2E_BASE_URL ?? 'https://dev.neuroboost.website'
+const API_BASE = process.env.E2E_API_URL ?? process.env.E2E_BASE_URL ?? 'https://dev.neuroboost.space'
 
 interface Ctx {
   api: APIRequestContext

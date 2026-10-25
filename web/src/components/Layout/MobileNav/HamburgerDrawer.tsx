@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Link, useLocation } from 'react-router-dom'
+import { useDayTasksEnabled } from '../../../hooks/useDayTasksEnabled'
 import { useTranslation } from 'react-i18next'
 import {
   Home,
@@ -12,6 +13,7 @@ import {
   User,
   Menu,
   X,
+  Pin,
 } from 'lucide-react'
 import { useFeatureFlags } from '../../../hooks/useFeatureFlags'
 
@@ -23,11 +25,13 @@ export function HamburgerDrawer() {
   const [isOpen, setIsOpen] = useState(false)
   const location = useLocation()
   const flags = useFeatureFlags()
+  const dayTasks = useDayTasksEnabled()
 
   const navItems = [
     { path: '/home', label: t('nav.home'), icon: Home, enabled: true },
     { path: '/calendar', label: t('nav.calendar'), icon: Calendar, enabled: true },
     { path: '/tasks', label: t('nav.tasks'), icon: CheckSquare, enabled: true },
+    { path: '/day-tasks', label: t('nav.dayTasks'), icon: Pin, enabled: dayTasks },
     { path: '/planning', label: t('nav.planning'), icon: LayoutGrid, enabled: true },
     { path: '/reflections', label: t('nav.reflections'), icon: BookOpen, enabled: true },
     { path: '/tools', label: t('nav.tools'), icon: Wrench, enabled: flags.tools },
@@ -139,7 +143,7 @@ export function HamburgerDrawer() {
       {/* Hamburger trigger button - fixed in header area on mobile */}
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed top-2.5 left-3 z-[60] md:hidden p-2 text-zinc-400 hover:text-white rounded-md hover:bg-zinc-800 transition-colors"
+        className="fixed top-[calc(0.625rem+var(--nb-safe-top))] left-3 z-[60] md:hidden p-2 text-zinc-400 hover:text-white rounded-md hover:bg-zinc-800 transition-colors"
         aria-label="Open navigation menu"
       >
         <Menu className="w-5 h-5" />
@@ -147,7 +151,7 @@ export function HamburgerDrawer() {
 
       {/* Overlay backdrop */}
       <div
-        className={`fixed inset-0 bg-black/50 z-[70] md:hidden transition-opacity duration-300 ${
+        className={`fixed inset-0 bg-scrim/50 z-[70] md:hidden transition-opacity duration-300 ${
           isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
         onClick={() => setIsOpen(false)}
@@ -156,7 +160,7 @@ export function HamburgerDrawer() {
       {/* Drawer panel */}
       <div
         ref={drawerRef}
-        className={`fixed top-0 left-0 w-72 h-full bg-zinc-900 border-r border-zinc-800 z-[80] md:hidden transition-transform duration-300 ${
+        className={`fixed top-0 left-0 pt-[var(--nb-safe-top)] w-72 h-full bg-zinc-900 border-r border-zinc-800 z-[80] md:hidden transition-transform duration-300 ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >

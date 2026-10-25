@@ -14,9 +14,11 @@ import (
 func TestSpanReachesTheAPIAsOneEvent(t *testing.T) {
 	h, fake, chat, acc := onboardedHandler(t)
 	h.startNewEventFlow(chat)
-	say(h, chat, "отпуск с 14.10 по 29.10")
+	from, fromMidnight := moscowDay(3)
+	to, toMidnight := moscowDay(18)
+	say(h, chat, "отпуск с "+from+" по "+to)
 
-	if card := fake.last(t).Text; !strings.Contains(card, "14.10 – 29.10 · 16 дней") {
+	if card := fake.last(t).Text; !strings.Contains(card, from+" – "+to+" · 16 дней") {
 		t.Fatalf("the card does not show the span:\n%s", card)
 	}
 	press(h, chat, "dr_ok")
@@ -27,8 +29,10 @@ func TestSpanReachesTheAPIAsOneEvent(t *testing.T) {
 			continue
 		}
 		posts++
-		// Europe/Moscow is UTC+3: local midnight is 21:00Z the day before.
-		if wr.Body["starts_at"] != "2026-10-13T21:00:00Z" || wr.Body["ends_at"] != "2026-10-29T21:00:00Z" || wr.Body["all_day"] != true {
+		// Local midnight in UTC; the end is the midnight after the last day.
+		wantStart := fromMidnight.UTC().Format("2006-01-02T15:04:05Z")
+		wantEnd := toMidnight.AddDate(0, 0, 1).UTC().Format("2006-01-02T15:04:05Z")
+		if wr.Body["starts_at"] != wantStart || wr.Body["ends_at"] != wantEnd || wr.Body["all_day"] != true {
 			t.Errorf("sent %v – %v all_day %v", wr.Body["starts_at"], wr.Body["ends_at"], wr.Body["all_day"])
 		}
 	}

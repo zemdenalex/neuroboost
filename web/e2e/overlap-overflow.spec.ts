@@ -13,7 +13,7 @@ import { localMidnightUtc } from './fixtures/localTime'
  * out of the browser, and compare them against the column meant to hold them.
  */
 
-const API_BASE = process.env.E2E_API_URL ?? process.env.E2E_BASE_URL ?? 'https://dev.neuroboost.website'
+const API_BASE = process.env.E2E_API_URL ?? process.env.E2E_BASE_URL ?? 'https://dev.neuroboost.space'
 
 test.describe('overlapping events stay inside their day column', () => {
   test('eight overlapping events do not leave the column', async ({ authedPage, session }) => {

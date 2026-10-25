@@ -178,7 +178,7 @@ export function CalendarFilter({ calendars, hidden, onToggle, onCalendarsChanged
                         type="button"
                         data-testid="invitation-accept"
                         onClick={() => void respond(cal.id, true)}
-                        className="flex items-center gap-1 rounded bg-blue-600 px-2 py-1 text-xs text-white hover:bg-blue-700"
+                        className="flex items-center gap-1 rounded bg-blue-600 px-2 py-1 text-xs text-onaccent hover:bg-blue-700"
                       >
                         <Check className="h-3 w-3" />
                         {tSettings('share.accept')}
@@ -412,7 +412,7 @@ export function CalendarFilter({ calendars, hidden, onToggle, onCalendarsChanged
                 // An icon, not the word: "Создать" beside a text field is what
                 // overflowed a 20rem panel and clipped the button in the first
                 // place. The label lives on the input's placeholder.
-                className="shrink-0 rounded bg-blue-600 px-2 py-1 text-white transition-colors hover:bg-blue-700 disabled:bg-zinc-700 disabled:text-zinc-500"
+                className="shrink-0 rounded bg-blue-600 px-2 py-1 text-onaccent transition-colors hover:bg-blue-700 disabled:bg-zinc-700 disabled:text-zinc-500"
               >
                 <Plus className="h-4 w-4" />
               </button>

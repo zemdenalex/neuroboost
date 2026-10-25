@@ -22,7 +22,8 @@ import (
 // The pin: len(screensWithoutHelp) must equal maxWithoutHelp exactly. Adding a
 // line makes it longer and fails; giving a listed screen its «ℹ️» fails until
 // the line is removed and the number lowered — so the list tracks the code.
-const maxWithoutHelp = 65
+// MenuTour (26.09) is itself an explanation, like HelpBack.
+const maxWithoutHelp = 66
 
 var screensWithoutHelp = []string{
 	"AgendaActions", "BackToList", "BackToMenu", "BackToTasks", "BroadcastConfirm",
@@ -31,7 +32,7 @@ var screensWithoutHelp = []string{
 	"DraftBack", "DraftCard", "DraftCardInList", "DraftDay", "DraftEditMenu",
 	"EventCard", "EventDeleteConfirm", "EventEditor", "EventPicker", "FeedbackKinds",
 	"FreqPicker", "GuideMore", "HelpBack", "HomeInlineFor", "Linking",
-	"ListCard", "ListConfirm", "ListPick", "ManyDates", "MonthGrid",
+	"ListCard", "ListConfirm", "ListPick", "ManyDates", "MenuTour", "MonthGrid",
 	"None", "OnboardNext", "QuickAddKind", "ReminderPicker", "RepeatEndPicker",
 	"RestartNewEvent", "SettingsMenu", "SpanFix", "StatsNav", "StatsScale",
 	"TaskActions", "TaskCard", "TaskDue", "TaskEstimate", "TaskListEmpty",

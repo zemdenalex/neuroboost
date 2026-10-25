@@ -4,9 +4,13 @@ import { Grid2X2, RefreshCw, AlertCircle } from 'lucide-react'
 import { getTasks, updateTask } from '../../api'
 import type { Task } from '../../types'
 import { PRIORITY_DOT_COLORS } from '../../lib/priority'
+import { PriorityMark } from '../../components/PriorityMark'
 // The matrix rule lives in a leaf module so it can be tested; this page
 // renders it. Do not re-declare it here — two copies would drift.
-import { priorityToQuadrant, QUADRANT_TO_PRIORITY, type QuadrantId } from '../../lib/tools/eisenhower'
+import { dropPriority, taskQuadrant, type QuadrantId } from '../../lib/tools/eisenhower'
+import { todayInZone } from '../../lib/dayTasks/dayColour'
+import { useAuthContext } from '../../contexts/AuthContext'
+import { showToast } from '../../components/ui/Toast'
 
 // ─── Priority → Quadrant mapping ─────────────────────────────────────────────
 
@@ -84,10 +88,7 @@ function TaskCard({ task, dotColor, onDragStart }: TaskCardProps) {
       className="group flex items-start gap-2 px-3 py-2 bg-zinc-900 border border-zinc-700/50
         rounded-lg cursor-grab active:cursor-grabbing hover:border-zinc-600 transition-colors select-none"
     >
-      <span
-        className={`mt-1.5 w-2 h-2 rounded-full flex-shrink-0 ${dotClass}`}
-        aria-hidden
-      />
+      <PriorityMark priority={task.priority} circleClass={dotClass} className="mt-1.5" />
       <span className="text-sm text-zinc-200 leading-snug break-words min-w-0 flex-1">
         {task.title}
       </span>
@@ -185,6 +186,10 @@ function AxisLabels() {
 
 export default function Eisenhower() {
   const { t } = useTranslation('tools')
+  // Urgency comes from the due date against the person's own day (4.9).
+  const { user } = useAuthContext()
+  const today = todayInZone(new Date(), user?.timezone || 'Europe/Moscow')
+  const quadrantOf = (task: Task) => taskQuadrant({ priority: task.priority, due_date: task.dueDate }, today)
 
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
@@ -214,7 +219,7 @@ export default function Eisenhower() {
 
   // ── Group tasks into quadrants ──────────────────────────────────────────────
   function getQuadrantTasks(qId: QuadrantId): Task[] {
-    return tasks.filter((t) => priorityToQuadrant(t.priority) === qId)
+    return tasks.filter((t) => quadrantOf(t) === qId)
   }
 
   // ── Drag handlers ───────────────────────────────────────────────────────────
@@ -242,9 +247,11 @@ export default function Eisenhower() {
     dragTaskRef.current = null
     if (!task) return
 
-    const newPriority = QUADRANT_TO_PRIORITY[targetQId]
-    const currentQId = priorityToQuadrant(task.priority)
-    if (currentQId === targetQId) return
+    // A drop moves importance only; urgency is the due date's (Denis 25.09, 4.9).
+    const newPriority = dropPriority(task.priority, targetQId)
+    const landsIn = taskQuadrant({ priority: newPriority, due_date: task.dueDate }, today)
+    if (landsIn !== targetQId) showToast(t('eisenhower.urgencyByDue'))
+    if (newPriority === task.priority) return
 
     // Optimistic update
     setTasks((prev) =>

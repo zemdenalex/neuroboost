@@ -77,7 +77,7 @@ export function AcceptInvite() {
             <button
               type="button"
               onClick={() => navigate('/calendar')}
-              className="w-full rounded bg-blue-600 px-3 py-2 text-sm text-white transition-colors hover:bg-blue-700"
+              className="w-full rounded bg-blue-600 px-3 py-2 text-sm text-onaccent transition-colors hover:bg-blue-700"
             >
               {t('share.goToCalendar')}
             </button>

@@ -8,6 +8,6 @@ echo "[check] API health (container)"
 curl -fsS http://127.0.0.1:8080/api/health || { echo "API health failed"; exit 1; }
 
 echo "[check] Nginx → API (host)"
-curl -fsS https://neuroboost.website/api/health || { echo "Nginx/API public check failed"; exit 1; }
+curl -fsS https://neuroboost.space/api/health || { echo "Nginx/API public check failed"; exit 1; }
 
 echo "[ok] All checks passed"

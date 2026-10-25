@@ -192,7 +192,7 @@ export function Login() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 disabled:cursor-not-allowed text-white font-mono rounded-lg flex items-center justify-center gap-2 transition-colors"
+              className="w-full py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 disabled:cursor-not-allowed text-onaccent font-mono rounded-lg flex items-center justify-center gap-2 transition-colors"
             >
               {loading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />

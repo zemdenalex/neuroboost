@@ -17,7 +17,7 @@ import { defineConfig, devices } from '@playwright/test'
  * the deployed build works, and the loop that uses this runs unattended, where
  * a dev server that silently died reads as a broken app.
  */
-const baseURL = process.env.E2E_BASE_URL ?? 'https://dev.neuroboost.website'
+const baseURL = process.env.E2E_BASE_URL ?? 'https://dev.neuroboost.space'
 
 export default defineConfig({
   testDir: './e2e',

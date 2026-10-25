@@ -15,8 +15,8 @@ import (
 
 	"github.com/zemdenalex/neuroboost-bot/internal/api"
 	"github.com/zemdenalex/neuroboost-bot/internal/config"
-	"github.com/zemdenalex/neuroboost-bot/internal/parse"
 	"github.com/zemdenalex/neuroboost-bot/internal/state"
+	"github.com/zemdenalex/neuroboost-bot/parse"
 )
 
 // fakeAccount is /api/auth/me for one user: a timezone column and a settings

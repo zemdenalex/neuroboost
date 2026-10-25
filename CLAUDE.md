@@ -3,8 +3,8 @@
 Calendar-first productivity app for neurodivergent users. Go backend + React/TypeScript frontend +
 PostgreSQL + Telegram bot. "The calendar is truth; tasks exist to support scheduling and reflection."
 
-**Live:** https://neuroboost.website · **Staging:** https://dev.neuroboost.website
-**Released:** `v0.4.11.5` (24.09.2026 — задачи дня в боте, правки D2, без длинных тире; только бот, API без изменений; 22 миграции; прод-бот на `3e72c4f`) · **Unreleased:**
+**Live:** https://neuroboost.space · **Staging:** https://dev.neuroboost.space
+**Released:** `v0.4.11.6` (26.09.2026 — бот: цвет дня D3 в месяце и на «Сегодня», переключатели задач дня, подзадачи; API: `before_start` в `GET /api/day-tasks`; веб не менялся; прод и прод-бот на `22682e4`) · **Unreleased:**
 всё, что после, — на `develop`; план 11.4 — `docs/superpowers/specs/2026-09-21-v04114-bot-design.md`
 
 > 🟢 **Последний релиз — `v0.4.11.1` (16.09.2026), целиком ботовый.** Разбор строки
@@ -133,7 +133,7 @@ cd web && pnpm build
 cd web && pnpm dev          # порт 5173
 
 # e2e с этой машины — одной командой (sandbox off: он режет loopback)
-web/scripts/e2e-local.sh [--staging] [--project desktop] [spec…]   # локальная сборка против staging API; --staging = как CI
+web/scripts/e2e-local.sh [--staging|--dev] [--project desktop] [spec…]   # сборка (build+preview) против staging API; --staging = как CI; --dev = vite dev (флакает)
 
 # dev-бот на nl-2 — одной командой; падает, если нет «Bot started». Прод — только руками по «да»
 scripts/deploy-dev-bot.sh [ref]                                     # по умолчанию develop
@@ -301,9 +301,9 @@ cd web && pnpm test --run                      # сколько тестов н�
     test bot»), но **не деплоит ни одного** — ни dev, ни прод. Telegram недоступен с основного
     хоста, поэтому оба бота вынесены на nl-2 и обновляются руками.
     - **dev:** `/opt/neuroboost-bot`, контейнер `neuroboost-dev-bot`, **@NeuroBoost_dev_bot**,
-      `API_BASE=https://dev.neuroboost.website`
+      `API_BASE=https://dev.neuroboost.space`
     - **прод:** `/opt/neuroboost-bot-prod`, контейнер `neuroboost-prod-bot`,
-      **@NeuroBoost_assistant_bot**, `API_BASE=https://neuroboost.website`
+      **@NeuroBoost_assistant_bot**, `API_BASE=https://neuroboost.space`
     - 🟢 **dev — `scripts/deploy-dev-bot.sh`** (22.09): те же шаги ниже плюс проверка «Bot started» в
       логах нового контейнера, три последних бэкапа `src.bak-*`. Прод — по-прежнему руками.
     - Обновление (обе среды одинаково): `cd /opt/neuroboost-bot{,-prod} && mv src src.bak-<дата>`,
@@ -321,7 +321,7 @@ cd web && pnpm test --run                      # сколько тестов н�
 19b. ⚠ **Прежняя редакция этой записи (только про прод-бота):** `/opt/neuroboost-bot-prod` — это `.env`,
     `docker-compose.yml` и **скопированная** папка `src`. Обновление:
     `git archive --prefix=src/ <tag>:bot | ssh …`, затем `docker compose up -d --build`.
-    `API_BASE=https://neuroboost.website`. Ключ — `~/.ssh/ufo_servers`, `root@185.214.10.107`.
+    `API_BASE=https://neuroboost.space`. Ключ — `~/.ssh/ufo_servers`, `root@185.214.10.107`.
     До 18.08 там лежали исходники **от 17 июня**.
 20. ⚠ **`git pull` на проде падает от ручных правок на сервере.** Деплой `v0.4.10` сорвался
     первым заходом: `scripts/backup.sh` чинили руками на хосте 14.08, в `main` починка не

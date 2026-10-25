@@ -78,6 +78,9 @@ temp/
 
 # Docker (keep compose files)
 .dockerignore
+# ...except the root one: the api image builds from the repo root and it keeps
+# .env, web/ and ref/ out of that context (api-go/Dockerfile).
+!/.dockerignore
 docker-compose.override.yml
 
 # Backup files

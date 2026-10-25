@@ -31,7 +31,7 @@ import { localMidnightUtc } from './fixtures/localTime'
  * edits two fields is the test that could not fail.
  */
 
-const API_BASE = process.env.E2E_API_URL ?? process.env.E2E_BASE_URL ?? 'https://dev.neuroboost.website'
+const API_BASE = process.env.E2E_API_URL ?? process.env.E2E_BASE_URL ?? 'https://dev.neuroboost.space'
 
 async function apiContext(token: string): Promise<APIRequestContext> {
   return playwrightRequest.newContext({

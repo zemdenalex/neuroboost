@@ -1,3 +1,4 @@
+import { scrollGridToTop } from './fixtures/grid'
 import {
   test,
   expect,
@@ -46,7 +47,7 @@ import { localMidnightUtc } from './fixtures/localTime'
  * runs anywhere the API is reachable.
  */
 
-const API_BASE = process.env.E2E_API_URL ?? process.env.E2E_BASE_URL ?? 'https://dev.neuroboost.website'
+const API_BASE = process.env.E2E_API_URL ?? process.env.E2E_BASE_URL ?? 'https://dev.neuroboost.space'
 
 // Long enough to overflow any block, and recognisable in a failure screenshot.
 const LONG_NAME = 'Александра Константинопольская-Верещагина'
@@ -127,6 +128,9 @@ async function expectContained(block: Locator, label: string) {
   // rendering bug on screen and make every bound below ambiguous.
   await expect(author, `${label}: the author is printed twice`).toHaveCount(1)
 
+  // The grid opens near the current hour since MW11: back to 00:00, the
+  // screen this spec's time band was chosen for.
+  await scrollGridToTop(block.page())
   const blockBox = await block.boundingBox()
   const badgeBox = await badge.boundingBox()
   const authorBox = await author.boundingBox()

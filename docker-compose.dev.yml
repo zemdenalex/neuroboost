@@ -1,5 +1,5 @@
 # Dev environment — separate containers, ports, volumes from production
-# Deployed from 'develop' branch to dev.neuroboost.website
+# Deployed from 'develop' branch to dev.neuroboost.space
 
 services:
   db:
@@ -23,8 +23,10 @@ services:
 
   api:
     build:
-      context: ./api-go
-      dockerfile: Dockerfile
+      # Repo root, not ./api-go: the api imports the bot's line parser
+      # (bot/parse) through a go.mod replace. See api-go/Dockerfile.
+      context: .
+      dockerfile: api-go/Dockerfile
     container_name: neuroboost-dev-api
     environment:
       DATABASE_URL: postgres://${POSTGRES_USER:-neuroboost}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-neuroboost}?sslmode=disable
@@ -36,7 +38,9 @@ services:
       TELEGRAM_NOTIFICATION_BOT_TOKEN: ${TELEGRAM_NOTIFICATION_BOT_TOKEN}
       # Guards /api/svc/*. Unset closes those endpoints with 503.
       SERVICE_TOKEN: ${SERVICE_TOKEN}
-      FRONTEND_URL: ${FRONTEND_URL:-https://dev.neuroboost.website}
+      # Guards /api/inbox (inbox bot + scripts/inbox.py). Unset closes it with 503.
+      INBOX_API_TOKEN: ${INBOX_API_TOKEN}
+      FRONTEND_URL: ${FRONTEND_URL:-https://dev.neuroboost.space}
     depends_on:
       db:
         condition: service_healthy
@@ -55,7 +59,7 @@ services:
       context: ./web
       dockerfile: Dockerfile
       args:
-        VITE_API_URL: ${FRONTEND_URL:-https://dev.neuroboost.website}/api
+        VITE_API_URL: ${FRONTEND_URL:-https://dev.neuroboost.space}/api
     container_name: neuroboost-dev-web
     depends_on:
       - api
