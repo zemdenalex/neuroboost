@@ -1,0 +1,545 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NeuroBoost v0.4.12.0 — решения и проверка</title>
+<style>
+:root{
+  --bg:#f3f5f8;--surface:#fff;--surface2:#eaeef3;--border:#d3dae3;--text:#18202b;--muted:#5a6676;
+  --accent:#2457d6;--accent-soft:#dfe8fb;--ok:#1a7f37;--ok-soft:#dcf2e2;--warn:#9a6700;--warn-soft:#faefcf;
+  --bad:#c62828;--bad-soft:#fbe0df;--you:#7a3fd1;--you-soft:#ebe0fa;--tg:#2a7fc4;
+  --r1:4px;--r2:8px;--r3:12px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0e1218;--surface:#161c25;--surface2:#1e2630;--border:#2b3441;--text:#e7ebf1;--muted:#98a3b3;
+  --accent:#6b9bff;--accent-soft:#1b2a4a;--ok:#4cc26a;--ok-soft:#14301d;--warn:#e0b04a;--warn-soft:#352b10;
+  --bad:#ff7b76;--bad-soft:#3a1816;--you:#b890f5;--you-soft:#2a1c44;--tg:#5aa9e6;
+}}
+:root[data-theme="dark"]{
+  --bg:#0e1218;--surface:#161c25;--surface2:#1e2630;--border:#2b3441;--text:#e7ebf1;--muted:#98a3b3;
+  --accent:#6b9bff;--accent-soft:#1b2a4a;--ok:#4cc26a;--ok-soft:#14301d;--warn:#e0b04a;--warn-soft:#352b10;
+  --bad:#ff7b76;--bad-soft:#3a1816;--you:#b890f5;--you-soft:#2a1c44;--tg:#5aa9e6;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:1080px;margin:0 auto;padding:0 16px 80px}
+header.top{padding:28px 0 8px}
+h1{font-size:1.75rem;line-height:1.2;margin:0 0 6px}
+h2{font-size:1.3rem;margin:44px 0 6px;line-height:1.25}
+h3{font-size:1.02rem;margin:0 0 6px}
+p{margin:0 0 10px}
+.lead{color:var(--muted);margin:0}
+.sec-no{display:inline-block;min-width:1.7em;color:var(--accent);font-weight:700}
+.sub{color:var(--muted);margin:0 0 16px}
+code,.mono{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:.88em;background:var(--surface2);padding:1px 5px;border-radius:var(--r1)}
+a{color:var(--accent)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r3);padding:16px}
+.grid{display:grid;gap:12px}
+.stats{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-top:18px}
+.stat b{display:block;font-size:1.6rem;line-height:1.1}
+.stat span{color:var(--muted);font-size:.86rem}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:7px;vertical-align:baseline;background:var(--muted)}
+.dot.ok{background:var(--ok)}.dot.warn{background:var(--warn)}.dot.bad{background:var(--bad)}.dot.you{background:var(--you)}
+.tag{display:inline-block;font-size:.74rem;font-weight:700;letter-spacing:.03em;text-transform:uppercase;padding:2px 7px;border-radius:var(--r1);margin-right:6px}
+.tag.you{background:var(--you-soft);color:var(--you)}.tag.me{background:var(--accent-soft);color:var(--accent)}
+.tag.ok{background:var(--ok-soft);color:var(--ok)}.tag.warn{background:var(--warn-soft);color:var(--warn)}.tag.bad{background:var(--bad-soft);color:var(--bad)}
+.two{display:grid;gap:20px;grid-template-columns:minmax(0,1fr)}
+@media(min-width:820px){.two{grid-template-columns:minmax(300px,420px) minmax(0,1fr);align-items:start}.two.rev{grid-template-columns:minmax(0,1fr) minmax(300px,420px)}}
+svg{display:block;width:100%;height:auto}
+svg text{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;fill:var(--text)}
+svg .m{fill:var(--muted)}
+.f-s{fill:var(--surface)}.f-s2{fill:var(--surface2)}.f-ok{fill:var(--ok-soft)}.f-warn{fill:var(--warn-soft)}.f-bad{fill:var(--bad-soft)}.f-you{fill:var(--you-soft)}.f-acc{fill:var(--accent-soft)}.f-tg{fill:var(--tg)}
+.s-b{stroke:var(--border)}.s-ok{stroke:var(--ok)}.s-bad{stroke:var(--bad)}.s-you{stroke:var(--you)}.s-acc{stroke:var(--accent)}.s-m{stroke:var(--muted)}.s-warn{stroke:var(--warn)}
+.fill-bad{fill:var(--bad)}.fill-ok{fill:var(--ok)}.fill-acc{fill:var(--accent)}.fill-you{fill:var(--you)}
+.ink{fill:var(--text)}
+/* decisions */
+.dec{margin-top:12px}
+.dec h3{display:flex;gap:8px;align-items:baseline}
+.dec .n{color:var(--accent);font-weight:700}
+.opts{display:grid;gap:8px;margin-top:10px}
+.opt{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--border);border-radius:var(--r2);padding:10px 12px;cursor:pointer;background:var(--surface)}
+.opt:hover{border-color:var(--accent)}
+.opt input{margin-top:5px;accent-color:var(--accent);flex:none}
+.opt.rec{border-color:var(--ok);background:var(--ok-soft)}
+.opt b{display:block}
+.opt small{color:var(--muted);display:block}
+.size{font-family:ui-monospace,Consolas,monospace;font-size:.8rem;color:var(--muted)}
+button{font:inherit;cursor:pointer;border-radius:var(--r2);border:1px solid var(--accent);background:var(--accent);color:#fff;padding:9px 16px;font-weight:600}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]) button{color:#0b1220}}
+button.ghost,:root:not([data-theme="light"]) button.ghost{background:transparent;color:var(--accent)}
+.answer{margin-top:14px}
+.answer pre{white-space:pre-wrap;margin:10px 0 0;background:var(--surface2);border-radius:var(--r2);padding:10px 12px;font:.88rem/1.5 ui-monospace,Consolas,monospace}
+/* chat */
+.chat{display:grid;gap:8px;background:var(--surface2);border-radius:var(--r3);padding:14px}
+.b{max-width:88%;padding:8px 12px;border-radius:12px;font-size:.95rem}
+.b.me{justify-self:end;background:var(--tg);color:#fff;border-bottom-right-radius:4px}
+.b.bot{justify-self:start;background:var(--surface);border:1px solid var(--border);border-bottom-left-radius:4px}
+.b small{display:block;opacity:.7;font-size:.74rem}
+.btnrow{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.btnrow span{background:var(--accent-soft);color:var(--accent);border-radius:var(--r1);padding:3px 9px;font-size:.86rem;font-weight:600}
+/* steps */
+ol.steps{list-style:none;margin:0;padding:0;counter-reset:s;display:grid;gap:10px}
+ol.steps>li{counter-increment:s;position:relative;padding-left:42px;min-height:30px}
+ol.steps>li::before{content:counter(s);position:absolute;left:0;top:0;width:28px;height:28px;border-radius:var(--r2);background:var(--accent);color:#fff;font-weight:700;display:grid;place-items:center}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]) ol.steps>li::before{color:#0b1220}}
+.pwa{grid-template-columns:repeat(auto-fit,minmax(min(250px,100%),1fr))}
+.pwa svg{max-width:240px;margin:0 auto 8px}
+/* checklist */
+.tier{margin-top:12px}
+.tier>summary,.tier>.hd{cursor:pointer;display:flex;gap:10px;align-items:center;flex-wrap:wrap;list-style:none}
+.tier>summary::-webkit-details-marker{display:none}
+.tier summary::before{content:"+";font-weight:700;color:var(--accent);width:1em}
+.tier[open] summary::before{content:"−"}
+.chk{display:grid;gap:2px;margin-top:10px}
+.chk label{display:flex;gap:10px;align-items:flex-start;padding:7px 4px;border-radius:var(--r1);cursor:pointer}
+.chk label:hover{background:var(--surface2)}
+.chk input{margin-top:5px;accent-color:var(--ok);flex:none;width:17px;height:17px}
+.chk input:checked+span{color:var(--muted);text-decoration:line-through}
+.ref{font-family:ui-monospace,Consolas,monospace;font-size:.78rem;color:var(--accent);margin-right:6px}
+.prog{height:6px;border-radius:3px;background:var(--surface2);overflow:hidden;margin-top:8px}
+.prog i{display:block;height:100%;width:0;background:var(--ok);transition:width .2s}
+.note{border-left:3px solid var(--warn);background:var(--warn-soft);border-radius:var(--r1);padding:10px 12px;margin:12px 0}
+.note.bad{border-color:var(--bad);background:var(--bad-soft)}
+.note.ok{border-color:var(--ok);background:var(--ok-soft)}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:.88rem;color:var(--muted);margin-top:10px}
+footer{margin-top:50px;color:var(--muted);font-size:.86rem}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <div class="mono" style="background:none;padding:0;color:var(--muted)">NeuroBoost · V003 · 25.10.2026</div>
+  <h1>Релиз v0.4.12.0: что решить и что проверить</h1>
+  <p class="lead">Цикл остановлен, ничего не крутится. Всё готово к релизу и ждёт твоего слова. Ниже: где мы, четыре решения, шаги для тебя и проверка по порядку.</p>
+  <div class="grid stats">
+    <div class="card stat"><b>225</b><span>коммитов в <code>develop</code>, которых нет в <code>main</code></span></div>
+    <div class="card stat"><b><span class="dot ok"></span>зелёный</b><span>CI на <code>9b1e886</code>: backend, frontend, docker, deploy-dev, e2e</span></div>
+    <div class="card stat"><b>v0.4.11.6</b><span>сейчас на проде. Мерж PR #11 = релиз прода</span></div>
+    <div class="card stat"><b id="openCount">71 / 85</b><span>пунктов приёмки ещё не отмечены в чеклисте</span></div>
+  </div>
+</header>
+
+<!-- ============ 1. WHERE ============ -->
+<h2><span class="sec-no">1</span>Где мы сейчас</h2>
+<p class="sub">Путь от кода до прода. Фиолетовое — шаги твои, синее — мои после твоего слова.</p>
+<div class="two">
+  <div class="card">
+  <svg viewBox="0 0 360 770" role="img" aria-label="Схема релиза: develop, staging, PR, слово Дениса, бэкап, мерж, проверка, прод-бот, тег, broadcast">
+    <defs><marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" class="fill-acc"/></marker></defs>
+    <!-- node helper layout: x=20 w=320 h=58 -->
+    <g>
+      <rect x="20" y="8" width="320" height="58" rx="8" class="f-ok s-ok" stroke-width="1.5"/>
+      <text x="36" y="32" font-size="14" font-weight="700">develop → staging</text>
+      <text x="36" y="52" font-size="12" class="m">dev.neuroboost.space · CI зелёный</text>
+      <text x="324" y="32" font-size="12" text-anchor="end" class="fill-ok" font-weight="700">готово</text>
+    </g>
+    <line x1="180" y1="66" x2="180" y2="92" class="s-acc" stroke-width="2" marker-end="url(#ar)"/>
+    <g>
+      <rect x="20" y="94" width="320" height="58" rx="8" class="f-ok s-ok" stroke-width="1.5"/>
+      <text x="36" y="118" font-size="14" font-weight="700">PR #11 develop → main</text>
+      <text x="36" y="138" font-size="12" class="m">открыт, статус CLEAN, конфликтов нет</text>
+      <text x="324" y="118" font-size="12" text-anchor="end" class="fill-ok" font-weight="700">готово</text>
+    </g>
+    <line x1="180" y1="152" x2="180" y2="178" class="s-acc" stroke-width="2" marker-end="url(#ar)"/>
+    <g>
+      <rect x="20" y="180" width="320" height="66" rx="8" class="f-you s-you" stroke-width="2.5"/>
+      <text x="36" y="205" font-size="14" font-weight="700">ТЫ: слово «мержи PR #11»</text>
+      <text x="36" y="224" font-size="12" class="m">нужно твоё слово напрямую, пересказ не считается</text>
+      <text x="36" y="239" font-size="12" class="m">решения 1–2 ниже</text>
+      <text x="324" y="205" font-size="12" text-anchor="end" class="fill-you" font-weight="700">ждём</text>
+    </g>
+    <line x1="180" y1="246" x2="180" y2="272" class="s-acc" stroke-width="2" marker-end="url(#ar)"/>
+    <g>
+      <rect x="20" y="274" width="320" height="58" rx="8" class="f-acc s-acc" stroke-width="1.5"/>
+      <text x="36" y="298" font-size="14" font-weight="700">Бэкап БД прода</text>
+      <text x="36" y="318" font-size="12" class="m">backup.sh, скрипт сам проверяет дамп</text>
+    </g>
+    <line x1="180" y1="332" x2="180" y2="358" class="s-acc" stroke-width="2" marker-end="url(#ar)"/>
+    <g>
+      <rect x="20" y="360" width="320" height="58" rx="8" class="f-acc s-acc" stroke-width="1.5"/>
+      <text x="36" y="384" font-size="14" font-weight="700">Мерж → CI выкатывает на прод</text>
+      <text x="36" y="404" font-size="12" class="m">ждём «deploy: success», применится 000023</text>
+    </g>
+    <line x1="180" y1="418" x2="180" y2="444" class="s-acc" stroke-width="2" marker-end="url(#ar)"/>
+    <g>
+      <rect x="20" y="446" width="320" height="58" rx="8" class="f-acc s-acc" stroke-width="1.5"/>
+      <text x="36" y="470" font-size="14" font-weight="700">Проверка HTTPS и API</text>
+      <text x="36" y="490" font-size="12" class="m">neuroboost.space/api/health отвечает 200</text>
+    </g>
+    <line x1="180" y1="504" x2="180" y2="530" class="s-acc" stroke-width="2" marker-end="url(#ar)"/>
+    <g>
+      <rect x="20" y="532" width="320" height="58" rx="8" class="f-acc s-acc" stroke-width="1.5"/>
+      <text x="36" y="556" font-size="14" font-weight="700">Прод-бот на nl-2 вручную</text>
+      <text x="36" y="576" font-size="12" class="m">CI бота не выкатывает, WEBAPP_URL на новый домен</text>
+    </g>
+    <line x1="180" y1="590" x2="180" y2="616" class="s-acc" stroke-width="2" marker-end="url(#ar)"/>
+    <g>
+      <rect x="20" y="618" width="320" height="58" rx="8" class="f-acc s-acc" stroke-width="1.5"/>
+      <text x="36" y="642" font-size="14" font-weight="700">Тег v0.4.12.0 + main → develop</text>
+      <text x="36" y="662" font-size="12" class="m">метка постфактум, ничего не запускает</text>
+    </g>
+    <line x1="180" y1="676" x2="180" y2="702" class="s-acc" stroke-width="2" marker-end="url(#ar)"/>
+    <g>
+      <rect x="20" y="704" width="320" height="58" rx="8" class="f-you s-you" stroke-width="1.5"/>
+      <text x="36" y="728" font-size="14" font-weight="700">ТЫ: /broadcast</text>
+      <text x="36" y="748" font-size="12" class="m">сообщение пользователям о новой версии</text>
+    </g>
+  </svg>
+  </div>
+  <div>
+    <div class="card">
+      <h3>Что уйдёт на прод</h3>
+      <p>Веб догнал бота и стал приложением в Telegram:</p>
+      <ul style="margin:0 0 8px;padding-left:20px">
+        <li><b>Telegram Mini App.</b> Кнопка «Календарь» в боте, цвета твоей темы Telegram, кнопка «Назад», ссылки <code>?startapp=</code>.</li>
+        <li><b>Телефон.</b> Нижняя панель «Календарь · Добавить · Ещё», день, месяц на выбор, «Что дальше».</li>
+        <li><b>Из бота в веб.</b> Разбор строки одним полем, повторы, подзадачи, теги, «Что нового», светлая тема.</li>
+        <li><b>Полный экран и установка.</b> Флажок в настройках Mini App и PWA для браузера. Это ночная задача.</li>
+        <li><b>Inbox-бот.</b> Две новые таблицы в БД (решение 2).</li>
+      </ul>
+      <p class="size">Полный список: docs/relizy/v0.4.12.0.md</p>
+    </div>
+    <div class="note bad">
+      <b>Найдено, не проверял вживую.</b> Прод уже переехал на <code>neuroboost.space</code> 24.10, а Telegram Login Widget привязан к домену в BotFather. Пока не сделан <code>/setdomain</code> (раздел 3), вход через виджет в браузере, скорее всего, не работает. Mini App внутри Telegram это не затрагивает.
+    </div>
+    <div class="note">
+      <b>Что я проверить не могу.</b> Полный экран и установку PWA на настоящем телефоне. В тестах Telegram заменён двойником. Поэтому раздел 4 про это.
+    </div>
+  </div>
+</div>
+
+<!-- ============ 2. DECISIONS ============ -->
+<h2><span class="sec-no">2</span>Что решить</h2>
+<p class="sub">Выбери варианты и нажми «Скопировать ответ», потом вставь мне в чат. Можно и просто написать словами.</p>
+
+<div class="card dec" data-q="merge">
+  <h3><span class="n">1.</span> Когда мержить PR #11 (выкат на прод)?</h3>
+  <p>Полный экран включается только галочкой, поэтому на тех, кто её не ставил, он не скажется. Риск в другом: 225 коммитов, из которых ты вручную прошёл разделы 1, 5 и 6. Остальное прошло автотесты на staging, но не твои руки.</p>
+  <div class="opts">
+    <label class="opt rec"><input type="radio" name="merge" value="сначала проверю блок «до мержа» (раздел 4), потом скажу «мержи PR #11»"><span><b>Сначала проверка «до мержа», потом слово (рекомендую)</b><small>Около 15 минут на телефоне. Откат прода дороже, чем 15 минут.</small><span class="size">после слова: ~15 мин · ~50k</span></span></label>
+    <label class="opt"><input type="radio" name="merge" value="мержи PR #11 сейчас"><span><b>Мержи сейчас</b><small>Остальную приёмку пройдёшь уже на проде. Бэкап БД перед мержем делается всё равно.</small><span class="size">~15 мин · ~50k</span></span></label>
+    <label class="opt"><input type="radio" name="merge" value="пока держать PR #11"><span><b>Держать</b><small>Прод остаётся на v0.4.11.6, домен уже новый.</small></span></label>
+  </div>
+</div>
+
+<div class="card dec" data-q="migration">
+  <h3><span class="n">2.</span> Миграция <code>000023_inbox</code>: оставить в релизе или убрать?</h3>
+  <div class="two rev" style="margin-top:10px">
+    <div>
+      <p>Ты выбрал «inbox позже», а заметки релиза писали «миграций нет». Я прочитал файл: он только создаёт две новые таблицы (<code>CREATE TABLE IF NOT EXISTS</code>), на существующие данные не влияет и ни с чем не связан. Применится сама при старте API.</p>
+      <div class="opts">
+        <label class="opt rec"><input type="radio" name="migration" value="000023_inbox оставить в релизе"><span><b>Оставить (рекомендую)</b><small>Таблицы пустые и не используются, пока не запущен inbox-бот. Бэкап перед мержем всё равно снимается.</small><span class="size">~0 мин</span></span></label>
+        <label class="opt"><input type="radio" name="migration" value="000023_inbox убрать из PR"><span><b>Убрать из PR</b><small>Нужно выпилить коммиты inbox из ветки с 225 коммитами и заново прогнать CI. Это рискованнее самой миграции.</small><span class="size">~30 мин · ~100k</span></span></label>
+      </div>
+    </div>
+    <div class="card" style="background:var(--surface2)">
+      <svg viewBox="0 0 360 230" role="img" aria-label="Миграция 000023 добавляет две новые таблицы, не связанные с существующими">
+        <rect x="8" y="10" width="170" height="205" rx="8" class="f-s s-b" stroke-width="1.5"/>
+        <text x="20" y="32" font-size="12" font-weight="700">БД прода сейчас</text>
+        <text x="20" y="50" font-size="11" class="m">22 миграции</text>
+        <g class="f-s2"><rect x="20" y="62" width="70" height="26" rx="4"/><rect x="96" y="62" width="70" height="26" rx="4"/><rect x="20" y="96" width="70" height="26" rx="4"/><rect x="96" y="96" width="70" height="26" rx="4"/><rect x="20" y="130" width="70" height="26" rx="4"/><rect x="96" y="130" width="70" height="26" rx="4"/></g>
+        <text x="55" y="79" font-size="10" text-anchor="middle">user</text><text x="131" y="79" font-size="10" text-anchor="middle">event</text>
+        <text x="55" y="113" font-size="10" text-anchor="middle">task</text><text x="131" y="113" font-size="10" text-anchor="middle">reminder</text>
+        <text x="55" y="147" font-size="10" text-anchor="middle">calendar</text><text x="131" y="147" font-size="10" text-anchor="middle">…</text>
+        <text x="20" y="182" font-size="11" class="m">не трогаются</text>
+        <line x1="20" y1="190" x2="166" y2="190" class="s-ok" stroke-width="2"/>
+        <rect x="200" y="10" width="152" height="205" rx="8" class="f-acc s-acc" stroke-width="1.5" stroke-dasharray="5 4"/>
+        <text x="212" y="32" font-size="12" font-weight="700">+ 000023</text>
+        <text x="212" y="50" font-size="11" class="m">создаст при старте API</text>
+        <rect x="212" y="64" width="128" height="40" rx="4" class="f-s s-acc" stroke-width="1.2"/>
+        <text x="276" y="88" font-size="11" text-anchor="middle" font-weight="700">inbox_note</text>
+        <rect x="212" y="120" width="128" height="40" rx="4" class="f-s s-acc" stroke-width="1.2"/>
+        <text x="276" y="144" font-size="11" text-anchor="middle" font-weight="700">inbox_media</text>
+        <line x1="276" y1="104" x2="276" y2="120" class="s-acc" stroke-width="1.5"/>
+        <text x="212" y="184" font-size="10.5" class="m">связаны только друг с</text>
+        <text x="212" y="198" font-size="10.5" class="m">другом, ключей на наши нет</text>
+        <path d="M180 112 H198" class="s-m" stroke-width="2" fill="none"/>
+        <path d="M194 107 L200 112 L194 117" class="s-m" stroke-width="2" fill="none"/>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<div class="card dec" data-q="rotate">
+  <h3><span class="n">3.</span> Секреты, которые попали в логи: ротировать когда?</h3>
+  <p>Пароль БД прода попал в мой транскрипт 24.10, токен inbox-бота — 11.10. Из БД наружу порт не открыт (она внутри docker-сети), поэтому срочности нет, но в список к ротации они входят.</p>
+  <div class="opts">
+    <label class="opt rec"><input type="radio" name="rotate" value="ротацию сделать отдельным шагом после релиза"><span><b>Отдельным шагом после релиза (рекомендую)</b><small>Не смешивать с выкатом: смена пароля БД требует правки <code>.env</code> и пересоздания контейнеров. Токен inbox-бота ты меняешь сам через <code>/revoke</code> в BotFather.</small><span class="size">пароль БД: ~20 мин · ~60k</span></span></label>
+    <label class="opt"><input type="radio" name="rotate" value="ротацию сделать до мержа"><span><b>До мержа</b><small>Один раз перезапущу всё, потом релиз. Дольше, но чище.</small><span class="size">~35 мин · ~90k</span></span></label>
+    <label class="opt"><input type="radio" name="rotate" value="ротацию отложить"><span><b>Позже</b><small>Остаётся в списке блокеров.</small></span></label>
+  </div>
+</div>
+
+<div class="card dec" data-q="rest">
+  <h3><span class="n">4.</span> Остальные приёмки (разделы 2, 3, 4, 7, 8, 10 старого чеклиста)</h3>
+  <p>Их 60+ пунктов. Для релиза они не блокеры, если ты согласен проходить их на проде по ходу дня.</p>
+  <div class="opts">
+    <label class="opt rec"><input type="radio" name="rest" value="остальную приёмку проходить на проде после релиза"><span><b>После релиза, по ходу дня (рекомендую)</b><small>Всё уже прошло автотесты на staging. Находки будем чинить мелкими релизами, как ты просил 21.09.</small></span></label>
+    <label class="opt"><input type="radio" name="rest" value="всю приёмку пройти до мержа"><span><b>Всю до мержа</b><small>Прод не получит ничего непроверенного, но релиз сдвигается на часы.</small></span></label>
+  </div>
+</div>
+
+<div class="answer">
+  <button id="copyBtn" type="button">Скопировать ответ</button>
+  <button id="clearBtn" type="button" class="ghost">Сбросить</button>
+  <pre id="answerOut" hidden></pre>
+</div>
+
+<!-- ============ 3. BOTFATHER ============ -->
+<h2><span class="sec-no">3</span>Твой шаг: BotFather <code>/setdomain</code> для двух ботов</h2>
+<p class="sub">Telegram разрешает вход через виджет только на домене, записанном у бота. Старые домены у тебя кончились, нужно вписать новые. Две минуты, делается один раз.</p>
+<div class="two">
+  <div class="chat" aria-label="Пример диалога с BotFather">
+    <div class="b me">/setdomain</div>
+    <div class="b bot">Choose a bot to change linked domain.</div>
+    <div class="b me">@NeuroBoost_assistant_bot</div>
+    <div class="b bot">Please send me the domain you want to link to this bot.</div>
+    <div class="b me">neuroboost.space</div>
+    <div class="b bot">Success! Domain updated.</div>
+    <div class="b me">/setdomain</div>
+    <div class="b me">@NeuroBoost_dev_bot</div>
+    <div class="b me">dev.neuroboost.space</div>
+    <div class="b bot">Success! Domain updated.</div>
+  </div>
+  <div>
+    <ol class="steps">
+      <li>Открой чат с <b>@BotFather</b> в Telegram.</li>
+      <li>Отправь <code>/setdomain</code> и выбери <b>@NeuroBoost_assistant_bot</b> (прод). Домен: <code>neuroboost.space</code>, без <code>https://</code>.</li>
+      <li>Повтори для <b>@NeuroBoost_dev_bot</b> (staging). Домен: <code>dev.neuroboost.space</code>.</li>
+      <li>Проверь: открой <a href="https://neuroboost.space/login">neuroboost.space/login</a> в браузере и нажми «Войти через Telegram». Должно открыться окно подтверждения, а не ошибка «Bot domain invalid».</li>
+    </ol>
+    <div class="note ok" style="margin-top:14px">Токены ботов не нужны. Mini App внутри Telegram входит сам, этот шаг только для входа в обычном браузере.</div>
+  </div>
+</div>
+
+<!-- ============ 4. TESTING ============ -->
+<h2><span class="sec-no">4</span>Что проверить и как</h2>
+<p class="sub">Сначала то, что нельзя проверить без настоящего Telegram: полный экран и установка. Галочки запоминаются в этом браузере.</p>
+
+<h3 style="margin-top:18px">4.1 На что смотреть в полном экране</h3>
+<div class="two">
+  <div class="card">
+    <svg viewBox="0 0 360 372" role="img" aria-label="Два экрана телефона: правильный, где шапка под кнопками Telegram, и неправильный, где кнопки закрывают шапку">
+      <!-- OK phone -->
+      <text x="95" y="14" font-size="12" text-anchor="middle" font-weight="700" class="fill-ok">Должно быть</text>
+      <rect x="20" y="22" width="150" height="336" rx="20" class="f-s s-ok" stroke-width="2"/>
+      <rect x="20" y="22" width="150" height="62" rx="20" class="f-warn"/><rect x="20" y="50" width="150" height="34" class="f-warn"/>
+      <text x="95" y="40" font-size="9" text-anchor="middle" class="m">9:41</text>
+      <circle cx="42" cy="66" r="11" class="f-tg"/><text x="42" y="70" font-size="11" text-anchor="middle" style="fill:#fff">✕</text>
+      <circle cx="148" cy="66" r="11" class="f-tg"/><text x="148" y="70" font-size="12" text-anchor="middle" style="fill:#fff">⋯</text>
+      <text x="95" y="70" font-size="9" text-anchor="middle" class="m">Telegram</text>
+      <rect x="20" y="84" width="150" height="30" class="f-acc"/><text x="30" y="103" font-size="12" font-weight="700">NeuroBoost</text>
+      <g class="f-s2"><rect x="30" y="126" width="130" height="20" rx="4"/><rect x="30" y="152" width="100" height="20" rx="4"/><rect x="30" y="178" width="130" height="20" rx="4"/><rect x="30" y="204" width="80" height="20" rx="4"/></g>
+      <rect x="20" y="280" width="150" height="34" class="f-acc"/><text x="95" y="302" font-size="10" text-anchor="middle">Календарь · Добавить · Ещё</text>
+      <rect x="20" y="314" width="150" height="44" rx="20" class="f-warn"/><rect x="20" y="314" width="150" height="20" class="f-warn"/>
+      <rect x="62" y="342" width="66" height="4" rx="2" class="ink"/>
+      <!-- BAD phone -->
+      <text x="265" y="14" font-size="12" text-anchor="middle" font-weight="700" class="fill-bad">Баг (так было бы без починки)</text>
+      <rect x="190" y="22" width="150" height="336" rx="20" class="f-s s-bad" stroke-width="2"/>
+      <rect x="190" y="22" width="150" height="62" rx="20" class="f-warn" opacity=".5"/>
+      <rect x="190" y="38" width="150" height="30" class="f-acc"/><text x="200" y="58" font-size="12" font-weight="700">NeuroBoost</text>
+      <circle cx="212" cy="53" r="11" class="f-tg"/><text x="212" y="57" font-size="11" text-anchor="middle" style="fill:#fff">✕</text>
+      <circle cx="318" cy="53" r="11" class="f-tg"/><text x="318" y="57" font-size="12" text-anchor="middle" style="fill:#fff">⋯</text>
+      <g class="f-s2"><rect x="200" y="100" width="130" height="20" rx="4"/><rect x="200" y="126" width="100" height="20" rx="4"/><rect x="200" y="152" width="130" height="20" rx="4"/></g>
+      <rect x="190" y="316" width="150" height="34" class="f-acc"/><text x="265" y="338" font-size="10" text-anchor="middle">Календарь · Добавить · Ещё</text>
+      <rect x="232" y="342" width="66" height="4" rx="2" class="ink"/>
+      <path d="M190 37 L340 37" class="s-bad" stroke-width="1" stroke-dasharray="3 3"/>
+    </svg>
+    <div class="legend">
+      <span><span class="dot" style="background:var(--warn)"></span>занято Telegram и системой (отступ)</span>
+      <span><span class="dot" style="background:var(--tg)"></span>кнопки Telegram</span>
+    </div>
+  </div>
+  <div>
+    <p><b>Смотришь на две вещи:</b></p>
+    <ul style="margin:0 0 10px;padding-left:20px">
+      <li><b>Сверху.</b> Слово «NeuroBoost» и шапка начинаются <b>ниже</b> кнопок ✕ и ⋯ от Telegram. Кнопки ничего не перекрывают.</li>
+      <li><b>Снизу.</b> Нижняя панель «Календарь · Добавить · Ещё» стоит выше полоски жестов (на iPhone) и не залезает под неё. Кнопка «+» тоже.</li>
+    </ul>
+    <p>Это то, что ночью поймало ревью: первая версия сдвигала только тело страницы, а шапка и панель прикреплены к экрану и оставались под кнопками. Починено, на двойнике Telegram тест красный без починки и зелёный с ней. На живом Telegram — не проверено, поэтому тут нужен ты.</p>
+    <div class="note">Если шапка под кнопками: скриншот и название устройства. Какой у тебя Telegram (iOS, Android, Desktop) — тоже важно: полный экран умеют не все версии.</div>
+  </div>
+</div>
+
+<h3 style="margin-top:26px">4.2 Как включить полный экран</h3>
+<div class="card">
+  <ol class="steps">
+    <li>Открой <b>dev-бота</b> @NeuroBoost_dev_bot в Telegram (на staging уже вся новая версия).</li>
+    <li>Нажми кнопку <b>«Календарь»</b> слева от поля ввода. Mini App откроется без экрана входа.</li>
+    <li>Внизу открой <b>Ещё → ⚙️ Настройки</b> и прокрути до раздела <b>Telegram</b>. Он виден только внутри Telegram.</li>
+    <li>Поставь флажок <b>«Полный экран»</b>. Окно должно уйти на весь экран.</li>
+    <li>Закрой Mini App и открой снова. Он должен сразу открыться на весь экран.</li>
+    <li>Сними флажок — снова обычное окно. Если флажок <b>серый с пояснением</b> — твой клиент не умеет, это не ошибка.</li>
+  </ol>
+</div>
+
+<h3 style="margin-top:26px">4.3 Установка на главный экран (PWA)</h3>
+<p class="sub">Это про обычный браузер на телефоне, а не Telegram. Сайт ставится значком и открывается как приложение без панелей браузера.</p>
+<div class="grid pwa">
+  <div class="card">
+    <svg viewBox="0 0 240 150" role="img" aria-label="iPhone Safari: Поделиться, затем На экран Домой">
+      <rect x="10" y="10" width="220" height="130" rx="10" class="f-s2 s-b" stroke-width="1.5"/>
+      <rect x="22" y="22" width="196" height="26" rx="6" class="f-s s-b"/><text x="120" y="39" font-size="11" text-anchor="middle" class="m">neuroboost.space</text>
+      <rect x="22" y="100" width="196" height="30" rx="4" class="f-s"/>
+      <g class="s-acc" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="108" y="108" width="16" height="16" rx="2"/><path d="M116 115V99M111 104l5-5 5 5" transform="translate(0 6)"/></g>
+      <circle cx="116" cy="116" r="22" fill="none" class="s-you" stroke-width="2" stroke-dasharray="4 3"/>
+      <text x="120" y="82" font-size="12" text-anchor="middle" font-weight="700">Поделиться ↓</text>
+    </svg>
+    <h3>iPhone, Safari</h3>
+    <p>Кнопка «Поделиться» внизу → прокрути список → <b>«На экран “Домой”»</b> → «Добавить».</p>
+  </div>
+  <div class="card">
+    <svg viewBox="0 0 240 150" role="img" aria-label="Android Chrome: меню, затем Установить приложение">
+      <rect x="10" y="10" width="220" height="130" rx="10" class="f-s2 s-b" stroke-width="1.5"/>
+      <rect x="22" y="22" width="150" height="26" rx="6" class="f-s s-b"/><text x="97" y="39" font-size="11" text-anchor="middle" class="m">neuroboost.space</text>
+      <circle cx="198" cy="35" r="14" class="f-s s-you" stroke-width="2" stroke-dasharray="4 3"/>
+      <circle cx="198" cy="29" r="2" class="ink"/><circle cx="198" cy="35" r="2" class="ink"/><circle cx="198" cy="41" r="2" class="ink"/>
+      <rect x="50" y="62" width="168" height="64" rx="6" class="f-s s-b" stroke-width="1.5"/>
+      <text x="60" y="82" font-size="11" class="m">Новая вкладка</text>
+      <rect x="55" y="90" width="158" height="26" rx="4" class="f-acc"/><text x="62" y="107" font-size="11" font-weight="700">Установить приложение</text>
+    </svg>
+    <h3>Android, Chrome</h3>
+    <p>Меню ⋮ вверху → <b>«Установить приложение»</b> (или «Добавить на главный экран») → «Установить».</p>
+  </div>
+  <div class="card">
+    <svg viewBox="0 0 240 150" role="img" aria-label="Результат: значок NeuroBoost на главном экране, открывается без панелей браузера">
+      <rect x="10" y="10" width="220" height="130" rx="10" class="f-s2 s-b" stroke-width="1.5"/>
+      <rect x="40" y="30" width="48" height="48" rx="12" class="f-acc s-acc" stroke-width="2"/>
+      <text x="64" y="61" font-size="22" text-anchor="middle" font-weight="700" class="fill-acc">N</text>
+      <text x="64" y="94" font-size="11" text-anchor="middle">NeuroBoost</text><text x="64" y="122" font-size="10" text-anchor="middle" class="m">на главном экране</text><text x="184" y="136" font-size="10" text-anchor="middle" class="m">без панелей</text>
+      <path d="M104 54 H140" class="s-ok" stroke-width="2.5" fill="none"/><path d="M134 48 L141 54 L134 60" class="s-ok" stroke-width="2.5" fill="none"/>
+      <rect x="152" y="24" width="64" height="94" rx="8" class="f-s s-ok" stroke-width="2"/>
+      <rect x="152" y="24" width="64" height="16" class="f-acc"/>
+      <g class="f-s2"><rect x="158" y="48" width="52" height="10" rx="2"/><rect x="158" y="64" width="40" height="10" rx="2"/><rect x="158" y="80" width="52" height="10" rx="2"/></g>
+      
+    </svg>
+    <h3>Что должно получиться</h3>
+    <p>Значок <b>NeuroBoost</b> на главном экране. Открывается без адресной строки, сразу на <code>/calendar</code>. Если значок серая буква вместо картинки или открылась вкладка с панелями — скриншот.</p>
+  </div>
+</div>
+
+<h3 style="margin-top:26px">4.4 Чеклист</h3>
+<div class="legend"><span><span class="tag you">до мержа</span>около 15 минут, телефон</span><span><span class="tag warn">на проде</span>после релиза, по ходу дня</span><span><span class="tag ok">готово</span>ты уже прошёл</span></div>
+
+<div class="card tier" id="tier1">
+  <div class="hd"><span class="tag you">до мержа</span><b>Полный экран, установка, главное</b><span class="size" id="p1txt"></span></div>
+  <div class="prog"><i id="p1bar"></i></div>
+  <div class="chk" id="list1">
+    <label><input type="checkbox" data-k="12.1"><span><span class="ref">12.1</span>Mini App из dev-бота → Настройки → Telegram → «Полный экран»: окно на весь экран, кнопки Telegram не закрывают шапку</span></label>
+    <label><input type="checkbox" data-k="12.1b"><span><span class="ref">12.1</span>Там же снизу: нижняя панель выше полоски жестов, кнопка «+» не под ней</span></label>
+    <label><input type="checkbox" data-k="12.2"><span><span class="ref">12.2</span>Снял флажок — обычное окно. Включил, закрыл и открыл Mini App — сразу на весь экран</span></label>
+    <label><input type="checkbox" data-k="12.3"><span><span class="ref">12.3</span>Telegram Desktop: тот же флажок работает, или серый с пояснением (не ошибка)</span></label>
+    <label><input type="checkbox" data-k="12.4"><span><span class="ref">12.4</span>Телефон, браузер: «На главный экран» → значок NeuroBoost, открывается без панелей, на <code>/calendar</code></span></label>
+    <label><input type="checkbox" data-k="2.1"><span><span class="ref">2.1</span>Перетащил событие вверх-вниз в Mini App → событие переехало, окно не свернулось</span></label>
+    <label><input type="checkbox" data-k="2.2"><span><span class="ref">2.2</span>Настройки или Профиль → вверху «Назад» Telegram вернула на прошлый экран. На вкладках снизу кнопки «Назад» нет</span></label>
+    <label><input type="checkbox" data-k="3.1"><span><span class="ref">3.1</span>Календарь на телефоне открывается на текущем часе, а не на 00:00</span></label>
+    <label><input type="checkbox" data-k="10.11"><span><span class="ref">10.11</span>Телефон: внизу только «Календарь · Добавить · Ещё», в «Ещё» остальные разделы</span></label>
+    <label><input type="checkbox" data-k="bf"><span><span class="ref">BotFather</span>Сделал <code>/setdomain</code> для двух ботов (раздел 3)</span></label>
+  </div>
+</div>
+
+<div class="card tier" id="tier2">
+  <div class="hd"><span class="tag warn">на проде</span><b>После релиза: смоук на проде</b><span class="size" id="p2txt"></span></div>
+  <div class="prog"><i id="p2bar"></i></div>
+  <div class="chk" id="list2">
+    <label><input type="checkbox" data-k="p1"><span>Открыл <a href="https://neuroboost.space">neuroboost.space</a>, вошёл (на новом домене сессия старая не переносится)</span></label>
+    <label><input type="checkbox" data-k="p2"><span>Календарь грузится, <code>/calendar</code> открывается быстро</span></label>
+    <label><input type="checkbox" data-k="p3"><span>Прод-бот @NeuroBoost_assistant_bot: кнопка «Календарь» открывает Mini App на новом домене</span></label>
+    <label><input type="checkbox" data-k="p4"><span>Повторил пункты 12.1 и 12.4 уже на проде</span></label>
+    <label><input type="checkbox" data-k="p5"><span>Отправил <code>/broadcast</code> пользователям</span></label>
+  </div>
+</div>
+
+<details class="card tier" id="tier3">
+  <summary><span class="tag warn">на проде</span><b>Остальной старый чеклист: 60+ пунктов</b></summary>
+  <p style="margin-top:10px">Идти по файлу, разделы независимы. Что в каждом:</p>
+  <div class="chk" style="margin-top:4px">
+    <div style="padding:6px 4px"><span class="ref">§2</span>Mini App внутри Telegram: тема, светлая и тёмная, цвета Telegram (10)</div>
+    <div style="padding:6px 4px"><span class="ref">§3</span>Телефонный веб: день, задачи, свайпы, подзадачи, профиль (9)</div>
+    <div style="padding:6px 4px"><span class="ref">§4</span>Повторяющиеся задачи и рабочие часы (7)</div>
+    <div style="padding:6px 4px"><span class="ref">§7</span>Задачи дня (7)</div>
+    <div style="padding:6px 4px"><span class="ref">§8</span>Месячный вид, пять вариантов карточки (11)</div>
+    <div style="padding:6px 4px"><span class="ref">§9</span>Ссылки на экран <code>?startapp=</code>, нужен <code>/newapp</code> в BotFather (1)</div>
+    <div style="padding:6px 4px"><span class="ref">§10</span>Новое с 26.09: запланировать, подзадача, символ приоритета, строка «Новая задача», Свои слова, связь задача↔событие, теги, Что нового (21)</div>
+  </div>
+  <p class="size">Файл: docs/proverka-2026-09-26-staging.md. Разделы 1, 5, 6 ты уже прошёл. Нумерация разделов в файле: после 10 идёт 12, потом 11.</p>
+</details>
+
+<!-- ============ 5. AFTER YOUR WORD ============ -->
+<h2><span class="sec-no">5</span>Что сделаю я после слова «мержи PR #11»</h2>
+<div class="card">
+  <ol class="steps">
+    <li><b>Проверю хост.</b> <code>git status</code> на сервере чистый, иначе <code>git pull</code> падает (так уронило релиз v0.4.10).</li>
+    <li><b>Бэкап БД.</b> <code>scripts/backup.sh</code> на 62.76.228.106; пока дамп не проверен, дальше не иду.</li>
+    <li><b>Запись «Что нового»</b> v0.4.12.0 с датой в <code>bot/internal/release</code>, мерж PR #11.</li>
+    <li><b>Жду <code>deploy: success</code></b> в CI и проверяю <code>https://neuroboost.space/api/health</code> → 200, что миграция 000023 применилась.</li>
+    <li><b>Прод-бот на nl-2:</b> выкладываю исходники версии, ставлю <code>WEBAPP_URL=https://neuroboost.space</code>, пересоздаю контейнер, в логах ищу «Bot started» (токен из логов вырезаю).</li>
+    <li><b>Тег</b> v0.4.12.0, мерж <code>main</code> обратно в <code>develop</code>, в CLAUDE.md строка «Released».</li>
+    <li><b>Сообщаю тебе</b>, что можно слать <code>/broadcast</code>.</li>
+  </ol>
+  <p class="size" style="margin-top:12px">всё вместе: ~15 мин · ~50k. Если на любом шаге что-то красное, останавливаюсь и пишу тебе, не чиню втихую.</p>
+</div>
+
+<h2><span class="sec-no">6</span>Не входит в этот релиз</h2>
+<div class="card">
+  <ul style="margin:0;padding-left:20px">
+    <li>Главное приложение бота (Main Mini App в BotFather) и кнопка меню прод-бота — по твоему слову.</li>
+    <li>Блокировка ориентации и <code>addToHomeScreen()</code> от Telegram.</li>
+    <li>Удаление старых nginx-хостов и сертификатов <code>*.website</code> — позже, отдельно.</li>
+    <li>Inbox-бот как функция: таблицы приедут, сам бот и его выкат — отдельным релизом.</li>
+  </ul>
+</div>
+
+<footer>
+  Источники: docs/relizy/v0.4.12.0.md · docs/agents/loop-blockers.md · docs/tasks-fullscreen.md · docs/proverka-2026-09-26-staging.md · api-go/migrations/000023_inbox.up.sql.<br>
+  Числа (225 коммитов, 71 из 85 пунктов) посчитаны 25.10 по git и по файлу чеклиста.
+</footer>
+</div>
+
+<script>
+(function(){
+  var KEY='nb-v0412-page';
+  var st={};
+  try{st=JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){st={}}
+  function save(){try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}}
+  var checks=[].slice.call(document.querySelectorAll('.chk input[type=checkbox]'));
+  var radios=[].slice.call(document.querySelectorAll('.opts input[type=radio]'));
+  checks.forEach(function(c){
+    if(st['c:'+c.dataset.k])c.checked=true;
+    c.addEventListener('change',function(){st['c:'+c.dataset.k]=c.checked;save();progress()});
+  });
+  radios.forEach(function(r){
+    if(st['r:'+r.name]===r.value)r.checked=true;
+    r.addEventListener('change',function(){st['r:'+r.name]=r.value;save()});
+  });
+  function prog(listId,barId,txtId){
+    var l=document.getElementById(listId).querySelectorAll('input[type=checkbox]');
+    var n=0;for(var i=0;i<l.length;i++)if(l[i].checked)n++;
+    document.getElementById(barId).style.width=(100*n/l.length)+'%';
+    document.getElementById(txtId).textContent=n+' из '+l.length;
+  }
+  function progress(){prog('list1','p1bar','p1txt');prog('list2','p2bar','p2txt')}
+  progress();
+  var out=document.getElementById('answerOut');
+  function build(){
+    var lines=[],names={merge:'1. Мерж',migration:'2. Миграция',rotate:'3. Ротация секретов',rest:'4. Остальная приёмка'};
+    Object.keys(names).forEach(function(k){
+      var el=document.querySelector('input[name='+k+']:checked');
+      lines.push(names[k]+': '+(el?el.value:'не выбрано'));
+    });
+    return lines.join('\n');
+  }
+  document.getElementById('copyBtn').addEventListener('click',function(){
+    var t=build();out.hidden=false;out.textContent=t;
+    try{navigator.clipboard.writeText(t).then(function(){out.textContent=t+'\n\n(скопировано)'},function(){})}catch(e){}
+  });
+  document.getElementById('clearBtn').addEventListener('click',function(){
+    radios.forEach(function(r){r.checked=false;delete st['r:'+r.name]});save();out.hidden=true;
+  });
+})();
+</script>
+</body>
+</html>

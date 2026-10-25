@@ -51,6 +51,8 @@
 
 ## Новые направления (словами Дениса, с датой)
 
+- 25.10 (первое в очереди, следующий релиз v0.4.12.1): *«how the dragging works on the phone, it just straight up doesn't right now, we should check how google calendar does it or apple one, it should feel easy and be customizable in settings»* — перетаскивание событий и задач на телефоне не работает. Первый шаг без Дениса: воспроизвести (e2e с touch на 375px, на staging, вне Telegram и внутри: gotcha — свайп вниз сворачивает окно Mini App, `disableVerticalSwipes`), разведка как делают Google Calendar и Apple Calendar (долгое нажатие → «подъём» события → перетаскивание с автопрокруткой, привязка к 15 мин, ручки растяжения), затем `/feature` с вариантами и настройкой в ⚙️ (чувствительность долгого нажатия, шаг привязки, ручки/долгое нажатие). Код: `web/src/components/Calendar/WeekGrid/`, `web/src/lib/calendar/swipe.ts`, `web/src/components/MonthView/useMonthDrag.ts`
+
 - 10.10: *«simple bot without ai that stores notes, ideas and feedback from telegram with tags … I would love for it to be in neuroboost actually, just for me»* — выбран отдельный inbox-бот + inline + пересылки: чек-лист `docs/tasks-inbox.md`, спека `docs/team/architecture/V003-20261010-arc-inbox-bot.md`
 
 - 25.09: *«work in a loop to create telegram miniapp and fix mobile web»* — луп идёт: `docs/tasks-mini-app.md`, `docs/tasks-mobile-web.md`; проверка Денису — `docs/proverka-mini-app.md` (после push)
