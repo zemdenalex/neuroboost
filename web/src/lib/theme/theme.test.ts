@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { readThemeChoice, resolveTheme, schemeFromHash, schemeFromBg, telegramChrome } from './theme'
+import { applyTheme, readThemeChoice, resolveTheme, schemeFromHash, schemeFromBg, telegramChrome } from './theme'
 
 describe('schemeFromBg', () => {
   it('reads a light or dark background colour', () => {
@@ -60,5 +60,19 @@ describe('telegramChrome (LT6)', () => {
   it("paints Telegram's frame in the app's zinc-900 / zinc-950 of the theme", () => {
     expect(telegramChrome('dark')).toEqual({ header: '#18181b', background: '#09090b' })
     expect(telegramChrome('light')).toEqual({ header: '#f4f4f5', background: '#fafafa' })
+  })
+})
+
+describe('applyTheme and the browser bar colour', () => {
+  it('moves <meta name="theme-color"> with the theme, not only data-theme', () => {
+    document.head.innerHTML = '<meta name="theme-color" content="#18181b">'
+    applyTheme('light')
+    expect(document.querySelector('meta[name="theme-color"]')?.getAttribute('content')).toBe('#f4f4f5')
+    applyTheme('dark')
+    expect(document.querySelector('meta[name="theme-color"]')?.getAttribute('content')).toBe('#18181b')
+  })
+  it('does not fail on a page without the meta tag', () => {
+    document.head.innerHTML = ''
+    expect(() => applyTheme('light')).not.toThrow()
   })
 })

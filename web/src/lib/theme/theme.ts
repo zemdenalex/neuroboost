@@ -93,6 +93,9 @@ export function applyCurrentTheme(choice: ThemeChoice = storedThemeChoice()): Th
 export function applyTheme(theme: Theme, root: HTMLElement = document.documentElement): void {
   root.dataset.theme = theme
   root.style.colorScheme = theme
+  // The installed app's title bar and the phone's browser bar follow the theme
+  // (index.html carries the dark value for the first paint).
+  root.ownerDocument?.querySelector('meta[name="theme-color"]')?.setAttribute('content', telegramChrome(theme).header)
 }
 
 /**
