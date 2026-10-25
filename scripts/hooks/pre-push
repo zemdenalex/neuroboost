@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# pre-push — no push to develop or main of a commit scripts/ci-local.sh has not
+# passed. GitHub's CI used to be the gate: a red run kept a PR from merging. With
+# CI run on this machine the gate is this hook, and it must be in the way or it
+# is a habit, not a gate.
+#
+# Install once per clone:  git config core.hooksPath scripts/hooks
+# Override, knowingly:     git push --no-verify
+#
+# A push whose changes (since the last stamped commit, or since the remote tip)
+# touch only docs/, graph/ or *.md needs no stamp — nothing in them can break the
+# build, and a five-minute run per note would teach everyone to --no-verify.
+ZERO=0000000000000000000000000000000000000000
+STAMP_FILE="$(git rev-parse --git-dir)/ci-local.ok"
+
+docs_only() { # docs_only <from> <to>: true when every changed path is documentation
+  local changed
+  changed=$(git diff --name-only "$1" "$2" 2>/dev/null) || return 1
+  [ -n "$changed" ] && ! printf '%s\n' "$changed" | grep -qvE '^(docs/|graph/|.*\.md$)'
+}
+
+while read -r lref lsha rref rsha; do
+  case "$rref" in refs/heads/develop|refs/heads/main) ;; *) continue ;; esac
+  [ "$lsha" = "$ZERO" ] && continue
+  if [ "$rsha" != "$ZERO" ] && git cat-file -e "$rsha^{commit}" 2>/dev/null && docs_only "$rsha" "$lsha"; then
+    continue
+  fi
+  stamped=$(cut -d' ' -f1 "$STAMP_FILE" 2>/dev/null)
+  if [ "$stamped" = "$lsha" ]; then continue; fi
+  if [ -n "$stamped" ] && git cat-file -e "$stamped^{commit}" 2>/dev/null && git merge-base --is-ancestor "$stamped" "$lsha" 2>/dev/null && docs_only "$stamped" "$lsha"; then
+    continue
+  fi
+  echo "pre-push: $rref would get ${lsha:0:7}, which scripts/ci-local.sh has not passed" >&2
+  echo "  stamped commit: ${stamped:0:7}" >&2
+  echo "  run:  scripts/ci-local.sh        (about 6 minutes; pushes of docs only skip this)" >&2
+  echo "  or push anyway, knowingly:  git push --no-verify" >&2
+  exit 1
+done
+exit 0
