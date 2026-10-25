@@ -143,7 +143,7 @@ export function HamburgerDrawer() {
       {/* Hamburger trigger button - fixed in header area on mobile */}
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed top-2.5 left-3 z-[60] md:hidden p-2 text-zinc-400 hover:text-white rounded-md hover:bg-zinc-800 transition-colors"
+        className="fixed top-[calc(0.625rem+var(--nb-safe-top))] left-3 z-[60] md:hidden p-2 text-zinc-400 hover:text-white rounded-md hover:bg-zinc-800 transition-colors"
         aria-label="Open navigation menu"
       >
         <Menu className="w-5 h-5" />
@@ -160,7 +160,7 @@ export function HamburgerDrawer() {
       {/* Drawer panel */}
       <div
         ref={drawerRef}
-        className={`fixed top-0 left-0 w-72 h-full bg-zinc-900 border-r border-zinc-800 z-[80] md:hidden transition-transform duration-300 ${
+        className={`fixed top-0 left-0 pt-[var(--nb-safe-top)] w-72 h-full bg-zinc-900 border-r border-zinc-800 z-[80] md:hidden transition-transform duration-300 ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >

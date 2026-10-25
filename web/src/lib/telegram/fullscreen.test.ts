@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import {
+  FULLSCREEN_KEY,
   applyFullscreenAtLaunch,
   fullscreenSupported,
   readFullscreenPref,
@@ -107,5 +108,18 @@ describe('watchFullscreen', () => {
     wa.isFullscreen = true
     handler()
     expect(calls.at(-1)).toEqual(['tg-fullscreen', true])
+  })
+
+  it('forgets the saved choice when Telegram refuses, but not when it is already full screen', () => {
+    const handlers: Record<string, () => void> = {}
+    const store = memory({ [FULLSCREEN_KEY]: '1' })
+    const wa = app({ isFullscreen: false, onEvent: (e, cb) => void (handlers[e] = cb) })
+    watchFullscreen(wa, { classList: { toggle: () => {} } }, store)
+    wa.isFullscreen = true
+    handlers.fullscreenFailed() // e.g. ALREADY_FULLSCREEN
+    expect(readFullscreenPref(store)).toBe(true)
+    wa.isFullscreen = false
+    handlers.fullscreenFailed() // UNSUPPORTED
+    expect(readFullscreenPref(store)).toBe(false)
   })
 })

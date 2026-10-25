@@ -208,9 +208,15 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 }
 /* Telegram full screen (lib/telegram/fullscreen.ts): Telegram draws its own
    buttons over the top of the page and the phone's edges are cut, so the page
-   keeps clear of both. The variables are Telegram's (Bot API 8.0); outside
-   Telegram the class is never set. */
-html.tg-fullscreen body {
-  padding-top: calc(var(--tg-safe-area-inset-top, 0px) + var(--tg-content-safe-area-inset-top, 0px));
-  padding-bottom: var(--tg-safe-area-inset-bottom, 0px);
+   keeps clear of both. The --tg-* variables are Telegram's (Bot API 8.0); outside
+   Telegram the class is never set and --nb-safe-* stay 0. They are variables and
+   not padding on body because the header, tab bar and buttons are position:fixed
+   and ignore the body's padding: each of them reads --nb-safe-* itself. */
+:root {
+  --nb-safe-top: 0px;
+  --nb-safe-bottom: 0px;
+}
+html.tg-fullscreen {
+  --nb-safe-top: calc(var(--tg-safe-area-inset-top, 0px) + var(--tg-content-safe-area-inset-top, 0px));
+  --nb-safe-bottom: var(--tg-safe-area-inset-bottom, 0px);
 }

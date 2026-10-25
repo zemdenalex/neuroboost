@@ -51,7 +51,7 @@ export default function VerticalSidebar() {
   // every card off the right edge. Small screens navigate via the bottom tab
   // bar, which renders regardless of the chosen layout variant.
   return (
-    <aside className="hidden md:flex fixed left-0 top-0 w-56 h-screen bg-zinc-900 border-r border-zinc-800 flex-col">
+    <aside className="hidden md:flex fixed left-0 top-0 pt-[var(--nb-safe-top)] w-56 h-screen bg-zinc-900 border-r border-zinc-800 flex-col">
       {/* Logo */}
       <div className="p-4 border-b border-zinc-800">
         <Link to="/calendar" className="text-lg font-mono font-bold text-white hover:text-blue-400 transition-colors">

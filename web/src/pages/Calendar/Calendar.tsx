@@ -491,7 +491,7 @@ export function Calendar() {
     // 110%, not 64px). With the vertical-sidebar variant there is no top bar and
     // the grid comes out 3.5rem shorter than it could be — visibly fine, and far
     // better than overflowing.
-    <div className="flex h-[calc(100vh-3.5rem-4rem)] md:h-[calc(100vh-3.5rem)] bg-black text-white font-mono">
+    <div className="flex h-[calc(100vh-3.5rem-4rem-var(--nb-safe-top)-var(--nb-safe-bottom))] md:h-[calc(100vh-3.5rem-var(--nb-safe-top))] bg-black text-white font-mono">
       {/* Task sidebar - hidden on mobile */}
       <div className="hidden lg:block">
         <TaskSidebar

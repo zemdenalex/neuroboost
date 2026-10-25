@@ -34,6 +34,7 @@ export interface TgWebApp {
   /** The person's Telegram colours (MA3b); follows the theme switch too. */
   themeParams?: TelegramThemeParams
   onEvent?: (event: 'themeChanged' | 'fullscreenChanged' | 'fullscreenFailed', cb: () => void) => void
+  offEvent?: (event: 'themeChanged' | 'fullscreenChanged' | 'fullscreenFailed', cb: () => void) => void
   /** Bot API 8.0+: the Mini App covers the whole screen (no Telegram header). */
   isFullscreen?: boolean
   requestFullscreen?: () => void

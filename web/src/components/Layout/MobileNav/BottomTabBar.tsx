@@ -21,7 +21,7 @@ export function BottomTabBar() {
   const inMore = MORE_PATHS.some((p) => location.pathname.startsWith(p))
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 md:hidden bg-zinc-900 border-t border-zinc-800 z-50">
+    <div className="fixed bottom-0 left-0 right-0 pb-[var(--nb-safe-bottom)] md:hidden bg-zinc-900 border-t border-zinc-800 z-50">
       <nav className="flex items-center justify-around h-16 px-2">
         {/* Calendar */}
         <button

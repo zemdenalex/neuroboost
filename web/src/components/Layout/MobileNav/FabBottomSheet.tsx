@@ -103,7 +103,7 @@ export function FabBottomSheet() {
       {/* FAB button */}
       <button
         onClick={() => setIsOpen(true)}
-        className={`fixed bottom-20 right-4 w-14 h-14 rounded-full bg-blue-600 hover:bg-blue-500 shadow-lg flex items-center justify-center z-50 md:hidden transition-all duration-300 ${
+        className={`fixed bottom-[calc(5rem+var(--nb-safe-bottom))] right-4 w-14 h-14 rounded-full bg-blue-600 hover:bg-blue-500 shadow-lg flex items-center justify-center z-50 md:hidden transition-all duration-300 ${
           isOpen ? 'scale-0 opacity-0' : 'scale-100 opacity-100'
         }`}
         aria-label="Open navigation"
@@ -122,7 +122,7 @@ export function FabBottomSheet() {
       {/* Bottom sheet */}
       <div
         ref={sheetRef}
-        className={`fixed bottom-0 left-0 right-0 bg-zinc-900 rounded-t-2xl border-t border-zinc-800 z-[80] md:hidden transition-transform duration-300 ${
+        className={`fixed bottom-0 left-0 right-0 pb-[var(--nb-safe-bottom)] bg-zinc-900 rounded-t-2xl border-t border-zinc-800 z-[80] md:hidden transition-transform duration-300 ${
           isOpen ? 'translate-y-0' : 'translate-y-full'
         }`}
       >

@@ -82,7 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       void loadWebApp().then((wa) => {
         if (!wa) return
         prepareWebApp(wa)
-        watchFullscreen(wa, document.documentElement)
+        watchFullscreen(wa, document.documentElement, window.localStorage)
         applyFullscreenAtLaunch(wa, window.localStorage)
       })
       const storedTokenValid = Boolean(getStoredToken()) && !isTokenExpired()

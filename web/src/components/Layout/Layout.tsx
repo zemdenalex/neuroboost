@@ -47,11 +47,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <main
           className={
             shown === 'horizontal'
-              ? 'pt-14 pb-16 md:pb-0' // Top padding for horizontal header, bottom padding for mobile nav
+              ? 'pt-[calc(3.5rem+var(--nb-safe-top))] pb-[calc(4rem+var(--nb-safe-bottom))] md:pb-0' // Top padding for horizontal header, bottom padding for mobile nav (+ Telegram full-screen insets)
               // The sidebar is hidden below md, so its left padding must be too —
               // unconditional pl-56 squeezed a 375px screen down to 129px of
               // content. The bottom tab bar still renders here, hence pb-16.
-              : 'pb-16 md:pb-0 md:pl-56'
+              : 'pt-[var(--nb-safe-top)] pb-[calc(4rem+var(--nb-safe-bottom))] md:pb-0 md:pl-56'
           }
         >
           {children}

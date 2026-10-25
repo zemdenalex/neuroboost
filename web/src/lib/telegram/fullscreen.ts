@@ -58,8 +58,19 @@ export function applyFullscreenAtLaunch(wa: TgWebApp, storage: Store): void {
  * Keeps `tg-fullscreen` on the root element equal to Telegram's own state, so
  * the page pads for Telegram's overlay buttons only while they are there.
  */
-export function watchFullscreen(wa: TgWebApp, root: { classList: { toggle: (c: string, on: boolean) => unknown } }): void {
+export function watchFullscreen(
+  wa: TgWebApp,
+  root: { classList: { toggle: (c: string, on: boolean) => unknown } },
+  storage?: Store,
+): void {
   const sync = () => root.classList.toggle(FULLSCREEN_CLASS, Boolean(wa.isFullscreen))
   sync()
   wa.onEvent?.('fullscreenChanged', sync)
+  // A client that reports 8.0 can still answer UNSUPPORTED: forget the saved
+  // choice, or every launch would ask again and fail silently.
+  if (storage) {
+    wa.onEvent?.('fullscreenFailed', () => {
+      if (!wa.isFullscreen) storeFullscreenPref(storage, false)
+    })
+  }
 }

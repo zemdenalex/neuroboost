@@ -22,6 +22,24 @@ export function TelegramSection() {
     }
   }, [])
 
+  // The box shows what Telegram really did: leaving full screen from Telegram's
+  // own button, or a refusal, unticks it (the saved choice follows on refusal).
+  useEffect(() => {
+    if (!wa) return
+    const follow = () => setOn(Boolean(wa.isFullscreen))
+    // Leaving through Telegram's own button is the person's choice too.
+    const left = () => {
+      follow()
+      storeFullscreenPref(window.localStorage, Boolean(wa.isFullscreen))
+    }
+    wa.onEvent?.('fullscreenChanged', left)
+    wa.onEvent?.('fullscreenFailed', follow)
+    return () => {
+      wa.offEvent?.('fullscreenChanged', left)
+      wa.offEvent?.('fullscreenFailed', follow)
+    }
+  }, [wa])
+
   if (!launchedInTelegram() || !wa) return null
   const supported = fullscreenSupported(wa)
 

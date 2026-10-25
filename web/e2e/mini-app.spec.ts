@@ -151,6 +151,15 @@ test('full screen is offered in Telegram, asked for, and asked again at the next
   await expect.poll(calls).toEqual(['request'])
   await expect(page.locator('html')).toHaveClass(/tg-fullscreen/)
 
+  // The header is position:fixed, so padding on body would not move it: it has to
+  // clear Telegram's buttons itself (the inset is what the client reports).
+  await page.evaluate(() => document.documentElement.style.setProperty('--tg-safe-area-inset-top', '44px'))
+  await expect
+    .poll(async () => (await page.locator('header').first().boundingBox())?.y ?? -1, 'the fixed header sits below the inset')
+    .toBeGreaterThanOrEqual(0)
+  const headerText = page.locator('header').first().getByText('NeuroBoost')
+  await expect.poll(async () => (await headerText.boundingBox())?.y ?? -1).toBeGreaterThanOrEqual(44)
+
   await box.uncheck()
   await expect.poll(calls).toEqual(['request', 'exit'])
   await expect(page.locator('html')).not.toHaveClass(/tg-fullscreen/)
