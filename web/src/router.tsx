@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react'
 import { createBrowserRouter, Navigate, Outlet, useSearchParams } from 'react-router-dom'
 import { useAuthContext } from './contexts/AuthContext'
+import { getStoredToken } from './api/client'
 import { safeNextPath } from './lib/auth/nextPath'
 import { Layout } from './components/Layout'
 import { QuickAddModal } from './components/QuickAdd/QuickAddModal'
@@ -14,7 +15,8 @@ import { useTelegramBackButton } from './lib/telegram/useTelegramBackButton'
 // Lazy-loaded pages
 const Home = lazy(() => import('./pages/Home'))
 const Login = lazy(() => import('./pages/Login'))
-const Calendar = lazy(() => import('./pages/Calendar'))
+const loadCalendar = () => import('./pages/Calendar')
+const Calendar = lazy(loadCalendar)
 const Agenda = lazy(() => import('./pages/Agenda'))
 const WhatsNew = lazy(() => import('./pages/WhatsNew'))
 const Tasks = lazy(() => import('./pages/Tasks'))
@@ -31,6 +33,15 @@ const Eisenhower = lazy(() => import('./pages/Tools/Eisenhower'))
 const TimeBlocking = lazy(() => import('./pages/Tools/TimeBlocking'))
 const AcceptInvite = lazy(() => import('./pages/Invite'))
 const LoginLink = lazy(() => import('./pages/Login/LoginLink'))
+
+// The calendar is the page people land on. Its chunk is otherwise requested only
+// after /auth/me has answered (ProtectedRoute renders the route after that), one
+// round trip later than it could be. With a stored token the request goes out
+// now, in parallel; without one the visitor is headed for /login and gets nothing
+// extra.
+if (typeof window !== 'undefined' && window.location.pathname === '/calendar' && getStoredToken()) {
+  void loadCalendar()
+}
 
 // Suspense fallback
 function PageLoader() {
