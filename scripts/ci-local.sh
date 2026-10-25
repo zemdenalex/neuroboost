@@ -128,9 +128,16 @@ stage_frontend() {
 
 stage_docker() {
   need_db || return 1
-  docker build -q -f api-go/Dockerfile -t nbci-api . >/dev/null || { echo "api image failed to build"; return 1; }
-  docker build -q --build-arg VITE_API_URL=http://localhost/api -t nbci-web ./web >/dev/null || { echo "web image failed to build"; return 1; }
-  docker build -q -t nbci-bot ./bot >/dev/null || { echo "bot image failed to build"; return 1; }
+  # Full output kept in a file, its tail shown on failure: with -q a failed
+  # `pnpm install` inside the image said only «exit code: 1» (25.10).
+  build() {
+    local what="$1"; shift
+    docker build "$@" > "$LOG_DIR/docker-build-$what.txt" 2>&1 || {
+      echo "$what image failed to build; last lines:"; tail -25 "$LOG_DIR/docker-build-$what.txt"; return 1; }
+  }
+  build api -f api-go/Dockerfile -t nbci-api . || return 1
+  build web --build-arg VITE_API_URL=http://localhost/api -t nbci-web ./web || return 1
+  build bot -t nbci-bot ./bot || return 1
   docker rm -f "$API" >/dev/null 2>&1
   docker run -d --name "$API" --network "$NET" -p "127.0.0.1:${API_PORT}:8080" \
     -e "DATABASE_URL=postgres://test:test@db:5432/neuroboost_test?sslmode=disable" \
