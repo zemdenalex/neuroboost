@@ -13,7 +13,8 @@
 ## Сделано (develop)
 
 - [x] `web/src/lib/telegram/fullscreen.ts` + 6 тестов: поддержка (версия 8.0 и метод), выбор в `localStorage` (на устройстве, не в `settings` аккаунта: gotcha 21), запрос при запуске только если человек выбрал, класс `tg-fullscreen` на `<html>` по событию Telegram
-- [x] `index.css`: в полном экране `body` отступает на `safe-area` + `content-safe-area` сверху и `safe-area` снизу
+- [x] `index.css`: переменные `--nb-safe-top/bottom` (в полном экране = `safe-area` + `content-safe-area` сверху, `safe-area` снизу); их читают шапка, таб-бар, FAB, гамбургер, drawer и `main`.
+  - 🔴 25.10 ревью (`docs/team/research/V003-20261025-res-review-fullscreen-pwa.md`) нашло, что первая версия (padding на `body`) не двигала `position:fixed` — шапка и таб-бар остались бы под кнопками Telegram. Починено `d3db46a`; e2e проверяет `y` шапки при инсете 44px, красный без починки (саботаж). `fullscreenFailed` теперь стирает сохранённый выбор. Иконки PWA: `nginx.conf` — отдельный location с `expires 1d` (раньше `1y immutable` без хеша в имени; проверено в docker: 86400 против 31536000 у остальных)
 - [x] Настройки → раздел «Telegram» (виден только внутри Telegram): флажок «Полный экран»; на клиенте без поддержки неактивен с пояснением (`TelegramSection.tsx`, ru/en)
 - [x] e2e `mini-app.spec.ts` «full screen…»: Telegram-скрипт заменён записывающим двойником; галочка → `request`, снятие → `exit`, после перезагрузки запрос повторён; саботаж (убран вызов при запуске) красный
 - [x] PWA: `manifest.webmanifest` (standalone, start `/calendar`), `icon-192.png`/`icon-512.png` (из `favicon.svg`), `theme-color`, `apple-touch-icon`
