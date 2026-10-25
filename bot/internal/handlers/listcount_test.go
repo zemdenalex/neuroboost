@@ -23,12 +23,14 @@ func TestListQuestionCountsEntriesNotLines(t *testing.T) {
 func TestBackwardsSpanIsAskedAgainOnConfirm(t *testing.T) {
 	h, fake, chat := quickHandler(t)
 	h.startNewEventFlow(chat)
-	say(h, chat, "отпуск с 29.10 по 14.10")
+	late, _ := moscowDay(18)
+	early, _ := moscowDay(3)
+	say(h, chat, "отпуск с "+late+" по "+early)
 	press(h, chat, "dr_ok")
 
 	// What it asks is pinned by TestBackwardsSpanOffersASwap; here: it asks
 	// rather than creates.
-	if fake.called_("createEvent") || !strings.Contains(fake.last(t).Text, "29.10") {
+	if fake.called_("createEvent") || !strings.Contains(fake.last(t).Text, late) {
 		t.Errorf("a backwards span was not asked again: %q", fake.last(t).Text)
 	}
 	if h.store.GetOrCreate(chat).FlowStep != "edit:date" {
