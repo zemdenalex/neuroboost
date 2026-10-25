@@ -34,6 +34,26 @@ type Note struct {
 // report said «выкачено».
 var notes = []Note{
 	{
+		Version:  "v0.4.12.0",
+		Released: "25.10.2026 · в проде",
+		RU: "• 📱 Кнопка «Календарь» рядом с полем ввода: NeuroBoost открывается прямо в Telegram, в цветах твоей темы. В настройках можно включить полный экран\n" +
+			"• ✍️ В вебе строка как в боте: «стоматолог завтра 15:00 напомни за час»\n" +
+			"• 🏠 Главная как «📅 Сегодня»: задачи дня, события, пять задач с галочкой\n" +
+			"• 📌 Задачи дня и цвет дня теперь и в вебе: страница, неделя, месяц\n" +
+			"• 🗓 Месяц в вебе, на телефоне на выбор: месяц со списком дня, полоса недели или тепловая карта\n" +
+			"• 🔁 Повторяющиеся задачи, подзадачи, «Запланировать» кнопками, связь задачи и события: в вебе как в боте\n" +
+			"• 🔘 Символ приоритета и свои слова из бота работают и в вебе\n" +
+			"• ℹ️ «Что в меню» в конце настройки бота",
+		EN: "• 📱 A «Calendar» button next to the message field: NeuroBoost opens right inside Telegram, in your theme's colours. Full screen can be turned on in Settings\n" +
+			"• ✍️ A line in the web like in the bot: «dentist tomorrow 3pm remind me an hour before»\n" +
+			"• 🏠 Home works like «📅 Today»: day tasks, events, five tasks with a tick\n" +
+			"• 📌 Day tasks and the day's colour are in the web now: page, week, month\n" +
+			"• 🗓 The month in the web; on a phone pick month with the day's list, a week strip or a heat map\n" +
+			"• 🔁 Repeating tasks, subtasks, «Schedule» buttons, the task–event link: in the web as in the bot\n" +
+			"• 🔘 The priority symbol and your own words from the bot work in the web too\n" +
+			"• ℹ️ «What's in the menu» at the end of the bot's setup",
+	},
+	{
 		Version:  "v0.4.11.6",
 		Released: "26.09.2026 · в проде",
 		RU: "• 🗓 В месячном календаре цвет дня: 🟩🟧⬛ рядом с числом, тот же, что на экране задач дня\n" +
