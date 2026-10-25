@@ -1,5 +1,5 @@
 import { test, expect } from './fixtures/auth'
-import { request as playwrightRequest, type APIRequestContext } from '@playwright/test'
+import { request as playwrightRequest, type APIRequestContext, type Page } from '@playwright/test'
 import { localMidnightUtc } from './fixtures/localTime'
 import { shiftByDays } from '../src/lib/calendar/shiftDays'
 
@@ -125,7 +125,25 @@ test.describe('dragging in the month', () => {
     const fromDay = localDay(start.getTime(), timeZone)
     const toDay = localDay(Date.parse(moved.startsAt), timeZone)
 
-    // The account is a real person's: whatever variant they chose, drag in the list.
+    // The account is a real person's and its days can be full (a «vacation» series
+    // fills every cell to «+N more» and hides the seeded event): the page is shown
+    // only the seeded event. Reads only; the move below is a real PATCH.
+    await authedPage.route('**/api/events?*', async (route) => {
+      if (route.request().method() !== 'GET') return route.fallback()
+      try {
+        const res = await route.fetch()
+        const body = await res.json()
+        const list = (Array.isArray(body.data) ? body.data : body.data?.events ?? []) as { id: string }[]
+        const mine = list.filter((e) => e.id === event.id)
+        await route.fulfill({
+          response: res,
+          json: Array.isArray(body.data) ? { ...body, data: mine } : { ...body, data: { ...body.data, events: mine } },
+        })
+      } catch {
+        // the page went away mid-request (end of test)
+      }
+    })
+    // Whatever variant they chose, drag in the list.
     await withVariant(authedPage, 'list')
     await authedPage.goto('/calendar')
     await authedPage.getByTestId('view-month').click({ timeout: 15_000 })
@@ -232,8 +250,30 @@ const VARIANT_MARK: Record<string, string> = {
   split: 'month-dots',
 }
 
+/**
+ * list/classic draw `month-item` only for a day that has an event, and the e2e
+ * account's staging calendar is empty in some months (red from 10.10). The test
+ * brings its own event into the answer; nothing is written, any write is aborted.
+ */
+async function withOwnEventThisMonth(page: Page) {
+  const noon = new Date()
+  noon.setUTCHours(12, 0, 0, 0)
+  const event = {
+    id: 'e2e-month-own-event', title: 'E2E month item', all_day: false, tags: [],
+    starts_at: noon.toISOString(), ends_at: new Date(noon.getTime() + 3_600_000).toISOString(),
+  }
+  // Registered first, so matched last: any write nothing below answered.
+  await page.route('**/api/**', (route) =>
+    ['GET', 'HEAD', 'OPTIONS'].includes(route.request().method()) ? route.fallback() : route.abort(),
+  )
+  await page.route('**/api/events?*', (route) =>
+    route.request().method() === 'GET' ? route.fulfill({ json: { data: [event] } }) : route.fallback(),
+  )
+}
+
 for (const variant of Object.keys(VARIANT_MARK)) {
   test(`the ${variant} variant draws its own month`, async ({ authedPage }) => {
+    if (VARIANT_MARK[variant] === 'month-item') await withOwnEventThisMonth(authedPage)
     await withVariant(authedPage, variant)
     await authedPage.goto('/calendar')
     await authedPage.getByTestId('view-month').click({ timeout: 30_000 })
