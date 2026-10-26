@@ -109,5 +109,8 @@
   "repeat.every": "Каждые",
   "repeat.unitDays": "дн.",
   "repeat.unitWeeks": "нед.",
-  "repeat.unitMonths": "мес."
+  "repeat.unitMonths": "мес.",
+  "toast.moved": "Перенесено",
+  "toast.resized": "Длительность изменена",
+  "toast.undo": "Отменить"
 }

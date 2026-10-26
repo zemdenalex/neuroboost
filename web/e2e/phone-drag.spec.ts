@@ -183,4 +183,19 @@ test.describe('phone drag', () => {
       'the event should have followed the scrolling grid, not stayed at the time under the finger when it last moved'
     ).toBeGreaterThan(6 * HOUR)
   })
+
+  test('after a move, «Отменить» in the toast puts the event back', async ({ authedPage, session }) => {
+    test.skip(test.info().project.name !== 'mobile', 'touch drag is a phone gesture')
+    const { box, startMs } = await seedEventOnScreen(authedPage, session.token)
+    const x = box.x + box.width / 2
+    const y = box.y + box.height / 2
+    await fingerDrag(authedPage, { x, y }, { x, y: y + HOUR_PX }, 600)
+
+    const undo = authedPage.getByRole('status').getByRole('button', { name: /^(Отменить|Undo)$/ })
+    await expect(undo, 'a finished move should offer to undo it').toBeVisible({ timeout: 5000 })
+    // Positive control: the move really landed, or putting it back proves nothing.
+    await expect.poll(() => startOf(session.token, createdId!), { timeout: 5000 }).toBe(startMs + HOUR)
+    await undo.click()
+    await expect.poll(() => startOf(session.token, createdId!), { timeout: 5000 }).toBe(startMs)
+  })
 })

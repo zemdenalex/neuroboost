@@ -28,6 +28,7 @@ import { useAuthContext } from '../../contexts/AuthContext';
 import { computeWeekRange } from '../../lib/calendar/weekRange';
 import { shouldRefetchOnReturn } from '../../lib/calendar/refetchOnReturn';
 import { createTask } from '../../api';
+import { isRecurringInstance } from '../../lib/recurrence/scope';
 import { markOccurrence } from '../../api/tasks';
 import { ApiError } from '../../api/client';
 import { showToast } from '../../components/ui/Toast';
@@ -66,6 +67,8 @@ export function Calendar() {
   const timezone = user?.timezone || 'Europe/Moscow';
   const { withScope, dialog: recurringScopeDialog } = useRecurringScope();
   const [events, setEvents] = useState<NbEvent[]>([]);
+  const eventsRef = useRef(events);
+  eventsRef.current = events;
   const [tasks, setTasks] = useState<Task[]>([]);
   // 🔴 "initial", not "loading". `if (loading)` below returns a spinner INSTEAD
   // of the entire calendar, so a flag raised on every week change tore the grid
@@ -258,6 +261,10 @@ export function Calendar() {
   }, []);
 
   const handleMoveOrResize = useCallback(async (data: { id: string; startsAt: string; endsAt: string }) => {
+    // Where it was, read before the optimistic patch below overwrites it: the
+    // undo in the toast puts it back here.
+    const before = eventsRef.current.find(event => event.id === data.id);
+
     // Draw the event where it was dropped, before the request goes out.
     //
     // Measured, not assumed: between mouseup and the refetch landing the block
@@ -278,16 +285,35 @@ export function Calendar() {
     ));
 
     try {
-      await withScope(data.id, 'move', scope => moveEvent(data.id, data.startsAt, data.endsAt, scope).then(() => undefined));
+      // withScope also resolves when the scope dialog is dismissed, so whether
+      // anything was saved is known only from inside `run`.
+      let saved = false;
+      await withScope(data.id, 'move', scope =>
+        moveEvent(data.id, data.startsAt, data.endsAt, scope).then(() => { saved = true; }));
       // Still reloaded, and still on the cancel path: the optimistic patch above
       // is a guess about one event, and the reload is what reconciles it — including
       // putting the event back when the scope dialog was dismissed.
       await loadEvents();
+      // Undo only for a plain event. A moved occurrence of a series is detached
+      // under a new id, so the "<uuid>:<date>" we hold no longer names it; an undo
+      // aimed at it would move a different occurrence.
+      if (saved && before && !isRecurringInstance(data.id)) {
+        const resized = new Date(data.endsAt).getTime() - new Date(data.startsAt).getTime()
+          !== new Date(before.endsAt).getTime() - new Date(before.startsAt).getTime();
+        showToast(t(resized ? 'toast.resized' : 'toast.moved'), {
+          label: t('toast.undo'),
+          onClick: () => {
+            void moveEvent(data.id, before.startsAt, before.endsAt)
+              .catch(error => console.error('Failed to undo the move:', error))
+              .then(() => loadEvents());
+          },
+        });
+      }
     } catch (error) {
       console.error('Failed to move/resize event:', error);
       await loadEvents();
     }
-  }, [loadEvents, withScope]);
+  }, [loadEvents, withScope, t]);
 
   const handleDelete = useCallback(async (id: string) => {
     try {

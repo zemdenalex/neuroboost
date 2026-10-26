@@ -109,5 +109,8 @@
   "repeat.every": "Every",
   "repeat.unitDays": "day(s)",
   "repeat.unitWeeks": "week(s)",
-  "repeat.unitMonths": "month(s)"
+  "repeat.unitMonths": "month(s)",
+  "toast.moved": "Moved",
+  "toast.resized": "Duration changed",
+  "toast.undo": "Undo"
 }
