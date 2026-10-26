@@ -284,6 +284,25 @@ func TestTickingADoneTaskWritesNothing(t *testing.T) {
 	}
 }
 
+// Audit M6, Denis 26.10: a viewer may take a shared task that only its owner
+// can close. The press writes nothing (the server would refuse it) and says
+// who closes it, and that the owner's close counts.
+func TestTickingATaskTheOwnerClosesExplainsAndWritesNothing(t *testing.T) {
+	a := &dayAPI{confirmed: true, items: []map[string]any{{"task_id": dtOne, "title": "полить цветы", "done": false, "owner_closes": true}}}
+	h, fake, chat := dayHandler(t, a)
+	press(h, chat, "dt_ok_"+moscowToday()+"_"+dtOne)
+	if a.called("PATCH /api/tasks/"+dtOne) || a.called("POST /api/tasks/"+dtOne+"/occurrences") {
+		t.Errorf("a task the viewer cannot close was written: %v", a.calls)
+	}
+	said := ""
+	for _, m := range fake.sent() {
+		said += m.Text
+	}
+	if !strings.Contains(said, "владел") {
+		t.Errorf("the press did not say the owner closes it: %q (calls %v)", said, a.calls)
+	}
+}
+
 // Review I2: a past day's write is refused by the bot with a sentence that fits,
 // before the server is asked.
 func TestPastDayWritesAreRefusedWithAFittingSentence(t *testing.T) {

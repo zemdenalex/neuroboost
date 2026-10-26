@@ -23,7 +23,7 @@ const TASKS = [
 
 const json = (route: Route, data: unknown, status = 200) => route.fulfill({ status, json: { data } })
 
-async function mockDayTasks(page: Page) {
+async function mockDayTasks(page: Page, ownerClosesSecond = false) {
   const sent: { confirm?: { day: string; task_ids: string[] }; patched?: { id: string; body: unknown } } = {}
   let day = ''
   let confirmed = false
@@ -32,7 +32,9 @@ async function mockDayTasks(page: Page) {
     day,
     target: 5,
     confirmed,
-    items: confirmed ? TASKS.map((t) => ({ task_id: t.id, title: t.title, done: t.id === 't-1' && done })) : [],
+    items: confirmed
+      ? TASKS.map((t) => ({ task_id: t.id, title: t.title, done: t.id === 't-1' && done, owner_closes: t.id === 't-2' && ownerClosesSecond }))
+      : [],
     done: done ? 1 : 0,
     level: done ? 1 : 0,
     before_start: false,
@@ -91,6 +93,26 @@ test('taking the proposed day sends its tasks, and a tick closes one', async ({ 
   // A one-off task is closed by status (api/dayTasks.ts markDayTaskDone).
   expect(sent.patched!.body).toMatchObject({ status: 'DONE' })
   await expect(authedPage.getByTestId('day-progress')).toContainText('1')
+
+  await authedPage.unrouteAll({ behavior: 'ignoreErrors' })
+})
+
+// Audit M6, Denis 26.10: a viewer may take a shared task; only the owner can
+// close it, and the owner's close counts. The page must say so instead of
+// offering a tick that the server would refuse.
+test('a task only the owner can close has no tick, and says who closes it', async ({ authedPage }) => {
+  await mockDayTasks(authedPage, true)
+  await authedPage.goto('/day-tasks')
+  const take = authedPage.getByRole('button', { name: 'Take it' })
+  await expect(take).toBeVisible({ timeout: 15_000 })
+  await take.click()
+
+  const rows = authedPage.getByRole('listitem').filter({ hasText: 'E2E' })
+  // Positive control: the viewer's own task still has a working tick.
+  await expect(rows.filter({ hasText: 'позвонить в банк' }).getByRole('button', { name: 'Mark done' })).toBeEnabled()
+  const shared = rows.filter({ hasText: 'купить хлеб' })
+  await expect(shared.getByRole('button', { name: 'Mark done' })).toBeDisabled()
+  await expect(shared).toContainText('the owner closes it')
 
   await authedPage.unrouteAll({ behavior: 'ignoreErrors' })
 })

@@ -11,6 +11,10 @@ type DayItem struct {
 	TaskID string `json:"task_id"`
 	Title  string `json:"title"`
 	Done   bool   `json:"done"`
+	// OwnerCloses: a shared task this reader can see but not close (audit
+	// M6); the owner's close counts in the reader's day. An older API sends
+	// nothing, which reads as «can close», as before.
+	OwnerCloses bool `json:"owner_closes"`
 }
 
 // Day is one day of the set: its target, whether it was taken, what is in it

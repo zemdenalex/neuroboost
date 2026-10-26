@@ -10,6 +10,8 @@ export interface DayItem {
   task_id: string
   title: string
   done: boolean
+  /** A shared task the reader can see but not close; the owner's close counts. Absent from older servers. */
+  owner_closes?: boolean
 }
 
 /** One day of GET /api/day-tasks, as the server sends it. */

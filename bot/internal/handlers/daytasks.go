@@ -281,6 +281,11 @@ func (h *Handler) tickDayTask(chatID int64, messageID int, day time.Time, taskID
 			"Этой задачи уже нет в сегодняшнем дне.", "This task is no longer in today's set."))
 	case item.Done:
 		// Already closed: redraw only.
+	case item.OwnerCloses:
+		// Audit M6: the server would refuse the write; say who closes it.
+		h.sendText(chatID, h.t(chatID,
+			"Эту задачу закрывает владелец календаря. Когда он её закроет, она засчитается в твой день.",
+			"The calendar's owner closes this task. When they do, it counts in your day."))
 	case h.taskRepeats(chatID, taskID):
 		err = h.api.MarkOccurrenceOn(us.AuthToken, taskID, "done", iso)
 	default:

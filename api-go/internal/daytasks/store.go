@@ -31,6 +31,12 @@ type Item struct {
 	TaskID string `json:"task_id"`
 	Title  string `json:"title"`
 	Done   bool   `json:"done"`
+	// OwnerCloses: the reader can see this task but not close it (a viewer of
+	// a shared calendar, audit M6). The owner's close still counts in the
+	// reader's day (doneOnDay reads the task, not who closed it). Named for the
+	// exception so a client that does not know the field reads «can close»,
+	// which is what every item meant before it existed.
+	OwnerCloses bool `json:"owner_closes"`
 }
 
 type Day struct {
@@ -169,17 +175,22 @@ func List(ctx context.Context, userID string, from, to time.Time) ([]Day, error)
 	if err != nil {
 		return nil, err
 	}
+	writable, err := calendars.WritableIDsFor(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
 
 	// $DAY is the row's own day, $TZ the user's zone: substituted by hand into
 	// the shared fragment, parameters stay parameters.
 	q := `
 		SELECT x.day, t.id::text, t.title,
-		       ` + replaceAll(doneOnDay, "$DAY", "x.day::date", "$TZ", "$4") + `
+		       ` + replaceAll(doneOnDay, "$DAY", "x.day::date", "$TZ", "$4") + `,
+		       NOT (t.calendar_id::text = ANY($5::text[]))
 		  FROM unnest($1::text[], $2::text[]) WITH ORDINALITY AS x(day, task_id, n)
 		  JOIN task t ON t.id = x.task_id::uuid
 		 WHERE t.calendar_id = ANY($3)
 		 ORDER BY x.n`
-	rows, err := db.Pool.Query(ctx, q, promDays, promTasks, calIDs, tz)
+	rows, err := db.Pool.Query(ctx, q, promDays, promTasks, calIDs, tz, writable)
 	if err != nil {
 		return nil, err
 	}
@@ -187,7 +198,7 @@ func List(ctx context.Context, userID string, from, to time.Time) ([]Day, error)
 	for rows.Next() {
 		var d string
 		var it Item
-		if err := rows.Scan(&d, &it.TaskID, &it.Title, &it.Done); err != nil {
+		if err := rows.Scan(&d, &it.TaskID, &it.Title, &it.Done, &it.OwnerCloses); err != nil {
 			return nil, err
 		}
 		if day := byDay[d]; day != nil {

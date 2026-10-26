@@ -16,6 +16,7 @@
   "addPick": "Pick a task",
   "remove": "Take out of the day",
   "markDone": "Mark done",
+  "ownerCloses": "the owner closes it",
   "pastReadOnly": "A past day can only be viewed.",
   "loading": "Loading…",
   "off": "Day tasks are off.",

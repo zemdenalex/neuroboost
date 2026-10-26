@@ -168,13 +168,16 @@ export default function DayTasks() {
             {data.items.map((item) => (
               <li key={item.task_id} className="flex items-center gap-2">
                 <button
-                  disabled={busy || item.done || when !== 'today'}
+                  disabled={busy || item.done || item.owner_closes || when !== 'today'}
                   aria-label={t('markDone')}
                   onClick={() => void act(() => markDayTaskDone(byId.get(item.task_id) ?? { id: item.task_id }, day))}
                   className="flex-1 flex items-center gap-2 p-2 rounded-md text-left text-sm text-zinc-200 hover:bg-zinc-800 disabled:hover:bg-transparent"
                 >
                   {item.done ? <CheckSquare className="w-4 h-4 text-green-500" /> : <Square className="w-4 h-4 text-zinc-500" />}
                   <span className={item.done ? 'line-through text-zinc-500' : ''}>{item.title}</span>
+                  {item.owner_closes && !item.done && (
+                    <span className="ml-auto text-xs text-zinc-500">{t('ownerCloses')}</span>
+                  )}
                 </button>
                 {editing && removable && (
                   <button
