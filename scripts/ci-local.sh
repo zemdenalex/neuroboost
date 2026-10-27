@@ -18,7 +18,7 @@
 # script exists to refuse.
 #
 # Needs: docker (running), go, migrate (golang-migrate with the postgres driver),
-# pnpm 10.12.0, node 22, curl. Ports used: 55433 (Postgres), 18080 (API).
+# pnpm 10.12.0, node 22, curl. Ports used: 15433 (Postgres), 18080 (API).
 set -uo pipefail
 
 cd "$(dirname "$0")/.."
@@ -29,11 +29,14 @@ mkdir -p "$LOG_DIR"
 PG=nbci-pg
 API=nbci-api
 NET=nbci-net
-PG_PORT=55433
+# 🔴 Outside 49152–65535, the Windows dynamic range. 55433 sat inside it: any app
+# (Telegram Desktop, 27.10) may hold it as an outgoing port, and then Docker
+# publishes it without error while nothing on the host can reach it — «actively
+# refused», or via localhost/::1 «forbidden by its access permissions».
+PG_PORT=15433
 API_PORT=18080
-# 127.0.0.1, not localhost: the port is published on IPv4 only, and Go tries
-# ::1 first and reports that error («forbidden by its access permissions»)
-# when the IPv4 forward is not up yet — twice on 26–27.10.
+# 127.0.0.1, not localhost: the port is published on IPv4 only, and Go tries ::1
+# first and reports THAT error, which hides the real one.
 DSN="postgres://test:test@127.0.0.1:${PG_PORT}/neuroboost_test?sslmode=disable"
 JWT="ci-local-jwt-secret-not-a-secret-0123456789abcdef"
 
@@ -97,9 +100,8 @@ need_db() {
   done
   [ "$i" -lt 40 ] || docker exec "$PG" psql -U test -d neuroboost_test -tAc 'select 1' >/dev/null 2>&1 \
     || { echo "Postgres did not come up"; return 1; }
-  # Ready inside the container is not reachable from the host: right after
-  # Docker Desktop starts, the published port opens seconds later and the first
-  # dial is «actively refused» (27.10, three red runs). Wait for the host side.
+  # Ready inside the container is not proof the host can reach it (see PG_PORT):
+  # wait for the host side, so a dead forward fails here with its real name.
   for i in $(seq 1 30); do
     (exec 3<>"/dev/tcp/127.0.0.1/${PG_PORT}") 2>/dev/null && return 0
     sleep 1
