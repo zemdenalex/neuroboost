@@ -31,7 +31,10 @@ API=nbci-api
 NET=nbci-net
 PG_PORT=55433
 API_PORT=18080
-DSN="postgres://test:test@localhost:${PG_PORT}/neuroboost_test?sslmode=disable"
+# 127.0.0.1, not localhost: the port is published on IPv4 only, and Go tries
+# ::1 first and reports that error («forbidden by its access permissions»)
+# when the IPv4 forward is not up yet — twice on 26–27.10.
+DSN="postgres://test:test@127.0.0.1:${PG_PORT}/neuroboost_test?sslmode=disable"
 JWT="ci-local-jwt-secret-not-a-secret-0123456789abcdef"
 
 STAGES="backend bot frontend docker"
