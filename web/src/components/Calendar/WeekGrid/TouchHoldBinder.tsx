@@ -8,6 +8,12 @@ interface Props {
    * still). Receives the block's element and the finger's position.
    */
   onLift: (el: HTMLElement, clientX: number, clientY: number) => void;
+  /**
+   * Touches that start inside an element matching this selector are left alone.
+   * The day track's binder skips events: they sit inside the track and have
+   * binders of their own. Circles (`[data-resize-handle]`) are always skipped.
+   */
+  skip?: string;
 }
 
 /**
@@ -24,7 +30,7 @@ interface Props {
  * agrees to wait for it. Cost: a scroll that STARTS on an event waits for this
  * handler; a scroll that starts on an empty slot is unaffected.
  */
-export const TouchHoldBinder = memo(function TouchHoldBinder({ onLift }: Props) {
+export const TouchHoldBinder = memo(function TouchHoldBinder({ onLift, skip }: Props) {
   const marker = useRef<HTMLSpanElement>(null);
   const liftRef = useRef(onLift);
   liftRef.current = onLift;
@@ -45,7 +51,7 @@ export const TouchHoldBinder = memo(function TouchHoldBinder({ onLift }: Props) 
       // One finger only: a second one is a pinch or a palm, not a pick-up.
       if (e.touches.length !== 1) { tracker.end(); return; }
       // A circle (EventBlock's ResizeCircle) stretches the event; holding it must not lift it.
-      if (e.target instanceof Element && e.target.closest('[data-resize-handle]')) return;
+      if (e.target instanceof Element && e.target.closest(skip ? `[data-resize-handle], ${skip}` : '[data-resize-handle]')) return;
       tracker.start(e.touches[0].clientX, e.touches[0].clientY);
     };
     const onMove = (e: TouchEvent) => {
@@ -72,7 +78,7 @@ export const TouchHoldBinder = memo(function TouchHoldBinder({ onLift }: Props) 
       el.removeEventListener('touchcancel', onEnd);
       el.removeEventListener('contextmenu', onContextMenu);
     };
-  }, []);
+  }, [skip]);
 
   return <span ref={marker} hidden aria-hidden="true" />;
 });

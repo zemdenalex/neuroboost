@@ -50,7 +50,7 @@ describe('resize anchors keep their date', () => {
 describe('resizing a multi-day event no longer collapses it (MD2)', () => {
   const runResize = (drag: Parameters<typeof handleDragComplete>[0]) => {
     const onMoveOrResize = vi.fn();
-    handleDragComplete(drag, vi.fn(), onMoveOrResize);
+    handleDragComplete(drag, vi.fn(), onMoveOrResize, 30);
     return onMoveOrResize.mock.calls[0][0];
   };
 
@@ -103,7 +103,7 @@ describe('resizing a multi-day event no longer collapses it (MD2)', () => {
 describe('same-day resize is unchanged', () => {
   const runResize = (drag: Parameters<typeof handleDragComplete>[0]) => {
     const onMoveOrResize = vi.fn();
-    handleDragComplete(drag, vi.fn(), onMoveOrResize);
+    handleDragComplete(drag, vi.fn(), onMoveOrResize, 30);
     return onMoveOrResize.mock.calls[0][0];
   };
 

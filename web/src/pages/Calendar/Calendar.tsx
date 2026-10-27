@@ -25,6 +25,7 @@ import { MobileTaskPanel } from '../../components/TaskSidebar/MobileTaskPanel';
 import { EventEditor } from '../../components/Calendar/EventEditor';
 import { useRecurringScope } from '../../components/Calendar/useRecurringScope';
 import { useAuthContext } from '../../contexts/AuthContext';
+import { readNewEventLength } from '../../lib/calendar/newEventLength';
 import { computeWeekRange } from '../../lib/calendar/weekRange';
 import { shouldRefetchOnReturn } from '../../lib/calendar/refetchOnReturn';
 import { createTask } from '../../api';
@@ -101,6 +102,7 @@ export function Calendar() {
     if (next === 'month') setMonthCursor(monthOfWeek(todayInZone(new Date(), timezone), currentWeekOffsetRef.current));
   }, [timezone]);
   const phoneMonth = readPhoneMonthVariant(user?.settings);
+  const newEventMinutes = readNewEventLength(user?.settings);
   const stripMonth = isMobile && view === 'month' && phoneMonth === 'strip';
   const monthVariant: MonthVariant = isMobile
     ? (phoneMonth === 'heat' ? 'heat' : 'split')
@@ -565,6 +567,7 @@ export function Calendar() {
         <WeekGrid
           focusDay={focusDay}
           weekStrip={stripMonth}
+          newEventMinutes={newEventMinutes}
           events={shownEvents}
           currentWeekOffset={currentWeekOffset}
           timezone={timezone}

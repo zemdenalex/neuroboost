@@ -185,4 +185,6 @@ export interface WeekGridProps extends WeekGridCallbacks {
    * grid (WeekStrip). Ignored when the grid shows the whole week.
    */
   weekStrip?: boolean;
+  /** Length of an event made by a click or a hold that never moved (⚙️). Default 30. */
+  newEventMinutes?: number;
 }

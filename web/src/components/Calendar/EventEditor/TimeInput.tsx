@@ -12,6 +12,7 @@ interface TimeInputProps {
   error?: string;
   autoFocus?: boolean;
   timezone?: string;
+  testId?: string;
 }
 
 export function TimeInput({
@@ -24,6 +25,7 @@ export function TimeInput({
   error,
   autoFocus,
   timezone,
+  testId,
 }: TimeInputProps) {
   const { t } = useTranslation('calendar');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -71,6 +73,7 @@ export function TimeInput({
       )}
       <input
         ref={inputRef}
+        data-testid={testId}
         type="text"
         value={value}
         onChange={handleChange}

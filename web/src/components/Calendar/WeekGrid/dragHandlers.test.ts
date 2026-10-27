@@ -15,10 +15,10 @@ const at = (dayUtc0: number, h: number, m = 0) => dayUtc0 + (h * 60 + m) * 60_00
 const min = (h: number, m = 0) => h * 60 + m;
 const iso = (ms: number) => new Date(ms).toISOString();
 
-function runDrag(drag: NonNullable<DragState>) {
+function runDrag(drag: NonNullable<DragState>, newEventMinutes = 30) {
   const onCreate = vi.fn();
   const onMoveOrResize = vi.fn();
-  handleDragComplete(drag, onCreate, onMoveOrResize);
+  handleDragComplete(drag, onCreate, onMoveOrResize, newEventMinutes);
   return { onCreate, onMoveOrResize };
 }
 
@@ -45,16 +45,39 @@ describe('handleDragComplete — create', () => {
     });
   });
 
-  it('enforces a minimum duration when the drag barely moved', () => {
-    const { onCreate } = runDrag({
-      kind: 'create',
+  // Denis 27.10 (friction audit #5): a click or a hold that never moved made a
+  // 15-minute event — the snap step showing through. It takes the length from
+  // ⚙️ now; a drag keeps exactly the span that was dragged (the test above).
+  it('gives a create that never moved the length from settings', () => {
+    const still = {
+      kind: 'create' as const,
       startDayUtc0: MON,
       endDayUtc0: MON,
       startMin: min(9),
       curMin: min(9),
       allDay: false,
+    };
+    expect(runDrag(still, 30).onCreate).toHaveBeenCalledWith({
+      startsAt: iso(at(MON, 9)),
+      endsAt: iso(at(MON, 9, 30)),
+      allDay: false,
     });
+    expect(runDrag(still, 90).onCreate).toHaveBeenCalledWith({
+      startsAt: iso(at(MON, 9)),
+      endsAt: iso(at(MON, 10, 30)),
+      allDay: false,
+    });
+  });
 
+  it('keeps a short drag short: 15 minutes dragged is 15 minutes, not the default', () => {
+    const { onCreate } = runDrag({
+      kind: 'create',
+      startDayUtc0: MON,
+      endDayUtc0: MON,
+      startMin: min(9),
+      curMin: min(9, 15),
+      allDay: false,
+    }, 60);
     expect(onCreate).toHaveBeenCalledWith({
       startsAt: iso(at(MON, 9)),
       endsAt: iso(at(MON, 9, 15)),

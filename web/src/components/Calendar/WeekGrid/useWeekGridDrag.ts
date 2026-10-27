@@ -16,10 +16,12 @@ interface UseDragProps {
   /** Current all-day bar height; a ref because the bar's height depends on this hook's own drag. */
   allDayHeightRef?: React.MutableRefObject<number>;
   callbacks: Pick<WeekGridCallbacks, 'onCreate' | 'onMoveOrResize'>;
+  /** Length of an event made by a click or a hold that never moved. */
+  newEventMinutes: number;
 }
 
 export function useWeekGridDrag({
-  mondayUtc0, visibleDays, timezone, scrollRef, containerRef, callbacks, allDayHeightRef,
+  mondayUtc0, visibleDays, timezone, scrollRef, containerRef, callbacks, allDayHeightRef, newEventMinutes,
 }: UseDragProps) {
   const [drag, setDrag] = useState<DragState>(null);
   const dragMeta = useRef<DragMeta | null>(null);
@@ -77,6 +79,13 @@ export function useWeekGridDrag({
     touchOwned.current = true;
     startMove(day, event, grabMin);
   }, [startMove]);
+
+  // A finger held on an empty slot (DayColumn's track binder): the finger now
+  // owns a create drag, and moving it before lifting sweeps the span.
+  const startTouchCreate = useCallback((day: DayInfo, startMin: number) => {
+    touchOwned.current = true;
+    startCreate(day, startMin);
+  }, [startCreate]);
 
   const startTouchResize = useCallback((day: DayInfo, event: ProcessedEvent, edge: 'start' | 'end') => {
     touchOwned.current = true;
@@ -189,7 +198,7 @@ export function useWeekGridDrag({
       const stillPending = drag !== null && drag.kind !== 'create' && drag.pending === true;
       if (drag && !stillPending) {
         stopAutoScroll();
-        handleDragComplete(drag, callbacks.onCreate, callbacks.onMoveOrResize);
+        handleDragComplete(drag, callbacks.onCreate, callbacks.onMoveOrResize, newEventMinutes);
       }
       touchOwned.current = false;
       setDrag(null);
@@ -237,7 +246,7 @@ export function useWeekGridDrag({
       // when the drag ends, below.
       if (!touchOwned.current) stopAutoScroll();
     };
-  }, [drag, mondayUtc0, visibleDays, callbacks, startAutoScroll, stopAutoScroll, scrollRef, containerRef]);
+  }, [drag, mondayUtc0, visibleDays, callbacks, newEventMinutes, startAutoScroll, stopAutoScroll, scrollRef, containerRef]);
 
   // The drag ended (or the grid went away): stop any edge scroll still running.
   const dragging = drag !== null;
@@ -246,5 +255,5 @@ export function useWeekGridDrag({
   }, [dragging, stopAutoScroll]);
   useEffect(() => stopAutoScroll, [stopAutoScroll]);
 
-  return { drag, dragMeta, startCreate, startMove, startTouchMove, startTouchResize, startResizeStart, startResizeEnd, cancelDrag, startAutoScroll, stopAutoScroll };
+  return { drag, dragMeta, startCreate, startMove, startTouchMove, startTouchCreate, startTouchResize, startResizeStart, startResizeEnd, cancelDrag, startAutoScroll, stopAutoScroll };
 }

@@ -238,5 +238,11 @@
   "telegram.title": "Telegram",
   "telegram.fullscreen": "Полный экран",
   "telegram.fullscreen.hint": "Открывает NeuroBoost на весь экран внутри Telegram. Сохраняется только на этом устройстве.",
-  "telegram.fullscreen.unsupported": "Это приложение Telegram не умеет полный экран."
+  "telegram.fullscreen.unsupported": "Это приложение Telegram не умеет полный экран.",
+  "newEvent": {
+    "title": "Новое событие",
+    "note": "Сколько длится событие, созданное нажатием или удержанием без протяжки. Если протянуть, событие займёт протянутое время.",
+    "minutes": "{{n}} мин",
+    "hours": "{{n}} ч"
+  }
 }

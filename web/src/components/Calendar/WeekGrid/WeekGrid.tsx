@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { DEFAULT_NEW_EVENT_LENGTH } from '../../../lib/calendar/newEventLength';
 import { ALL_DAY_HEIGHT, DAY_HEADER_HEIGHT, DAY_MS, HOUR_PX } from './weekgrid.constants';
 import { initialScrollHour } from '../../../lib/calendar/initialScroll';
 import { allDayBarHeight } from '../../../lib/calendar/calendarChrome';
@@ -32,6 +33,7 @@ export function WeekGrid({
   onWeekChange,
   focusDay,
   weekStrip = false,
+  newEventMinutes = DEFAULT_NEW_EVENT_LENGTH,
 }: WeekGridProps) {
   // Refs
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -185,6 +187,7 @@ export function WeekGrid({
     startCreate,
     startMove,
     startTouchMove,
+    startTouchCreate,
     startTouchResize,
     startResizeStart,
     startResizeEnd,
@@ -193,7 +196,7 @@ export function WeekGrid({
     stopAutoScroll,
   } = useWeekGridDrag({
     mondayUtc0: adjustedStart, visibleDays, timezone, scrollRef, containerRef, callbacks: { onCreate, onMoveOrResize },
-    allDayHeightRef,
+    allDayHeightRef, newEventMinutes,
   });
 
   // The all-day bar: a thin strip on a phone while empty (Denis 25.09, variant A).
@@ -262,10 +265,7 @@ export function WeekGrid({
     onCreate({ startsAt: start.toISOString(), endsAt: end.toISOString(), allDay: false });
   }, [onCreate]);
   
-  const handleTouchEnd = useCallback((d: DayInfo, min: number) => {
-    startCreate(d, min);
-    setTouchStart(null);
-  }, [startCreate]);
+  const handleTouchEnd = useCallback(() => setTouchStart(null), []);
 
   // Swipe navigation (mobile/tablet)
   //
@@ -403,6 +403,7 @@ export function WeekGrid({
               onDragStart={handleDragStart}
               onTouchMoveStart={(d, ev, grabMin) => startTouchMove(d, ev, grabMin)}
               onTouchResizeStart={(d, ev, edge) => startTouchResize(d, ev, edge)}
+              onTouchCreateStart={startTouchCreate}
               onTouchStart={setTouchStart}
               onTouchEnd={handleTouchEnd}
               startAutoScroll={startAutoScroll}

@@ -51,6 +51,8 @@ export interface UserSettings {
   phone_month_variant?: string
   /** Month view: how long a click waits for a second click, ms (150–800, default 300). */
   month_click_wait_ms?: number
+  /** Length of an event made by a click or a hold that never moved (lib/calendar/newEventLength, default 30). */
+  new_event_minutes?: number
   /** Phone task rows: 'menu' | 'swipe' | 'card' (lib/tasks/rowActions, Denis 25.09). */
   task_row_actions?: string
   /** Web theme: 'dark' | 'light' | 'system' (lib/theme/theme, Denis 25.09). */

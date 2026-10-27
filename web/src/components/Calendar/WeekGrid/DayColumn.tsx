@@ -6,6 +6,7 @@ import type { ProcessedEvent, DragState, DragMeta, NbEvent, TouchStart, DayInfo 
 import { HourGrid } from './HourGrid';
 import { TimeIndicator } from './TimeIndicator';
 import { EventBlock } from './EventBlock';
+import { TouchHoldBinder } from './TouchHoldBinder';
 import { GhostPreview, MultiDayTimedGhost } from './GhostPreview';
 import { dateLocale } from '../../../utils/date';
 import { dayKey } from '../../../lib/dayTasks/loadDayColours';
@@ -43,8 +44,10 @@ interface DayColumnProps {
   onTouchMoveStart: (day: DayInfo, event: ProcessedEvent, grabMin: number) => void;
   /** A finger on a selected event's circle: begin stretching that edge. */
   onTouchResizeStart: (day: DayInfo, event: ProcessedEvent, edge: 'start' | 'end') => void;
+  /** A finger held on an empty slot until it was picked up: begin a touch create. */
+  onTouchCreateStart: (day: DayInfo, startMin: number) => void;
   onTouchStart: (info: TouchStart) => void;
-  onTouchEnd: (day: DayInfo, startMin: number) => void;
+  onTouchEnd: () => void;
   startAutoScroll: (direction: 'up' | 'down') => void;
   stopAutoScroll: () => void;
 }
@@ -70,6 +73,7 @@ export const DayColumn = memo(function DayColumn({
   onDragStart,
   onTouchMoveStart,
   onTouchResizeStart,
+  onTouchCreateStart,
   onTouchStart,
   onTouchEnd,
   startAutoScroll,
@@ -224,16 +228,24 @@ export const DayColumn = memo(function DayColumn({
     // about it.
   };
 
-  const handleTouchEnd = (e: React.TouchEvent) => {
+  const handleTouchEnd = () => {
     stopAutoScroll();
-    if (!touchStart) return;
-    const touch = e.changedTouches[0];
-    const duration = Date.now() - touchStart.time;
-    const distance = Math.hypot(touch.clientX - touchStart.x, touch.clientY - touchStart.y);
-    if (duration > 500 && distance < 20) {
-      const rect = e.currentTarget.getBoundingClientRect();
-      onTouchEnd(day, clampMins(snapMin(topToMins(touchStart.y - rect.top + (scrollContainer.current?.scrollTop ?? 0)))));
-    }
+    onTouchEnd();
+  };
+
+  // A finger held still on an empty slot (the track's own binder, which skips
+  // events and circles). Until 27.10 a create began only when the finger LIFTED,
+  // so a hold could never be dragged into a span, and the event was committed by
+  // the browser's compatibility mouseup at the 15-minute minimum (audit #5).
+  // Now the hold picks up a create the finger owns: moving sweeps the span, a
+  // lift without moving takes the length from ⚙️ (handleCreateComplete).
+  const handleEmptyTouchLift = (el: HTMLElement, clientY: number) => {
+    const rect = el.getBoundingClientRect();
+    dragMeta.current = {
+      colTop: rect.top,
+      scrollStart: scrollContainer.current?.scrollTop ?? 0,
+    };
+    onTouchCreateStart(day, clampMins(snapMin(topToMins(clientY - rect.top))));
   };
 
   return (
@@ -262,6 +274,10 @@ export const DayColumn = memo(function DayColumn({
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
+        <TouchHoldBinder
+          onLift={(el, _x, y) => handleEmptyTouchLift(el, y)}
+          skip="[data-event-id], [data-resize-handle]"
+        />
         <HourGrid isMobile={isMobile} />
         
         {isToday && <TimeIndicator currentMinutes={currentMinutes} />}

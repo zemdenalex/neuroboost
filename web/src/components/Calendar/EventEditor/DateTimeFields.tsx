@@ -79,6 +79,7 @@ export function DateTimeFields({
           onChange={onStartTimeChange}
           onEnter={onStartTimeEnter}
           label={t('dateTime.startTime')}
+          testId="event-start-time"
           placeholder={t('dateTime.timePlaceholder')}
           timezone={timezone}
         />
@@ -87,6 +88,7 @@ export function DateTimeFields({
           onChange={onEndTimeChange}
           onEnter={onEndTimeEnter}
           label={t('dateTime.endTime')}
+          testId="event-end-time"
           placeholder={t('dateTime.timePlaceholder')}
           timezone={timezone}
         />

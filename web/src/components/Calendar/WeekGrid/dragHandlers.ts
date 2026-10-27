@@ -10,10 +10,12 @@ type MoveCallback = WeekGridCallbacks['onMoveOrResize'];
 export function handleDragComplete(
   drag: NonNullable<DragState>,
   onCreate: CreateCallback,
-  onMoveOrResize: MoveCallback
+  onMoveOrResize: MoveCallback,
+  /** Length of an event made by a click or a hold that never moved (⚙️, readNewEventLength). */
+  newEventMinutes: number
 ): void {
   if (drag.kind === 'create') {
-    handleCreateComplete(drag, onCreate);
+    handleCreateComplete(drag, onCreate, newEventMinutes);
   } else if (drag.kind === 'move') {
     handleMoveComplete(drag, onMoveOrResize);
   } else if (drag.kind === 'resize-start' || drag.kind === 'resize-end') {
@@ -23,7 +25,8 @@ export function handleDragComplete(
 
 function handleCreateComplete(
   drag: NonNullable<DragState> & { kind: 'create' },
-  onCreate: CreateCallback
+  onCreate: CreateCallback,
+  newEventMinutes: number
 ): void {
   const startDay = Math.min(drag.startDayUtc0, drag.endDayUtc0);
   const endDay = Math.max(drag.startDayUtc0, drag.endDayUtc0);
@@ -46,10 +49,12 @@ function handleCreateComplete(
   } else {
     const a = Math.min(drag.startMin, drag.curMin);
     const b = Math.max(drag.startMin, drag.curMin);
-    
+    // Never moved: a click or a hold, not a span — the length comes from ⚙️.
+    const end = a === b ? a + newEventMinutes : Math.max(a + MIN_SLOT_MIN, b);
+
     onCreate({
       startsAt: new Date(drag.startDayUtc0 + a * 60000).toISOString(),
-      endsAt: new Date(drag.startDayUtc0 + Math.max(a + MIN_SLOT_MIN, b) * 60000).toISOString(),
+      endsAt: new Date(drag.startDayUtc0 + end * 60000).toISOString(),
       allDay: false,
     });
   }

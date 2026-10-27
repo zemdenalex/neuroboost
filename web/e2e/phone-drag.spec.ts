@@ -222,6 +222,64 @@ test.describe('phone drag', () => {
     expect(end - start, 'the event was 2 hours, the circle was dragged one hour down').toBe(3 * HOUR)
   })
 
+  /**
+   * A free 3-hour window today (09:00–20:00, on the hour), centred on screen.
+   * The account is a real one: a hold that lands on someone's event lifts that
+   * event instead of creating. Returns the finger's y for the window's start.
+   */
+  async function freeWindowOnScreen(authedPage: Page, token: string) {
+    const { block } = await seedEventOnScreen(authedPage, token)
+    const ctx = await apiContext(token)
+    const me = (await (await ctx.get('/api/auth/me')).json()).data
+    const dayStart = localMidnightUtc(me.timezone || 'Europe/Moscow', 0)
+    const listed = await ctx.get(`/api/events?start=${new Date(dayStart).toISOString()}&end=${new Date(dayStart + 24 * HOUR).toISOString()}`)
+    const busy = (((await listed.json()).data ?? []) as { starts_at: string; ends_at: string; all_day?: boolean }[])
+      .filter((e) => !e.all_day)
+      .map((e) => [new Date(e.starts_at).getTime(), new Date(e.ends_at).getTime()])
+    await ctx.dispose()
+    const hour = [9, 10, 11, 12, 13, 14, 15, 16, 17].find((h) => {
+      const a = dayStart + h * HOUR, b = a + 3 * HOUR
+      return busy.every(([s, e]) => e <= a || s >= b)
+    })
+    expect(hour, 'no free 3-hour window today between 09:00 and 20:00').toBeDefined()
+    // The track is the seeded block's parent; its top is 00:00 on screen.
+    const y = await block.evaluate((el, h) => {
+      const track = el.parentElement!
+      let sc: HTMLElement | null = track.parentElement
+      while (sc && getComputedStyle(sc).overflowY !== 'auto') sc = sc.parentElement
+      const want = track.getBoundingClientRect().top + h * 44
+      const r = sc!.getBoundingClientRect()
+      sc!.scrollTop += want - (r.top + r.height / 3)
+      return track.getBoundingClientRect().top + h * 44
+    }, hour!)
+    await authedPage.evaluate(() => new Promise((r) => requestAnimationFrame(() => r(null))))
+    const x = (await block.boundingBox())!.x + 20
+    const settingMin = typeof me.settings?.new_event_minutes === 'number' ? me.settings.new_event_minutes : 30
+    return { x, y: y + 2, hour: hour!, settingMin }
+  }
+
+  const hhmm = (h: number, m = 0) => `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+
+  test('holding an empty slot and dragging two hours down opens a new event for those two hours', async ({ authedPage, session }) => {
+    test.skip(test.info().project.name !== 'mobile', 'touch drag is a phone gesture')
+    const { x, y, hour } = await freeWindowOnScreen(authedPage, session.token)
+    await fingerDrag(authedPage, { x, y }, { x, y: y + 2 * HOUR_PX }, 600)
+
+    await expect(authedPage.getByTestId('event-start-time'), 'the new-event form should open').toBeVisible({ timeout: 5000 })
+    await expect(authedPage.getByTestId('event-start-time')).toHaveValue(hhmm(hour))
+    await expect(authedPage.getByTestId('event-end-time'), 'the end is where the finger was lifted').toHaveValue(hhmm(hour + 2))
+  })
+
+  test('holding an empty slot without moving opens a new event of the length set in ⚙️', async ({ authedPage, session }) => {
+    test.skip(test.info().project.name !== 'mobile', 'touch drag is a phone gesture')
+    const { x, y, hour, settingMin } = await freeWindowOnScreen(authedPage, session.token)
+    await fingerDrag(authedPage, { x, y }, { x, y }, 600)
+
+    await expect(authedPage.getByTestId('event-start-time'), 'the new-event form should open').toBeVisible({ timeout: 5000 })
+    await expect(authedPage.getByTestId('event-start-time')).toHaveValue(hhmm(hour))
+    await expect(authedPage.getByTestId('event-end-time')).toHaveValue(hhmm(hour + Math.floor(settingMin / 60), settingMin % 60))
+  })
+
   test('after a move, «Отменить» in the toast puts the event back', async ({ authedPage, session }) => {
     test.skip(test.info().project.name !== 'mobile', 'touch drag is a phone gesture')
     const { box, startMs } = await seedEventOnScreen(authedPage, session.token)
