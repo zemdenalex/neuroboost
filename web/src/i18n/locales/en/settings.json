@@ -46,6 +46,7 @@
   "featureToggles.graphView": "Graph View",
   "featureToggles.timelineView": "Timeline View",
   "featureToggles.toolsView": "Tools View",
+  "featureToggles.soon": "soon",
   "dataManagement.title": "Data Management",
   "dataManagement.export": "Export Data",
   "dataManagement.import": "Import Data",

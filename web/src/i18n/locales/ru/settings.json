@@ -46,6 +46,7 @@
   "featureToggles.graphView": "Граф",
   "featureToggles.timelineView": "Временная шкала",
   "featureToggles.toolsView": "Инструменты",
+  "featureToggles.soon": "скоро",
   "dataManagement.title": "Управление данными",
   "dataManagement.export": "Экспорт данных",
   "dataManagement.import": "Импорт данных",

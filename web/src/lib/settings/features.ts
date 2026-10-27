@@ -8,11 +8,10 @@
 /**
  * The toggles the page offers, and their defaults.
  *
- * 🔴 `opportunities`, `needs` and `graph` no longer have anything behind them:
- * the 501-stub backends and the dead GraphView tree were deleted on
- * 2026-08-14. The switches flip and persist; they enable nothing. Left in place
- * because removing a visible control and a stored key is a product decision,
- * not a refactor.
+ * 🔴 `opportunities`, `needs` and `graph` lost their backends on 2026-08-14, and
+ * no view is imported for any key but `tools`. Since 27.10 those are drawn as
+ * «soon» and cannot be switched (SOON_FEATURES below, Denis's choice); the keys
+ * stay because removing a stored key is a product decision, not a refactor.
  */
 export const DEFAULT_FEATURES = {
   dreams: false,
@@ -26,6 +25,17 @@ export const DEFAULT_FEATURES = {
 } as const
 
 export type FeatureKey = keyof typeof DEFAULT_FEATURES
+
+/**
+ * Toggles with no screen behind them: no view is imported for any of these
+ * (checked 27.10 — even the DreamsView/GoalsView «TODO» stubs are unused).
+ * Denis 27.10 (friction audit #10): keep them visible, marked «soon», not
+ * switchable. A stored value is left as it is. Remove a key from here when its
+ * screen ships.
+ */
+export const SOON_FEATURES: ReadonlySet<FeatureKey> = new Set<FeatureKey>([
+  'dreams', 'goals', 'projects', 'timeline', 'opportunities', 'needs', 'graph',
+])
 export type Features = Record<FeatureKey, boolean>
 
 /**

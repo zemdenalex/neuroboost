@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Sliders } from 'lucide-react'
 import { useAuthContext } from '../../../contexts/AuthContext'
-import { mergeFeatures, DEFAULT_FEATURES, type Features, type FeatureKey } from '../../../lib/settings/features'
+import { mergeFeatures, DEFAULT_FEATURES, SOON_FEATURES, type Features, type FeatureKey } from '../../../lib/settings/features'
 import type { UserSettings } from '../../../api/auth'
 
 interface Props {
@@ -54,9 +54,27 @@ export function FeatureTogglesSection({ autoSave }: Props) {
       <div className="grid grid-cols-2 gap-3">
         {(Object.keys(DEFAULT_FEATURES) as FeatureKey[]).map((key) => {
           const enabled = features[key]
+          if (SOON_FEATURES.has(key)) {
+            return (
+              <button
+                key={key}
+                type="button"
+                disabled
+                data-testid={`feature-${key}`}
+                className="flex items-center justify-between p-3 bg-zinc-800/30 rounded-lg cursor-default"
+              >
+                <span className="text-sm text-zinc-500">{t(`featureToggles.${key}View`)}</span>
+                <span className="text-xs font-mono text-zinc-500 border border-zinc-700 rounded px-1.5 py-0.5">
+                  {t('featureToggles.soon')}
+                </span>
+              </button>
+            )
+          }
           return (
             <button
               key={key}
+              type="button"
+              data-testid={`feature-${key}`}
               onClick={() => toggle(key)}
               className="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg hover:bg-zinc-800 transition-colors"
             >
