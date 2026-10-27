@@ -3,6 +3,7 @@ import HorizontalHeader from './HorizontalHeader'
 import VerticalSidebar from './VerticalSidebar'
 import { useMediaQuery } from '../../../hooks/useMediaQuery'
 import { effectiveHeaderVariant, PHONE_QUERY } from '../../../lib/layout/headerVariant'
+import { launchedInTelegram } from '../../../lib/telegram/webApp'
 
 type HeaderVariant = 'horizontal' | 'vertical'
 
@@ -35,7 +36,9 @@ export default function Header() {
   }, [])
 
   const isPhone = useMediaQuery(PHONE_QUERY)
-  return effectiveHeaderVariant(variant, isPhone) === 'horizontal' ? <HorizontalHeader /> : <VerticalSidebar />
+  const shown = effectiveHeaderVariant(variant, isPhone, Boolean(launchedInTelegram()))
+  if (shown === 'none') return null
+  return shown === 'horizontal' ? <HorizontalHeader /> : <VerticalSidebar />
 }
 
 export { HorizontalHeader, VerticalSidebar }

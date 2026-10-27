@@ -10,7 +10,17 @@ export const PHONE_QUERY = '(max-width: 767px)'
  * the phone's top bar away (mobile tour 25.09, MW5). A phone always gets the
  * top bar; the saved choice stays for the desktop.
  */
-export function effectiveHeaderVariant(saved: string | null | undefined, isPhone: boolean): HeaderVariant {
+/**
+ * 'none' inside Telegram on a phone: Telegram draws its own header, and ours
+ * under it made two (friction audit 26.10 #3, Denis 27.10 «hide, profile in
+ * More»). Header and Layout's padding both ask here, so they cannot disagree.
+ */
+export function effectiveHeaderVariant(
+  saved: string | null | undefined,
+  isPhone: boolean,
+  inTelegram = false,
+): HeaderVariant | 'none' {
+  if (isPhone && inTelegram) return 'none'
   if (isPhone) return 'horizontal'
   return saved === 'vertical' ? 'vertical' : 'horizontal'
 }

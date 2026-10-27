@@ -4,6 +4,8 @@ import { useDayTasksEnabled } from '../../../hooks/useDayTasksEnabled'
 import { useTranslation } from 'react-i18next'
 import { LayoutGrid, Wrench, BookOpen, User, Pin, ListOrdered, CheckSquare, Settings, Sparkles } from 'lucide-react'
 import { useFeatureFlags } from '../../../hooks/useFeatureFlags'
+import { HelpButton } from '../../Help/HelpButton'
+import { launchedInTelegram } from '../../../lib/telegram/webApp'
 
 /** Pages reached through «Ещё»: the bar lights the tab while one is shown. */
 export const MORE_PATHS = ['/agenda', '/tasks', '/day-tasks', '/planning', '/tools', '/reflections', '/profile', '/settings', '/whats-new']
@@ -82,6 +84,12 @@ export function MoreMenu({ open, onClose, anchorRef }: MoreMenuProps) {
           </button>
         )
       })}
+      {/* In Telegram the top bar with «?» is hidden (effectiveHeaderVariant): its help lives here. */}
+      {launchedInTelegram() && (
+        <div data-testid="more-help" className="border-t border-zinc-800 px-1 py-1">
+          <HelpButton variant="sidebar" />
+        </div>
+      )}
     </div>
   )
 }

@@ -7,6 +7,7 @@ import { OnboardingOverlay } from '../Onboarding/OnboardingOverlay'
 import { HintsLayer } from '../Hints/HintsLayer'
 import { useMediaQuery } from '../../hooks/useMediaQuery'
 import { effectiveHeaderVariant, PHONE_QUERY } from '../../lib/layout/headerVariant'
+import { launchedInTelegram } from '../../lib/telegram/webApp'
 
 type HeaderVariant = 'horizontal' | 'vertical'
 
@@ -38,7 +39,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
-  const shown = effectiveHeaderVariant(variant, useMediaQuery(PHONE_QUERY))
+  const shown = effectiveHeaderVariant(variant, useMediaQuery(PHONE_QUERY), Boolean(launchedInTelegram()))
 
   return (
     <OnboardingProvider>
@@ -46,7 +47,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Header />
         <main
           className={
-            shown === 'horizontal'
+            shown === 'none'
+              ? 'pt-[var(--nb-safe-top)] pb-[calc(4rem+var(--nb-safe-bottom))]' // Telegram's header is the only one
+              : shown === 'horizontal'
               ? 'pt-[calc(3.5rem+var(--nb-safe-top))] pb-[calc(4rem+var(--nb-safe-bottom))] md:pb-0' // Top padding for horizontal header, bottom padding for mobile nav (+ Telegram full-screen insets)
               // The sidebar is hidden below md, so its left padding must be too —
               // unconditional pl-56 squeezed a 375px screen down to 129px of
