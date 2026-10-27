@@ -78,6 +78,12 @@ export function useWeekGridDrag({
     startMove(day, event, grabMin);
   }, [startMove]);
 
+  const startTouchResize = useCallback((day: DayInfo, event: ProcessedEvent, edge: 'start' | 'end') => {
+    touchOwned.current = true;
+    if (edge === 'start') startResizeStart(day, event);
+    else startResizeEnd(day, event);
+  }, [startResizeStart, startResizeEnd]);
+
   const cancelDrag = useCallback(() => {
     touchOwned.current = false;
     setDrag(null);
@@ -240,5 +246,5 @@ export function useWeekGridDrag({
   }, [dragging, stopAutoScroll]);
   useEffect(() => stopAutoScroll, [stopAutoScroll]);
 
-  return { drag, dragMeta, startCreate, startMove, startTouchMove, startResizeStart, startResizeEnd, cancelDrag, startAutoScroll, stopAutoScroll };
+  return { drag, dragMeta, startCreate, startMove, startTouchMove, startTouchResize, startResizeStart, startResizeEnd, cancelDrag, startAutoScroll, stopAutoScroll };
 }

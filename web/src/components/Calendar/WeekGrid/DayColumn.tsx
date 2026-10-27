@@ -41,6 +41,8 @@ interface DayColumnProps {
   ) => void;
   /** A finger held on an event until it was picked up: begin a touch move. */
   onTouchMoveStart: (day: DayInfo, event: ProcessedEvent, grabMin: number) => void;
+  /** A finger on a selected event's circle: begin stretching that edge. */
+  onTouchResizeStart: (day: DayInfo, event: ProcessedEvent, edge: 'start' | 'end') => void;
   onTouchStart: (info: TouchStart) => void;
   onTouchEnd: (day: DayInfo, startMin: number) => void;
   startAutoScroll: (direction: 'up' | 'down') => void;
@@ -67,6 +69,7 @@ export const DayColumn = memo(function DayColumn({
   onSelectId,
   onDragStart,
   onTouchMoveStart,
+  onTouchResizeStart,
   onTouchStart,
   onTouchEnd,
   startAutoScroll,
@@ -169,6 +172,27 @@ export const DayColumn = memo(function DayColumn({
     onTouchMoveStart(day, event, topToMins(grabYLocal));
   };
 
+  // The finger version of the handle branches of handleEventMouseDown.
+  //
+  // The resize maths puts the edge where the pointer is. A mouse handle is 8px
+  // tall, so that error is under a snap; a fingertip lands ~12px inside the edge
+  // (the circle's hit zone sits inside the clipped block), which cost a quarter
+  // hour on every stretch (measured: 2h + 1h of finger came out as 2h45). So the
+  // column origin is shifted by the finger's distance from the edge: the edge
+  // then follows the finger's movement instead of jumping to the finger.
+  const handleEventTouchResize = (edge: 'start' | 'end', el: HTMLElement, clientY: number, event: ProcessedEvent) => {
+    if (!event.id) return;
+    const track = el.parentElement;
+    if (!track) return;
+    const block = el.getBoundingClientRect();
+    const edgeY = edge === 'start' ? block.top : block.bottom;
+    dragMeta.current = {
+      colTop: track.getBoundingClientRect().top + (clientY - edgeY),
+      scrollStart: scrollContainer.current?.scrollTop ?? 0,
+    };
+    onTouchResizeStart(day, event, edge);
+  };
+
   const handleTouchStart = (e: React.TouchEvent) => {
     const touch = e.touches[0];
     onTouchStart({ x: touch.clientX, y: touch.clientY, time: Date.now() });
@@ -253,6 +277,7 @@ export const DayColumn = memo(function DayColumn({
             onClick={() => event.id && onSelectId(event.id)}
             onMouseDown={(e) => handleEventMouseDown(e, event)}
             onTouchLift={(el, _x, y) => handleEventTouchLift(el, y, event)}
+            onTouchResize={(edge, el, y) => handleEventTouchResize(edge, el, y, event)}
           />
         ))}
         

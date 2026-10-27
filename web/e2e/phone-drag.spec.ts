@@ -70,6 +70,16 @@ test.describe('phone drag', () => {
     // Same band as move-grab-offset: 06:30–08:30.
     const startMs = dayStart + 6 * HOUR + 30 * 60 * 1000
     const endMs = dayStart + 8 * HOUR + 30 * 60 * 1000
+    // Runs that died before afterEach (a dropped connection) leave their events
+    // behind, and five of them in this band squeeze each block to a fifth of the
+    // column. Only this spec's own titles are removed (the account is a real one),
+    // and only stale ones: the tests run in parallel, and a sibling's event made a
+    // second ago is in use. The title carries its creation time.
+    const listed = await ctx.get(`/api/events?start=${new Date(dayStart).toISOString()}&end=${new Date(dayStart + 24 * HOUR).toISOString()}`)
+    for (const ev of ((await listed.json()).data ?? []) as { id: string; title: string }[]) {
+      const made = Number(/^E2E phone drag (\d+)$/.exec(ev.title)?.[1])
+      if (made && Date.now() - made > 10 * 60 * 1000) await ctx.delete(`/api/events/${ev.id}`)
+    }
     const title = `E2E phone drag ${Date.now()}`
     const created = await ctx.post('/api/events', {
       data: {
@@ -182,6 +192,34 @@ test.describe('phone drag', () => {
       (await startOf(session.token, createdId!)) - startMs,
       'the event should have followed the scrolling grid, not stayed at the time under the finger when it last moved'
     ).toBeGreaterThan(6 * HOUR)
+  })
+
+  test('a tapped event shows a circle at its bottom edge; dragging it one hour down makes the event an hour longer', async ({ authedPage, session }) => {
+    test.skip(test.info().project.name !== 'mobile', 'touch drag is a phone gesture')
+    const { block, box, startMs } = await seedEventOnScreen(authedPage, session.token)
+    // A tap selects the event (no hold, no move).
+    const cdp = await authedPage.context().newCDPSession(authedPage)
+    const c = { x: box.x + box.width / 2, y: box.y + box.height / 2 }
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [c] })
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+    await cdp.detach()
+
+    const handle = block.getByTestId('resize-handle-bottom')
+    await expect(handle, 'a selected event offers a circle to stretch it').toBeVisible({ timeout: 5000 })
+    const hb = (await handle.boundingBox())!
+    const from = { x: hb.x + hb.width / 2, y: hb.y + hb.height / 2 }
+    // Held past the lift delay on purpose: a circle stretches, it never picks the
+    // event up (TouchHoldBinder skips touches that start on a circle).
+    await fingerDrag(authedPage, from, { x: from.x, y: from.y + HOUR_PX }, 600)
+
+    await authedPage.waitForTimeout(1500)
+    const check = await apiContext(session.token)
+    const after = (await (await check.get(`/api/events/${createdId}`)).json()).data
+    await check.dispose()
+    const start = new Date(after.starts_at ?? after.startsAt).getTime()
+    const end = new Date(after.ends_at ?? after.endsAt).getTime()
+    expect(start, 'stretching the bottom edge must not move the start').toBe(startMs)
+    expect(end - start, 'the event was 2 hours, the circle was dragged one hour down').toBe(3 * HOUR)
   })
 
   test('after a move, «Отменить» in the toast puts the event back', async ({ authedPage, session }) => {

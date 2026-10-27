@@ -18,7 +18,15 @@ interface EventBlockProps {
    * Receives the block's element and the finger's position, and starts the move.
    */
   onTouchLift: (el: HTMLElement, clientX: number, clientY: number) => void;
+  /**
+   * A finger put down on one of the circles a selected event shows on a phone:
+   * start stretching that edge at once (no hold). Receives the block's element.
+   */
+  onTouchResize?: (edge: 'start' | 'end', el: HTMLElement, clientY: number) => void;
 }
+
+/** Below this height there is room for one circle only; the bottom one is kept. */
+const TWO_CIRCLES_MIN_PX = 48;
 
 export const EventBlock = memo(function EventBlock({
   event,
@@ -29,6 +37,7 @@ export const EventBlock = memo(function EventBlock({
   onClick,
   onMouseDown,
   onTouchLift,
+  onTouchResize,
 }: EventBlockProps) {
   const isMultiDaySegment = event.span && event.span.spanDays > 1;
   const isFirstSegment = event.span?.isFirstSegment;
@@ -47,6 +56,14 @@ export const EventBlock = memo(function EventBlock({
   // construction rather than by two copies of the same number.
   const showsTimeRow = event.height > 35;
   const compactAuthor = !showsTimeRow && !isMultiDaySegment && Boolean(event.authorName);
+
+  // Circles for a finger: only on the selected event, only on a phone. An edge a
+  // multi-day segment does not own (a middle day) has no circle, as with the mouse.
+  const ownsStart = !isMultiDaySegment || Boolean(isFirstSegment);
+  const ownsEnd = !isMultiDaySegment || Boolean(isLastSegment);
+  const showCircles = selected && isMobile && Boolean(onTouchResize);
+  const circleStart = showCircles && ownsStart && event.height >= TWO_CIRCLES_MIN_PX;
+  const circleEnd = showCircles && ownsEnd;
 
   const borderRadius = isMultiDaySegment
     ? isFirstSegment ? '4px 4px 0 0' 
@@ -129,6 +146,13 @@ export const EventBlock = memo(function EventBlock({
       )}
       {isMultiDaySegment && isLastSegment && (
         <div className="absolute left-0 right-0 h-2 bottom-0 cursor-ns-resize bg-transparent hover:bg-blue-400/20" />
+      )}
+
+      {circleStart && (
+        <ResizeCircle edge="start" onTouchResize={onTouchResize!} />
+      )}
+      {circleEnd && (
+        <ResizeCircle edge="end" onTouchResize={onTouchResize!} />
       )}
 
       {/* 🔴 A 22px block (30 minutes at HOUR_PX 44) cannot hold a 14px line
@@ -229,3 +253,38 @@ export const EventBlock = memo(function EventBlock({
     </div>
   );
 });
+
+/**
+ * A circle on the top or bottom edge of a selected event, for a finger.
+ *
+ * The 24px hit zone sits inside the block: the block clips its children
+ * (overflow-hidden, see above), so a zone straddling the edge would lose half of
+ * itself. `touch-action: none` stops the browser from starting a scroll from
+ * here; TouchHoldBinder ignores touches that start on a circle, so holding one
+ * still never turns into a move.
+ */
+function ResizeCircle({ edge, onTouchResize }: {
+  edge: 'start' | 'end';
+  onTouchResize: (edge: 'start' | 'end', el: HTMLElement, clientY: number) => void;
+}) {
+  return (
+    <div
+      data-testid={edge === 'start' ? 'resize-handle-top' : 'resize-handle-bottom'}
+      data-resize-handle={edge}
+      className={`absolute left-1/2 -translate-x-1/2 ${edge === 'start' ? 'top-0 items-start' : 'bottom-0 items-end'} z-10 flex h-6 w-10 justify-center`}
+      style={{ touchAction: 'none' }}
+      // A finger resting on the circle is a long press to the phone: its context
+      // menu would cancel the touch (touchcancel commits nothing) mid-stretch.
+      onContextMenu={(e) => e.preventDefault()}
+      onTouchStart={(e) => {
+        const block = e.currentTarget.parentElement;
+        const t = e.touches[0];
+        if (!block || !t) return;
+        e.stopPropagation();
+        onTouchResize(edge, block, t.clientY);
+      }}
+    >
+      <span className="m-0.5 h-3 w-3 rounded-full border-2 border-blue-500 bg-white shadow" />
+    </div>
+  );
+}
