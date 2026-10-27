@@ -24,7 +24,10 @@ type recogniser struct {
 //   - repeat before weekday, because «каждый вторник» is a rule AND a start
 //     day, and the repeat pass deliberately leaves the weekday token behind;
 //   - all-day after time, because «весь день» has to be able to drop a time
-//     that was already read.
+//     that was already read;
+//   - kind, colour and tags before time, because a bare hour counts only at
+//     the start of what is left, and «#работа завтра 10 врач» has a tag, not
+//     title text, in front of its «10» (Denis, 27.10).
 //
 // TestRecogniserOrderIsFixed holds this list so a reordering during a refactor
 // fails loudly instead of changing behaviour quietly.
@@ -35,13 +38,13 @@ var recognisers = []recogniser{
 	{"relative-day", func(t []Token, now time.Time, d *Draft) bool { return recogniseRelativeDay(t, now, d) }},
 	{"repeat", func(t []Token, _ time.Time, d *Draft) bool { return recogniseRepeat(t, d) }},
 	{"weekday", func(t []Token, now time.Time, d *Draft) bool { return recogniseWeekday(t, now, d) }},
+	{"kind", func(t []Token, _ time.Time, d *Draft) bool { return recogniseKind(t, d) }},
+	{"colour", func(t []Token, _ time.Time, d *Draft) bool { return recogniseColour(t, d) }},
+	{"tags", func(t []Token, _ time.Time, d *Draft) bool { return recogniseTags(t, d) }},
 	{"time-range", func(t []Token, _ time.Time, d *Draft) bool { return recogniseTimeRange(t, d) }},
 	{"time-word", func(t []Token, _ time.Time, d *Draft) bool { return recogniseTimeWord(t, d) }},
 	{"all-day", func(t []Token, _ time.Time, d *Draft) bool { return recogniseAllDay(t, d) }},
-	{"kind", func(t []Token, _ time.Time, d *Draft) bool { return recogniseKind(t, d) }},
-	{"colour", func(t []Token, _ time.Time, d *Draft) bool { return recogniseColour(t, d) }},
 	{"reminder", func(t []Token, _ time.Time, d *Draft) bool { return RecogniseReminderOffset(t, d) }},
-	{"tags", func(t []Token, _ time.Time, d *Draft) bool { return recogniseTags(t, d) }},
 }
 
 // Parsed is a draft together with the tokens it came from.

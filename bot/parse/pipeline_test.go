@@ -87,7 +87,7 @@ func TestParseLineTable(t *testing.T) {
 func TestRecogniserOrderIsFixed(t *testing.T) {
 	want := []string{
 		"repeat-end", "date-span", "date", "relative-day", "repeat", "weekday",
-		"time-range", "time-word", "all-day", "kind", "colour", "reminder", "tags",
+		"kind", "colour", "tags", "time-range", "time-word", "all-day", "reminder",
 	}
 	if len(recognisers) != len(want) {
 		t.Fatalf("got %d recognisers, want %d — if one was added, decide where it "+

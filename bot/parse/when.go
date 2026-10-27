@@ -374,7 +374,7 @@ func readStart(toks []Token, i int) (dur time.Duration, sep, mm string, width in
 	}
 
 	// A lone number, and possibly a lone pair of minutes after it: «10 00».
-	if m := bareNumRe.FindStringSubmatch(t.Norm); m != nil && (timeExpectedAt(toks, i) || timePrepositionBefore(toks, i)) {
+	if m := bareNumRe.FindStringSubmatch(t.Norm); m != nil && (timeExpectedAt(toks, i) || timePrepositionBefore(toks, i) || (lastWordOf(toks, i) && dayNamed(toks))) {
 		if i+1 < len(toks) && toks[i+1].Field == FieldNone && bareMinRe.MatchString(toks[i+1].Norm) {
 			if v, good := clockValue(m[1], toks[i+1].Norm); good {
 				return v, " ", toks[i+1].Norm, 2, true
@@ -474,4 +474,16 @@ func setTime(d *Draft, start, end time.Duration, hasEnd bool) {
 	d.End = end
 	d.HasTime = true
 	d.HasEnd = hasEnd
+}
+
+// dayNamed reports whether the line already names a day. A bare hour at the end
+// of the line counts only then (Denis, 27.10: «врач завтра 10»): without a day,
+// «кабинет 12» and «купить яйца 10» are a room and a count, not a time.
+func dayNamed(toks []Token) bool {
+	for _, t := range toks {
+		if t.Field == FieldDay {
+			return true
+		}
+	}
+	return false
 }
