@@ -92,10 +92,19 @@ need_db() {
   done
   # pg_isready answers during init, before the final restart: ask a real query.
   for i in $(seq 1 40); do
-    docker exec "$PG" psql -U test -d neuroboost_test -tAc 'select 1' >/dev/null 2>&1 && return 0
+    docker exec "$PG" psql -U test -d neuroboost_test -tAc 'select 1' >/dev/null 2>&1 && break
     sleep 1
   done
-  echo "Postgres did not come up"; return 1
+  [ "$i" -lt 40 ] || docker exec "$PG" psql -U test -d neuroboost_test -tAc 'select 1' >/dev/null 2>&1 \
+    || { echo "Postgres did not come up"; return 1; }
+  # Ready inside the container is not reachable from the host: right after
+  # Docker Desktop starts, the published port opens seconds later and the first
+  # dial is «actively refused» (27.10, three red runs). Wait for the host side.
+  for i in $(seq 1 30); do
+    (exec 3<>"/dev/tcp/127.0.0.1/${PG_PORT}") 2>/dev/null && return 0
+    sleep 1
+  done
+  echo "Postgres did not come up on 127.0.0.1:${PG_PORT}"; return 1
 }
 
 stage_backend() {
