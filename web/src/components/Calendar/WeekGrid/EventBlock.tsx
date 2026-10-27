@@ -55,6 +55,9 @@ export const EventBlock = memo(function EventBlock({
   // has nowhere to go but the title line. Named here so the two places agree by
   // construction rather than by two copies of the same number.
   const showsTimeRow = event.height > 35;
+  // A 15-minute block is 11px (HOUR_PX 44), 9px inside its border: even text-xs
+  // with no padding (~15px) showed only the top half of the title (audit 26.10, #4).
+  const tinyTitle = event.height < 16;
   const compactAuthor = !showsTimeRow && !isMultiDaySegment && Boolean(event.authorName);
 
   // Circles for a finger: only on the selected event, only on a phone. An edge a
@@ -163,11 +166,16 @@ export const EventBlock = memo(function EventBlock({
 
           So short blocks lose the vertical padding and drop to text-xs, which
           fits. Taller blocks are untouched. */}
-      <div className={`px-2 min-h-0 leading-tight overflow-hidden ${showsTimeRow ? 'py-1' : 'py-0'}`}>
+      <div
+        className={`px-2 min-h-0 overflow-hidden ${showsTimeRow ? 'py-1' : 'py-0'} ${
+          tinyTitle ? 'h-full flex items-center leading-none' : 'leading-tight'
+        }`}
+      >
         {/* Title with multi-day arrows */}
         <div
-          className={`font-semibold flex items-center gap-1 ${
-            showsTimeRow ? 'text-sm mb-0.5' : 'text-xs mb-0'
+          data-testid="event-title"
+          className={`font-semibold flex items-center gap-1 min-w-0 ${
+            showsTimeRow ? 'text-sm mb-0.5' : tinyTitle ? 'text-[9px] mb-0' : 'text-xs mb-0'
           }`}
         >
           {isMultiDaySegment && !isFirstSegment && (
@@ -203,7 +211,10 @@ export const EventBlock = memo(function EventBlock({
               line, where it has been since the badge shipped, and this branch
               cannot touch it. */}
           {compactAuthor && (
-            <span className="min-w-0 truncate text-xs font-normal text-zinc-400" data-testid="event-author">
+            <span
+              className={`min-w-0 truncate font-normal text-zinc-400 ${tinyTitle ? 'text-[9px]' : 'text-xs'}`}
+              data-testid="event-author"
+            >
               · {event.authorName}
             </span>
           )}

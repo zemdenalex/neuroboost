@@ -64,7 +64,7 @@
   "allDay": "all-day",
   "today": "Today",
   "quickCreate": "Quick",
-  "helpMobile": "Tap: select • Long-press: create • Drag: move • Esc: cancel",
+  "helpMobile": "Tap: select • Hold empty space: create • Hold an event and slide: move • Circle: duration",
   "helpDesktop": "Click: select • Double-click: edit • Drag: create/move • Esc: cancel",
   "recurringScope": {
     "title": {

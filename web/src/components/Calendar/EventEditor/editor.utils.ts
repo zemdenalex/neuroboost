@@ -176,3 +176,19 @@ export function createInitialValidation(
     dateRangeError: '',
   };
 }
+
+/**
+ * A zone as a person reads it: «UTC+3», not «Etc/GMT-3» (whose POSIX sign is
+ * the opposite of what it means). The offset is the one in force at `at`, so a
+ * DST zone shows its summer or winter offset. An unknown name comes back as is.
+ */
+export function zoneLabel(timezone: string, at: Date = new Date()): string {
+  try {
+    const part = new Intl.DateTimeFormat('en-US', { timeZone: timezone, timeZoneName: 'shortOffset' })
+      .formatToParts(at)
+      .find((p) => p.type === 'timeZoneName')
+    return part ? part.value.replace(/^GMT(\+0)?/, 'UTC') : timezone
+  } catch {
+    return timezone
+  }
+}

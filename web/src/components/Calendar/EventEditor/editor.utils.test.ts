@@ -5,6 +5,7 @@ import {
   validateDateRange,
   utcToLocalDateTime,
   localDateTimeToUtc,
+  zoneLabel,
 } from './editor.utils'
 
 describe('parseTimeInput', () => {
@@ -95,5 +96,26 @@ describe('utcToLocalDateTime / localDateTimeToUtc', () => {
     const utc = localDateTimeToUtc('2026-06-15', '15:00', 'Europe/Moscow')
     expect(utc.toISOString()).toBe('2026-06-15T12:00:00.000Z')
     expect(utcToLocalDateTime(utc, 'Europe/Moscow')).toEqual({ date: '2026-06-15', time: '15:00' })
+  })
+})
+
+describe('zoneLabel', () => {
+  // The editor printed the stored name raw: «(Etc/GMT-3)», whose POSIX sign is
+  // the opposite of what it means (audit 26.10, #6).
+  const JUNE = new Date('2026-06-15T12:00:00Z')
+
+  it('turns an Etc zone into the offset it means, with the sign the right way round', () => {
+    expect(zoneLabel('Etc/GMT-3', JUNE)).toBe('UTC+3')
+    expect(zoneLabel('Etc/GMT+5', JUNE)).toBe('UTC-5')
+  })
+
+  it('names a city zone by its offset on that date, half hours included', () => {
+    expect(zoneLabel('Europe/Moscow', JUNE)).toBe('UTC+3')
+    expect(zoneLabel('Asia/Kolkata', JUNE)).toBe('UTC+5:30')
+    expect(zoneLabel('UTC', JUNE)).toBe('UTC')
+  })
+
+  it('falls back to the raw name for a zone the browser does not know', () => {
+    expect(zoneLabel('Not/AZone', JUNE)).toBe('Not/AZone')
   })
 })

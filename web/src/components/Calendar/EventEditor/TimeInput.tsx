@@ -1,6 +1,6 @@
 import { useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { parseTimeInput } from './editor.utils';
+import { parseTimeInput, zoneLabel } from './editor.utils';
 
 interface TimeInputProps {
   value: string;
@@ -66,7 +66,7 @@ export function TimeInput({
       {label && (
         <label className="block text-xs text-zinc-400 mb-1">
           {label}
-          {timezone && <span className="text-zinc-500 ml-1">({timezone})</span>}
+          {timezone && <span className="text-zinc-500 ml-1">({zoneLabel(timezone)})</span>}
         </label>
       )}
       <input
