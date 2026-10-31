@@ -15,6 +15,7 @@ import { FeatureTogglesSection } from './sections/FeatureTogglesSection'
 import { DayTasksSection } from './sections/DayTasksSection'
 import { MonthViewSection } from './sections/MonthViewSection'
 import { NewEventSection } from './sections/NewEventSection'
+import { PhoneCalendarSection } from './sections/PhoneCalendarSection'
 import { TaskRowSection } from './sections/TaskRowSection'
 import { PriorityStyleSection } from './sections/PriorityStyleSection'
 import { KeywordsSection } from './sections/KeywordsSection'
@@ -159,7 +160,7 @@ export default function Settings() {
 
         <DayTasksSection autoSave={autoSaveSettings} />
 
-        {/* Desktop only: the phone has no month in v1 (spec §3). */}
+        <PhoneCalendarSection autoSave={autoSaveSettings} />
         <MonthViewSection autoSave={autoSaveSettings} phoneOnly={isMobile} />
 
         <NewEventSection autoSave={autoSaveSettings} />

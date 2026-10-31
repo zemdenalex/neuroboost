@@ -15,6 +15,11 @@ interface WeekHeaderProps {
   onMobileNav?: (direction: 'prev' | 'next') => void;
   onToday?: () => void;
   onQuickCreate: () => void;
+  /**
+   * Header C on a phone (Denis 31.10): the title is the month's name and opens
+   * the month; the week strip below is the navigation, so no arrows here.
+   */
+  onOpenMonth?: () => void;
   /** Extra controls for the right-hand button row (the calendar filter). */
   headerExtra?: ReactNode;
 }
@@ -29,6 +34,7 @@ export function WeekHeader({
   onMobileNav,
   onToday,
   onQuickCreate,
+  onOpenMonth,
   headerExtra,
 }: WeekHeaderProps) {
   const { t, i18n } = useTranslation('calendar');
@@ -64,49 +70,59 @@ export function WeekHeader({
     return `${startDate.toLocaleDateString(locale, { month: 'short', day: 'numeric' })} – ${endDate.toLocaleDateString(locale, { month: 'short', day: 'numeric', year: 'numeric' })}`;
   })();
 
+  // Header C: «Октябрь ▾». Month name of the day on screen, standalone form
+  // (ru «октябрь», not the genitive «октября» a date uses).
+  const monthTitle = startDate.toLocaleDateString(locale, { month: 'long' });
+
+  const arrow = (dir: 'prev' | 'next') => (
+    <button
+      onClick={() => {
+        if (onMobileNav) {
+          onMobileNav(dir);
+        } else if (onWeekChange) {
+          onWeekChange(currentWeekOffset + (dir === 'next' ? 1 : -1));
+        }
+      }}
+      className="px-2 py-1 text-xs rounded bg-zinc-800 border border-zinc-700 hover:bg-zinc-700 transition-colors"
+      title={dir === 'next' ? 'Next period' : 'Previous period'}
+    >
+      {isMobile ? (dir === 'next' ? '›' : '‹') : (dir === 'next' ? '→' : '←')}
+    </button>
+  );
+
+  const showHint = !isMobile || mobileHint;
+
   return (
-    <div className="px-2 py-2 border-b border-zinc-700 bg-zinc-900">
+    <div data-testid="calendar-header" className="px-2 py-2 border-b border-zinc-700 bg-zinc-900">
       {/* Wraps rather than overflows: on a 320px phone arrows, title, Today,
           + Task and the calendar filter do not fit on one line and the last
           buttons ran off the screen (26.09). The right group keeps ml-auto so
           a wrapped row still ends at the right edge, where the filter panel
           (absolute right-0) expects its anchor. */}
-      <div className="flex flex-wrap items-center justify-between gap-y-2 mb-2">
-        <div className="flex items-center gap-2">
-          {(onWeekChange || onMobileNav) && (
+      <div className={`flex flex-wrap items-center justify-between gap-y-2 ${showHint ? 'mb-2' : ''}`}>
+        {/* Phone (header A, Denis 31.10): ‹ date › on one line with the
+            buttons; the desktop keeps ← → before the title. */}
+        <div className="flex items-center gap-2 min-w-0">
+          {onOpenMonth ? (
+            <button
+              type="button"
+              data-testid="calendar-month-title"
+              onClick={onOpenMonth}
+              className="font-semibold text-sm capitalize whitespace-nowrap"
+            >
+              {monthTitle} ▾
+            </button>
+          ) : (
             <>
-              <button
-                onClick={() => {
-                  if (onMobileNav) {
-                    onMobileNav('prev');
-                  } else if (onWeekChange) {
-                    onWeekChange(currentWeekOffset - 1);
-                  }
-                }}
-                className="px-2 py-1 text-xs rounded bg-zinc-800 border border-zinc-700 hover:bg-zinc-700 transition-colors"
-                title="Previous period"
-              >
-                ←
-              </button>
-              <button
-                onClick={() => {
-                  if (onMobileNav) {
-                    onMobileNav('next');
-                  } else if (onWeekChange) {
-                    onWeekChange(currentWeekOffset + 1);
-                  }
-                }}
-                className="px-2 py-1 text-xs rounded bg-zinc-800 border border-zinc-700 hover:bg-zinc-700 transition-colors"
-                title="Next period"
-              >
-                →
-              </button>
+              {(onWeekChange || onMobileNav) && arrow('prev')}
+              {!isMobile && (onWeekChange || onMobileNav) && arrow('next')}
+              <h2 data-testid="calendar-period-title" className="whitespace-nowrap font-semibold text-sm md:text-lg">{weekLabel}</h2>
+              {isMobile && (onWeekChange || onMobileNav) && arrow('next')}
             </>
           )}
-          <h2 data-testid="calendar-period-title" className="whitespace-nowrap font-semibold text-sm md:text-lg">{weekLabel}</h2>
         </div>
-        
-        <div className="ml-auto flex items-center gap-2">
+
+        <div className="ml-auto flex items-center gap-1.5 md:gap-2">
           {(currentWeekOffset !== 0 || onMobileNav) && (onWeekChange || onToday) && (
             <button
               onClick={() => {
@@ -118,7 +134,7 @@ export function WeekHeader({
               }}
               className="px-2 py-1 text-xs rounded bg-zinc-700 hover:bg-zinc-600 text-white transition-colors"
             >
-              {t('today')}
+              {isMobile ? t('todayShort') : t('today')}
             </button>
           )}
           {!isMobile && (
@@ -141,8 +157,8 @@ export function WeekHeader({
         </div>
       </div>
       
-      {(!isMobile || mobileHint) && (
-        <div data-testid="calendar-hint" className="text-xs text-zinc-400">
+      {showHint && (
+        <div data-testid="calendar-hint" className="text-xs text-zinc-400 truncate">
           {isMobile ? t('helpMobile') : t('helpDesktop')}
         </div>
       )}

@@ -181,10 +181,13 @@ export interface WeekGridProps extends WeekGridCallbacks {
   /** Passed straight through to WeekHeader's right-hand button row. */
   headerExtra?: ReactNode;
   /**
-   * Phone month variant C: the week's seven days as a strip over the one-day
-   * grid (WeekStrip). Ignored when the grid shows the whole week.
+   * Phone header C (Denis 31.10; until then month variant C): the week's seven
+   * days as a strip over the one-day grid (WeekStrip), the phone's navigation.
+   * Ignored unless the grid shows one day.
    */
   weekStrip?: boolean;
+  /** Header C (phone): the month title opens the month. Absent: header A. */
+  onOpenMonth?: () => void;
   /** Length of an event made by a click or a hold that never moved (⚙️). Default 30. */
   newEventMinutes?: number;
 }

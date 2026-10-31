@@ -15,14 +15,19 @@ export type CalendarView = 'week' | 'month'
 
 /**
  * What "month" is on a phone (Denis 26.09: «let people choose, build all of
- * these, okay, A + C + D»): A month + the day's list, C the week strip over the
- * day, D the heatmap. A separate key from the desktop's month_view_variant, so
- * choosing for the phone does not change the desktop.
+ * these, okay, A + C + D»): A month + the day's list, D the heatmap. A separate
+ * key from the desktop's month_view_variant, so choosing for the phone does not
+ * change the desktop.
+ *
+ * C, the week strip, is no longer a month: since 31.10 it is a header of its
+ * own (lib/calendar/phoneCalendar, «header A + C choice in settings … month b
+ * and c depending on what is the choice of header»). A stored 'strip' reads as
+ * A, so the «Month» button always opens a real month.
  */
-export const PHONE_MONTH_VARIANTS = ['split', 'strip', 'heat'] as const
+export const PHONE_MONTH_VARIANTS = ['split', 'heat'] as const
 export type PhoneMonthVariant = (typeof PHONE_MONTH_VARIANTS)[number]
 
-/** The phone's month variant; A ("split") when unset or unknown. */
+/** The phone's month variant; A ("split") when unset, unknown or the old 'strip'. */
 export function readPhoneMonthVariant(settings: { phone_month_variant?: unknown } | undefined): PhoneMonthVariant {
   const v = settings?.phone_month_variant
   return typeof v === 'string' && (PHONE_MONTH_VARIANTS as readonly string[]).includes(v) ? (v as PhoneMonthVariant) : 'split'

@@ -47,8 +47,12 @@ export interface UserSettings {
    * classic, heat, split or commit. Unknown or missing = list.
    */
   month_view_variant?: string
-  /** Phone month: split (A) · strip (C) · heat (D). */
+  /** Phone month: split (A) · heat (D). A stored 'strip' (C, 26.09) reads as split: the strip moved to the header (31.10). */
   phone_month_variant?: string
+  /** Phone calendar header: 'row' (A) | 'strip' (C) — lib/calendar/phoneCalendar, Denis 31.10. */
+  phone_header_variant?: string
+  /** «+» on the phone: 'simple' (one parsed line) | 'detailed' (chips, like TickTick) — Denis 31.10. */
+  add_mode?: string
   /** Month view: how long a click waits for a second click, ms (150–800, default 300). */
   month_click_wait_ms?: number
   /** Length of an event made by a click or a hold that never moved (lib/calendar/newEventLength, default 30). */

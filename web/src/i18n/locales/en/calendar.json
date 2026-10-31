@@ -63,8 +63,9 @@
   "dateTime.timePlaceholder": "e.g. 1050, 10:50",
   "allDay": "all-day",
   "today": "Today",
+  "todayShort": "Today",
   "quickCreate": "Quick",
-  "helpMobile": "Tap: select • Hold empty space: create • Hold an event and slide: move • Circle: duration",
+  "helpMobile": "Hold: create on empty · move an event",
   "helpDesktop": "Click: select • Double-click: edit • Drag: create/move • Esc: cancel",
   "recurringScope": {
     "title": {
@@ -92,6 +93,9 @@
   "view": {
     "week": "Week",
     "month": "Month",
+    "weekShort": "W",
+    "monthShort": "M",
+    "day": "Day",
     "label": "Calendar view"
   },
   "month": {

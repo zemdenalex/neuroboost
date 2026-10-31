@@ -93,23 +93,6 @@ function Sketch({ variant }: { variant: MonthVariant }) {
   }
 }
 
-/** The phone's week strip (variant C): seven days with a fullness bar each. */
-function StripSketch() {
-  return (
-    <div className="flex flex-col gap-0.5">
-      <div className="grid grid-cols-7 gap-px">
-        {[40, 80, 0, 100, 30, 60, 10].map((w, i) => (
-          <div key={i} className={`h-4 rounded-sm flex items-end px-px pb-0.5 ${i === 3 ? 'bg-zinc-700' : 'bg-black border border-zinc-800'}`}>
-            <div className="h-0.5 bg-blue-500" style={{ width: `${w}%` }} />
-          </div>
-        ))}
-      </div>
-      <div className="h-3 w-full border-l-2 border-purple-500 bg-zinc-800" />
-      <div className="h-3 w-2/3 border-l-2 border-green-500 bg-zinc-800" />
-    </div>
-  )
-}
-
 /**
  * Which month view the calendar shows (spec V003-20260924-arc-web-month-view).
  * Denis, 24.09: «let's build all of them, make a default and other to choose in settings».
@@ -168,7 +151,7 @@ export function MonthViewSection({ autoSave, phoneOnly = false }: Props) {
       )}
       <h3 className="mt-5 text-sm font-mono font-semibold text-zinc-200">{t('monthView.phone.title')}</h3>
       <p className="text-xs text-zinc-500 mb-2">{t('monthView.phone.note')}</p>
-      <div role="radiogroup" aria-label={t('monthView.phone.title')} className="grid grid-cols-3 gap-2 md:w-[36rem]">
+      <div role="radiogroup" aria-label={t('monthView.phone.title')} className="grid grid-cols-2 gap-2 md:w-[24rem]">
         {PHONE_MONTH_VARIANTS.map((v) => (
           <button
             key={v}
@@ -184,7 +167,7 @@ export function MonthViewSection({ autoSave, phoneOnly = false }: Props) {
               phone === v ? 'bg-blue-600/20 border-blue-500' : 'bg-zinc-800 border-zinc-700 hover:border-zinc-600'
             }`}
           >
-            {v === 'strip' ? <StripSketch /> : <Sketch variant={v} />}
+            <Sketch variant={v} />
             <span className={`text-sm font-mono ${phone === v ? 'text-blue-300' : 'text-zinc-200'}`}>
               {t(`monthView.${v}.name`)}
             </span>

@@ -73,6 +73,12 @@ describe('readPhoneMonthVariant', () => {
   })
 
   it('keeps a phone variant', () => {
-    expect(readPhoneMonthVariant({ phone_month_variant: 'strip' })).toBe('strip')
+    expect(readPhoneMonthVariant({ phone_month_variant: 'heat' })).toBe('heat')
+  })
+
+  // 31.10: the strip became a header; a month saved as 'strip' must still
+  // open a real month, not a variant the month view cannot draw.
+  it('reads the old strip choice as A', () => {
+    expect(readPhoneMonthVariant({ phone_month_variant: 'strip' })).toBe('split')
   })
 })

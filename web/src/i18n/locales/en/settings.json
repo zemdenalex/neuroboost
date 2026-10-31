@@ -152,7 +152,7 @@
     },
     "phone": {
       "title": "On a phone",
-      "note": "What «Month» shows on a phone. This choice is for the phone only; the computer keeps its own."
+      "note": "What «Month» shows on a phone (with either header). This choice is for the phone only; the computer keeps its own."
     },
     "strip": {
       "name": "Week strip",
@@ -245,5 +245,15 @@
     "note": "How long an event made by a click or a hold without dragging lasts. Drag and it spans what you dragged.",
     "minutes": "{{n}} min",
     "hours": "{{n}} h"
+  },
+  "phoneCalendar": {
+    "title": "Calendar on a phone",
+    "note": "How the calendar looks on a phone and what «+» at the bottom does. Nothing changes on a computer.",
+    "header": "Header",
+    "row": { "name": "One row", "desc": "Arrows, date, Today, Week/Month on one line; «Month» opens the month" },
+    "strip": { "name": "Week strip", "desc": "Seven days with how full each is; tap the month name to open the month" },
+    "add": "The «+» button",
+    "simple": { "name": "Simple", "desc": "One line: «tomorrow 10:00 doctor» is an event, «buy bread» a task" },
+    "detailed": { "name": "Detailed", "desc": "Title, description and chips: day, time, priority, calendar" }
   }
 }
