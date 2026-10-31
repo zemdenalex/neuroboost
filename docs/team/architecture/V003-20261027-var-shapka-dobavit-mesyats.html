@@ -1,0 +1,537 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Шапка, Добавить, Месяц</title>
+<style>
+:root{--bg:#f3f5f8;--surface:#fff;--surface2:#eaeef3;--border:#d3dae3;--text:#18202b;--muted:#5a6676;
+--accent:#2457d6;--accent-soft:#dfe8fb;--ok:#1a7f37;--ok-soft:#dcf2e2;--warn:#9a6700;--warn-soft:#faefcf;--r1:4px;--r2:8px;--r3:12px}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1218;--surface:#161c25;--surface2:#1e2630;--border:#2b3441;--text:#e7ebf1;--muted:#98a3b3;--accent:#6b9bff;--accent-soft:#1b2a4a;--ok:#4cc26a;--ok-soft:#14301d;--warn:#e0b04a;--warn-soft:#352b10}}
+:root[data-theme="dark"]{--bg:#0e1218;--surface:#161c25;--surface2:#1e2630;--border:#2b3441;--text:#e7ebf1;--muted:#98a3b3;--accent:#6b9bff;--accent-soft:#1b2a4a;--ok:#4cc26a;--ok-soft:#14301d;--warn:#e0b04a;--warn-soft:#352b10}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:1240px;margin:0 auto;padding:0 16px 80px}
+h1{font-size:1.7rem;line-height:1.2;margin:28px 0 6px}
+h2{font-size:1.3rem;margin:44px 0 6px;padding-top:12px;border-top:2px solid var(--border)}
+p{margin:0 0 10px}.sub{color:var(--muted);margin:0 0 14px}
+.note{border-left:3px solid var(--warn);background:var(--warn-soft);border-radius:var(--r1);padding:10px 12px;margin:12px 0}
+.note.ok{border-color:var(--ok);background:var(--ok-soft)}
+code{font-family:ui-monospace,Consolas,monospace;font-size:.88em;background:var(--surface2);padding:1px 5px;border-radius:var(--r1)}
+/* constructor */
+.ctor{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:24px;align-items:start;margin-top:12px}
+@media(max-width:860px){.ctor{grid-template-columns:1fr}}
+.pick{background:var(--surface);border:1px solid var(--border);border-radius:var(--r3);padding:14px;display:flex;flex-direction:column;gap:14px}
+.pick h3{margin:0 0 6px;font-size:1rem}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg button{font:inherit;font-size:.9rem;border:1px solid var(--border);background:var(--surface2);color:var(--text);border-radius:var(--r2);padding:6px 10px;cursor:pointer;text-align:left}
+.seg button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);color:var(--accent);font-weight:700}
+.desc{font-size:.9rem;color:var(--muted);margin-top:6px}
+.size{font-family:ui-monospace,Consolas,monospace;font-size:.82rem;color:var(--muted)}
+.rec{background:var(--ok-soft);color:var(--ok);font-weight:700;font-size:.72rem;text-transform:uppercase;padding:1px 6px;border-radius:var(--r1);margin-left:4px}
+label.tg{display:flex;gap:8px;align-items:center;font-size:.92rem}
+.measure{font-family:ui-monospace,Consolas,monospace;font-size:.85rem;margin-top:6px}
+/* gallery */
+.gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:16px;margin-top:12px}
+.fig{background:var(--surface);border:1px solid var(--border);border-radius:var(--r3);padding:12px;display:flex;flex-direction:column;gap:8px}
+.fig .id{font-weight:800;color:var(--accent)}
+.fig ul{margin:0;padding-left:18px;font-size:.9rem}
+.risk{font-size:.86rem;color:var(--muted)}
+.frame{position:relative;margin:0 auto;overflow:hidden;border-radius:18px;border:3px solid #3f3f46}
+.frame>.phone{transform-origin:top left;position:absolute;left:0;top:0}
+.reset{font:inherit;font-size:.8rem;border:1px solid var(--border);background:var(--surface2);color:var(--muted);border-radius:var(--r1);padding:2px 8px;cursor:pointer;align-self:center}
+/* the app: dark zinc, monospace, like web/src */
+.phone{width:375px;height:667px;display:flex;flex-direction:column;background:#000;color:#e4e4e7;font:13px/1.35 ui-monospace,Consolas,"Cascadia Mono",monospace;overflow:hidden;user-select:none;-webkit-user-select:none;touch-action:pan-y}
+.phone button{font:inherit;color:inherit;cursor:pointer}
+.p-site{height:63px;flex:none;background:#18181b;border-bottom:1px solid #27272a;display:flex;align-items:center;padding:0 16px;gap:10px}
+.p-site b{font-size:17px}.p-sp{flex:1}
+.p-av{width:28px;height:28px;border-radius:50%;background:#2563eb;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff}
+.p-ico{width:28px;height:28px;border:0;background:none;color:#a1a1aa;font-size:16px}
+.p-row{flex:none;background:#18181b;display:flex;align-items:center;gap:6px;padding:6px 10px}
+.p-btn{border:1px solid #3f3f46;background:#27272a;border-radius:6px;padding:5px 9px;font-size:12px;white-space:nowrap}
+.p-btn.on{background:#3f3f46;color:#fff}
+.p-btn.acc{background:#2563eb;border-color:#2563eb;color:#fff}
+.p-segm{display:flex;border:1px solid #3f3f46;border-radius:6px;overflow:hidden}
+.p-segm button{border:0;background:#27272a;padding:5px 9px;font-size:12px}
+.p-segm button.on{background:#3f3f46;color:#fff}
+.p-hint{flex:none;background:#18181b;color:#a1a1aa;font-size:11.5px;padding:2px 10px 6px}
+.p-allday{flex:none;background:#18181b;border-top:1px solid #27272a;padding:4px 8px}
+.p-allday .lbl{color:#71717a;font-size:11px}
+.p-card{background:#52525b;border:1px solid #71717a;border-radius:6px;padding:14px 10px;margin:4px 0 2px}
+.p-chip{display:inline-block;background:#3f3f46;border-radius:4px;padding:1px 6px;font-size:11px;margin-left:4px}
+.p-dayh{flex:none;background:#18181b;border-top:1px solid #27272a;border-bottom:1px solid #27272a;color:#60a5fa;font-size:12px;padding:4px 10px}
+.p-week{flex:none;background:#18181b;display:flex;gap:2px;padding:4px 6px;border-top:1px solid #27272a}
+.p-week button{flex:1;border:0;background:none;border-radius:6px;padding:3px 0;font-size:11px;color:#a1a1aa;line-height:1.25}
+.p-week button.on{background:#3f3f46;color:#60a5fa}
+.p-week i{display:block;width:4px;height:4px;border-radius:50%;margin:2px auto 0;background:#60a5fa}
+.p-week i.no{background:transparent}
+.p-body{flex:1;overflow-y:auto;position:relative;overscroll-behavior:contain}
+.p-grid{position:relative}
+.p-hour{position:absolute;left:0;right:0;border-top:1px solid #27272a;height:44px}
+.p-hour span{position:absolute;left:4px;top:1px;font-size:10px;color:#71717a}
+.p-ev{position:absolute;left:44px;right:8px;background:#27272a;border:1px solid #52525b;border-radius:5px;padding:2px 6px;font-size:12px;overflow:hidden}
+.p-ev small{color:#a1a1aa}
+.p-ev.new{border-color:#60a5fa;box-shadow:0 0 0 2px rgba(96,165,250,.4)}
+.p-now{position:absolute;left:0;right:0;border-top:2px solid #ef4444}
+.p-month{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;padding:6px}
+.p-month .h{font-size:10px;color:#71717a;text-align:center}
+.p-month button{border:1px solid #27272a;background:#09090b;border-radius:5px;height:54px;font-size:11px;text-align:left;padding:2px 4px;vertical-align:top;display:flex;flex-direction:column;gap:2px}
+.p-month button.out{opacity:.35}.p-month button.on{border-color:#60a5fa;color:#60a5fa}
+.p-month button i{display:block;height:3px;border-radius:2px;background:#60a5fa;width:70%}
+.p-tabs{flex:none;height:58px;background:#18181b;border-top:1px solid #27272a;display:flex;justify-content:space-around;align-items:center;font-size:11px;color:#a1a1aa;position:relative;z-index:6}
+.p-tabs .cal{color:#60a5fa}
+.p-fab{width:46px;height:46px;border-radius:50%;background:#2563eb;border:0;color:#fff!important;font-size:24px;margin-top:-18px}
+.p-dim{position:absolute;inset:0;background:rgba(0,0,0,.55);z-index:4}
+.p-sheet{position:absolute;left:0;right:0;bottom:58px;background:#18181b;border-top:1px solid #3f3f46;border-radius:14px 14px 0 0;padding:14px;z-index:5;display:flex;flex-direction:column;gap:10px}
+.p-sheet .item{border:0;background:none;text-align:left;padding:10px 4px;border-bottom:1px solid #27272a;font-size:14px}
+.p-in{width:100%;border:1px solid #52525b;border-radius:6px;background:#09090b;color:#fafafa;padding:9px 10px;font:inherit;font-size:14px;outline:none}
+.p-in:focus{border-color:#60a5fa}
+.p-pv{font-size:12px;color:#a1a1aa;min-height:32px}
+.p-pv b{color:#e4e4e7}
+.p-chips{display:flex;flex-wrap:wrap;gap:6px}
+.p-chips button{border:1px solid #3f3f46;background:#27272a;border-radius:6px;padding:5px 9px;font-size:12px}
+.p-chips button.on{border-color:#60a5fa;color:#60a5fa;background:#1e3a8a55}
+.p-acts{display:flex;gap:6px}
+.p-in.desc{border:0;background:none;padding:2px 2px;font-size:13px;color:#a1a1aa}
+.p-in.ttl{border:0;background:none;padding:2px 2px;font-size:16px}
+.p-dchips{display:flex;gap:4px;flex-wrap:wrap;align-items:center}
+.p-dchips button{border:1px solid #3f3f46;background:#27272a;border-radius:6px;padding:5px 8px;font-size:12px;color:#d4d4d8}
+.p-dchips button.set{border-color:#2563eb;color:#93c5fd}
+.p-dchips .go{margin-left:auto;background:#2563eb;border-color:#2563eb;color:#fff;font-weight:700}
+.p-pop{position:absolute;z-index:7;background:#18181b;border:1px solid #3f3f46;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.6);padding:4px;display:flex;flex-direction:column;min-width:160px}
+.p-pop button{border:0;background:none;text-align:left;padding:8px 10px;border-radius:6px;font-size:13px}
+.p-pop button:hover,.p-pop button.on{background:#27272a}
+.p-toast{position:absolute;left:12px;right:12px;bottom:70px;background:#27272a;border:1px solid #3f3f46;border-radius:8px;padding:9px 12px;font-size:12px;z-index:8}
+.p-small{font-size:11px;color:#71717a}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>Телефон: шапка, «Добавить», «Месяц» — живые варианты</h1>
+<p class="sub">Каждый телефон ниже работает: листай дни (стрелки или свайп по сетке), переключай вид, жми «+» и пиши строку. Создание кладёт событие на сетку и называет, за сколько нажатий. Наверху — конструктор: собери свою смесь. Под каждым телефоном — где на нём начинается время, измерено на этой странице.</p>
+<div class="note">Это макет поведения, а не приложение: данные выдуманные, разбор строки — упрощённая копия бота (день + время в начале или в конце, «в 15», «10:30»). Пропорции и размеры как в приложении на 375×667. Сейчас в приложении время начинается с <b>298 px</b> (снято с staging 27.10, вариант «0» ниже повторяет этот экран).</div>
+
+<h2>Конструктор</h2>
+<div class="ctor">
+  <div class="pick" id="ctorPick"></div>
+  <div><div id="ctorPhone"></div><div class="measure" id="ctorMeasure"></div></div>
+</div>
+
+<h2>1. Шапка (№1)</h2>
+<p class="sub">Всё остальное — как сейчас («Добавить» 0, «Месяц» 0), чтобы сравнивать только шапку.</p>
+<div class="gal" id="galH"></div>
+
+<h2>2. «Добавить» (№7)</h2>
+<p class="sub">Попробуй одно и то же в каждом: «завтра 10 врач», потом «купить хлеб». Внизу тоста — сколько нажатий ушло.</p>
+<div class="gal" id="galA"></div>
+
+<h2>3. «Месяц» (№9)</h2>
+<p class="sub">У тебя выбран телефонный месяц C — «полоса недели», поэтому кнопка «Месяц» открывает полосу. Шапка во всех — A (B живёт только в шапке C).</p>
+<div class="gal" id="galM"></div>
+
+<h2>4. «Добавить» подробно — как в TickTick (выбрано 31.10)</h2>
+<p class="sub">Твой выбор 31.10: <b>шапка A и C — на выбор в настройках</b>, «Месяц» C при шапке A и B при шапке C, «Добавить» — <b>простой режим = A</b> и <b>подробный</b>, как в TickTick. Ниже — подробный режим, живой: жми «+», пиши «завтра 10 врач» — чипы встают сами; тапни чип, чтобы поменять. В простом (A) кнопка «подробно…» переносит набранное сюда. Скажи, какие чипы оставить.</p>
+<div class="gal" id="galD"></div>
+
+<div class="note ok">Моя рекомендация: <b>шапка A + «Добавить» A + «Месяц» A</b>. Смелее — <b>шапка C + «Месяц» B</b>: полоса недели становится главной навигацией. Выбирай по ощущению, смесь разрешена.</div>
+
+</div>
+<script>
+const OPTS = {
+  h: {
+    title: 'Шапка',
+    v: {
+      '0': { name: '0 — как есть', desc: 'Два ряда кнопок, подсказка в две строки, «весь день» карточкой.', size: '0 мин' },
+      'A': { name: 'A — одна строка', rec: true, desc: 'Стрелки, дата, «Сег.», Н|М, слои в одну строку; «+ Задача» убрана (есть «+» внизу); «весь день» — строка с чипами; подсказка в одну строку.', size: '~25 мин · ~85k', risk: 'На 320 px строка тесная.' },
+      'B': { name: 'B — дата-заголовок, остальное в «⋯»', desc: 'Тап по дате — выбор дня; дни свайпом; вид и слои — в «⋯»; «весь день» в строке дня.', size: '~30 мин · ~100k', risk: 'Смена вида — два нажатия; стрелок нет.' },
+      'C': { name: 'C — полоса недели', desc: '7 дней с точками — навигация; «Октябрь ▾» раскрывает месяц; переключателя Неделя/Месяц нет.', size: '~45 мин · ~140k (вместе с «Месяц» B)', risk: 'Самая большая переделка; полоса из твоего выбора 26.09 становится главным видом.' },
+    },
+  },
+  a: {
+    title: '«Добавить»',
+    v: {
+      '0': { name: '0 — как есть', desc: 'Меню «Событие / Задача» → форма.', size: '0 мин' },
+      'A': { name: 'A — одна строка', rec: true, desc: 'Пишешь «завтра 10 врач» — под строкой видно, что создастся; есть время → событие, нет → задача; «форма…» для сложного.', size: '~30 мин · ~110k', risk: 'Разбор может ошибиться — видно в превью до создания.' },
+      'B': { name: 'B — сразу событие', desc: 'Тап «+» — форма события на ближайшие полчаса; удержание «+» — задача.', size: '~10 мин · ~30k', risk: 'Удержание никто не найдёт.' },
+      'C': { name: 'C — строка + быстрые времена', desc: 'Название + кнопка времени (Сейчас / Через час / Вечером / Завтра утром / Без времени).', size: '~25 мин · ~85k', risk: 'Два способа задать время.' },
+      'D': { name: 'D — подробный (как TickTick)', desc: 'Выбран 31.10 как второй режим. Название + описание, ряд чипов: 📅 день (уже стоит открытый), ⏰ время и длительность, ⚑ приоритет, ◉ календарь, ⋯ (событие/задача, полная форма). Строка тоже разбирается: «завтра 10 врач» сам ставит чипы.', size: '~30 мин · ~100k', risk: 'Чипов много — какие оставить, решаешь ты.' },
+    },
+  },
+  m: {
+    title: '«Месяц»',
+    v: {
+      '0': { name: '0 — как есть', desc: 'Кнопка «Месяц» открывает полосу недели (твоя настройка C).', size: '0 мин' },
+      'A': { name: 'A — подпись по виду', rec: true, desc: 'Кнопка называет то, что откроет: «Полоса».', size: '~6 мин · ~17k' },
+      'B': { name: 'B — полоса всегда, месяц по заголовку', desc: 'Только с шапкой C: тап по «Октябрь» раскрывает месяц.', size: 'входит в шапку C' },
+      'C': { name: 'C — «Месяц» всегда сетка', desc: 'Кнопка открывает настоящий месяц; тап по дню — назад в день.', size: '~15 мин · ~45k', risk: 'Меняет твой выбор 26.09.' },
+    },
+  },
+}
+
+const BASE = new Date(2026, 9, 27) // Tue 27 Oct 2026
+const WD = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб']
+const MON = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек']
+const MONN = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь']
+const HOUR = 44, NOW = 14 * 60 + 40
+const pad = (n) => String(n).padStart(2, '0')
+const fmt = (m) => `${pad(Math.floor(m / 60) % 24)}:${pad(m % 60)}`
+const dateOf = (o) => { const d = new Date(BASE); d.setDate(d.getDate() + o); return d }
+const offOf = (d) => Math.round((d - BASE) / 864e5)
+const lbl = (o) => { const d = dateOf(o); return `${WD[d.getDay()]}, ${d.getDate()} ${MON[d.getMonth()]}` }
+const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))
+
+const seed = () => [
+  { d: 0, all: true, t: 'отпуск' },
+  { d: 0, s: 600, e: 660, t: 'созвон' }, { d: 0, s: 900, e: 960, t: 'уборка' }, { d: 0, s: 1170, e: 1200, t: 'ужин' },
+  { d: 1, s: 720, e: 780, t: 'спорт' }, { d: 2, s: 540, e: 600, t: 'почта' }, { d: 3, s: 1080, e: 1140, t: 'кино' },
+  { d: -1, s: 660, e: 720, t: 'магазин' }, { d: 6, s: 780, e: 840, t: 'родители' },
+]
+
+// The bot's rule, simplified: a day word anywhere; a clock «10:30» anywhere; «в 15»;
+// a bare hour at the start of what is left, or at the end when a day is named.
+function parse(text) {
+  const w = text.trim().split(/\s+/).filter(Boolean), used = w.map(() => false)
+  let day = null, time = null
+  const dw = { 'сегодня': 0, 'завтра': 1, 'послезавтра': 2 }
+  const wd = { 'пн': 1, 'понедельник': 1, 'вт': 2, 'вторник': 2, 'ср': 3, 'среда': 3, 'среду': 3, 'чт': 4, 'четверг': 4, 'пт': 5, 'пятница': 5, 'пятницу': 5, 'сб': 6, 'суббота': 6, 'субботу': 6, 'вс': 0, 'воскресенье': 0 }
+  w.forEach((t, i) => {
+    const l = t.toLowerCase()
+    if (day !== null) return
+    if (l in dw) { day = dw[l]; used[i] = true }
+    else if (l in wd) { day = (wd[l] - BASE.getDay() + 7) % 7; used[i] = true }
+  })
+  w.forEach((t, i) => { const m = /^(\d{1,2})[:.](\d{2})$/.exec(t); if (time === null && !used[i] && m && +m[1] < 24 && +m[2] < 60) { time = +m[1] * 60 + +m[2]; used[i] = true } })
+  if (time === null) w.forEach((t, i) => { if (time === null && i > 0 && !used[i] && /^(в|во)$/i.test(w[i - 1]) && /^\d{1,2}$/.test(t) && +t < 24) { time = +t * 60; used[i] = used[i - 1] = true } })
+  if (time === null) { const i = used.findIndex((u) => !u); if (i >= 0 && /^\d{1,2}$/.test(w[i]) && +w[i] < 24) { time = +w[i] * 60; used[i] = true } }
+  if (time === null && day !== null) { let i = w.length - 1; while (i >= 0 && used[i]) i--; if (i > 0 && /^\d{1,2}$/.test(w[i]) && +w[i] < 24) { time = +w[i] * 60; used[i] = true } }
+  return { day: day ?? 0, dayNamed: day !== null, time, title: w.filter((_, i) => !used[i]).join(' ') }
+}
+
+class Phone {
+  constructor(host, o, onMeasure) {
+    this.o = { h: '0', a: '0', m: '0', tg: false, ...o }
+    this.onMeasure = onMeasure
+    this.el = document.createElement('div')
+    this.el.className = 'phone'
+    host.appendChild(this.el)
+    this.reset()
+    this.bind()
+    this.render()
+  }
+  reset() { this.s = { day: 0, view: 'day', monthOpen: false, sheet: null, input: '', chip: null, pop: null, taps: 0, toast: '', ev: seed(), fresh: null, det: null, desc: '' }; this.scroll = 9 * HOUR; this.focus = false }
+  set(o) { Object.assign(this.o, o); this.reset(); this.render() }
+  hasEv(d) { return this.s.ev.some((e) => e.d === d) }
+  monthMode() { return this.o.m === 'C' ? 'month' : 'strip' }
+  monthLabel() { return this.o.m === 'A' ? 'Полоса' : 'Месяц' }
+
+  weekStrip() {
+    const s = this.s, d = dateOf(s.day), start = s.day - ((d.getDay() + 6) % 7)
+    let h = '<div class="p-week">'
+    for (let i = 0; i < 7; i++) {
+      const o = start + i, dd = dateOf(o)
+      h += `<button data-act="pick" data-d="${o}" class="${o === s.day ? 'on' : ''}">${WD[dd.getDay()]}<br>${dd.getDate()}<i class="${this.hasEv(o) ? '' : 'no'}"></i></button>`
+    }
+    return h + '</div>'
+  }
+  monthGrid() {
+    const s = this.s, cur = dateOf(s.day), first = new Date(cur.getFullYear(), cur.getMonth(), 1)
+    const start = new Date(first); start.setDate(1 - ((first.getDay() + 6) % 7))
+    let h = '<div class="p-month">' + ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'].map((x) => `<div class="h">${x}</div>`).join('')
+    for (let i = 0; i < 42; i++) {
+      const dd = new Date(start); dd.setDate(start.getDate() + i)
+      const o = offOf(dd), evs = s.ev.filter((e) => e.d === o).length
+      h += `<button data-act="pick" data-d="${o}" class="${dd.getMonth() !== cur.getMonth() ? 'out' : ''} ${o === s.day ? 'on' : ''}">${dd.getDate()}${'<i></i>'.repeat(Math.min(evs, 3))}</button>`
+    }
+    return h + '</div>'
+  }
+  allDay(style) {
+    const ad = this.s.ev.filter((e) => e.all && e.d === this.s.day)
+    if (style === 'card') return `<div class="p-allday"><div class="lbl">весь день</div>${ad.map((e) => `<div class="p-card">${esc(e.t)}</div>`).join('') || '<div style="height:18px"></div>'}</div>`
+    if (style === 'chips') return ad.length ? `<div class="p-allday"><span class="lbl">весь день:</span>${ad.map((e) => `<span class="p-chip">${esc(e.t)}</span>`).join('')}</div>` : ''
+    return ad.map((e) => ` · <span style="color:#e4e4e7">${esc(e.t)}</span> <span class="p-small">(весь день)</span>`).join('')
+  }
+  dayHead(extra = '') { const d = dateOf(this.s.day); return `<div class="p-dayh">${d.getDate()} ${WD[d.getDay()]}${extra}</div>` }
+
+  header() {
+    const s = this.s, o = this.o, inMonth = s.view !== 'day'
+    let h = o.tg ? '' : `<div class="p-site"><b>NeuroBoost</b><span class="p-sp"></span><button class="p-ico" data-act="help">?</button><span class="p-av">DE</span></div>`
+    const viewSeg = (short) => `<div class="p-segm"><button data-act="vday" class="${inMonth ? '' : 'on'}">${short ? 'Н' : 'Неделя'}</button><button data-act="vmonth" class="${inMonth ? 'on' : ''}">${short ? (o.m === 'A' ? 'П' : 'М') : this.monthLabel()}</button></div>`
+    if (o.h === '0') {
+      h += `<div class="p-row"><button class="p-btn" data-act="prev">←</button><button class="p-btn" data-act="next">→</button><b style="font-size:14px">${lbl(s.day)}</b></div>`
+      h += `<div class="p-row" style="justify-content:flex-end;padding-top:0"><button class="p-btn" data-act="today">Сегодня</button>${viewSeg(false)}<button class="p-btn" data-act="task">+ Задача</button><button class="p-btn" data-act="layers">≡</button></div>`
+      h += `<div class="p-hint">Тап: выбрать • Удержать на пустом: создать • Удержать событие и вести: перенести • Кружок: длительность</div>`
+      if (s.view === 'strip') h += this.weekStrip()
+      if (s.view !== 'month') h += this.allDay('card') + this.dayHead()
+    } else if (o.h === 'A') {
+      h += `<div class="p-row"><button class="p-btn" data-act="prev">‹</button><b style="font-size:13px;white-space:nowrap">${lbl(s.day)}</b><button class="p-btn" data-act="next">›</button><span class="p-sp"></span><button class="p-btn" data-act="today">Сег.</button>${viewSeg(true)}<button class="p-btn" data-act="layers">≡</button></div>`
+      h += `<div class="p-hint" style="padding-top:0">Удержи: создать на пустом · перенести событие</div>`
+      if (s.view === 'strip') h += this.weekStrip()
+      if (s.view !== 'month') h += this.allDay('chips') + this.dayHead()
+    } else if (o.h === 'B') {
+      h += `<div class="p-row"><button class="p-btn" data-act="picker" style="border:0;background:none;font-weight:700;font-size:14px;padding-left:2px">${lbl(s.day)} ▾</button><span class="p-sp"></span><button class="p-btn" data-act="today">Сег.</button><button class="p-btn" data-act="more">⋯</button></div>`
+      if (s.view === 'strip') h += this.weekStrip()
+      if (s.view !== 'month') h += this.dayHead(this.allDay('inline'))
+    } else {
+      const d = dateOf(s.day)
+      h += `<div class="p-row"><button class="p-btn" data-act="mtoggle" style="border:0;background:none;font-weight:700;font-size:14px;padding-left:2px">${MONN[d.getMonth()]} ${s.monthOpen ? '▴' : '▾'}</button><span class="p-sp"></span><button class="p-btn" data-act="today">Сег.</button><button class="p-btn" data-act="layers">≡</button></div>`
+      h += s.monthOpen ? this.monthGrid() : this.weekStrip()
+      h += this.allDay('chips')
+    }
+    return h
+  }
+  body() {
+    const s = this.s
+    if (s.view === 'month') return `<div class="p-body" data-swipe="1">${this.monthGrid()}<div class="p-small" style="padding:4px 8px">тап по дню — открыть его</div></div>`
+    let h = `<div class="p-body" data-swipe="1"><div class="p-grid" style="height:${24 * HOUR}px">`
+    for (let i = 0; i < 24; i++) h += `<div class="p-hour" style="top:${i * HOUR}px"><span>${pad(i)}:00</span></div>`
+    if (s.day === 0) h += `<div class="p-now" style="top:${NOW / 60 * HOUR}px"></div>`
+    for (const e of s.ev.filter((x) => x.d === s.day && !x.all)) {
+      h += `<div class="p-ev ${s.fresh === e ? 'new' : ''}" style="top:${e.s / 60 * HOUR}px;height:${Math.max(18, (e.e - e.s) / 60 * HOUR)}px">${esc(e.t)} <small>${fmt(e.s)}–${fmt(e.e)}</small></div>`
+    }
+    return h + '</div></div>'
+  }
+  sheet() {
+    const s = this.s
+    if (!s.sheet) return ''
+    let h = '<div class="p-dim" data-act="close"></div><div class="p-sheet">'
+    const slot = Math.ceil(NOW / 30) * 30
+    if (s.sheet === 'menu') h += `<button class="item" data-act="form-event">📅 Новое событие</button><button class="item" data-act="form-task" style="border:0">✓ Новая задача</button>`
+    else if (s.sheet === 'form-event') h += `<b>Новое событие</b><input class="p-in" data-in="1" placeholder="Название" value="${esc(s.input)}"><div class="p-small">${lbl(s.day)} · ${fmt(slot)}–${fmt(slot + 30)}</div><div class="p-acts"><button class="p-btn acc" data-act="mk-form-event">Создать</button><button class="p-btn" data-act="close">Отмена</button></div>`
+    else if (s.sheet === 'form-task') h += `<b>Новая задача</b><input class="p-in" data-in="1" placeholder="Что сделать" value="${esc(s.input)}"><div class="p-acts"><button class="p-btn acc" data-act="mk-task">Создать</button><button class="p-btn" data-act="close">Отмена</button></div>`
+    else if (s.sheet === 'line') h += `<input class="p-in" data-in="1" placeholder="Что сделать? «завтра 10 врач»" value="${esc(s.input)}"><div class="p-pv" data-pv="1">${this.preview()}</div><div class="p-acts"><button class="p-btn acc" data-act="mk-line">Создать</button><button class="p-btn" data-act="mk-task">как задачу</button><span class="p-sp"></span><button class="p-btn" data-act="to-detail">подробно…</button></div>`
+    else if (s.sheet === 'detail') {
+      const d = s.det, pr = ['', '⚑1 срочно', '⚑2', '⚑3', '⚑4', '⚑5 если выйдет']
+      const kind = d.kind || (d.time !== null ? 'event' : 'task')
+      h += `<input class="p-in ttl" data-in="1" placeholder="Что сделать?" value="${esc(s.input)}"><input class="p-in desc" data-desc="1" placeholder="Описание" value="${esc(s.desc)}">` +
+        `<div class="p-dchips">` +
+        `<button data-act="dpop" data-p="date" class="set">📅 ${lbl(d.day)}${d.day === 0 ? ' · сег.' : ''}</button>` +
+        `<button data-act="dpop" data-p="time" class="${d.time !== null ? 'set' : ''}">⏰ ${d.time !== null ? fmt(d.time) + ' · ' + d.dur + ' мин' : 'время'}</button>` +
+        `<button data-act="dpop" data-p="prio" class="${d.prio ? 'set' : ''}">${d.prio ? pr[d.prio] : '⚑'}</button>` +
+        `<button data-act="dpop" data-p="cal">◉ ${d.cal}</button>` +
+        `<button data-act="dpop" data-p="more">⋯</button>` +
+        `<button class="go acc" data-act="mk-detail">✓</button></div>` +
+        `<div class="p-small">Создастся: <b>${kind === 'event' ? '📅 событие' : '✓ задача'}</b>${kind === 'event' && d.time === null ? ' (время — ближайшие полчаса)' : ''}</div>`
+    }
+    else if (s.sheet === 'chips') {
+      const chips = [['now', 'Сейчас'], ['hour', 'Через час'], ['eve', 'Вечером'], ['morn', 'Завтра утром'], ['none', 'Без времени']]
+      h += `<input class="p-in" data-in="1" placeholder="Что сделать?" value="${esc(s.input)}"><div class="p-chips">${chips.map(([k, t]) => `<button data-act="chip" data-c="${k}" class="${s.chip === k ? 'on' : ''}">${t}</button>`).join('')}</div><div class="p-acts"><button class="p-btn acc" data-act="mk-chip">Создать</button></div>`
+    }
+    return h + '</div>'
+  }
+  preview() {
+    const t = this.s.input.trim()
+    if (!t) return 'Например: <b>завтра 10 врач</b> — событие, <b>купить хлеб</b> — задача'
+    const p = parse(t)
+    if (p.time !== null) return `📅 Событие · <b>${lbl(p.day)} · ${fmt(p.time)}–${fmt(p.time + 30)}</b> · «${esc(p.title || 'без названия')}»`
+    return `✓ Задача${p.dayNamed ? ' на <b>' + lbl(p.day) + '</b>' : ''} · «${esc(p.title || 'без названия')}»`
+  }
+  pop() {
+    const s = this.s
+    if (s.pop === 'picker') {
+      let h = '<div class="p-pop" style="left:10px;top:' + (this.o.tg ? 44 : 100) + 'px">'
+      for (let i = -1; i < 8; i++) h += `<button data-act="pick" data-d="${i}" class="${i === s.day ? 'on' : ''}">${lbl(i)}${i === 0 ? ' · сегодня' : ''}${this.hasEv(i) ? ' •' : ''}</button>`
+      return h + '</div>'
+    }
+    if (s.pop && s.pop.startsWith('d-')) {
+      const d = s.det, k = s.pop.slice(2)
+      const opt = (v, t, on) => `<button data-act="dset" data-k="${k}" data-v="${v}" class="${on ? 'on' : ''}">${t}</button>`
+      let h = '<div class="p-pop" style="left:12px;bottom:200px;max-height:300px;overflow:auto">'
+      if (k === 'date') for (let i = -1; i < 8; i++) h += opt(i, lbl(i) + (i === 0 ? ' · сегодня' : ''), i === d.day)
+      if (k === 'time') { h += opt('none', 'Без времени', d.time === null); for (const m of [540, 600, 720, 900, 1080, 1140]) h += opt(m, fmt(m), d.time === m); h += '<div class="p-small" style="padding:6px 10px 2px">длительность</div>'; for (const m of [15, 30, 60, 90]) h += `<button data-act="dset" data-k="dur" data-v="${m}" class="${d.dur === m ? 'on' : ''}">${m} мин</button>` }
+      if (k === 'prio') { h += opt(0, 'Без приоритета', !d.prio); ['1 — срочно', '2 — важно', '3 — обычно', '4 — можно позже', '5 — если выйдет'].forEach((t, i) => { h += opt(i + 1, '⚑ ' + t, d.prio === i + 1) }) }
+      if (k === 'cal') for (const c of ['Личное', 'Работа', 'Семья']) h += opt(c, '◉ ' + c, d.cal === c)
+      if (k === 'more') { h += opt('event', '📅 Сделать событием', d.kind === 'event'); h += opt('task', '✓ Сделать задачей', d.kind === 'task'); h += `<button data-act="form-event">⤢ Полная форма</button>` }
+      return h + '</div>'
+    }
+    if (s.pop === 'more') return `<div class="p-pop" style="right:10px;top:${this.o.tg ? 44 : 100}px"><button data-act="vday" class="${s.view === 'day' ? 'on' : ''}">День</button><button data-act="vmonth" class="${s.view !== 'day' ? 'on' : ''}">${this.monthLabel()}</button><button data-act="layers">Слои календарей</button></div>`
+    return ''
+  }
+  render() {
+    const body = this.el.querySelector('.p-body')
+    if (body) this.scroll = body.scrollTop
+    const s = this.s
+    this.el.innerHTML = this.header() + this.body() + this.sheet() + this.pop() +
+      (s.toast ? `<div class="p-toast">${s.toast}</div>` : '') +
+      `<div class="p-tabs"><span class="cal">📅<br>Календарь</span><button class="p-fab" data-act="add">+</button><span>⋯<br>Ещё</span></div>`
+    const nb = this.el.querySelector('.p-body')
+    if (nb) {
+      nb.scrollTop = this.scroll
+      if (s.fresh && s.fresh.d === s.day && !s.fresh.all) nb.scrollTop = Math.max(0, s.fresh.s / 60 * HOUR - 120)
+      this.onMeasure?.(s.view === 'month' ? null : nb.offsetTop)
+    }
+    const inp = this.el.querySelector('[data-in]')
+    if (inp && this.focus) { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length) }
+    this.focus = false
+  }
+  toast(msg) {
+    this.s.toast = msg
+    clearTimeout(this.tt)
+    this.tt = setTimeout(() => { this.s.toast = ''; this.render() }, 3200)
+  }
+  open(sheet, taps = 1) { Object.assign(this.s, { sheet, input: sheet === 'line' || sheet === 'chips' ? '' : this.s.input, chip: null, pop: null, taps }); this.focus = true }
+  create(kind, d, start, title) {
+    const s = this.s, n = s.taps
+    title = title.trim() || 'без названия'
+    if (kind === 'task') { this.toast(`✓ Задача «${esc(title)}»${d !== null ? ' на ' + lbl(d) : ''} · <b>нажатий: ${n}</b>`) }
+    else {
+      const e = { d, s: start, e: start + 30, t: title }
+      s.ev.push(e); s.fresh = e; s.day = d; if (s.view === 'month') s.view = 'day'
+      this.toast(`📅 «${esc(title)}» · ${lbl(d)} ${fmt(start)} · <b>нажатий: ${n}</b>`)
+    }
+    Object.assign(s, { sheet: null, input: '', chip: null })
+  }
+  act(a, t) {
+    const s = this.s, o = this.o, slot = Math.ceil(NOW / 30) * 30
+    if (s.sheet && a !== 'add' && a !== 'close') s.taps++
+    switch (a) {
+      case 'prev': s.day--; break
+      case 'next': s.day++; break
+      case 'today': s.day = 0; s.monthOpen = false; break
+      case 'pick': s.day = +t.dataset.d; s.pop = null; s.monthOpen = false; if (s.view === 'month') s.view = 'day'; break
+      case 'vday': s.view = 'day'; s.pop = null; break
+      case 'vmonth': s.view = this.monthMode(); s.pop = null; break
+      case 'mtoggle': s.monthOpen = !s.monthOpen; break
+      case 'picker': s.pop = s.pop === 'picker' ? null : 'picker'; break
+      case 'more': s.pop = s.pop === 'more' ? null : 'more'; break
+      case 'layers': s.pop = null; this.toast('Слои календарей — как сейчас'); break
+      case 'help': this.toast('Справка страницы — как сейчас'); break
+      case 'task': this.open('form-task'); break
+      case 'add':
+        if (this.longFired) { this.longFired = false; return }
+        if (s.sheet) { s.sheet = null; break }
+        if (o.a === 'D') { this.open('detail'); s.det = { day: s.day, time: null, dur: 30, prio: 0, cal: 'Личное', kind: null }; s.desc = ''; break }
+        this.open({ '0': 'menu', 'A': 'line', 'B': 'form-event', 'C': 'chips' }[o.a]); break
+      case 'close': Object.assign(s, { sheet: null, pop: null }); break
+      case 'form-event': s.sheet = 'form-event'; this.focus = true; break
+      case 'form-task': s.sheet = 'form-task'; this.focus = true; break
+      case 'mk-form-event': this.create('event', s.day, slot, s.input); break
+      case 'mk-task': this.create('task', null, 0, s.sheet === 'line' ? parse(s.input).title || s.input : s.input); break
+      case 'mk-line': { const p = parse(s.input); p.time !== null ? this.create('event', p.day, p.time, p.title) : this.create('task', p.dayNamed ? p.day : null, 0, p.title); break }
+      case 'chip': s.chip = t.dataset.c; this.focus = true; break
+      case 'to-detail': { const p = parse(s.input); s.det = { day: p.dayNamed ? p.day : s.day, time: p.time, dur: 30, prio: 0, cal: 'Личное', kind: null }; s.input = p.title || s.input; s.desc = ''; s.sheet = 'detail'; this.focus = true; break }
+      case 'dpop': s.pop = s.pop === 'd-' + t.dataset.p ? null : 'd-' + t.dataset.p; break
+      case 'dset': {
+        const k = t.dataset.k, v = t.dataset.v, d = s.det
+        if (k === 'date') d.day = +v
+        if (k === 'time') d.time = v === 'none' ? null : +v
+        if (k === 'dur') d.dur = +v
+        if (k === 'prio') d.prio = +v
+        if (k === 'cal') d.cal = v
+        if (k === 'more') d.kind = v
+        if (k !== 'time' || v === 'none') s.pop = null
+        break
+      }
+      case 'mk-detail': {
+        const d = s.det, kind = d.kind || (d.time !== null ? 'event' : 'task'), title = parse(s.input).title || s.input
+        s.pop = null
+        if (kind === 'event') { const st = d.time ?? slot; this.create('event', d.day, st, title); const e = s.ev[s.ev.length - 1]; e.e = st + d.dur }
+        else this.create('task', d.day, 0, title)
+        break
+      }
+      case 'mk-chip': {
+        const m = { now: [0, 14 * 60 + 45], hour: [0, 15 * 60 + 45], eve: [0, 19 * 60], morn: [1, 9 * 60] }[s.chip]
+        m ? this.create('event', m[0], m[1], s.input) : this.create('task', null, 0, s.input); break
+      }
+    }
+    this.render()
+  }
+  bind() {
+    this.el.addEventListener('click', (e) => { const t = e.target.closest('[data-act]'); if (t && this.el.contains(t)) this.act(t.dataset.act, t) })
+    this.el.addEventListener('input', (e) => {
+      if (e.target.matches('[data-desc]')) { this.s.desc = e.target.value; return }
+      if (!e.target.matches('[data-in]')) return
+      this.s.input = e.target.value
+      const pv = this.el.querySelector('[data-pv]'); if (pv) pv.innerHTML = this.preview()
+      if (this.s.sheet === 'detail') {
+        // «завтра 10 врач» sets the chips as you type, like TickTick's inline syntax
+        const p = parse(this.s.input), d = this.s.det, before = d.day + '|' + d.time
+        if (p.dayNamed) d.day = p.day
+        if (p.time !== null) d.time = p.time
+        if (before !== d.day + '|' + d.time) { this.focus = true; this.render() }
+      }
+    })
+    this.el.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter' || !e.target.matches('[data-in]')) return
+      const btn = this.el.querySelector('.p-sheet .acc'); if (btn) this.act(btn.dataset.act, btn)
+    })
+    // swipe the grid for days; long press «+» (Добавить B) for a task
+    let sx = null, timer = null
+    this.el.addEventListener('pointerdown', (e) => {
+      if (e.target.closest('[data-swipe]')) sx = e.clientX
+      if (e.target.closest('.p-fab') && this.o.a === 'B') timer = setTimeout(() => { this.longFired = true; this.open('form-task'); this.render() }, 500)
+    })
+    this.el.addEventListener('pointerup', (e) => {
+      clearTimeout(timer)
+      if (sx === null) return
+      const dx = (e.clientX - sx) / this.scale()
+      sx = null
+      if (Math.abs(dx) > 60 && this.s.view !== 'month') { this.s.day += dx < 0 ? 1 : -1; this.render() }
+    })
+    this.el.addEventListener('pointercancel', () => { clearTimeout(timer); sx = null })
+  }
+  scale() { const m = /scale\(([\d.]+)\)/.exec(this.el.style.transform); return m ? +m[1] : 1 }
+}
+
+function framed(host, scale, o, onMeasure) {
+  const f = document.createElement('div')
+  f.className = 'frame'
+  f.style.width = 375 * scale + 6 + 'px'
+  f.style.height = 667 * scale + 6 + 'px'
+  host.appendChild(f)
+  const p = new Phone(f, o, onMeasure)
+  p.el.style.transform = `scale(${scale})`
+  return p
+}
+const measureText = (top) => top === null ? 'вид месяца — сетки времени нет' : `время начинается с <b>${top} px</b> из 667 (${Math.round(top / 667 * 100)} %)`
+
+// constructor
+const cs = { h: 'A', a: 'A', m: 'A', tg: false }
+const ctorScale = Math.min(1, (Math.min(window.innerWidth, 1240) - 44) / 381)
+const cm = document.getElementById('ctorMeasure')
+const ctor = framed(document.getElementById('ctorPhone'), ctorScale, cs, (t) => { cm.innerHTML = measureText(t) })
+function drawPick() {
+  const box = document.getElementById('ctorPick')
+  box.innerHTML = Object.entries(OPTS).map(([k, g]) => `<div><h3>${g.title}</h3><div class="seg">${Object.entries(g.v).map(([id, v]) => `<button data-k="${k}" data-v="${id}" aria-pressed="${cs[k] === id}">${v.name}${v.rec ? '<span class="rec">рек.</span>' : ''}</button>`).join('')}</div><div class="desc">${g.v[cs[k]].desc} <span class="size">${g.v[cs[k]].size}</span></div></div>`).join('') +
+    `<label class="tg"><input type="checkbox" id="tgBox" ${cs.tg ? 'checked' : ''}> как в Mini App (без шапки сайта, с 27.10)</label><button class="reset" id="ctorReset">сбросить телефон</button>`
+  box.querySelectorAll('button[data-k]').forEach((b) => b.onclick = () => { cs[b.dataset.k] = b.dataset.v; if (cs.m === 'B') cs.h = 'C'; if (cs.h !== 'C' && cs.m === 'B') cs.m = 'A'; ctor.set({ ...cs }); drawPick() })
+  box.querySelector('#tgBox').onchange = (e) => { cs.tg = e.target.checked; ctor.set({ ...cs }) }
+  box.querySelector('#ctorReset').onclick = () => ctor.set({ ...cs })
+}
+drawPick()
+
+// galleries
+const galScale = window.innerWidth < 700 ? Math.min(0.78, (window.innerWidth - 70) / 381) : 0.72
+function gallery(id, key, base) {
+  const host = document.getElementById(id)
+  for (const [v, info] of Object.entries(OPTS[key].v)) {
+    const fig = document.createElement('div')
+    fig.className = 'fig'
+    fig.innerHTML = `<div><span class="id">${info.name}</span>${info.rec ? '<span class="rec">рекомендую</span>' : ''}</div>`
+    host.appendChild(fig)
+    const meas = document.createElement('div')
+    const o = { ...base, [key]: v }
+    if (key === 'm' && v === 'B') o.h = 'C'
+    const p = framed(fig, galScale, o, (t) => { meas.innerHTML = measureText(t) })
+    meas.className = 'measure'
+    fig.appendChild(meas)
+    const d = document.createElement('div')
+    d.innerHTML = `<div class="desc" style="margin:0">${info.desc}</div>${info.risk ? `<div class="risk">Риск: ${info.risk}</div>` : ''}<div class="size">${info.size}</div>`
+    fig.appendChild(d)
+    const r = document.createElement('button'); r.className = 'reset'; r.textContent = 'сбросить'; r.onclick = () => p.set({}); fig.appendChild(r)
+  }
+}
+gallery('galH', 'h', { a: '0', m: '0' })
+gallery('galA', 'a', { h: '0', m: '0' })
+gallery('galM', 'm', { h: 'A', a: '0' })
+for (const [o, name] of [[{ h: 'A', a: 'D', m: 'C' }, 'Шапка A · подробный «+»'], [{ h: 'C', a: 'A', m: 'B' }, 'Шапка C · простой «+» → «подробно…»']]) {
+  const fig = document.createElement('div'); fig.className = 'fig'
+  fig.innerHTML = `<div><span class="id">${name}</span></div>`
+  document.getElementById('galD').appendChild(fig)
+  const meas = document.createElement('div'); meas.className = 'measure'
+  const p = framed(fig, galScale, o, (t) => { meas.innerHTML = measureText(t) })
+  fig.appendChild(meas)
+  const r = document.createElement('button'); r.className = 'reset'; r.textContent = 'сбросить'; r.onclick = () => p.set({}); fig.appendChild(r)
+}
+</script>
+</body>
+</html>
