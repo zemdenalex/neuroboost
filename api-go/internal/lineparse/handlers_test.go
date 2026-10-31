@@ -241,3 +241,26 @@ func deref(s *string) string {
 	}
 	return *s
 }
+
+// The phone's «+» is pressed while looking at a day (Denis 31.10, TickTick's
+// date chip): a line that names no day lands on that day, and a named day
+// still wins. Without the field «врач 10» is a question, not an event.
+func TestParseDayIsTheDefaultWhenTheLineNamesNone(t *testing.T) {
+	withClock(t)
+	user, _ := seedUser(t, `{}`)
+	tok := token(t, user)
+
+	got := answer(t, post(t, tok, map[string]string{"text": "врач 10:00", "day": "2026-10-01"}))
+	if got.Kind != KindEvent || got.StartsAt == nil || *got.StartsAt != "2026-10-01T07:00:00Z" {
+		t.Fatalf("no day named: kind %q starts %v, want event at 2026-10-01 10:00 MSK", got.Kind, deref(got.StartsAt))
+	}
+
+	named := answer(t, post(t, tok, map[string]string{"text": "врач завтра 10:00", "day": "2026-10-01"}))
+	if named.StartsAt == nil || *named.StartsAt != "2026-09-27T07:00:00Z" {
+		t.Errorf("«завтра» named: starts %v, want 2026-09-27 10:00 MSK", deref(named.StartsAt))
+	}
+
+	if rec := post(t, tok, map[string]string{"text": "врач 10:00", "day": "01.10.2026"}); rec.Code != http.StatusBadRequest {
+		t.Errorf("malformed day: %d, want 400", rec.Code)
+	}
+}

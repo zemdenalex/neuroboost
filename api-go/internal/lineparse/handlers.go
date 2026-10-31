@@ -63,6 +63,10 @@ const (
 type request struct {
 	Text     string  `json:"text"`
 	Timezone *string `json:"timezone,omitempty"`
+	// Day (YYYY-MM-DD, optional) is the day the line is typed on: the phone's
+	// «+» pressed while looking at a day (Denis 31.10). A line naming no day
+	// lands on it; a named day («завтра», «пт», 14.10) still wins.
+	Day *string `json:"day,omitempty"`
 }
 
 // Answer is the parsed draft. Every optional field is a pointer: «not stated»
@@ -144,13 +148,29 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		zone, loc = "UTC", time.UTC
 	}
 
-	util.RespondJSON(w, http.StatusOK, Read(text, now().In(loc), zone, vocabulary(ctx, userID)))
+	var day time.Time
+	if req.Day != nil && strings.TrimSpace(*req.Day) != "" {
+		d, err := time.ParseInLocation("2006-01-02", strings.TrimSpace(*req.Day), loc)
+		if err != nil {
+			util.RespondError(w, http.StatusBadRequest, "VALIDATION_ERROR", "day must be YYYY-MM-DD")
+			return
+		}
+		day = d
+	}
+
+	util.RespondJSON(w, http.StatusOK, ReadOn(text, now().In(loc), zone, vocabulary(ctx, userID), day))
 }
 
 // Read is the whole decision, as a pure function of the line, the clock and
 // the user's vocabulary. It mirrors the bot's handleQuickAdd: a plain task
 // first, then the event card, and a question for everything else.
 func Read(text string, at time.Time, zone string, v parse.Vocabulary) Answer {
+	return ReadOn(text, at, zone, v, time.Time{})
+}
+
+// ReadOn is Read with a default day: when `day` is not zero (local midnight)
+// and the line names no day, the line is read as typed on that day.
+func ReadOn(text string, at time.Time, zone string, v parse.Vocabulary, day time.Time) Answer {
 	a := Answer{Timezone: zone, Tags: []string{}, Uncertain: []string{}}
 
 	if r, ok := parse.PlainTask(text, at); ok {
@@ -169,6 +189,9 @@ func Read(text string, at time.Time, zone string, v parse.Vocabulary) Answer {
 
 	u := parse.Understand(text, at, v)
 	d := u.Draft
+	if !day.IsZero() && !d.HasDay {
+		d.Day, d.HasDay = day, true
+	}
 	a.Title, a.AllDay, a.IsTask, a.HasTime = u.Title, d.AllDay, d.IsTask, d.HasTime
 	if len(d.Tags) > 0 {
 		a.Tags = d.Tags
