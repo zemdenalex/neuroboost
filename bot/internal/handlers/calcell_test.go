@@ -90,9 +90,15 @@ func TestColourOnlyWithDayTasksOffKeepsTheBar(t *testing.T) {
 func TestAColourOnlyMonthWithDayTasksOffDrawsBars(t *testing.T) {
 	loc, _ := time.LoadLocation("Europe/Moscow")
 	now := time.Now().In(loc)
-	// Tomorrow: today's cell draws 🔸 instead of a bar, and tomorrow is
-	// always inside the 42-day grid.
-	start := time.Date(now.Year(), now.Month(), now.Day()+1, 9, 0, 0, 0, loc)
+	// Not today: today's cell draws 🔸 instead of a bar. Tomorrow, unless
+	// today is the month's last day — then tomorrow is next month's cell,
+	// drawn «·1» with no bar, and the test went red on 31.10 by the calendar
+	// alone. Yesterday then, which is in this month.
+	day := now.Day() + 1
+	if time.Date(now.Year(), now.Month(), day, 0, 0, 0, 0, loc).Month() != now.Month() {
+		day = now.Day() - 1
+	}
+	start := time.Date(now.Year(), now.Month(), day, 9, 0, 0, 0, loc)
 	a := &dayAPI{settings: map[string]any{"day_tasks_enabled": false},
 		events: []map[string]any{{"id": "e1", "title": "работа",
 			"starts_at": start.UTC().Format(time.RFC3339), "ends_at": start.Add(8 * time.Hour).UTC().Format(time.RFC3339)}}}
