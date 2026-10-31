@@ -51,5 +51,29 @@
   "agenda.loading": "Loading…",
   "agenda.empty": "Nothing scheduled for the next {{days}} days.",
   "agenda.more": "{{days}} more days",
-  "whatsNew.failed": "Could not load. Try again later."
+  "whatsNew.failed": "Could not load. Try again later.",
+  "addSheet": {
+    "placeholder": "What to do? «tomorrow 10:00 doctor»",
+    "example": "«tomorrow 10:00 doctor» is an event, «buy bread» a task",
+    "event": "Event",
+    "task": "Task",
+    "create": "Create",
+    "asTask": "as a task",
+    "detailed": "details…",
+    "unread": "The time was not read: open «details…» and pick it there",
+    "createdEvent": "📅 «{{title}}» · {{when}}",
+    "createdEventShort": "📅 «{{title}}» created",
+    "createdTask": "✓ Task «{{title}}»",
+    "titlePlaceholder": "What to do?",
+    "description": "Description",
+    "today": "Today",
+    "tomorrow": "Tomorrow",
+    "todayShort": "today",
+    "time": "time",
+    "noTime": "No time",
+    "duration": "Duration",
+    "noPriority": "No priority",
+    "makeEvent": "Make it an event",
+    "makeTask": "Make it a task"
+  }
 }

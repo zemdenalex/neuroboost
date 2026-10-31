@@ -45,14 +45,19 @@ export const PARSE_TIMEOUT_MS = 3000
  * from an API without the route, a 5xx, a network error, a timeout. The
  * caller then does exactly what it did before the parser existed.
  */
-export async function parseLine(text: string, timeoutMs = PARSE_TIMEOUT_MS): Promise<ParsedLine | null> {
+export async function parseLine(
+  text: string,
+  timeoutMs = PARSE_TIMEOUT_MS,
+  /** YYYY-MM-DD the line is typed on (the phone's «+»): a line naming no day lands on it. */
+  day?: string,
+): Promise<ParsedLine | null> {
   let timer: ReturnType<typeof setTimeout> | undefined
   const timeout = new Promise<null>(resolve => {
     timer = setTimeout(() => resolve(null), timeoutMs)
   })
   try {
     return await Promise.race([
-      api.post<ParsedLine>('/parse', { text }).then(p => (p && typeof p.kind === 'string' ? p : null)),
+      api.post<ParsedLine>('/parse', day ? { text, day } : { text }).then(p => (p && typeof p.kind === 'string' ? p : null)),
       timeout,
     ])
   } catch {

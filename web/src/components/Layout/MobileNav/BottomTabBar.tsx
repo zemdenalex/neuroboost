@@ -2,7 +2,7 @@ import { useState, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Calendar, PlusCircle, MoreHorizontal } from 'lucide-react'
-import { QuickAddDialog } from './QuickAddDialog'
+import { AddSheet } from '../../QuickAdd/AddSheet'
 import { MoreMenu, MORE_PATHS } from './MoreMenu'
 
 export function BottomTabBar() {
@@ -37,13 +37,13 @@ export function BottomTabBar() {
 
         {/* Quick Add (+) — center, special styling */}
         <div className="relative flex flex-col items-center justify-center flex-1">
-          <QuickAddDialog
-            open={quickAddOpen}
-            onClose={() => setQuickAddOpen(false)}
-            anchorRef={quickAddRef}
-          />
+          {/* One line or the detailed form, not the old «Event / Task» menu
+              that led to a page (Denis 31.10, «simple uses A, elaborate opens
+              like the one in ticktick»). */}
+          <AddSheet open={quickAddOpen} onClose={() => setQuickAddOpen(false)} />
           <button
             ref={quickAddRef}
+            data-testid="tab-add"
             onClick={() => {
               setMoreOpen(false)
               setQuickAddOpen((prev) => !prev)

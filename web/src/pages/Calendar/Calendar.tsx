@@ -26,6 +26,10 @@ import { EventEditor } from '../../components/Calendar/EventEditor';
 import { useRecurringScope } from '../../components/Calendar/useRecurringScope';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { readNewEventLength } from '../../lib/calendar/newEventLength';
+import { readPhoneHeader } from '../../lib/calendar/phoneCalendar';
+import { onCreated } from '../../lib/calendar/createdSignal';
+import { getOpenDay } from '../../lib/calendar/openDay';
+import { MOBILE_BREAKPOINT } from '../../lib/calendar/visibleDays';
 import { computeWeekRange } from '../../lib/calendar/weekRange';
 import { shouldRefetchOnReturn } from '../../lib/calendar/refetchOnReturn';
 import { createTask } from '../../api';
@@ -103,7 +107,16 @@ export function Calendar() {
   }, [timezone]);
   const phoneMonth = readPhoneMonthVariant(user?.settings);
   const newEventMinutes = readNewEventLength(user?.settings);
-  const stripMonth = isMobile && view === 'month' && phoneMonth === 'strip';
+  // The phone's header (Denis 31.10, «header A + C choice in settings … month
+  // b and c depending on what is the choice of header»). C, the week strip, is
+  // the one-day grid's own navigation, so it needs the one-column phone; there
+  // the month is opened from the title and is a passing look, never the saved
+  // view — a saved «month» would otherwise leave C with no way back (no
+  // Week/Month switch in C).
+  const isPhone = useMediaQuery(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`);
+  const stripHeader = isPhone && readPhoneHeader(user?.settings) === 'strip';
+  const [stripMonthOpen, setStripMonthOpen] = useState(false);
+  const showMonth = stripHeader ? stripMonthOpen : view === 'month';
   const monthVariant: MonthVariant = isMobile
     ? (phoneMonth === 'heat' ? 'heat' : 'split')
     : readMonthVariant(user?.settings);
@@ -190,7 +203,7 @@ export function Calendar() {
   // Load events for current week
   const loadEvents = useCallback(async () => {
     let { start, end } = getWeekRange(currentWeekOffset);
-    if (view === 'month' && !stripMonth) {
+    if (showMonth) {
       // The 42 grid days, padded by 14 hours each side so that whatever the
       // zone, its first and last local day are whole; cells file by local day.
       const days = monthGrid(monthCursor.year, monthCursor.month);
@@ -206,7 +219,7 @@ export function Calendar() {
     } catch (error) {
       console.error('Failed to load events:', error);
     }
-  }, [currentWeekOffset, getWeekRange, view, stripMonth, monthCursor, latestEvents]);
+  }, [currentWeekOffset, getWeekRange, showMonth, monthCursor, latestEvents]);
 
   // Load tasks
   const loadTasks = useCallback(async () => {
@@ -248,6 +261,12 @@ export function Calendar() {
     document.addEventListener('visibilitychange', onVisibility);
     return () => document.removeEventListener('visibilitychange', onVisibility);
   }, [loadEvents, loadTasks]);
+
+  // The phone's «+» lives in the layout: what it made appears here at once.
+  useEffect(() => onCreated(() => {
+    lastLoadedAtRef.current = Date.now();
+    void Promise.all([loadEvents(), loadTasks()]);
+  }), [loadEvents, loadTasks]);
 
   // Event handlers
   const handleCreate = useCallback((data: { startsAt: string; endsAt: string; allDay: boolean }) => {
@@ -372,6 +391,17 @@ export function Calendar() {
     setFocusDay(day);
     // Not saved: a look at one week keeps "month" as the view to come back to.
     setSavedView('week');
+    setStripMonthOpen(false);
+  }, [timezone]);
+
+  // Header C: the title names the month of the day on screen, and opens that
+  // month (not the week's Thursday's: on Sun 1 Nov the title says November).
+  const handleOpenStripMonth = useCallback(() => {
+    const shown = getOpenDay();
+    setMonthCursor(shown
+      ? { year: Number(shown.slice(0, 4)), month: Number(shown.slice(5, 7)) }
+      : monthOfWeek(todayInZone(new Date(), timezone), currentWeekOffsetRef.current));
+    setStripMonthOpen(true);
   }, [timezone]);
 
   // /calendar?date=YYYY-MM-DD opens that day (Mini App start link d-…), and
@@ -536,7 +566,7 @@ export function Calendar() {
 
       {/* Main calendar area */}
       <div data-testid="calendar-main" className="flex-1 flex flex-col min-w-0">
-        {view === 'month' && !stripMonth ? (
+        {showMonth ? (
           <MonthView
             year={monthCursor.year}
             month={monthCursor.month}
@@ -553,7 +583,18 @@ export function Calendar() {
             onMoveToDay={handleMoveToDay}
             headerExtra={
               <>
-                <ViewSwitch view={view} onChange={changeView} />
+                {stripHeader ? (
+                  <button
+                    type="button"
+                    data-testid="month-close"
+                    onClick={() => setStripMonthOpen(false)}
+                    className="px-2 py-1 text-xs rounded border border-zinc-700 bg-zinc-800 text-zinc-200 hover:bg-zinc-700"
+                  >
+                    {t('view.day')}
+                  </button>
+                ) : (
+                  <ViewSwitch view={view} onChange={changeView} short={isPhone} />
+                )}
                 <CalendarFilter
                   calendars={calendars}
                   hidden={hiddenCalendars}
@@ -566,7 +607,8 @@ export function Calendar() {
         ) : (
         <WeekGrid
           focusDay={focusDay}
-          weekStrip={stripMonth}
+          weekStrip={stripHeader}
+          onOpenMonth={stripHeader ? handleOpenStripMonth : undefined}
           newEventMinutes={newEventMinutes}
           events={shownEvents}
           currentWeekOffset={currentWeekOffset}
@@ -574,21 +616,22 @@ export function Calendar() {
           calendarColors={calendarColors}
           headerExtra={
             <>
-              <ViewSwitch view={view} onChange={changeView} />
+              {!stripHeader && <ViewSwitch view={view} onChange={changeView} short={isPhone} />}
               {/* 🔴 Creating a task from the calendar used to live ONLY in the
                   task sidebar's header — and the sidebar is collapsed by
                   default, so on a first visit it was two clicks behind an
                   unlabelled vertical strip. Denis's report was "я не нашел
                   кнопку создания задачи", which is a finding about placement,
-                  not about the feature. */}
-              <button
+                  not about the feature. On a phone «+» at the bottom makes
+                  both (31.10, header A), so the row keeps its one line. */}
+              {!isMobile && <button
                 type="button"
                 onClick={handleCreateTask}
                 title={t('newTask')}
                 className="px-2 py-1 text-xs font-mono rounded border border-zinc-700 bg-zinc-800 text-zinc-200 hover:bg-zinc-700 whitespace-nowrap"
               >
                 + {t('taskShort')}
-              </button>
+              </button>}
               <CalendarFilter
                 calendars={calendars}
                 hidden={hiddenCalendars}

@@ -18,6 +18,7 @@ import { useTranslation } from 'react-i18next';
 import { dateLocale } from '../../../utils/date';
 import { busyShare } from '../../../lib/calendar/busyShare';
 import { WeekStrip, type WeekStripDay } from '../WeekStrip';
+import { setOpenDay } from '../../../lib/calendar/openDay';
 
 export function WeekGrid({
   events,
@@ -33,6 +34,7 @@ export function WeekGrid({
   onWeekChange,
   focusDay,
   weekStrip = false,
+  onOpenMonth,
   newEventMinutes = DEFAULT_NEW_EVENT_LENGTH,
 }: WeekGridProps) {
   // Refs
@@ -116,6 +118,13 @@ export function WeekGrid({
       setMobileDayOffset(prev => prev + daysInWeek);
     }
   }, [mobileDayOffset, visibleDays, currentWeekOffset, onWeekChange, weekStrip]);
+
+  // The day on screen, for «+» in the bottom bar (lib/calendar/openDay). The
+  // whole-week desktop grid has no single day, and leaving the page clears it.
+  useEffect(() => {
+    setOpenDay(visibleDays < 7 ? dayKey(adjustedStart, timezone) : null);
+  }, [adjustedStart, timezone, visibleDays]);
+  useEffect(() => () => setOpenDay(null), []);
 
   // Generate day info
   const days = useMemo(
@@ -331,6 +340,7 @@ export function WeekGrid({
         onMobileNav={visibleDays < 7 ? handleMobileNav : undefined}
         onToday={handleToday}
         onQuickCreate={handleQuickCreate}
+        onOpenMonth={showStrip ? onOpenMonth : undefined}
         headerExtra={headerExtra}
       />
 
