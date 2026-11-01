@@ -14,6 +14,14 @@ interface MobileTaskPanelProps {
   onUpdateTask: (id: string, updates: Partial<Task>) => Promise<void>;
   onAnswerDay: (task: Task, state: 'done' | 'open') => Promise<void>;
   onCreateTask?: () => void;
+  /** Phone: a finger held on a row lifted this task; it is now carried to the grid (Calendar). */
+  onTouchCarry?: (task: Task, clientX: number, clientY: number) => void;
+  /**
+   * A task from here is being carried: the panel steps out of the way but stays
+   * MOUNTED. The finger's touch began on a row in it, and a browser stops
+   * delivering touchmove/touchend to the page once that target leaves the DOM.
+   */
+  carrying?: boolean;
 }
 
 export function MobileTaskPanel({
@@ -26,6 +34,8 @@ export function MobileTaskPanel({
   onUpdateTask,
   onAnswerDay,
   onCreateTask,
+  onTouchCarry,
+  carrying = false,
 }: MobileTaskPanelProps) {
   const { t } = useTranslation('tasks');
   const panelRef = useRef<HTMLDivElement>(null);
@@ -104,7 +114,7 @@ export function MobileTaskPanel({
   if (!isOpen) return null;
 
   return (
-    <div className="lg:hidden fixed inset-0 z-40 font-mono">
+    <div className={`lg:hidden fixed inset-0 z-40 font-mono ${carrying ? 'opacity-0 pointer-events-none' : ''}`}>
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-scrim/50"
@@ -142,6 +152,7 @@ export function MobileTaskPanel({
             onUpdateTask={onUpdateTask}
             onAnswerDay={onAnswerDay}
             onCreateTask={onCreateTask}
+            onTouchCarry={onTouchCarry}
           />
         </div>
       </div>

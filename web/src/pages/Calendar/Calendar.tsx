@@ -134,6 +134,18 @@ export function Calendar() {
     return localStorage.getItem('nb-sidebar-open') === 'true';
   });
   const [mobileTasksOpen, setMobileTasksOpen] = useState(false);
+  // A task lifted from the phone's task panel by a held finger (WeekGrid.carry).
+  const [carry, setCarry] = useState<{ task: Task; x: number; y: number } | null>(null);
+  const endCarry = useCallback((dropped: boolean) => {
+    setCarry(null);
+    // Put nowhere: the panel comes back as it was.
+    if (dropped) setMobileTasksOpen(false);
+  }, []);
+  // The grid leaving mid-carry (the month view opened) would leave the panel
+  // invisible and the task in the hand: nothing can drop it there.
+  useEffect(() => {
+    if (showMonth && carry) endCarry(false);
+  }, [showMonth, carry, endCarry]);
   // The calendar list drives two things on this page: the colour an event with
   // no colour of its own is drawn in, and the filter's checkboxes. Loaded once
   // — the list is short and changes rarely — and a failure is not worth
@@ -648,6 +660,8 @@ export function Calendar() {
           onMoveOrResize={handleMoveOrResize}
           onDelete={handleDelete}
           onTaskDrop={handleTaskDrop}
+          carry={carry}
+          onCarryEnd={endCarry}
           onWeekChange={handleWeekChange}
         />
         )}
@@ -673,6 +687,10 @@ export function Calendar() {
         onUpdateTask={handleTaskUpdate}
         onAnswerDay={handleAnswerDay}
         onCreateTask={handleCreateTask}
+        // Only while the grid is on screen: in the month view nothing would take
+        // the task, and the hidden panel would wait for a drop that never comes.
+        onTouchCarry={showMonth ? undefined : (task, x, y) => setCarry({ task, x, y })}
+        carrying={carry !== null}
       />
 
       {/* Event editor modal */}

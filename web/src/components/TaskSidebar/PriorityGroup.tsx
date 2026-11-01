@@ -11,6 +11,8 @@ interface PriorityGroupProps {
   onEditTask: (task: Task) => void;
   onToggleStatus: (task: Task) => void;
   onDragStart: (task: Task, e: React.DragEvent) => void;
+  /** Phone: a finger held on a row lifted this task; it is now carried to the grid (Calendar). */
+  onTouchCarry?: (task: Task, clientX: number, clientY: number) => void;
 }
 
 export function PriorityGroup({
@@ -21,6 +23,7 @@ export function PriorityGroup({
   onEditTask,
   onToggleStatus,
   onDragStart,
+  onTouchCarry,
 }: PriorityGroupProps) {
   const [collapsed, setCollapsed] = useState(false);
 
@@ -68,6 +71,7 @@ export function PriorityGroup({
               onDoubleClick={() => onEditTask(task)}
               onEdit={() => onEditTask(task)}
               onDragStart={(e) => onDragStart(task, e)}
+              onTouchCarry={onTouchCarry ? (x, y) => onTouchCarry(task, x, y) : undefined}
               onStatusToggle={() => onToggleStatus(task)}
             />
           ))}

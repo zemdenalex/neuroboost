@@ -16,6 +16,8 @@ interface TaskSidebarProps {
   /** Answers today's day of a repeating task ('open' takes the answer back). */
   onAnswerDay: (task: Task, state: 'done' | 'open') => Promise<void>;
   onCreateTask?: () => void;
+  /** Phone: a finger held on a row lifted this task; it is now carried to the grid (Calendar). */
+  onTouchCarry?: (task: Task, clientX: number, clientY: number) => void;
 }
 
 export function TaskSidebar({
@@ -28,6 +30,7 @@ export function TaskSidebar({
   onUpdateTask,
   onAnswerDay,
   onCreateTask,
+  onTouchCarry,
 }: TaskSidebarProps) {
   const { t } = useTranslation('tasks');
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -176,6 +179,7 @@ export function TaskSidebar({
               onEditTask={onEditTask}
               onToggleStatus={handleToggleStatus}
               onDragStart={handleDragStart}
+              onTouchCarry={onTouchCarry}
             />
           ))
         )}

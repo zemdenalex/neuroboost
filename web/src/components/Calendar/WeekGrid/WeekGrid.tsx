@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { DEFAULT_NEW_EVENT_LENGTH } from '../../../lib/calendar/newEventLength';
-import { ALL_DAY_HEIGHT, DAY_HEADER_HEIGHT, DAY_MS, HOUR_PX } from './weekgrid.constants';
+import { ALL_DAY_HEIGHT, DAY_HEADER_HEIGHT, DAY_MS, HOUR_PX, TOUCH_SLOP_PX } from './weekgrid.constants';
 import { initialScrollHour } from '../../../lib/calendar/initialScroll';
 import { allDayBarHeight } from '../../../lib/calendar/calendarChrome';
 import { visibleDaysFor, DAY_COUNT_QUERIES } from '../../../lib/calendar/visibleDays';
@@ -19,6 +19,7 @@ import { dateLocale } from '../../../utils/date';
 import { busyShare } from '../../../lib/calendar/busyShare';
 import { WeekStrip, type WeekStripDay } from '../WeekStrip';
 import { setOpenDay } from '../../../lib/calendar/openDay';
+import { fingersDown } from '../../../lib/calendar/fingersDown';
 
 export function WeekGrid({
   events,
@@ -37,6 +38,8 @@ export function WeekGrid({
   onOpenMonth,
   newEventMinutes = DEFAULT_NEW_EVENT_LENGTH,
   dragStart = 'hold',
+  carry = null,
+  onCarryEnd,
 }: WeekGridProps) {
   // Refs
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -311,23 +314,92 @@ export function WeekGrid({
     onWeekChange?.(0);
   }, [onWeekChange]);
 
+  // Where a task let go at (clientX, clientY) starts: the mouse's drop and the
+  // finger's carry share this, so the two cannot disagree about the slot.
+  // null when the point is not over the time grid.
+  const dropStartAt = useCallback((clientX: number, clientY: number): Date | null => {
+    const rect = scrollRef.current?.getBoundingClientRect();
+    if (!rect) return null;
+    if (clientX < rect.left || clientX > rect.right || clientY > rect.bottom) return null;
+    const yInTimeGrid = clientY - rect.top - allDayHeight - DAY_HEADER_HEIGHT;
+    if (yInTimeGrid < 0) return null;
+    const dayIndex = Math.floor((clientX - rect.left) / (rect.width / visibleDays));
+    const targetDay = days[Math.max(0, Math.min(days.length - 1, dayIndex))];
+    if (!targetDay) return null;
+    const dropMin = Math.max(0, Math.round((yInTimeGrid + (scrollRef.current?.scrollTop || 0)) / 44 * 60 / 15) * 15);
+    return new Date(targetDay.dayUtc0 + dropMin * 60000);
+  }, [days, visibleDays, allDayHeight]);
+
   const handleTaskDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     if (!onTaskDrop) return;
     try {
       const dragData = JSON.parse(e.dataTransfer.getData('application/json'));
       if (dragData.type !== 'task') return;
-      const rect = scrollRef.current?.getBoundingClientRect();
-      if (!rect) return;
-      const dayIndex = Math.floor((e.clientX - rect.left) / (rect.width / visibleDays));
-      const targetDay = days[Math.max(0, Math.min(days.length - 1, dayIndex))];
-      if (targetDay) {
-        const yInTimeGrid = e.clientY - rect.top - allDayHeight - DAY_HEADER_HEIGHT;
-        const dropMin = Math.max(0, Math.round((yInTimeGrid + (scrollRef.current?.scrollTop || 0)) / 44 * 60 / 15) * 15);
-        onTaskDrop(dragData.task, new Date(targetDay.dayUtc0 + dropMin * 60000));
-      }
+      const at = dropStartAt(e.clientX, e.clientY);
+      if (at) onTaskDrop(dragData.task, at);
     } catch { /* ignore drop errors */ }
-  }, [onTaskDrop, days, visibleDays, allDayHeight]);
+  }, [onTaskDrop, dropStartAt]);
+
+  // The finger's version (step 7 of docs/tasks-phone-drag.md). The touch began
+  // on a row in the task panel, which stays mounted (MobileTaskPanel.carrying),
+  // so its touchmove / touchend still reach the document.
+  const [carryAt, setCarryAt] = useState<{ x: number; y: number } | null>(null);
+  const carryTask = carry?.task;
+  useEffect(() => {
+    if (!carry) { setCarryAt(null); return; }
+    // Ends the carry exactly once: on the drop or on a cancel.
+    let done = false;
+    const finish = (dropAt: { x: number; y: number } | null) => {
+      if (done) return;
+      done = true;
+      const at = dropAt ? dropStartAt(dropAt.x, dropAt.y) : null;
+      if (at && onTaskDrop) onTaskDrop(carry.task, at);
+      onCarryEnd?.(Boolean(at));
+    };
+    // The finger came up between the pick-up and this effect: that touchend was
+    // never seen here. Put the task nowhere rather than wait for the next tap.
+    if (fingersDown() === 0) { finish(null); return; }
+    setCarryAt({ x: carry.x, y: carry.y });
+    let last = { x: carry.x, y: carry.y };
+    // Held and let go in place is not a drop: the slot under the panel's row was
+    // never chosen. The task stays where it was and the panel comes back.
+    let moved = false;
+    const onMove = (ev: TouchEvent) => {
+      const t = ev.touches[0];
+      if (!t || ev.touches.length !== 1) return;
+      if (ev.cancelable) ev.preventDefault();
+      last = { x: t.clientX, y: t.clientY };
+      if (Math.hypot(last.x - carry.x, last.y - carry.y) > TOUCH_SLOP_PX) moved = true;
+      setCarryAt(last);
+    };
+    const onEnd = (ev: TouchEvent) => {
+      // A second finger lifting is not the drop; the last finger lifting is.
+      if (ev.touches.length > 0) return;
+      if (ev.cancelable) ev.preventDefault(); // no compatibility click on the row
+      finish(moved ? last : null);
+    };
+    // A second finger coming down makes it a pinch, not a carry.
+    const onStart = () => finish(null);
+    // The system took the gesture: put nothing anywhere.
+    const onCancel = () => finish(null);
+    document.addEventListener('touchstart', onStart);
+    document.addEventListener('touchmove', onMove, { passive: false });
+    document.addEventListener('touchend', onEnd, { passive: false });
+    document.addEventListener('touchcancel', onCancel);
+    return () => {
+      document.removeEventListener('touchstart', onStart);
+      document.removeEventListener('touchmove', onMove);
+      document.removeEventListener('touchend', onEnd);
+      document.removeEventListener('touchcancel', onCancel);
+      // Not finish() here: StrictMode runs this cleanup on every mount in dev,
+      // which would end each carry at once. The grid going away mid-carry (the
+      // month view) is ended by Calendar instead.
+    };
+    // Re-arm only for a new carry, not for each finger position.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [carryTask]);
+  const carryDrop = carryAt ? dropStartAt(carryAt.x, carryAt.y) : null;
 
   return (
     <div className="h-full w-full flex flex-col font-mono bg-black text-zinc-100">
@@ -368,6 +440,16 @@ export function WeekGrid({
         onTouchStart={handleTouchStartSwipe}
         onTouchEnd={handleTouchEndSwipe}
       >
+        {carry && carryAt && (
+          <div
+            data-testid="task-carry"
+            className="fixed z-[90] pointer-events-none -translate-x-1/2 -translate-y-full rounded border border-blue-400 bg-blue-600/90 px-2 py-1 text-xs text-onaccent shadow-lg max-w-[70vw] truncate"
+            style={{ left: carryAt.x, top: carryAt.y - 12 }}
+          >
+            {carry.task.title}
+            {carryDrop && ` · ${new Intl.DateTimeFormat(dateLocale(i18n.language), { timeZone: timezone, hour: '2-digit', minute: '2-digit' }).format(carryDrop)}`}
+          </div>
+        )}
         <div
           ref={containerRef}
           className={`grid gap-px relative ${

@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { sidebarTicked } from './sidebarTick';
 import { Pencil } from 'lucide-react';
 import type { Task } from '../../types';
+import { TouchHoldBinder } from '../Calendar/WeekGrid/TouchHoldBinder';
 import { describeDueDate, dueDateColorClass, formatDueDateLabel } from '../../lib/dueDate';
 
 interface TaskItemProps {
@@ -22,6 +23,8 @@ interface TaskItemProps {
   onEdit: () => void;
   onDragStart: (e: React.DragEvent) => void;
   onStatusToggle: () => void;
+  /** Phone: a finger held on a row lifted this task; it is now carried to the grid (Calendar). */
+  onTouchCarry?: (clientX: number, clientY: number) => void;
 }
 
 export function TaskItem({
@@ -33,6 +36,7 @@ export function TaskItem({
   onEdit,
   onDragStart,
   onStatusToggle,
+  onTouchCarry,
 }: TaskItemProps) {
   const { t, i18n } = useTranslation('common');
   const isDone = sidebarTicked(task);
@@ -42,7 +46,9 @@ export function TaskItem({
   return (
     <div
       data-task-index={index}
-      draggable
+      // A finger carries the task instead (onTouchCarry): Chrome on Android also
+      // starts a native drag on a long-pressed draggable, which would race it.
+      draggable={!onTouchCarry}
       className={`group px-2 py-1.5 border-b border-zinc-800 cursor-grab
         ${selected ? 'bg-zinc-700' : 'hover:bg-zinc-800/50'}
         ${isDone ? 'opacity-50' : ''}
@@ -51,6 +57,9 @@ export function TaskItem({
       onDoubleClick={onDoubleClick}
       onDragStart={onDragStart}
     >
+      {onTouchCarry && (
+        <TouchHoldBinder onLift={(_el, x, y) => onTouchCarry(x, y)} skip="button" />
+      )}
       <div className="flex items-start gap-2">
         {/* Checkbox */}
         <button

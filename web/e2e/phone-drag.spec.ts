@@ -346,4 +346,98 @@ test.describe('phone drag', () => {
     await expect(authedPage.getByTestId('event-block').first()).toBeVisible({ timeout: 15_000 })
     await expect(authedPage.getByTestId('event-grip')).toHaveCount(0)
   })
+
+  // Step 7: a task from the phone's task panel onto the grid. Desktop does this
+  // with HTML5 drag-and-drop, which a finger never fires.
+  test('holding a task in the task panel and dropping it on a slot schedules it at that hour', async ({ authedPage, session }) => {
+    test.skip(test.info().project.name !== 'mobile', 'touch drag is a phone gesture')
+    const { hour } = await freeWindowOnScreen(authedPage, session.token)
+    const ctx = await apiContext(session.token)
+    const title = `E2E carry ${Date.now()}`
+    const made = await ctx.post('/api/tasks', { data: { title, estimated_minutes: 60, priority: 3 } })
+    expect(made.ok(), `task create failed: ${made.status()} ${await made.text()}`).toBe(true)
+    const taskId = (await made.json()).data.id as string
+    try {
+      // The panel lists tasks loaded with the page.
+      await authedPage.reload()
+      await authedPage.waitForLoadState('networkidle')
+      await authedPage.getByRole('button', { name: /^(Open tasks|Открыть задачи)$/ }).click()
+      const row = authedPage.locator('[data-task-index]', { hasText: title })
+      await expect(row).toBeVisible({ timeout: 10_000 })
+      // The panel slides in: a box measured mid-animation put the finger off
+      // screen. Wait until the row stops moving.
+      let rb = (await row.boundingBox())!
+      await expect.poll(async () => {
+        const prev = rb.x
+        await authedPage.waitForTimeout(100)
+        rb = (await row.boundingBox())!
+        return rb.x === prev
+      }, { timeout: 3000 }).toBe(true)
+      const from = { x: rb.x + rb.width / 2, y: rb.y + rb.height / 2 }
+      // The reload put the grid back at its initial scroll: aim through the
+      // grid's own coordinates, not the ones measured before it.
+      const target = await authedPage.evaluate((h) => {
+        const track = document.querySelector('[data-hint="calendar.grid"]') as HTMLElement
+        let sc: HTMLElement | null = track
+        while (sc && getComputedStyle(sc).overflowY !== 'auto') sc = sc.parentElement
+        const col = document.querySelector('[data-testid="week-day-header"]')!.parentElement!.parentElement!
+        const trackEl = col.querySelector('.relative.select-none') as HTMLElement
+        const want = trackEl.getBoundingClientRect().top + h * 44
+        const r = sc!.getBoundingClientRect()
+        sc!.scrollTop += want - (r.top + r.height / 2)
+        return { y: trackEl.getBoundingClientRect().top + h * 44 + 2, x: trackEl.getBoundingClientRect().left + 30 }
+      }, hour)
+      await fingerDrag(authedPage, from, target, 600)
+
+      const zone = (await (await ctx.get('/api/auth/me')).json()).data.timezone || 'Europe/Moscow'
+      await expect.poll(async () => {
+        const t = (await (await ctx.get(`/api/tasks/${taskId}`)).json()).data
+        if (!t?.event_id) return `not scheduled (${t?.status})`
+        const ev = (await (await ctx.get(`/api/events/${t.event_id}`)).json()).data
+        return new Intl.DateTimeFormat('en-GB', { timeZone: zone, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date(ev.starts_at))
+      }, { timeout: 8000, message: 'the task should be scheduled where the finger let go' }).toBe(hhmm(hour))
+    } finally {
+      // The schedule made an event named after the task: remove both.
+      const dayStart = localMidnightUtc(((await (await ctx.get('/api/auth/me')).json()).data.timezone) || 'Europe/Moscow', 0)
+      const listed = await ctx.get(`/api/events?start=${new Date(dayStart - 24 * HOUR).toISOString()}&end=${new Date(dayStart + 48 * HOUR).toISOString()}`)
+      for (const ev of ((await listed.json()).data ?? []) as { id: string; title: string }[]) {
+        if (ev.title === title) await ctx.delete(`/api/events/${ev.id}`)
+      }
+      await ctx.delete(`/api/tasks/${taskId}`)
+      await ctx.dispose()
+    }
+  })
+
+  test('a task held in the panel and let go in place is put nowhere, and the panel comes back', async ({ authedPage, session }) => {
+    test.skip(test.info().project.name !== 'mobile', 'touch drag is a phone gesture')
+    const ctx = await apiContext(session.token)
+    const title = `E2E carry ${Date.now()}`
+    const made = await ctx.post('/api/tasks', { data: { title, estimated_minutes: 60, priority: 3 } })
+    expect(made.ok()).toBe(true)
+    const taskId = (await made.json()).data.id as string
+    try {
+      await authedPage.goto('/calendar')
+      await authedPage.waitForLoadState('networkidle')
+      await authedPage.getByRole('button', { name: /^(Open tasks|Открыть задачи)$/ }).click()
+      const row = authedPage.locator('[data-task-index]', { hasText: title })
+      await expect(row).toBeVisible({ timeout: 10_000 })
+      let rb = (await row.boundingBox())!
+      await expect.poll(async () => {
+        const prev = rb.x
+        await authedPage.waitForTimeout(100)
+        rb = (await row.boundingBox())!
+        return rb.x === prev
+      }, { timeout: 3000 }).toBe(true)
+      const at = { x: rb.x + rb.width / 2, y: rb.y + rb.height / 2 }
+      // Picked up (600 ms > the hold), not moved, let go.
+      await fingerDrag(authedPage, at, at, 600)
+      await authedPage.waitForTimeout(1500)
+      const t = (await (await ctx.get(`/api/tasks/${taskId}`)).json()).data
+      expect(t.event_id ?? null, 'a hold let go in place must not schedule the task').toBeNull()
+      await expect(row, 'the panel comes back as it was').toBeVisible()
+    } finally {
+      await ctx.delete(`/api/tasks/${taskId}`)
+      await ctx.dispose()
+    }
+  })
 })

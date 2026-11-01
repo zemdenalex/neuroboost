@@ -193,4 +193,12 @@ export interface WeekGridProps extends WeekGridCallbacks {
   newEventMinutes?: number;
   /** How a finger starts a move on the phone: hold, grip or both (⚙️, phoneDrag.ts). */
   dragStart?: PhoneDragStart;
+  /**
+   * Phone: a task lifted from the task panel by a held finger, at the finger's
+   * position. While set, the grid follows the finger and drops the task where it
+   * is let go (onTaskDrop, as desktop drag-and-drop), then calls onCarryEnd.
+   */
+  carry?: { task: Task; x: number; y: number } | null;
+  /** dropped: the task was put on the grid (the panel can close); false: put nowhere. */
+  onCarryEnd?: (dropped: boolean) => void;
 }
