@@ -84,7 +84,10 @@ test.describe('phone header and «+»', () => {
   })
 
   test('header C: the strip navigates, the month opens from its title (Month B)', async ({ authedPage: page }, testInfo) => {
-    await withSettings(page, { phone_header_variant: 'strip' })
+    // «Open week» lives in the split month only. The account is a real one and
+    // its owner switches the month layout (CI 01.11 went red when it read heat),
+    // so the layout this test walks through is pinned here, not inherited.
+    await withSettings(page, { phone_header_variant: 'strip', phone_month_variant: 'split' })
     await page.goto('/calendar')
     const strip = page.getByTestId('week-strip')
     await expect(strip).toBeVisible({ timeout: 15_000 })
