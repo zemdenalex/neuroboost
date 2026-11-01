@@ -1,6 +1,7 @@
 import { test, expect } from './fixtures/auth'
 import { request as playwrightRequest, type APIRequestContext, type Page } from '@playwright/test'
 import { localMidnightUtc } from './fixtures/localTime'
+import { withSettings } from './fixtures/settings'
 
 /**
  * Phone drag (Denis, 25.10: «how the dragging works on the phone, it just
@@ -293,5 +294,56 @@ test.describe('phone drag', () => {
     await expect.poll(() => startOf(session.token, createdId!), { timeout: 5000 }).toBe(startMs + HOUR)
     await undo.click()
     await expect.poll(() => startOf(session.token, createdId!), { timeout: 5000 }).toBe(startMs)
+  })
+
+  // Step 5, the grip (variant 4: «hold / handle / both» in ⚙️). The setting is
+  // laid over in this browser only: the e2e account is Denis's real one.
+  test('with the grip on, the grip moves the event at once, without a hold', async ({ authedPage, session }) => {
+    test.skip(test.info().project.name !== 'mobile', 'touch drag is a phone gesture')
+    await withSettings(authedPage, { phone_drag_start: 'handle' })
+    const { block, startMs } = await seedEventOnScreen(authedPage, session.token)
+    const grip = block.getByTestId('event-grip')
+    await expect(grip).toBeVisible()
+    const gb = (await grip.boundingBox())!
+    const from = { x: gb.x + gb.width / 2, y: gb.y + gb.height / 2 }
+    await fingerDrag(authedPage, from, { x: from.x, y: from.y + HOUR_PX }, 0)
+    await expect.poll(() => startOf(session.token, createdId!), { timeout: 5000 }).toBe(startMs + HOUR)
+  })
+
+  test('with the grip on, the bar at the bottom stretches the event at once', async ({ authedPage, session }) => {
+    test.skip(test.info().project.name !== 'mobile', 'touch drag is a phone gesture')
+    await withSettings(authedPage, { phone_drag_start: 'handle' })
+    const { block, startMs } = await seedEventOnScreen(authedPage, session.token)
+    const bar = block.getByTestId('event-grip-bottom')
+    await expect(bar).toBeVisible()
+    const bb = (await bar.boundingBox())!
+    const from = { x: bb.x + bb.width / 2, y: bb.y + bb.height / 2 }
+    await fingerDrag(authedPage, from, { x: from.x, y: from.y + HOUR_PX }, 0)
+    await authedPage.waitForTimeout(1500)
+    const check = await apiContext(session.token)
+    const after = (await (await check.get(`/api/events/${createdId}`)).json()).data
+    await check.dispose()
+    const start = new Date(after.starts_at ?? after.startsAt).getTime()
+    const end = new Date(after.ends_at ?? after.endsAt).getTime()
+    expect(start, 'the bar stretches the end, the start stays').toBe(startMs)
+    expect(end - start, 'the event was 2 hours, the bar was dragged one hour down').toBe(3 * HOUR)
+  })
+
+  test('grip only: holding the body no longer lifts the event, and no grip by default', async ({ authedPage, session }) => {
+    test.skip(test.info().project.name !== 'mobile', 'touch drag is a phone gesture')
+    await withSettings(authedPage, { phone_drag_start: 'handle' })
+    const { box, startMs } = await seedEventOnScreen(authedPage, session.token)
+    // On the left half: the grip sits on the right.
+    const x = box.x + box.width / 4
+    const y = box.y + box.height / 2
+    await fingerDrag(authedPage, { x, y }, { x, y: y + HOUR_PX }, 600)
+    await authedPage.waitForTimeout(1500)
+    expect(await startOf(session.token, createdId!), 'with «handle» a hold on the body must not move it').toBe(startMs)
+
+    // Default (no key): hold only, nothing new drawn on the events.
+    await withSettings(authedPage, { phone_drag_start: undefined })
+    await authedPage.reload()
+    await expect(authedPage.getByTestId('event-block').first()).toBeVisible({ timeout: 15_000 })
+    await expect(authedPage.getByTestId('event-grip')).toHaveCount(0)
   })
 })

@@ -26,6 +26,7 @@ import { EventEditor } from '../../components/Calendar/EventEditor';
 import { useRecurringScope } from '../../components/Calendar/useRecurringScope';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { readNewEventLength } from '../../lib/calendar/newEventLength';
+import { readPhoneDragStart } from '../../lib/calendar/phoneDrag';
 import { readPhoneHeader } from '../../lib/calendar/phoneCalendar';
 import { onCreated } from '../../lib/calendar/createdSignal';
 import { getOpenDay } from '../../lib/calendar/openDay';
@@ -107,6 +108,7 @@ export function Calendar() {
   }, [timezone]);
   const phoneMonth = readPhoneMonthVariant(user?.settings);
   const newEventMinutes = readNewEventLength(user?.settings);
+  const dragStart = readPhoneDragStart(user?.settings);
   // The phone's header (Denis 31.10, «header A + C choice in settings … month
   // b and c depending on what is the choice of header»). C, the week strip, is
   // the one-day grid's own navigation, so it needs the one-column phone; there
@@ -610,6 +612,7 @@ export function Calendar() {
           weekStrip={stripHeader}
           onOpenMonth={stripHeader ? handleOpenStripMonth : undefined}
           newEventMinutes={newEventMinutes}
+          dragStart={dragStart}
           events={shownEvents}
           currentWeekOffset={currentWeekOffset}
           timezone={timezone}

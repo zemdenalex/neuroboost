@@ -10,6 +10,10 @@ interface EventBlockProps {
   selected: boolean;
   timezone: string;
   isMobile: boolean;
+  /** A finger held on the body picks the event up (⚙️ «hold» or «both»). Default true. */
+  holdLifts?: boolean;
+  /** Draw the grip and the bottom bar (⚙️ «handle» or «both», phone only). */
+  grip?: boolean;
   onSelect: (event: NbEvent) => void;
   onClick: () => void;
   onMouseDown: (e: React.MouseEvent) => void;
@@ -27,12 +31,16 @@ interface EventBlockProps {
 
 /** Below this height there is room for one circle only; the bottom one is kept. */
 const TWO_CIRCLES_MIN_PX = 48;
+/** 30 minutes at HOUR_PX 44: shorter blocks get no grip. */
+const GRIP_MIN_PX = 22;
 
 export const EventBlock = memo(function EventBlock({
   event,
   selected,
   timezone,
   isMobile,
+  holdLifts = true,
+  grip = false,
   onSelect,
   onClick,
   onMouseDown,
@@ -67,6 +75,11 @@ export const EventBlock = memo(function EventBlock({
   const showCircles = selected && isMobile && Boolean(onTouchResize);
   const circleStart = showCircles && ownsStart && event.height >= TWO_CIRCLES_MIN_PX;
   const circleEnd = showCircles && ownsEnd;
+  // The grip (variant 4, step 5): not on a block shorter than 30 minutes (22px),
+  // where it would cover the title. The bar gives way to the circle when the
+  // event is selected: both stretch the same edge.
+  const showGrip = grip && event.height >= GRIP_MIN_PX && Boolean(onTouchResize);
+  const showGripBar = showGrip && ownsEnd && !circleEnd;
 
   const borderRadius = isMultiDaySegment
     ? isFirstSegment ? '4px 4px 0 0' 
@@ -136,7 +149,9 @@ export const EventBlock = memo(function EventBlock({
         isMobile ? 'Tap to edit' : 'Click to select, double-click to edit'
       }`}
     >
-      <TouchHoldBinder onLift={onTouchLift} />
+      {holdLifts && <TouchHoldBinder onLift={onTouchLift} />}
+      {showGrip && <Grip onTouchLift={onTouchLift} />}
+      {showGripBar && <GripBar onTouchResize={onTouchResize!} />}
       {/* Resize handles */}
       {!isMultiDaySegment && (
         <>
@@ -167,7 +182,7 @@ export const EventBlock = memo(function EventBlock({
           So short blocks lose the vertical padding and drop to text-xs, which
           fits. Taller blocks are untouched. */}
       <div
-        className={`px-2 min-h-0 overflow-hidden ${showsTimeRow ? 'py-1' : 'py-0'} ${
+        className={`${showGrip ? 'pl-2 pr-7' : 'px-2'} min-h-0 overflow-hidden ${showsTimeRow ? 'py-1' : 'py-0'} ${
           tinyTitle ? 'h-full flex items-center leading-none' : 'leading-tight'
         }`}
       >
@@ -296,6 +311,64 @@ function ResizeCircle({ edge, onTouchResize }: {
       }}
     >
       <span className="m-0.5 h-3 w-3 rounded-full border-2 border-blue-500 bg-white shadow" />
+    </div>
+  );
+}
+
+/**
+ * The grip on the right of an event (⚙️ «handle» or «both»): a finger put down
+ * here moves the event at once, no hold. `touch-action: none` keeps the browser
+ * from scrolling off it; TouchHoldBinder skips `[data-grip]`, so under «both» a
+ * finger resting on the grip is not lifted a second time by the hold.
+ */
+function Grip({ onTouchLift }: {
+  onTouchLift: (el: HTMLElement, clientX: number, clientY: number) => void;
+}) {
+  return (
+    <div
+      data-testid="event-grip"
+      data-grip="move"
+      aria-hidden="true"
+      className="absolute right-0 top-0 bottom-0 z-10 flex w-7 items-start justify-center pt-1"
+      style={{ touchAction: 'none' }}
+      onContextMenu={(e) => e.preventDefault()}
+      onTouchStart={(e) => {
+        const block = e.currentTarget.parentElement;
+        const t = e.touches[0];
+        if (!block || !t || e.touches.length !== 1) return;
+        try { navigator.vibrate?.(12); } catch { /* not allowed or unsupported */ }
+        onTouchLift(block, t.clientX, t.clientY);
+      }}
+    >
+      <span className="grid grid-cols-2 gap-[3px] opacity-70">
+        {Array.from({ length: 6 }, (_, i) => (
+          <span key={i} className="h-[3px] w-[3px] rounded-full bg-current" />
+        ))}
+      </span>
+    </div>
+  );
+}
+
+/** The bar at the bottom of an event with the grip on: stretches the end at once. */
+function GripBar({ onTouchResize }: {
+  onTouchResize: (edge: 'start' | 'end', el: HTMLElement, clientY: number) => void;
+}) {
+  return (
+    <div
+      data-testid="event-grip-bottom"
+      data-grip="end"
+      aria-hidden="true"
+      className="absolute bottom-0 left-1/2 z-10 flex h-4 w-12 -translate-x-1/2 items-end justify-center pb-0.5"
+      style={{ touchAction: 'none' }}
+      onContextMenu={(e) => e.preventDefault()}
+      onTouchStart={(e) => {
+        const block = e.currentTarget.parentElement;
+        const t = e.touches[0];
+        if (!block || !t || e.touches.length !== 1) return;
+        onTouchResize('end', block, t.clientY);
+      }}
+    >
+      <span className="h-[3px] w-5 rounded-full bg-current opacity-70" />
     </div>
   );
 }

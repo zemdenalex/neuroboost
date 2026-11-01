@@ -1,3 +1,4 @@
+import type { PhoneDragStart } from '../../../lib/calendar/phoneDrag';
 import type { ReactNode } from 'react';
 import type { Task } from '../../../types';
 
@@ -190,4 +191,6 @@ export interface WeekGridProps extends WeekGridCallbacks {
   onOpenMonth?: () => void;
   /** Length of an event made by a click or a hold that never moved (⚙️). Default 30. */
   newEventMinutes?: number;
+  /** How a finger starts a move on the phone: hold, grip or both (⚙️, phoneDrag.ts). */
+  dragStart?: PhoneDragStart;
 }

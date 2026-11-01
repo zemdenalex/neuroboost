@@ -7,6 +7,7 @@ import { HourGrid } from './HourGrid';
 import { TimeIndicator } from './TimeIndicator';
 import { EventBlock } from './EventBlock';
 import { TouchHoldBinder } from './TouchHoldBinder';
+import { gripShown, holdLifts, type PhoneDragStart } from '../../../lib/calendar/phoneDrag';
 import { GhostPreview, MultiDayTimedGhost } from './GhostPreview';
 import { dateLocale } from '../../../utils/date';
 import { dayKey } from '../../../lib/dayTasks/loadDayColours';
@@ -28,6 +29,8 @@ interface DayColumnProps {
   visibleDays: number;
   timezone: string;
   isMobile: boolean;
+  /** Phone: hold, grip or both (lib/calendar/phoneDrag.ts). */
+  dragStart: PhoneDragStart;
   touchStart: TouchStart | null;
   onSelect: (event: NbEvent) => void;
   onSelectId: (id: string) => void;
@@ -67,6 +70,7 @@ export const DayColumn = memo(function DayColumn({
   visibleDays,
   timezone,
   isMobile,
+  dragStart,
   touchStart,
   onSelect,
   onSelectId,
@@ -289,6 +293,8 @@ export const DayColumn = memo(function DayColumn({
             selected={selectedId === event.id}
             timezone={timezone}
             isMobile={isMobile}
+            holdLifts={holdLifts(dragStart)}
+            grip={isMobile && gripShown(dragStart)}
             onSelect={onSelect}
             onClick={() => event.id && onSelectId(event.id)}
             onMouseDown={(e) => handleEventMouseDown(e, event)}

@@ -51,7 +51,8 @@ export const TouchHoldBinder = memo(function TouchHoldBinder({ onLift, skip }: P
       // One finger only: a second one is a pinch or a palm, not a pick-up.
       if (e.touches.length !== 1) { tracker.end(); return; }
       // A circle (EventBlock's ResizeCircle) stretches the event; holding it must not lift it.
-      if (e.target instanceof Element && e.target.closest(skip ? `[data-resize-handle], ${skip}` : '[data-resize-handle]')) return;
+      // So does the grip (EventBlock's Grip / GripBar): it starts at once, without a hold.
+      if (e.target instanceof Element && e.target.closest(skip ? `[data-resize-handle], [data-grip], ${skip}` : '[data-resize-handle], [data-grip]')) return;
       tracker.start(e.touches[0].clientX, e.touches[0].clientY);
     };
     const onMove = (e: TouchEvent) => {

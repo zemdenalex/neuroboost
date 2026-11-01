@@ -36,6 +36,7 @@ export function WeekGrid({
   weekStrip = false,
   onOpenMonth,
   newEventMinutes = DEFAULT_NEW_EVENT_LENGTH,
+  dragStart = 'hold',
 }: WeekGridProps) {
   // Refs
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -407,6 +408,7 @@ export function WeekGrid({
               visibleDays={visibleDays}
               timezone={timezone}
               isMobile={isMobile}
+              dragStart={dragStart}
               touchStart={touchStart}
               onSelect={onSelect}
               onSelectId={setSelectedId}

@@ -53,6 +53,8 @@ export interface UserSettings {
   phone_header_variant?: string
   /** «+» on the phone: 'simple' (one parsed line) | 'detailed' (chips, like TickTick) — Denis 31.10. */
   add_mode?: string
+  /** Phone: how a finger starts a move — hold | handle | both (lib/calendar/phoneDrag.ts). */
+  phone_drag_start?: string
   /** Month view: how long a click waits for a second click, ms (150–800, default 300). */
   month_click_wait_ms?: number
   /** Length of an event made by a click or a hold that never moved (lib/calendar/newEventLength, default 30). */
