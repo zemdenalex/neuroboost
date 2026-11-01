@@ -14,8 +14,10 @@ import {
   Menu,
   X,
   Pin,
+  Plus,
 } from 'lucide-react'
 import { useFeatureFlags } from '../../../hooks/useFeatureFlags'
+import { AddSheet } from '../../QuickAdd/AddSheet'
 
 const EDGE_ZONE = 20
 const SWIPE_THRESHOLD = 60
@@ -23,6 +25,7 @@ const SWIPE_THRESHOLD = 60
 export function HamburgerDrawer() {
   const { t } = useTranslation('common')
   const [isOpen, setIsOpen] = useState(false)
+  const [addOpen, setAddOpen] = useState(false)
   const location = useLocation()
   const flags = useFeatureFlags()
   const dayTasks = useDayTasksEnabled()
@@ -179,6 +182,19 @@ export function HamburgerDrawer() {
         {/* Navigation items */}
         <nav className="p-3 overflow-y-auto" style={{ maxHeight: 'calc(100% - 65px)' }}>
           <div className="flex flex-col gap-1">
+            {/* «+» lived only in the bottom tabs; the drawer had no way to add
+                at all. Same sheet, same add_mode. */}
+            <button
+              data-testid="drawer-add"
+              onClick={() => {
+                setIsOpen(false)
+                setAddOpen(true)
+              }}
+              className="flex items-center gap-3 px-3 py-2.5 mb-1 rounded-md text-sm font-mono text-left bg-blue-600 text-onaccent"
+            >
+              <Plus className="w-4 h-4" />
+              {t('action.add')}
+            </button>
             {navItems.map(({ path, label, icon: Icon }) => {
               const isActive = location.pathname === path
               return (
@@ -199,6 +215,8 @@ export function HamburgerDrawer() {
           </div>
         </nav>
       </div>
+
+      <AddSheet open={addOpen} onClose={() => setAddOpen(false)} />
     </>
   )
 }

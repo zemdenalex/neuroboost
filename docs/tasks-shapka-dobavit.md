@@ -15,7 +15,7 @@
       удаление; саботаж. ~30 мин · ~100k
 - [x] 6. Прототип подробного режима (как TickTick) на странице вариантов — кликабельный; спросить Дениса. ~15 мин · ~40k
 - [x] 7. Подробный режим по его ответу + настройка `add_mode`. ~30 мин · ~100k
-- [ ] 8. ci-local, push в develop, проверка на staging 375 px скриншотами.
+- [x] 8. ci-local, push в develop, проверка на staging 375 px скриншотами.
 
 Промпт лупа: «header A + C choice in settings, for creation I think it should have simple mode and elaborate, and simple
 uses A, elaborate opens like the one in ticktick, month b and c depending on what is the choice of header» (Денис, 31.10) —
@@ -30,10 +30,14 @@ uses A, elaborate opens like the one in ticktick, month b and c depending on wha
 - «+» в нижней панели: лист `AddSheet` — простой (строка + превью разбора) и подробный (`DetailedAdd`, чипы как в прототипе).
 - API: `POST /api/parse` принимает `day` — строка без дня ложится на открытый день (`ReadOn`, тест + саботаж).
 - e2e `phone-header-add.spec.ts` 4/4, четыре саботажа красные; весь mobile 85 ✅, desktop 83 ✅; `phone-month.spec` без `strip`.
-- ⚠ Не тронуто: нижняя навигация вариантов `fab` и `hamburger` — у них «+» ведёт по-старому (меню → страница).
+- ✅ 01.11: навигация `fab` и `hamburger` тоже открывает лист «+» (`fab-add`, `drawer-add`, по `add_mode`);
+  мёртвый `QuickAddDialog.tsx` и ключи `quickAction.newEvent/newTask` удалены. e2e 5/5, саботаж красный. Не закоммичено.
 - ⚠ Подробный режим собран по прототипу целиком; какие чипы оставить — решает Денис.
 - Ревью (`pr-review-toolkit:code-reviewer`) — 4 находки, все исправлены: устаревшее название при быстром ✓, теряемые
   длительность/календарь/повтор/напоминания из строки, заголовок «Ноябрь ▾» открывал октябрь, e2e не проверял дату.
 - 🟡 e2e «line naming no day lands there» красный локально: staging API ещё без поля `day`. Станет зелёным в CI после
   push (job `e2e` идёт после `deploy-dev`) — это и есть проверка «красный до, зелёный после».
+- ✅ 31.10 16:20: push `a7fd86e` → CI зелёный (e2e 168 passed); `phone-header-add.spec` против staging 4/4 —
+  тест без дня в строке стал зелёным после выката API (был красным до). Заодно починен бот-тест, красневший
+  в последний день месяца (`calcell_test.go`).
 

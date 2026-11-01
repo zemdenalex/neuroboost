@@ -134,6 +134,25 @@ test.describe('phone header and «+»', () => {
     expect(tk.body.title).toContain(tag)
   })
 
+  test('«+» in the FAB and hamburger navs opens the same sheet', async ({ authedPage: page }) => {
+    // Before 01.11 the FAB jumped to /calendar or /tasks and the drawer had no
+    // «+» at all; only the bottom tabs opened the sheet.
+    await withSettings(page, { mobile_nav: 'fab', add_mode: 'simple' })
+    await page.goto('/calendar')
+    await page.getByRole('button', { name: 'Open navigation', exact: true }).click()
+    await page.getByTestId('fab-add').click()
+    await expect(page.getByTestId('add-line')).toBeVisible()
+    await expect(page).toHaveURL(/\/calendar/)
+    await page.keyboard.press('Escape')
+    await expect(page.getByTestId('add-sheet')).toHaveCount(0)
+
+    await withSettings(page, { mobile_nav: 'hamburger', add_mode: 'detailed' })
+    await page.reload()
+    await page.getByRole('button', { name: 'Open navigation menu' }).click()
+    await page.getByTestId('drawer-add').click()
+    await expect(page.getByTestId('add-detailed-form')).toBeVisible()
+  })
+
   test('«+» detailed: the day chip starts on the open day, and a line naming no day lands there', async ({ authedPage: page, session }) => {
     await withSettings(page, { add_mode: 'detailed', phone_header_variant: 'strip' })
     const tag = `E2E-ADD-${Date.now()}`

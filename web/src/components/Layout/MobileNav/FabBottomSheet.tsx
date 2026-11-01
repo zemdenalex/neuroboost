@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { useDayTasksEnabled } from '../../../hooks/useDayTasksEnabled'
 import { useFeatureFlags } from '../../../hooks/useFeatureFlags'
 import { useTranslation } from 'react-i18next'
+import { AddSheet } from '../../QuickAdd/AddSheet'
 import {
   Plus,
   Calendar,
@@ -23,13 +24,9 @@ export function FabBottomSheet() {
   const dayTasks = useDayTasksEnabled()
   const flags = useFeatureFlags()
   const [isOpen, setIsOpen] = useState(false)
+  const [addOpen, setAddOpen] = useState(false)
   const navigate = useNavigate()
   const location = useLocation()
-
-  const quickActions = [
-    { label: t('quickAction.newEvent'), icon: Calendar, path: '/calendar' },
-    { label: t('quickAction.newTask'), icon: CheckSquare, path: '/tasks' },
-  ]
 
   const navItems = [
     { path: '/home', label: t('nav.home'), icon: Home },
@@ -141,18 +138,19 @@ export function FabBottomSheet() {
           <p className="text-xs font-mono text-zinc-500 uppercase tracking-wider mb-2 px-1">
             {t('quickAction.quickActions')}
           </p>
-          <div className="flex gap-3">
-            {quickActions.map(({ label, icon: Icon, path }) => (
-              <button
-                key={path}
-                onClick={() => handleNavigate(path)}
-                className="flex-1 flex items-center gap-2 px-4 py-3 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors"
-              >
-                <Icon className="w-4 h-4 text-blue-400" />
-                <span className="text-sm font-mono text-zinc-200">{label}</span>
-              </button>
-            ))}
-          </div>
+          {/* The same «+» sheet as the bottom tabs (simple line or detailed
+              form, per add_mode), not a jump to the Calendar or Tasks page. */}
+          <button
+            data-testid="fab-add"
+            onClick={() => {
+              setIsOpen(false)
+              setAddOpen(true)
+            }}
+            className="w-full flex items-center gap-2 px-4 py-3 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors"
+          >
+            <Plus className="w-4 h-4 text-blue-400" />
+            <span className="text-sm font-mono text-zinc-200">{t('action.add')}</span>
+          </button>
         </div>
 
         {/* Divider */}
@@ -187,6 +185,8 @@ export function FabBottomSheet() {
         {/* Bottom safe area padding */}
         <div className="h-6" />
       </div>
+
+      <AddSheet open={addOpen} onClose={() => setAddOpen(false)} />
     </>
   )
 }
