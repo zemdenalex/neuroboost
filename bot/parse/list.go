@@ -173,13 +173,26 @@ func ParseEventList(text string, now time.Time) []Parsed {
 // while the same words typed as a SINGLE task parsed correctly, because that
 // path always used ParseTask.
 //
-// No day inherits here: a task list is a list of things to do, and its lines do
-// not describe a schedule the way an event block does.
+// A task's own day stays with that task: a list of things to do is not a
+// schedule. The one exception is a day HEADER — a line that is only a day
+// («сегодня», «завтра», «пятница»). It is not a task; its day goes to every
+// line below it until the next header (Denis, 04.11: two headers came back as
+// two untitled tasks and the ten tasks under them had no day).
 func ParseTaskList(text string, now time.Time) []TaskResult {
 	entries := Entries(text)
 	out := make([]TaskResult, 0, len(entries))
+	var header *time.Time
 	for _, e := range entries {
-		out = append(out, ParseTask(e, now))
+		t := ParseTask(e, now)
+		if isDayHeader(t) {
+			header = t.DueDate
+			continue
+		}
+		if t.DueDate == nil && header != nil {
+			due := *header
+			t.DueDate = &due
+		}
+		out = append(out, t)
 	}
 
 	// 🔴 ONE line, one day: «завтра помыться, поесть, поспать» is a sentence,
@@ -195,4 +208,11 @@ func ParseTaskList(text string, now time.Time) []TaskResult {
 		}
 	}
 	return out
+}
+
+// isDayHeader: a day and nothing else — no title, priority, estimate, tag or
+// repeat. Anything more and the line is a task the user typed.
+func isDayHeader(t TaskResult) bool {
+	return t.DueDate != nil && strings.TrimSpace(t.Title) == "" && t.Priority == nil &&
+		t.EstimatedMinutes == nil && len(t.Tags) == 0 && t.Rrule == "" && !t.RepeatAsked
 }

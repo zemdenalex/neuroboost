@@ -138,6 +138,39 @@ func TestLooksLikeList(t *testing.T) {
 	}
 }
 
+// 🔴 Denis, 04.11, verbatim from the bot chat: «сегодня» and «завтра» on their
+// own lines became two tasks «(без названия)» with a date, and the tasks under
+// them got no date at all. A line that is ONLY a day is a header: it is not a
+// task, and its day goes to the lines below it until the next header.
+func TestTaskListDayHeadersCarryDownAndAreNotTasks(t *testing.T) {
+	block := "сегодня \nгерион счет\nрадар новая страница\nдоговоры флоутех и гектор\nавокар правки\n\n" +
+		"завтра\nпозвонить в суд\nзайти в ростелеком\nавокар работа\n" +
+		"флоутех написать и скинуть договор, акт\nавокар договориться по дизайну Алины\nавокар авито"
+	got := ParseTaskList(block, tuesday15())
+	if len(got) != 10 {
+		t.Fatalf("got %d tasks, want 10 — a day header was counted as a task", len(got))
+	}
+	for i, task := range got {
+		if task.Title == "" {
+			t.Errorf("task %d has no title", i)
+		}
+		want := 15
+		if i >= 4 {
+			want = 16
+		}
+		if task.DueDate == nil || task.DueDate.Day() != want {
+			t.Errorf("task %d %q due %v, want the %d", i, task.Title, task.DueDate, want)
+		}
+	}
+
+	// A task that names its own day keeps it to itself: only a bare header
+	// carries, so «завтра купить хлеб» does not date the line under it.
+	own := ParseTaskList("завтра купить хлеб\nпозвонить маме", tuesday15())
+	if len(own) != 2 || own[1].DueDate != nil {
+		t.Errorf("a dated task passed its day to the next line: %+v", own)
+	}
+}
+
 // One line with commas is split only after the user says it is a list; the
 // splitting itself must then be right.
 func TestEntriesSplitsASingleLineOnCommasOnly(t *testing.T) {
