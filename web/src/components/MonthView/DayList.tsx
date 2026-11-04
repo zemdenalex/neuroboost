@@ -2,6 +2,8 @@ import { useTranslation } from 'react-i18next'
 import { resolveEventColor } from '../../lib/calendar/eventColor'
 import type { MonthItem } from '../../lib/calendar/monthCells'
 import type { Day } from '../../lib/dayTasks/dayColour'
+import type { NbEvent } from '../../types'
+import { TouchHoldBinder } from '../Calendar/WeekGrid/TouchHoldBinder'
 
 const NEUTRAL = '#71717a'
 
@@ -14,10 +16,14 @@ interface Props {
   timeFormat: Intl.DateTimeFormat
   calendarColors: Record<string, string | null>
   onOpenWeek: () => void
+  /** A finger held on a row picked its event up (phone): the month carries it to a cell. */
+  onItemTouchLift?: (event: NbEvent, x: number, y: number) => void
+  /** The event being carried, dimmed in the list. */
+  draggingId?: string | null
 }
 
 /** Variant D's lower half: the chosen day as a list, like the bot's calendar → day. */
-export function DayList({ day, locale, items, square, dayTasks, timeFormat, calendarColors, onOpenWeek }: Props) {
+export function DayList({ day, locale, items, square, dayTasks, timeFormat, calendarColors, onOpenWeek, onItemTouchLift, draggingId }: Props) {
   const { t } = useTranslation('calendar')
   const title = new Date(day + 'T12:00:00Z').toLocaleDateString(locale, {
     weekday: 'short',
@@ -46,7 +52,16 @@ export function DayList({ day, locale, items, square, dayTasks, timeFormat, cale
       {items.length === 0 && <p className="text-xs text-zinc-500">{t('month.free')}</p>}
       <ul className="flex flex-col">
         {items.map(({ event, first, last }) => (
-          <li key={event.id} className="flex gap-3 py-1.5 border-b border-zinc-800 text-sm">
+          <li
+            key={event.id}
+            data-testid="month-day-item"
+            className={`flex gap-3 py-1.5 border-b border-zinc-800 text-sm select-none ${draggingId === event.id ? 'opacity-40' : ''}`}
+            // iOS raises a callout on a long press; here a long press picks the event up.
+            style={{ WebkitTouchCallout: 'none' }}
+          >
+            {onItemTouchLift && !event.allDay && (
+              <TouchHoldBinder onLift={(_el, x, y) => onItemTouchLift(event, x, y)} />
+            )}
             <span className="w-20 shrink-0 whitespace-nowrap text-zinc-500 tabular-nums">
               {event.allDay
                 ? t('allDay')

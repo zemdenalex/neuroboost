@@ -233,6 +233,8 @@ export function MonthView(props: MonthViewProps) {
           timeFormat={timeFormat}
           calendarColors={calendarColors}
           onOpenWeek={() => onOpenDay(chosenDay)}
+          onItemTouchLift={(event, x, y) => drag.onItemTouchLift(event, chosenDay, x, y)}
+          draggingId={drag.draggingId}
         />
       )}
     </div>

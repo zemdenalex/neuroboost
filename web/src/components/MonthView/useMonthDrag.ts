@@ -43,10 +43,70 @@ export function useMonthDrag(onMoveToDay: (event: NbEvent, fromDay: string, toDa
     [machine, onPress],
   )
 
+  // The finger (step 8 of docs/tasks-phone-drag.md). The mouse path above
+  // returns on pointerType touch: a finger on a list row scrolls. A held finger
+  // (TouchHoldBinder on DayList's row) picks the event up instead, and from then
+  // on these document touch listeners steer the same machine the mouse does.
+  // They are always attached, so a lift can never outrun them.
+  const touchOwned = useRef(false)
+  const lastTouch = useRef({ x: 0, y: 0 })
+  const onItemTouchLift = useCallback(
+    (event: NbEvent, fromDay: string, x: number, y: number) => {
+      onPress()
+      touchOwned.current = true
+      lastTouch.current = { x, y }
+      machine.down(event, fromDay, x, y)
+    },
+    [machine, onPress],
+  )
+
   useEffect(() => {
-    const move = (e: PointerEvent) => machine.move(e.clientX, e.clientY)
-    const up = (e: PointerEvent) => machine.up(e.clientX, e.clientY)
-    const cancel = () => machine.cancel()
+    const tmove = (e: TouchEvent) => {
+      if (!touchOwned.current) return
+      const t = e.touches[0]
+      if (!t || e.touches.length !== 1) return
+      if (e.cancelable) e.preventDefault()
+      lastTouch.current = { x: t.clientX, y: t.clientY }
+      machine.move(t.clientX, t.clientY)
+    }
+    const tend = (e: TouchEvent) => {
+      // The last finger up is the drop; a second finger lifting is not.
+      if (!touchOwned.current || e.touches.length > 0) return
+      touchOwned.current = false
+      if (e.cancelable) e.preventDefault() // no click on the cell under the finger
+      machine.up(lastTouch.current.x, lastTouch.current.y)
+    }
+    const tstart = (e: TouchEvent) => {
+      // A second finger down while carrying: a pinch, not a drop.
+      if (touchOwned.current && e.touches.length > 1) {
+        touchOwned.current = false
+        machine.cancel()
+      }
+    }
+    const tcancel = () => {
+      if (!touchOwned.current) return
+      touchOwned.current = false
+      machine.cancel()
+    }
+    document.addEventListener('touchstart', tstart)
+    document.addEventListener('touchmove', tmove, { passive: false })
+    document.addEventListener('touchend', tend, { passive: false })
+    document.addEventListener('touchcancel', tcancel)
+    return () => {
+      document.removeEventListener('touchstart', tstart)
+      document.removeEventListener('touchmove', tmove)
+      document.removeEventListener('touchend', tend)
+      document.removeEventListener('touchcancel', tcancel)
+    }
+  }, [machine])
+
+  useEffect(() => {
+    // A finger is steered by the touch listeners above. Its pointer events are
+    // ignored here: a phone fires pointercancel when it takes a gesture for a
+    // scroll, and that must not drop an event the finger is carrying.
+    const move = (e: PointerEvent) => { if (e.pointerType !== 'touch') machine.move(e.clientX, e.clientY) }
+    const up = (e: PointerEvent) => { if (e.pointerType !== 'touch') machine.up(e.clientX, e.clientY) }
+    const cancel = (e: PointerEvent) => { if (e.pointerType !== 'touch') machine.cancel() }
     window.addEventListener('pointermove', move)
     window.addEventListener('pointerup', up)
     window.addEventListener('pointercancel', cancel)
@@ -57,5 +117,5 @@ export function useMonthDrag(onMoveToDay: (event: NbEvent, fromDay: string, toDa
     }
   }, [machine])
 
-  return { onItemPointerDown, over, draggingId, wasDrag: machine.wasDrag }
+  return { onItemPointerDown, onItemTouchLift, over, draggingId, wasDrag: machine.wasDrag }
 }

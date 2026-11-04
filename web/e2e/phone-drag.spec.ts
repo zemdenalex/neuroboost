@@ -440,4 +440,53 @@ test.describe('phone drag', () => {
       await ctx.dispose()
     }
   })
+
+  // Step 8: the phone month («month and day», split). An event in the chosen
+  // day's list, held and dragged onto another day's cell, moves there and keeps
+  // its time. The month's mouse drag returns early on pointerType touch.
+  test('in the phone month, an event held in the day list and dropped on another day moves there, same time', async ({ authedPage, session }) => {
+    test.skip(test.info().project.name !== 'mobile', 'touch drag is a phone gesture')
+    await withSettings(authedPage, { phone_header_variant: 'row', phone_month_variant: 'split' })
+    const ctx = await apiContext(session.token)
+    const me = (await (await ctx.get('/api/auth/me')).json()).data
+    const zone = me.timezone || 'Europe/Moscow'
+    const dayStart = localMidnightUtc(zone, 0)
+    const ymd = (ms: number) => new Intl.DateTimeFormat('en-CA', { timeZone: zone }).format(new Date(ms))
+    const today = ymd(dayStart + 12 * HOUR)
+    // Another day of THIS month: tomorrow, or yesterday on a month's last day
+    // (a fixed «tomorrow» went red by itself on 31.10).
+    const tomorrow = ymd(dayStart + 36 * HOUR)
+    const target = tomorrow.slice(0, 7) === today.slice(0, 7) ? tomorrow : ymd(dayStart - 12 * HOUR)
+    const title = `E2E month drag ${Date.now()}`
+    const startMs = dayStart + 10 * HOUR
+    const made = await ctx.post('/api/events', {
+      data: { title, starts_at: new Date(startMs).toISOString(), ends_at: new Date(startMs + HOUR).toISOString(), all_day: false },
+    })
+    expect(made.ok()).toBe(true)
+    createdId = (await made.json()).data.id
+    try {
+      await authedPage.goto('/calendar')
+      await authedPage.getByTestId('view-month').click()
+      const list = authedPage.getByTestId('month-day-list')
+      await expect(list).toBeVisible({ timeout: 15_000 })
+      const item = list.locator('li', { hasText: title })
+      await expect(item).toBeVisible({ timeout: 10_000 })
+      const ib = (await item.boundingBox())!
+      const cell = authedPage.locator(`[data-testid="month-day"][data-day="${target}"]`)
+      const cb = (await cell.boundingBox())!
+      await fingerDrag(
+        authedPage,
+        { x: ib.x + ib.width / 2, y: ib.y + ib.height / 2 },
+        { x: cb.x + cb.width / 2, y: cb.y + cb.height / 2 },
+        600,
+      )
+      await expect.poll(async () => {
+        const ev = (await (await ctx.get(`/api/events/${createdId}`)).json()).data
+        const at = new Date(ev.starts_at)
+        return `${ymd(at.getTime())} ${new Intl.DateTimeFormat('en-GB', { timeZone: zone, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(at)}`
+      }, { timeout: 8000, message: 'the event moves to the day it was dropped on, at the same time' }).toBe(`${target} 10:00`)
+    } finally {
+      await ctx.dispose()
+    }
+  })
 })
