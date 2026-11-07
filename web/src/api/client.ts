@@ -11,12 +11,15 @@ const API_BASE = (import.meta.env?.VITE_API_URL ?? '/api').replace(/\/$/, '');
 export class ApiError extends Error {
   code?: string;
   raw: unknown;
+  /** HTTP status of the answer; absent when built without one (tests, old callers). */
+  status?: number;
 
-  constructor(message: string, code: string | undefined, raw: unknown) {
+  constructor(message: string, code: string | undefined, raw: unknown, status?: number) {
     super(message);
     this.name = 'ApiError';
     this.code = code;
     this.raw = raw;
+    this.status = status;
   }
 }
 
@@ -125,7 +128,7 @@ async function request<T>(
       'Request failed';
 
     const code = isRecord(errorField) && typeof errorField.code === 'string' ? errorField.code : undefined;
-    throw new ApiError(msg, code, errorField);
+    throw new ApiError(msg, code, errorField, response.status);
   }
 
   if (envelope && 'data' in envelope) {

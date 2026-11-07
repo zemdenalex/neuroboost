@@ -21,6 +21,7 @@ import {
   setStoredToken,
   clearStoredToken,
 } from '../api/client'
+import { endsSession, loadWithRetry } from '../lib/auth/startupSession'
 import { applyCurrentTheme, readThemeChoice, storeThemeChoice } from '../lib/theme/theme'
 import { launchedInTelegram, loadWebApp, pickStartupAuth, prepareWebApp, sessionFitsLaunch } from '../lib/telegram/webApp'
 import { applyFullscreenAtLaunch, watchFullscreen } from '../lib/telegram/fullscreen'
@@ -98,7 +99,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const token = getStoredToken()
       if (token && !isTokenExpired()) {
         try {
-          const userData = await getMe()
+          const userData = await loadWithRetry(getMe)
           if (!sessionFitsLaunch(initData, userData.tg_id)) {
             // Somebody else's session in this WebView: drop it, show the login.
             clearStoredToken()
@@ -115,10 +116,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             i18n.changeLanguage(userData.locale)
             localStorage.setItem('neuroboost-locale', userData.locale)
           }
-        } catch {
-          // If fetching the user fails, clear the stored token to avoid
-          // repeatedly attempting with a stale credential.
-          clearStoredToken()
+        } catch (err) {
+          // Only a rejected credential ends the session. A dropped network or a
+          // 5xx (a redeploy) used to clear the token too and log the person out
+          // (07.11); now the token stays and the next open restores the session.
+          if (endsSession(err)) clearStoredToken()
         }
       } else {
         // Token missing or expired
