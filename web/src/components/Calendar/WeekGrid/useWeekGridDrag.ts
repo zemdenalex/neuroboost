@@ -135,11 +135,11 @@ export function useWeekGridDrag({
     withTouchSlot();
   }, [startCreate, withTouchSlot]);
 
-  const startTouchResize = useCallback((day: DayInfo, event: ProcessedEvent, edge: 'start' | 'end') => {
+  const startTouchResize = useCallback((day: DayInfo, event: ProcessedEvent, edge: 'start' | 'end', at?: { x: number; y: number }) => {
     touchOwned.current = true;
     if (edge === 'start') startResizeStart(day, event);
     else startResizeEnd(day, event);
-    withTouchSlot();
+    withTouchSlot(at);
   }, [startResizeStart, startResizeEnd, withTouchSlot]);
 
   const cancelDrag = useCallback(() => {

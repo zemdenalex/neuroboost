@@ -244,6 +244,30 @@ test.describe('phone drag', () => {
     expect(end - start, 'the event was 2 hours, the circle was dragged one hour down').toBe(3 * HOUR)
   })
 
+  // Same dead zone as the short move (07.11): Chrome sends no touchmove inside
+  // its ~15 px slop, and the threshold counted from the first move that came.
+  // 19 px down = 26 min: the 08:30 end goes to 08:56 → 09:00 on the 15-min grid.
+  test('a short stretch of the circle makes the event longer (the threshold counts from the touch)', async ({ authedPage, session }) => {
+    test.skip(test.info().project.name !== 'mobile', 'touch drag is a phone gesture')
+    const { block, box, startMs } = await seedEventOnScreen(authedPage, session.token)
+    const cdp = await authedPage.context().newCDPSession(authedPage)
+    const c = { x: box.x + box.width / 2, y: box.y + box.height / 2 }
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [c] })
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+    await cdp.detach()
+    const handle = block.getByTestId('resize-handle-bottom')
+    await expect(handle).toBeVisible({ timeout: 5000 })
+    const hb = (await handle.boundingBox())!
+    const from = { x: hb.x + hb.width / 2, y: hb.y + hb.height / 2 }
+    await fingerDrag(authedPage, from, { x: from.x, y: from.y + 19 }, 0)
+    await expect.poll(async () => {
+      const check = await apiContext(session.token)
+      const ev = (await (await check.get(`/api/events/${createdId}`)).json()).data
+      await check.dispose()
+      return (new Date(ev.ends_at).getTime() - startMs) / 60_000
+    }, { timeout: 8000, message: 'minutes from the start to the new end' }).toBe(150)
+  })
+
   /**
    * A free 3-hour window today (09:00–20:00, on the hour), centred on screen.
    * The account is a real one: a hold that lands on someone's event lifts that

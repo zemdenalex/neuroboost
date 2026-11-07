@@ -33,7 +33,7 @@ interface EventBlockProps {
    * A finger put down on one of the circles a selected event shows on a phone:
    * start stretching that edge at once (no hold). Receives the block's element.
    */
-  onTouchResize?: (edge: 'start' | 'end', el: HTMLElement, clientY: number) => void;
+  onTouchResize?: (edge: 'start' | 'end', el: HTMLElement, clientY: number, clientX?: number) => void;
 }
 
 /** Below this height there is room for one circle only; the bottom one is kept. */
@@ -302,7 +302,7 @@ export const EventBlock = memo(function EventBlock({
  */
 function ResizeCircle({ edge, onTouchResize }: {
   edge: 'start' | 'end';
-  onTouchResize: (edge: 'start' | 'end', el: HTMLElement, clientY: number) => void;
+  onTouchResize: (edge: 'start' | 'end', el: HTMLElement, clientY: number, clientX?: number) => void;
 }) {
   return (
     <div
@@ -318,7 +318,7 @@ function ResizeCircle({ edge, onTouchResize }: {
         const t = e.touches[0];
         if (!block || !t) return;
         e.stopPropagation();
-        onTouchResize(edge, block, t.clientY);
+        onTouchResize(edge, block, t.clientY, t.clientX);
       }}
     >
       <span className="m-0.5 h-3 w-3 rounded-full border-2 border-blue-500 bg-white shadow" />
@@ -363,7 +363,7 @@ function Grip({ onTouchLift, vibrate }: {
 
 /** The bar at the bottom of an event with the grip on: stretches the end at once. */
 function GripBar({ onTouchResize }: {
-  onTouchResize: (edge: 'start' | 'end', el: HTMLElement, clientY: number) => void;
+  onTouchResize: (edge: 'start' | 'end', el: HTMLElement, clientY: number, clientX?: number) => void;
 }) {
   return (
     <div
@@ -377,7 +377,7 @@ function GripBar({ onTouchResize }: {
         const block = e.currentTarget.parentElement;
         const t = e.touches[0];
         if (!block || !t || e.touches.length !== 1) return;
-        onTouchResize('end', block, t.clientY);
+        onTouchResize('end', block, t.clientY, t.clientX);
       }}
     >
       <span className="h-[3px] w-5 rounded-full bg-current opacity-70" />
