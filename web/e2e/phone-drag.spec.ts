@@ -505,6 +505,63 @@ test.describe('phone drag', () => {
     }).toBe(24 * HOUR)
   })
 
+  // Review 07.11: a flip that crosses into another week went through the week
+  // change, whose reset put the view on today (current week), the week's Monday,
+  // or the ?date= day — so the held event was dropped days away from the day the
+  // finger stepped to. The clock is pinned (Wed 04.11) and the dates are written
+  // out, so the boundary is crossed whatever day the suite runs on.
+  test('an edge flip from Sunday crosses into the next week on its Monday, not on today', async ({ authedPage, session }) => {
+    test.skip(test.info().project.name !== 'mobile', 'touch drag is a phone gesture')
+    const ctx = await apiContext(session.token)
+    const me = (await (await ctx.get('/api/auth/me')).json()).data
+    const zone = me.timezone || 'Europe/Moscow'
+    const ymd = (ms: number) => new Intl.DateTimeFormat('en-CA', { timeZone: zone }).format(new Date(ms))
+    // 06:30 on Sunday 01.11 in the account's zone: midnight of the 1st, found from noon UTC.
+    const noon = Date.UTC(2026, 10, 1, 12)
+    const offsetMs = noon - Date.parse(new Date(noon).toLocaleString('en-US', { timeZone: zone }) + ' UTC')
+    const startMs = Date.UTC(2026, 10, 1, 6, 30) + offsetMs
+    const title = `E2E phone drag ${Date.now()}`
+    const made = await ctx.post('/api/events', {
+      data: { title, starts_at: new Date(startMs).toISOString(), ends_at: new Date(startMs + 2 * HOUR).toISOString(), all_day: false },
+    })
+    expect(made.ok()).toBe(true)
+    createdId = (await made.json()).data.id
+    await ctx.dispose()
+
+    await authedPage.clock.setFixedTime(new Date(Date.UTC(2026, 10, 4, 9)))
+    await authedPage.goto('/calendar?date=2026-11-01')
+    await authedPage.waitForLoadState('networkidle')
+    const block = authedPage.locator(`[title^="${title}"]`).first()
+    await expect(block).toBeVisible({ timeout: 15_000 })
+    await block.evaluate((el) => el.scrollIntoView({ block: 'center', behavior: 'instant' }))
+    await authedPage.evaluate(() => new Promise((r) => requestAnimationFrame(() => r(null))))
+    const box = (await block.boundingBox())!
+    const x = box.x + box.width / 2
+    const y = box.y + box.height / 2
+    const width = authedPage.viewportSize()!.width
+    const cdp = await authedPage.context().newCDPSession(authedPage)
+    const touch = (type: 'touchStart' | 'touchMove' | 'touchEnd', p?: { x: number; y: number }) =>
+      cdp.send('Input.dispatchTouchEvent', { type, touchPoints: p ? [p] : [] })
+    const title2 = authedPage.getByTestId('calendar-period-title')
+    const before = await title2.textContent()
+    await touch('touchStart', { x, y })
+    await authedPage.waitForTimeout(600)
+    for (let i = 1; i <= 6; i++) {
+      await touch('touchMove', { x: x + ((width - 46 - x) * i) / 6, y })
+      await authedPage.waitForTimeout(16)
+    }
+    await touch('touchMove', { x: width - 6, y })
+    await expect(title2).not.toHaveText(before ?? '', { timeout: 3000 })
+    await touch('touchEnd')
+    await cdp.detach()
+    await expect.poll(async () => {
+      const check = await apiContext(session.token)
+      const ev = (await (await check.get(`/api/events/${createdId}`)).json()).data
+      await check.dispose()
+      return ymd(new Date(ev.starts_at).getTime())
+    }, { timeout: 8000, message: 'the day the event was dropped on' }).toBe('2026-11-02')
+  })
+
   // Step 9, the 3-day view (a phone on its side, 480–767 px). A flip shifts the
   // view by ONE day, so the event steps on instead of jumping three.
   // (A second test, «a drop is not also a swipe», was dropped: it stayed green

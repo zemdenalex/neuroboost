@@ -56,6 +56,10 @@ export function WeekGrid({
   const [mobileDayOffset, setMobileDayOffset] = useState(
     () => initialMobileDayOffset(currentWeekOffset, timezone)
   );
+  // An edge flip (step 9) set the last offset change; and that flip rolled the
+  // week, so the week-change reset must leave the offset alone once.
+  const edgeFlipped = useRef(false);
+  const flipRolledWeek = useRef(false);
   const isMobile = visibleDays < 7;
 
   // Open on the current hour, not 00:00 (mobile tour 25.09, MW11). Once, on
@@ -103,6 +107,10 @@ export function WeekGrid({
   // (it landed on Monday before this change). Not covered by the mobile specs —
   // both drag specs skip at 375px and recurring-scope never swipes.
   useEffect(() => {
+    // A held event that flipped across the boundary keeps the day it stepped
+    // to: the rollover below already set that offset, and landing on today (or
+    // Monday, or ?date=) would drop the event days away (review 07.11).
+    if (flipRolledWeek.current) { flipRolledWeek.current = false; return; }
     setMobileDayOffset(initialMobileDayOffset(currentWeekOffset, timezone, new Date(), focusDay));
   }, [currentWeekOffset, timezone, focusDay]);
 
@@ -110,16 +118,24 @@ export function WeekGrid({
   useEffect(() => {
     if (visibleDays >= 7) return; // desktop handles this via onWeekChange directly
     const daysInWeek = 7;
+    // Consumed here whether or not the week rolls: only the step that crossed
+    // the boundary may skip the reset.
+    const byFlip = edgeFlipped.current;
+    edgeFlipped.current = false;
+    const roll = (delta: -1 | 1) => {
+      flipRolledWeek.current = byFlip;
+      onWeekChange?.(currentWeekOffset + delta);
+    };
     // Under the week strip the shown day must stay inside the strip's week, so
     // a swipe back from Monday rolls at once instead of at −7 (review of 3fe9456).
     if (weekStrip && visibleDays === 1 && mobileDayOffset < 0) {
-      onWeekChange?.(currentWeekOffset - 1);
+      roll(-1);
       setMobileDayOffset(prev => prev + daysInWeek);
     } else if (mobileDayOffset >= daysInWeek) {
-      onWeekChange?.(currentWeekOffset + 1);
+      roll(1);
       setMobileDayOffset(prev => prev - daysInWeek);
     } else if (mobileDayOffset <= -daysInWeek) {
-      onWeekChange?.(currentWeekOffset - 1);
+      roll(-1);
       setMobileDayOffset(prev => prev + daysInWeek);
     }
   }, [mobileDayOffset, visibleDays, currentWeekOffset, onWeekChange, weekStrip]);
@@ -213,7 +229,9 @@ export function WeekGrid({
     allDayHeightRef, newEventMinutes,
     // One day per flip, in the 3-day view too: the event steps to the next day
     // instead of jumping three.
-    onEdgeFlip: visibleDays < 7 && phoneDrag.edgeFlip ? (dir) => setMobileDayOffset(prev => prev + dir) : undefined,
+    onEdgeFlip: visibleDays < 7 && phoneDrag.edgeFlip
+      ? (dir) => { edgeFlipped.current = true; setMobileDayOffset(prev => prev + dir); }
+      : undefined,
     touchSlotMin: phoneDrag.stepMin,
   });
 
