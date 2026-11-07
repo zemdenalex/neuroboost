@@ -210,6 +210,9 @@ export function WeekGrid({
   } = useWeekGridDrag({
     mondayUtc0: adjustedStart, visibleDays, timezone, scrollRef, containerRef, callbacks: { onCreate, onMoveOrResize },
     allDayHeightRef, newEventMinutes,
+    // One day per flip, in the 3-day view too: the event steps to the next day
+    // instead of jumping three.
+    onEdgeFlip: visibleDays < 7 ? (dir) => setMobileDayOffset(prev => prev + dir) : undefined,
   });
 
   // The all-day bar: a thin strip on a phone while empty (Denis 25.09, variant A).

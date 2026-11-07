@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { DAY_MS, ALL_DAY_HEIGHT, DAY_HEADER_HEIGHT, EDGE_THRESHOLD, MIN_SLOT_MIN, DRAG_THRESHOLD_PX } from './weekgrid.constants';
+import { DAY_MS, ALL_DAY_HEIGHT, DAY_HEADER_HEIGHT, EDGE_THRESHOLD, EDGE_FLIP_PX, EDGE_FLIP_MS, MIN_SLOT_MIN, DRAG_THRESHOLD_PX } from './weekgrid.constants';
 import { topToMins, snapMin, clampMins, utcToLocalMinutes } from './weekgrid.utils';
 import { buildResizeState, resizeCursorMs } from './resizeCoords';
 import { moveGrabOffsetMs, moveRangeMs, columnForMs, minutesIntoColumn } from './moveCoords';
@@ -18,10 +18,15 @@ interface UseDragProps {
   callbacks: Pick<WeekGridCallbacks, 'onCreate' | 'onMoveOrResize'>;
   /** Length of an event made by a click or a hold that never moved. */
   newEventMinutes: number;
+  /**
+   * Phone only: shift the visible days by one. Called while a finger holds an
+   * event at the left (-1) or right (+1) edge of the grid. Absent on desktop.
+   */
+  onEdgeFlip?: (dir: -1 | 1) => void;
 }
 
 export function useWeekGridDrag({
-  mondayUtc0, visibleDays, timezone, scrollRef, containerRef, callbacks, allDayHeightRef, newEventMinutes,
+  mondayUtc0, visibleDays, timezone, scrollRef, containerRef, callbacks, allDayHeightRef, newEventMinutes, onEdgeFlip,
 }: UseDragProps) {
   const [drag, setDrag] = useState<DragState>(null);
   const dragMeta = useRef<DragMeta | null>(null);
@@ -31,6 +36,29 @@ export function useWeekGridDrag({
   const moveRef = useRef<((p: { clientX: number; clientY: number }) => void) | null>(null);
   // Declared here, used by the tick below: whether the drag in progress is a finger's.
   const touchOwned = useRef(false);
+  // The edge flip: which edge the finger is parked at and the pending timer. In a
+  // ref, not state: the drag effect re-registers on every move, and a timer kept
+  // in its closure would be cleared and restarted by each one.
+  const edgeFlip = useRef<{ dir: -1 | 1; timer: ReturnType<typeof setTimeout> } | null>(null);
+  // The node the finger first touched. A touch keeps targeting it for the whole
+  // gesture, even after React removes it from the page — and a removed node no
+  // longer bubbles to `document`. An edge flip removes exactly that node (its day
+  // leaves the screen), so the drag listens on it as well as on the document; the
+  // WeakSet drops the second delivery while it is still attached. Without this
+  // the drag went deaf after the first flip and paged on forever (e2e, 07.11).
+  const touchTarget = useRef<EventTarget | null>(null);
+  const handledTouches = useRef(new WeakSet<Event>());
+  useEffect(() => {
+    const record = (ev: TouchEvent) => { if (ev.touches.length === 1) touchTarget.current = ev.target; };
+    document.addEventListener('touchstart', record, { capture: true, passive: true });
+    return () => document.removeEventListener('touchstart', record, { capture: true });
+  }, []);
+  const onEdgeFlipRef = useRef(onEdgeFlip);
+  onEdgeFlipRef.current = onEdgeFlip;
+  const stopEdgeFlip = useCallback(() => {
+    if (edgeFlip.current) clearTimeout(edgeFlip.current.timer);
+    edgeFlip.current = null;
+  }, []);
   const { startAutoScroll, stopAutoScroll } = useAutoScroll(scrollRef, () => {
     // Fingers only. A mouse parked at the edge has always stopped scrolling on its
     // next move, and desktop specs (crossday-resize) rely on a parked cursor not
@@ -95,9 +123,10 @@ export function useWeekGridDrag({
 
   const cancelDrag = useCallback(() => {
     touchOwned.current = false;
+    stopEdgeFlip();
     setDrag(null);
     stopAutoScroll();
-  }, [stopAutoScroll]);
+  }, [stopAutoScroll, stopEdgeFlip]);
 
   useEffect(() => {
     if (!drag) return;
@@ -132,7 +161,25 @@ export function useWeekGridDrag({
       if (yInScroll < EDGE_THRESHOLD && scrollRef.current.scrollTop > 0) startAutoScroll('up');
       else if (yInScroll > timeGridHeight - EDGE_THRESHOLD) startAutoScroll('down');
       else stopAutoScroll();
-      
+
+      // Edge flip: a finger moving an event, parked at a side edge. The timer
+      // flips and re-arms itself, so holding there keeps paging; leaving the band
+      // or switching edges starts over.
+      const flipDir: -1 | 1 | 0 = !touchOwned.current || drag.kind !== 'move' || !onEdgeFlipRef.current ? 0
+        : ev.clientX < containerRect.left + EDGE_FLIP_PX ? -1
+        : ev.clientX > containerRect.right - EDGE_FLIP_PX ? 1
+        : 0;
+      if (flipDir === 0) stopEdgeFlip();
+      else if (edgeFlip.current?.dir !== flipDir) {
+        stopEdgeFlip();
+        const arm = (): ReturnType<typeof setTimeout> => setTimeout(() => {
+          if (!edgeFlip.current) return;
+          onEdgeFlipRef.current?.(flipDir);
+          edgeFlip.current = { dir: flipDir, timer: arm() };
+        }, EDGE_FLIP_MS);
+        edgeFlip.current = { dir: flipDir, timer: arm() };
+      }
+
       // Target day & minutes
       const dayWidth = containerRect.width / visibleDays;
       const dayIndex = Math.max(0, Math.min(visibleDays - 1, Math.floor((ev.clientX - containerRect.left) / dayWidth)));
@@ -201,6 +248,7 @@ export function useWeekGridDrag({
         handleDragComplete(drag, callbacks.onCreate, callbacks.onMoveOrResize, newEventMinutes);
       }
       touchOwned.current = false;
+      stopEdgeFlip();
       setDrag(null);
     };
 
@@ -224,21 +272,37 @@ export function useWeekGridDrag({
     const onTouchCancel = () => {
       if (!touchOwned.current) return;
       touchOwned.current = false;
+      stopEdgeFlip();
       setDrag(null);
       stopAutoScroll();
     };
 
+    const once = <E extends Event>(fn: (ev: E) => void) => (ev: E) => {
+      if (handledTouches.current.has(ev)) return;
+      handledTouches.current.add(ev);
+      fn(ev);
+    };
+    const touchMove = once(onTouchMove);
+    const touchEnd = once(onTouchEnd);
+    const touchCancel = once(onTouchCancel);
+    const touchTargets: EventTarget[] = [document];
+    if (touchOwned.current && touchTarget.current && touchTarget.current !== document) touchTargets.push(touchTarget.current);
+
     document.addEventListener('mousemove', onMove);
     document.addEventListener('mouseup', onUp);
-    document.addEventListener('touchmove', onTouchMove, { passive: false });
-    document.addEventListener('touchend', onTouchEnd, { passive: false });
-    document.addEventListener('touchcancel', onTouchCancel);
+    for (const t of touchTargets) {
+      t.addEventListener('touchmove', touchMove as EventListener, { passive: false });
+      t.addEventListener('touchend', touchEnd as EventListener, { passive: false });
+      t.addEventListener('touchcancel', touchCancel as EventListener);
+    }
     return () => {
       document.removeEventListener('mousemove', onMove);
       document.removeEventListener('mouseup', onUp);
-      document.removeEventListener('touchmove', onTouchMove);
-      document.removeEventListener('touchend', onTouchEnd);
-      document.removeEventListener('touchcancel', onTouchCancel);
+      for (const t of touchTargets) {
+        t.removeEventListener('touchmove', touchMove as EventListener);
+        t.removeEventListener('touchend', touchEnd as EventListener);
+        t.removeEventListener('touchcancel', touchCancel as EventListener);
+      }
       // This cleanup runs after EVERY pointer move (the drag state changes, so the
       // effect re-registers). For the mouse that has always stopped the edge scroll
       // each time (kept: see the tick above). A finger that stands still sends no
@@ -246,14 +310,22 @@ export function useWeekGridDrag({
       // when the drag ends, below.
       if (!touchOwned.current) stopAutoScroll();
     };
-  }, [drag, mondayUtc0, visibleDays, callbacks, newEventMinutes, startAutoScroll, stopAutoScroll, scrollRef, containerRef]);
+  }, [drag, mondayUtc0, visibleDays, callbacks, newEventMinutes, startAutoScroll, stopAutoScroll, stopEdgeFlip, scrollRef, containerRef]);
+
+  // After a flip the finger is still parked and sends no move, so the ghost (and
+  // the drop) would stay on the day that just left the screen. Re-run the last
+  // move against the new days. Declared after the effect above, so it runs after
+  // that effect has handed moveRef the onMove that sees the new mondayUtc0.
+  useEffect(() => {
+    if (touchOwned.current && lastPoint.current) moveRef.current?.(lastPoint.current);
+  }, [mondayUtc0]);
 
   // The drag ended (or the grid went away): stop any edge scroll still running.
   const dragging = drag !== null;
   useEffect(() => {
-    if (!dragging) { stopAutoScroll(); lastPoint.current = null; moveRef.current = null; }
-  }, [dragging, stopAutoScroll]);
-  useEffect(() => stopAutoScroll, [stopAutoScroll]);
+    if (!dragging) { stopAutoScroll(); stopEdgeFlip(); lastPoint.current = null; moveRef.current = null; }
+  }, [dragging, stopAutoScroll, stopEdgeFlip]);
+  useEffect(() => () => { stopAutoScroll(); stopEdgeFlip(); }, [stopAutoScroll, stopEdgeFlip]);
 
   return { drag, dragMeta, startCreate, startMove, startTouchMove, startTouchCreate, startTouchResize, startResizeStart, startResizeEnd, cancelDrag, startAutoScroll, stopAutoScroll };
 }

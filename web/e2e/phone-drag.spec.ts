@@ -441,6 +441,90 @@ test.describe('phone drag', () => {
     }
   })
 
+  // Step 9: a held event parked at the right edge of the day flips the day
+  // after ~0.8 s and stays in the finger. The column it was lifted from leaves
+  // the screen with the flip; a touch keeps targeting the node it started on even
+  // after React removes it, so a drag that listened only on `document` would go
+  // deaf right here and the drop would never be saved.
+  test('a held event parked at the right edge flips to the next day and is dropped there, same time', async ({ authedPage, session }) => {
+    test.skip(test.info().project.name !== 'mobile', 'touch drag is a phone gesture')
+    const { box, startMs } = await seedEventOnScreen(authedPage, session.token)
+    const x = box.x + box.width / 2
+    const y = box.y + box.height / 2
+    const width = authedPage.viewportSize()!.width
+    const cdp = await authedPage.context().newCDPSession(authedPage)
+    const touch = (type: 'touchStart' | 'touchMove' | 'touchEnd', p?: { x: number; y: number }) =>
+      cdp.send('Input.dispatchTouchEvent', { type, touchPoints: p ? [p] : [] })
+    await touch('touchStart', { x, y })
+    await authedPage.waitForTimeout(600)
+    const title = authedPage.getByTestId('calendar-period-title')
+    const before = await title.textContent()
+    const edge = width - 6
+    for (let i = 1; i <= 6; i++) {
+      await touch('touchMove', { x: x + ((edge - 40 - x) * i) / 6, y })
+      await authedPage.waitForTimeout(16)
+    }
+    // Into the band in one move, so the timer starts at a known moment; wait for
+    // the day the user sees to change, then let go. Waiting
+    // on the header, not a fixed sleep: CDP round trips stretched a fixed 1.1 s
+    // past the second flip at 1.6 s (07.11).
+    await touch('touchMove', { x: edge, y })
+    const parked = Date.now()
+    await expect(title, 'parked at the right edge, the day flips').not.toHaveText(before ?? '', { timeout: 3000 })
+    const flippedAfter = Date.now() - parked
+    // Let go right there, without another move: the finger sent nothing since the
+    // flip, so the drop is right only if the drag re-reads the new day by itself.
+    await touch('touchEnd')
+    expect(flippedAfter, 'the flip waits about 0.8 s, it is not instant').toBeGreaterThan(500)
+    await cdp.detach()
+
+    await expect.poll(() => startOf(session.token, createdId!).then((ms) => ms - startMs), {
+      timeout: 8000,
+      message: 'the event lands on the next day at the same time',
+    }).toBe(24 * HOUR)
+  })
+
+  // Step 9, the 3-day view (a phone on its side, 480–767 px). A flip shifts the
+  // view by ONE day, so the event steps on instead of jumping three.
+  // (A second test, «a drop is not also a swipe», was dropped: it stayed green
+  // with the swipe guard sabotaged — the lifted block's node leaves React's tree,
+  // so the grid's swipe never sees that touchend. 07.11, test-audit.)
+  test.describe('3-day view', () => {
+    async function threeDay(authedPage: Page, token: string) {
+      await authedPage.setViewportSize({ width: 600, height: 800 })
+      const seeded = await seedEventOnScreen(authedPage, token)
+      const columns = await authedPage.getByTestId('calendar-period-title').textContent()
+      return { ...seeded, columns }
+    }
+    async function finger(page: Page) {
+      const cdp = await page.context().newCDPSession(page)
+      const touch = (type: 'touchStart' | 'touchMove' | 'touchEnd', p?: { x: number; y: number }) =>
+        cdp.send('Input.dispatchTouchEvent', { type, touchPoints: p ? [p] : [] })
+      return { touch, done: () => cdp.detach() }
+    }
+
+    test('parked at the right edge, the view moves on by one day and the event lands in its last column', async ({ authedPage, session }) => {
+      test.skip(test.info().project.name !== 'mobile', 'touch drag is a phone gesture')
+      const { box, startMs, columns } = await threeDay(authedPage, session.token)
+      const x = box.x + box.width / 2
+      const y = box.y + box.height / 2
+      const { touch, done } = await finger(authedPage)
+      await touch('touchStart', { x, y })
+      await authedPage.waitForTimeout(600)
+      await touch('touchMove', { x: x + 20, y })
+      await touch('touchMove', { x: 600 - 6, y })
+      const title = authedPage.getByTestId('calendar-period-title')
+      await expect(title).not.toHaveText(columns ?? '', { timeout: 3000 })
+      await touch('touchEnd')
+      await done()
+      // Today was the first of three columns; one flip makes the last column
+      // today + 3. Three flips' worth (a whole-page jump) would be today + 5.
+      await expect.poll(() => startOf(session.token, createdId!).then((ms) => (ms - startMs) / (24 * HOUR)), {
+        timeout: 8000, message: 'days moved',
+      }).toBe(3)
+    })
+  })
+
   // Step 8: the phone month («month and day», split). An event in the chosen
   // day's list, held and dragged onto another day's cell, moves there and keeps
   // its time. The month's mouse drag returns early on pointerType touch.

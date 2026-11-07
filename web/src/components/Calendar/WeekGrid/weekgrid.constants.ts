@@ -21,6 +21,14 @@ export const TOUCH_SLOP_PX = 8;
 
 // Auto-scroll settings
 export const EDGE_THRESHOLD = 24;
+
+/**
+ * Phone: a held event parked this close to the left or right edge of the grid
+ * flips the day after EDGE_FLIP_MS, and keeps flipping while it stays there
+ * (step 9 of docs/tasks-phone-drag.md: «через ~0,8 с день листается»).
+ */
+export const EDGE_FLIP_PX = 32;
+export const EDGE_FLIP_MS = 800;
 export const SCROLL_SPEED = 8;
 
 // Mobile breakpoints for responsive day count — lib/calendar/visibleDays.
