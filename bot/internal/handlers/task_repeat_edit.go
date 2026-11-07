@@ -98,8 +98,8 @@ func (h *Handler) handleTaskNagMenu(chatID int64, messageID int, taskID string) 
 		return
 	}
 	h.editOrSend(chatID, messageID, h.t(chatID,
-		"🔔 <b>Долбить</b>\n\nЕсли напоминание осталось без ответа, через сколько повторить?",
-		"🔔 <b>Nag</b>\n\nIf a reminder goes unanswered, how soon should it come back?"),
+		"🔔 <b>Постоянные напоминания</b>\n\nЕсли напоминание осталось без ответа, через сколько повторить? Повторяю, пока не ответишь или не выключишь.",
+		"🔔 <b>Persistent reminders</b>\n\nIf a reminder goes unanswered, how soon should it come back? I repeat until you answer or switch it off."),
 		keyboards.TaskNag(h.lang(chatID), taskID, t.NagMinutes))
 }
 
@@ -119,8 +119,8 @@ func (h *Handler) handleTaskNagSet(chatID int64, messageID int, taskID, code str
 
 	if minutes == 0 {
 		h.sendText(chatID, h.t(chatID,
-			"🔔 Не буду долбить. Напоминание придёт один раз.",
-			"🔔 No nagging. The reminder arrives once."))
+			"🔔 Постоянные напоминания выключены. Напоминание придёт один раз.",
+			"🔔 Persistent reminders are off. The reminder arrives once."))
 	} else {
 		h.sendText(chatID, fmt.Sprintf(h.t(chatID,
 			"🔔 Буду повторять каждые %d мин, пока не ответишь.",

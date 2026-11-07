@@ -59,7 +59,8 @@ func (h *Handler) quickSaveTask(chatID int64, raw string, r parse.TaskResult) {
 	// The card the old path showed before saving, now as the receipt: the
 	// user sees what was understood (due, priority, repeat) and can fix it.
 	text := h.t(chatID, "✅ <b>Задача создана</b>\n", "✅ <b>Task created</b>\n") +
-		taskCardText(h.lang(chatID), r, h.timezone(chatID), h.priorityStyle(chatID))
+		taskCardText(h.lang(chatID), r, h.timezone(chatID), h.priorityStyle(chatID)) +
+		h.attachTaskRule(chatID, task.ID, r.RemindRule, r.DueDate != nil)
 	h.sendHTMLWithKeyboard(chatID, text, keyboards.QuickSaved(h.lang(chatID), task.ID))
 }
 

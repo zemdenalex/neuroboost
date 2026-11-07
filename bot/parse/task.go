@@ -26,6 +26,10 @@ type TaskResult struct {
 	// the same way an event's card does. Never a guess, never a word left in
 	// the title.
 	RepeatAsked bool
+	// RemindRule: «напоминать каждый день в 12» — reminders until the due.
+	RemindRule *RemindRule
+	// BadDate: a date that does not exist («31.11»), not rolled to 01.12.
+	BadDate string
 }
 
 var (
@@ -50,8 +54,18 @@ var dueDatePrepositions = map[string]bool{"на": true, "к": true, "до": true
 // the user typed is worse than not parsing it: they lose text and never learn
 // why. Only a marker that matched in full is cut out.
 func ParseTask(line string, now time.Time) TaskResult {
-	res := TaskResult{Tags: []string{}}
-	text := strings.TrimSpace(line)
+	text, rule := ExtractRemindRule(strings.TrimSpace(line))
+	res := parseTask(text, now, rule)
+	// A day rule with no due to run up to: the line means what it meant
+	// before rules existed («напомни каждый день …» = a daily repeat).
+	if rule != nil && rule.EveryDays > 0 && res.DueDate == nil && res.BadDate == "" {
+		return parseTask(strings.TrimSpace(line), now, nil)
+	}
+	return res
+}
+
+func parseTask(text string, now time.Time, rule *RemindRule) TaskResult {
+	res := TaskResult{Tags: []string{}, RemindRule: rule}
 	if text == "" {
 		return res
 	}
@@ -124,6 +138,14 @@ func ParseTask(line string, now time.Time) TaskResult {
 			}
 			if mo >= 1 && mo <= 12 && d >= 1 && d <= 31 {
 				candidate := time.Date(year, time.Month(mo), d, 0, 0, 0, 0, now.Location())
+				if candidate.Day() != d {
+					// «31.11»: time.Date would make it 01.12 without a word.
+					res.BadDate = strings.TrimSpace(m[0])
+					text = strings.Replace(text, m[0], " ", 1)
+					res.Title = cleanTitle(text)
+					res.Title, res.Rrule, res.RepeatAsked = taskRepeat(res.Title)
+					return res
+				}
 				if m[3] == "" && candidate.Before(day) {
 					candidate = candidate.AddDate(1, 0, 0)
 				}

@@ -140,6 +140,13 @@ func recogniseExplicitDate(toks []Token, now time.Time, d *Draft) bool {
 			year, _ = strconv.Atoi(m[4])
 		}
 		candidate := time.Date(year, time.Month(month), day, 0, 0, 0, 0, now.Location())
+		if candidate.Day() != day {
+			// «31.11» does not exist; time.Date would quietly make it 01.12.
+			// Cut from the title, and the card asks for the day.
+			d.BadDate = t.Norm
+			toks[i].Field = FieldDay
+			continue
+		}
 		// A bare day.month already gone by means next year: nobody schedules
 		// into the past on purpose.
 		if m[4] == "" && candidate.Before(time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())) {

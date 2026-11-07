@@ -184,6 +184,11 @@ func (h *Handler) handleEventCard(chatID int64, messageID int, eventID string) {
 	// first screen (keyboards.EventEditor).
 	st := draftFromEvent(*ev, h.location(chatID))
 	st.CalendarName = h.calendarName(chatID, ev.CalendarID)
+	// The rule has its own door on the API, so it is read separately. A failed
+	// read leaves it nil and RuleTouched false: the save then leaves it alone.
+	if rule, err := h.api.RemindRule(us.AuthToken, "events", parentID); err == nil {
+		st.D.RemindRule = rule
+	}
 	us.CurrentFlow = "new_event"
 	us.FlowStep = "card"
 	us.FlowData = map[string]any{"draft": &st, "series": isInstance, "rawID": eventID}
@@ -261,6 +266,11 @@ func (h *Handler) updateFromDraft(chatID int64, messageID int, st draftState) {
 
 	err := h.api.UpdateEvent(us.AuthToken, st.EventID, req)
 	h.store.ClearFlow(chatID)
+	if err == nil {
+		if note := h.syncEventRule(chatID, st.EventID, st); note != "" {
+			h.sendText(chatID, strings.TrimSpace(note))
+		}
+	}
 	if err != nil {
 		h.editOrSend(chatID, messageID,
 			h.t(chatID, "❌ Не удалось сохранить: ", "❌ Could not save: ")+format.Escape(h.errorText(chatID, err)),
