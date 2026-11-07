@@ -42,6 +42,11 @@ type draftState struct {
 	// A plain []int would collapse the first two, and the collapse is the
 	// defect this product hit on 12.08.
 	ReminderOffsets *[]int
+
+	// RuleTouched: the «⏰ До срока» screen changed D.RemindRule, so the save
+	// must send it even when it is now nil (= remove). An untouched nil sends
+	// nothing — a rule that failed to load is not a rule to delete.
+	RuleTouched bool
 }
 
 // Question names a thing the card cannot create without. The empty string
@@ -291,6 +296,7 @@ func renderDraft(lang i18n.Lang, st draftState, now time.Time) string {
 			i18n.T(lang, "за "+joined, joined+" before")))
 	}
 
+	b.WriteString(ruleLine(lang, st.D.RemindRule, st.D.BadDate))
 	b.WriteString(fieldLine("🏷", i18n.T(lang, "Теги:", "Tags:"),
 		orNone(lang, format.Escape(strings.Join(st.D.Tags, ", ")))))
 	b.WriteString(fieldLine("🎨", i18n.T(lang, "Цвет:", "Colour:"),

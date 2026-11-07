@@ -51,10 +51,16 @@ func TaskActions(lang i18n.Lang, taskID string, repeats bool, linkedEventID stri
 		),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🔁 Повтор", "🔁 Repeat"), "task_rp_"+taskID),
-			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🔔 Долбить", "🔔 Nag"), "task_ng_"+taskID),
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "🔔 Постоянные напоминания", "🔔 Persistent reminders"), "task_ng_"+taskID),
 		),
-		doneRow(lang, taskID, repeats),
 	)
+	// «⏰ До срока» runs up to ONE deadline, so a series has no place for it
+	// (v1, docs/tasks-napominaniya-do-sroka.md «Не входит»).
+	if !repeats {
+		rows = append(rows, tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "⏰ Напоминать до срока", "⏰ Remind until due"), "rrt_m_"+taskID)))
+	}
+	rows = append(rows, doneRow(lang, taskID, repeats))
 	if dayTasks {
 		rows = append(rows, tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(i18n.T(lang, "📌 В задачи дня", "📌 To day tasks"), "dt_pin_"+taskID)))
@@ -135,7 +141,7 @@ func TaskNag(lang i18n.Lang, taskID string, current int) tgbotapi.InlineKeyboard
 			btn(i18n.T(lang, "Час", "An hour"), "60"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			btn(i18n.T(lang, "Не долбить", "Don't nag"), "off"),
+			btn(i18n.T(lang, "Выключить", "Off"), "off"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
 			HelpButton(lang, HelpNag),

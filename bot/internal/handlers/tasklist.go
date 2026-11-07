@@ -261,6 +261,9 @@ func (h *Handler) showTaskCard(chatID int64, text string) {
 	if r.RepeatAsked {
 		us.FlowData["repeat_asked"] = true
 	}
+	if r.RemindRule != nil {
+		us.FlowData["remind_rule"] = r.RemindRule
+	}
 	us.FlowStep = "card"
 	// The kind can still be changed when the card came from a typed line.
 	raw, fromLine := us.FlowData["raw"].(string)
@@ -300,11 +303,12 @@ func (h *Handler) createTaskList(chatID int64, messageID int, parsed []parse.Tas
 		if len(p.Tags) > 0 {
 			req.Tags = p.Tags
 		}
-		if _, err := h.api.CreateTask(us.AuthToken, req); err != nil {
+		task, err := h.api.CreateTask(us.AuthToken, req)
+		if err != nil {
 			failed = append(failed, format.Escape(p.Title)+": "+format.Escape(h.errorText(chatID, err)))
 			continue
 		}
-		made = append(made, format.Escape(p.Title))
+		made = append(made, format.Escape(p.Title)+h.attachTaskRule(chatID, task.ID, p.RemindRule, p.DueDate != nil))
 	}
 
 	h.store.ClearFlow(chatID)

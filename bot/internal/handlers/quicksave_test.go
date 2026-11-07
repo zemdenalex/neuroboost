@@ -22,6 +22,7 @@ type taskAPI struct {
 	mu      sync.Mutex
 	created []map[string]any
 	deleted []string
+	rules   map[string]map[string]any // PUT …/remind-rule, by path
 }
 
 func (a *taskAPI) handler() http.HandlerFunc {
@@ -40,6 +41,14 @@ func (a *taskAPI) handler() http.HandlerFunc {
 			w.WriteHeader(http.StatusCreated)
 			_ = json.NewEncoder(w).Encode(map[string]any{"data": map[string]any{
 				"id": "11111111-2222-3333-4444-555555555555", "title": body["title"], "status": "TODO"}})
+		case r.Method == http.MethodPut && strings.HasSuffix(r.URL.Path, "/remind-rule"):
+			var body map[string]any
+			_ = json.NewDecoder(r.Body).Decode(&body)
+			if a.rules == nil {
+				a.rules = map[string]map[string]any{}
+			}
+			a.rules[r.URL.Path] = body
+			_ = json.NewEncoder(w).Encode(map[string]any{"data": body})
 		case r.Method == http.MethodDelete && strings.HasPrefix(r.URL.Path, "/api/tasks/"):
 			a.deleted = append(a.deleted, strings.TrimPrefix(r.URL.Path, "/api/tasks/"))
 			w.WriteHeader(http.StatusNoContent)
@@ -154,5 +163,36 @@ func TestLinesThatStillAsk(t *testing.T) {
 		if len(a.created) != 0 {
 			t.Errorf("%q was saved at once; it needs a question first", line)
 		}
+	}
+}
+
+// «Напоминать до срока» typed in the line (Denis, 07.11) reaches the API: the
+// task is created without the clause in its title, and the rule is PUT to its
+// own door. A line with the clause but no due date stores no rule and says so.
+func TestARuleTypedInTheLineIsSentAfterTheTask(t *testing.T) {
+	h, fake, a, chat := quickSaveHandler(t)
+	say(h, chat, "сдать отчёт 20.11 напоминать каждый день в 9 и 18")
+
+	if len(a.created) != 1 || a.created[0]["title"] != "сдать отчёт" || a.created[0]["due_date"] == nil {
+		t.Fatalf("created %v, want «сдать отчёт» with a due date", a.created)
+	}
+	rule := a.rules["/api/tasks/"+quickTaskID+"/remind-rule"]
+	if rule == nil || rule["every_days"] != float64(1) {
+		t.Fatalf("rule sent = %v, want every_days 1", a.rules)
+	}
+	if times, _ := rule["times"].([]any); len(times) != 2 || times[0] != "09:00" || times[1] != "18:00" {
+		t.Errorf("times = %v, want 09:00 and 18:00", rule["times"])
+	}
+	if got := fake.last(t).Text; !strings.Contains(got, "Буду напоминать") {
+		t.Errorf("the receipt does not say the rule: %q", got)
+	}
+
+	h2, fake2, a2, chat2 := quickSaveHandler(t)
+	say(h2, chat2, "позвонить маме напоминать каждый час")
+	if len(a2.rules) != 0 {
+		t.Errorf("a rule was stored for a task with no due date: %v", a2.rules)
+	}
+	if got := fake2.last(t).Text; !strings.Contains(got, "нужен срок") {
+		t.Errorf("no word that the rule needs a due date: %q", got)
 	}
 }

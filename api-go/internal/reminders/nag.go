@@ -4,6 +4,8 @@ import (
 	"context"
 	"log/slog"
 	"time"
+
+	"neuroboost/api-go/internal/usersettings"
 )
 
 // Repeating an unanswered reminder — «долбёжка».
@@ -27,14 +29,14 @@ import (
 // from 000015 until 18.09 — a migration changed an index and a query that never
 // changed became wrong.
 
-const (
-	// maxNags bounds how many times one reminder may come back.
-	//
-	// 🔴 A bot that nags forever gets muted, and a muted bot delivers NOTHING —
-	// including the reminder that mattered. Six is enough to be hard to ignore
-	// and few enough to stay inside one morning.
-	maxNags = 6
-)
+// 🔴 No cap and no midnight stop (Denis, 07.11: «надо сделать чтобы оно
+// бесконечно напоминало а не 6 раз, там же есть функция отключить»). It was
+// six nags and never past the end of the item's day; now it comes back until
+// answered or switched off. What keeps it bearable instead:
+//   - quiet hours: a nag that would land in them waits for their end;
+//   - only the NEWEST delivered reminder of an item nags — with «every 5
+//     minutes until the deadline» every older row nagging too would multiply;
+//   - a task closed anywhere (web, another device) stops its nag.
 
 // NagUnanswered moves every delivered-but-unanswered reminder forward by the
 // nag interval of the thing it is about.
@@ -47,25 +49,45 @@ func NagUnanswered(ctx context.Context, now time.Time, log *slog.Logger) (int, e
 	// because it is a property of the thing being reminded about, not of one
 	// delivery. Joined here rather than copied onto the reminder row, so
 	// changing it changes the next nag instead of only future reminders.
+	// 🔴 First retire what a newer reminder replaced. «Newer» is by created_at
+	// (then id) — the moment the scanner wrote the row, which never moves.
+	// remind_at cannot be the key: nagging moves it, so the row that was newest
+	// stopped looking newest the moment it was re-armed, and the rows it held
+	// back came back too (review 07.11: nags multiplied without end).
+	//
+	// A retired row is marked answered: the same «stop coming back» the buttons
+	// write (action.go), and it is never delivered again.
+	if _, err := db.Pool.Exec(ctx, `
+		UPDATE reminder r
+		   SET answered_at = NOW()
+		 WHERE r.answered_at IS NULL
+		   AND (r.status = 'SENT' OR (r.status = 'PENDING' AND r.nag_count > 0))
+		   AND EXISTS (
+		         SELECT 1 FROM reminder n
+		          WHERE n.user_id = r.user_id
+		            AND COALESCE(n.event_id, n.task_id) = COALESCE(r.event_id, r.task_id)
+		            AND n.status = 'SENT'
+		            AND (n.created_at, n.id) > (r.created_at, r.id)
+		       )`); err != nil {
+		return 0, err
+	}
+
 	rows, err := db.Pool.Query(ctx, `
 		SELECT r.id,
 		       COALESCE(e.nag_minutes, t.nag_minutes) AS nag_minutes,
 		       r.remind_at,
-		       r.occurrence_start,
-		       -- 🔴 The owner's zone, because "the end of the day" is a question
-		       -- only they can answer. occurrence_start comes back in UTC, and
-		       -- 23:59 UTC is 02:59 the next morning in Moscow.
-		       COALESCE(u.timezone, 'Europe/Moscow')
+		       COALESCE(u.timezone, 'Europe/Moscow'),
+		       COALESCE(u.settings, '{}')
 		FROM reminder r
 		JOIN "user" u ON u.id = r.user_id
 		LEFT JOIN event e ON e.id = r.event_id
 		LEFT JOIN task  t ON t.id = r.task_id
 		WHERE r.status = 'SENT'
 		  AND r.answered_at IS NULL
-		  AND r.nag_count < $1
 		  AND COALESCE(e.nag_minutes, t.nag_minutes) IS NOT NULL
-		  AND r.remind_at <= $2`,
-		maxNags, now)
+		  AND r.remind_at <= $1
+		  AND (t.id IS NULL OR t.status NOT IN ('DONE', 'CANCELLED'))`,
+		now)
 	if err != nil {
 		return 0, err
 	}
@@ -74,13 +96,13 @@ func NagUnanswered(ctx context.Context, now time.Time, log *slog.Logger) (int, e
 		id         string
 		nagMinutes int
 		remindAt   time.Time
-		occurrence *time.Time
 		timezone   string
+		settings   []byte
 	}
 	var candidates []due
 	for rows.Next() {
 		var d due
-		if err := rows.Scan(&d.id, &d.nagMinutes, &d.remindAt, &d.occurrence, &d.timezone); err != nil {
+		if err := rows.Scan(&d.id, &d.nagMinutes, &d.remindAt, &d.timezone, &d.settings); err != nil {
 			rows.Close()
 			return 0, err
 		}
@@ -93,10 +115,24 @@ func NagUnanswered(ctx context.Context, now time.Time, log *slog.Logger) (int, e
 
 	moved := 0
 	for _, d := range candidates {
-		next := d.remindAt.Add(time.Duration(d.nagMinutes) * time.Minute)
-
-		if !WithinSameLocalDay(d.occurrence, next, d.timezone) {
-			continue
+		// From now, not from the old remind_at: a row that waited (a deploy, a
+		// long quiet night) must come back once, not replay every missed nag a
+		// minute apart.
+		base := d.remindAt
+		if base.Before(now) {
+			base = now
+		}
+		next := base.Add(time.Duration(d.nagMinutes) * time.Minute)
+		if st := usersettings.ParseReminders(d.settings); st.QuietHoursRespected {
+			loc, err := time.LoadLocation(d.timezone)
+			if err != nil {
+				loc = time.UTC
+			}
+			// A huge «minutes before» so the grace rule never drops a nag: it
+			// only waits for the end of the quiet window.
+			if shifted, ok := ShiftForQuietHours(next, 1<<30, st.QuietHoursStart, st.QuietHoursEnd, loc); ok {
+				next = shifted
+			}
 		}
 
 		tag, err := db.Pool.Exec(ctx, `
@@ -117,36 +153,4 @@ func NagUnanswered(ctx context.Context, now time.Time, log *slog.Logger) (int, e
 		log.Info("reminders re-armed", slog.Int("count", moved))
 	}
 	return moved, nil
-}
-
-// WithinSameLocalDay reports whether a re-armed reminder would still fall on the
-// day it is about, where the OWNER lives.
-//
-// 🔴 Never past the end of that day. A 23:50 event nagging hourly would
-// otherwise wake someone at 02:00 about something that finished yesterday, and
-// that is how a person mutes the bot — after which nothing gets through.
-//
-// ⚠ The zone is load-bearing and was wrong in the first version. `occurrence_start`
-// is a timestamptz and comes back in UTC, so computing 23:59:59 from it built
-// the end of the UTC day: for a Moscow user that is 02:59 the following morning
-// — precisely the 2am wake-up this guard exists to prevent — and for anyone west
-// of UTC it cuts the evening short instead.
-//
-// A nil occurrence means the row is not about a particular day (a digest has
-// none). Such a row has no day to overrun, so it is allowed through; the nag
-// count still bounds it.
-func WithinSameLocalDay(occurrence *time.Time, next time.Time, timezone string) bool {
-	if occurrence == nil {
-		return true
-	}
-	loc, err := time.LoadLocation(timezone)
-	if err != nil {
-		// 🔴 UTC, not the server's local zone: the server's zone is an accident
-		// of deployment, and falling back to it would make the same account
-		// behave differently after a host move.
-		loc = time.UTC
-	}
-	day := occurrence.In(loc)
-	endOfDay := time.Date(day.Year(), day.Month(), day.Day(), 23, 59, 59, 0, loc)
-	return !next.After(endOfDay)
 }

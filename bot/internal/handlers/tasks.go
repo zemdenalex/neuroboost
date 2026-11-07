@@ -11,6 +11,7 @@ import (
 
 	"github.com/zemdenalex/neuroboost-bot/internal/api"
 	"github.com/zemdenalex/neuroboost-bot/internal/format"
+	"github.com/zemdenalex/neuroboost-bot/internal/i18n"
 	"github.com/zemdenalex/neuroboost-bot/internal/keyboards"
 )
 
@@ -145,6 +146,10 @@ func (h *Handler) handleTaskAction(chatID int64, messageID int, taskID string) {
 
 	if repeats {
 		text += h.t(chatID, "🔁 Повторяется\n", "🔁 Repeats\n")
+	} else if dueDate != "" {
+		if rule, err := h.api.RemindRule(us.AuthToken, "tasks", taskID); err == nil && rule != nil {
+			text += "⏰ " + rule.Describe(h.lang(chatID) == i18n.RU) + "\n"
+		}
 	}
 
 	linkedID := ""

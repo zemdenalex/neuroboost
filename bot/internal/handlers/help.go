@@ -132,10 +132,14 @@ func helpText(lang i18n.Lang, screen string) string {
 		return i18n.T(lang,
 			"ℹ️ <b>🔁 Повтор</b>\n\nЗадача, которая возвращается: каждый день, через день, раз в неделю или в месяц.\n\nЕсли выбрать, задача станет серией: «Готово» отмечается за каждый день отдельно, и дни серии видны в статистике.\n\n<b>Отменить:</b> «Не повторять» делает её снова разовой.",
 			"ℹ️ <b>🔁 Repeat</b>\n\nA task that comes back: every day, every other day, weekly or monthly.\n\nPick one and the task becomes a series: «Done» is marked for each day on its own, and the series days show in statistics.\n\n<b>Undo:</b> «Don't repeat» makes it a one-off again.")
+	case keyboards.HelpRule:
+		return i18n.T(lang,
+			"ℹ️ <b>⏰ Напоминать до срока</b>\n\nНапоминания приходят регулярно, пока не наступит срок задачи или начало события: каждые 5, 15, 30 минут, каждый час, или каждый день в выбранное время.\n\nМожно написать прямо в строке: «экзамен 30.11 напоминать каждый день в 12 и 16», «отчёт 20.11 напоминать каждые 30 минут».\n\nВ тихие часы такие напоминания не приходят. День срока тоже считается, до самого срока.\n\n<b>Отменить:</b> «Выключить».",
+			"ℹ️ <b>⏰ Remind until due</b>\n\nReminders come regularly until the task is due or the event starts: every 5, 15 or 30 minutes, every hour, or every day at the times you pick.\n\nYou can write it in the line: «exam 30.11 remind every day at 12 and 16».\n\nNone come during quiet hours. The due day counts too, right up to the due time.\n\n<b>Undo:</b> «Off».")
 	case keyboards.HelpNag:
 		return i18n.T(lang,
-			"ℹ️ <b>🔔 Долбить</b>\n\nНапоминание, на которое не ответили, приходит снова через выбранный промежуток.\n\nПовторяется, пока не нажмёшь кнопку под напоминанием, и не дольше конца того дня.\n\n<b>Отменить:</b> «Не долбить».",
-			"ℹ️ <b>🔔 Nag</b>\n\nA reminder nobody answered comes again after the gap you pick.\n\nIt repeats until you press a button under the reminder, and never past the end of that day.\n\n<b>Undo:</b> «Don't nag».")
+			"ℹ️ <b>🔔 Постоянные напоминания</b>\n\nНапоминание, на которое не ответили, приходит снова через выбранный промежуток.\n\nПовторяется, пока не нажмёшь кнопку под напоминанием или задача не будет закрыта. В тихие часы ждёт их конца.\n\n<b>Отменить:</b> «Выключить».",
+			"ℹ️ <b>🔔 Persistent reminders</b>\n\nA reminder nobody answered comes again after the gap you pick.\n\nIt repeats until you press a button under the reminder or the task is closed. During quiet hours it waits for them to end.\n\n<b>Undo:</b> «Off».")
 	case keyboards.HelpPostpone:
 		return i18n.T(lang,
 			"ℹ️ <b>⏰ Отложить</b>\n\nДля повторяющейся задачи: пропустить ближайшие дни, не сдвигая ритм.\n\nЕсли выбрать «2 дня», два ближайших дня серии будут пропущены, дальше всё как было.\n\n<b>Отменить:</b> « Назад ничего не меняет. Уже пропущенные дни из бота не вернуть.",

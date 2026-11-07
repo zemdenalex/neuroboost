@@ -53,6 +53,15 @@ type Draft struct {
 
 	AllDay bool
 
+	// RemindRule is «напоминать каждый день в 12 и 16» / «каждые 5 минут»:
+	// reminders until the event starts. nil when the line has none.
+	RemindRule *RemindRule
+
+	// BadDate is a date that does not exist («31.11»), cut from the title so
+	// it is not silently rolled to 01.12. The card asks for the day instead
+	// (Denis, 17.09: dates are asked, not guessed).
+	BadDate string
+
 	// IsTask means the word "задача" was used: the bot creates a task and an
 	// event bound to it, so the entry can be ticked off.
 	IsTask bool

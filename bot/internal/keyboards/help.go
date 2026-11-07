@@ -31,12 +31,13 @@ const (
 	HelpQuick    = "quick"
 	HelpDayTasks = "daytasks"
 	HelpSubtasks = "subtasks"
+	HelpRule     = "rule"
 )
 
 // HelpScreens is every screen that has an explanation. A test asks for its
 // text in both languages, so a screen added here without one goes red.
 var HelpScreens = []string{
-	HelpToEvent, HelpToTask, HelpLink, HelpRepeat, HelpNag, HelpPostpone, HelpPriority, HelpUpdates, HelpQuick, HelpDayTasks, HelpSubtasks,
+	HelpToEvent, HelpToTask, HelpLink, HelpRepeat, HelpNag, HelpPostpone, HelpPriority, HelpUpdates, HelpQuick, HelpDayTasks, HelpSubtasks, HelpRule,
 }
 
 // HelpButton sits next to a screen's cancel or back button.

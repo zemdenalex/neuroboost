@@ -63,8 +63,22 @@ type Parsed struct {
 // the caller supplies the user's own timezone — the same contract the previous
 // parser had, and worth keeping.
 func ParseLine(line string, now time.Time) Parsed {
+	// The reminder rule first, on the raw line: its «в 12 и 16» must never
+	// reach the time pass.
+	rest, rule := ExtractRemindRule(line)
+	p := parseLine(rest, now, rule)
+	// 🔴 A DAY rule needs a day to run up to. «напомни каждый день пить
+	// таблетки» with no date was a daily repeat before the rule existed, and
+	// stays one: the line is read as if the rule were not there.
+	if rule != nil && rule.EveryDays > 0 && !p.Draft.HasDay && p.Draft.BadDate == "" {
+		return parseLine(line, now, nil)
+	}
+	return p
+}
+
+func parseLine(line string, now time.Time, rule *RemindRule) Parsed {
 	toks := Tokenize(line)
-	var d Draft
+	d := Draft{RemindRule: rule}
 	for _, r := range recognisers {
 		r.Run(toks, now, &d)
 	}

@@ -1,0 +1,2 @@
+ALTER TABLE task  DROP COLUMN IF EXISTS remind_rule;
+ALTER TABLE event DROP COLUMN IF EXISTS remind_rule;

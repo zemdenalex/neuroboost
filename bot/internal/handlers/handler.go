@@ -337,6 +337,10 @@ func (h *Handler) HandleCallback(cb *tgbotapi.CallbackQuery) {
 		return
 	}
 
+	// «⏰ До срока» (rrt_ on a task, rrd_ on the event draft).
+	if h.handleRuleCallback(chatID, cb.Message.MessageID, data) {
+		return
+	}
 	if h.handleDraftCallback(chatID, cb.Message.MessageID, data) {
 		return
 	}
