@@ -246,6 +246,52 @@
     "minutes": "{{n}} min",
     "hours": "{{n}} h"
   },
+  "phoneDrag": {
+    "title": "Dragging on a phone",
+    "note": "How a finger moves and stretches events in the calendar. Applies on a phone.",
+    "start": {
+      "label": "How to pick up an event",
+      "hold": {
+        "name": "Hold",
+        "desc": "Keep a finger on the event"
+      },
+      "handle": {
+        "name": "Grip",
+        "desc": "Pull the ⋮⋮ on the right, at once"
+      },
+      "both": {
+        "name": "Both",
+        "desc": "Hold and grip"
+      }
+    },
+    "delay": "How long to hold",
+    "ms": "{{n}} ms",
+    "step": "Drag step",
+    "min": "{{n}} min",
+    "resize": {
+      "label": "Stretch circles",
+      "selected": {
+        "name": "When tapped",
+        "desc": "Tap an event to show its circles"
+      },
+      "always": {
+        "name": "Always",
+        "desc": "Circles on every event"
+      },
+      "off": {
+        "name": "Off",
+        "desc": "Length only in the editor"
+      }
+    },
+    "edgeFlip": {
+      "label": "Flip the day at the edge",
+      "hint": "Hold an event at the screen edge to open the next day"
+    },
+    "vibrate": {
+      "label": "Vibration",
+      "hint": "A short buzz when an event is picked up"
+    }
+  },
   "phoneCalendar": {
     "title": "Calendar on a phone",
     "note": "How the calendar looks on a phone and what «+» at the bottom does. Nothing changes on a computer.",

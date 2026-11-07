@@ -16,6 +16,7 @@ import { DayTasksSection } from './sections/DayTasksSection'
 import { MonthViewSection } from './sections/MonthViewSection'
 import { NewEventSection } from './sections/NewEventSection'
 import { PhoneCalendarSection } from './sections/PhoneCalendarSection'
+import { PhoneDragSection } from './sections/PhoneDragSection'
 import { TaskRowSection } from './sections/TaskRowSection'
 import { PriorityStyleSection } from './sections/PriorityStyleSection'
 import { KeywordsSection } from './sections/KeywordsSection'
@@ -161,6 +162,8 @@ export default function Settings() {
         <DayTasksSection autoSave={autoSaveSettings} />
 
         <PhoneCalendarSection autoSave={autoSaveSettings} />
+
+        <PhoneDragSection autoSave={autoSaveSettings} />
         <MonthViewSection autoSave={autoSaveSettings} phoneOnly={isMobile} />
 
         <NewEventSection autoSave={autoSaveSettings} />

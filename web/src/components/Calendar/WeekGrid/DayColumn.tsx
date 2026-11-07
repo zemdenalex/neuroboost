@@ -7,7 +7,7 @@ import { HourGrid } from './HourGrid';
 import { TimeIndicator } from './TimeIndicator';
 import { EventBlock } from './EventBlock';
 import { TouchHoldBinder } from './TouchHoldBinder';
-import { gripShown, holdLifts, type PhoneDragStart } from '../../../lib/calendar/phoneDrag';
+import { gripShown, holdLifts, type PhoneDragPrefs } from '../../../lib/calendar/phoneDrag';
 import { GhostPreview, MultiDayTimedGhost } from './GhostPreview';
 import { dateLocale } from '../../../utils/date';
 import { dayKey } from '../../../lib/dayTasks/loadDayColours';
@@ -30,7 +30,7 @@ interface DayColumnProps {
   timezone: string;
   isMobile: boolean;
   /** Phone: hold, grip or both (lib/calendar/phoneDrag.ts). */
-  dragStart: PhoneDragStart;
+  phoneDrag: PhoneDragPrefs;
   touchStart: TouchStart | null;
   onSelect: (event: NbEvent) => void;
   onSelectId: (id: string) => void;
@@ -70,7 +70,7 @@ export const DayColumn = memo(function DayColumn({
   visibleDays,
   timezone,
   isMobile,
-  dragStart,
+  phoneDrag,
   touchStart,
   onSelect,
   onSelectId,
@@ -249,7 +249,7 @@ export const DayColumn = memo(function DayColumn({
       colTop: rect.top,
       scrollStart: scrollContainer.current?.scrollTop ?? 0,
     };
-    onTouchCreateStart(day, clampMins(snapMin(topToMins(clientY - rect.top))));
+    onTouchCreateStart(day, clampMins(snapMin(topToMins(clientY - rect.top), phoneDrag.stepMin)));
   };
 
   return (
@@ -281,6 +281,8 @@ export const DayColumn = memo(function DayColumn({
         <TouchHoldBinder
           onLift={(el, _x, y) => handleEmptyTouchLift(el, y)}
           skip="[data-event-id], [data-resize-handle]"
+          holdMs={phoneDrag.delayMs}
+          vibrate={phoneDrag.vibrate}
         />
         <HourGrid isMobile={isMobile} />
         
@@ -293,8 +295,11 @@ export const DayColumn = memo(function DayColumn({
             selected={selectedId === event.id}
             timezone={timezone}
             isMobile={isMobile}
-            holdLifts={holdLifts(dragStart)}
-            grip={isMobile && gripShown(dragStart)}
+            holdLifts={holdLifts(phoneDrag.start)}
+            grip={isMobile && gripShown(phoneDrag.start)}
+            holdMs={phoneDrag.delayMs}
+            vibrate={phoneDrag.vibrate}
+            resize={phoneDrag.resize}
             onSelect={onSelect}
             onClick={() => event.id && onSelectId(event.id)}
             onMouseDown={(e) => handleEventMouseDown(e, event)}

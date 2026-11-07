@@ -25,8 +25,8 @@ export function topToMins(top: number): number {
   return (top / HOUR_PX) * 60;
 }
 
-export function snapMin(min: number): number {
-  return Math.round(min / MIN_SLOT_MIN) * MIN_SLOT_MIN;
+export function snapMin(min: number, step: number = MIN_SLOT_MIN): number {
+  return Math.round(min / step) * step;
 }
 
 export function clampMins(min: number): number {

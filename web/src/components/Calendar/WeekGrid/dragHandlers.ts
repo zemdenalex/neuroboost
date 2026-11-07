@@ -65,7 +65,8 @@ function handleMoveComplete(
   onMoveOrResize: MoveCallback
 ): void {
   const targetDay = drag.targetDayUtc0 || drag.dayUtc0;
-  const offsetMin = clampMins(snapMin(drag.offsetMin));
+  const slot = drag.slotMin ?? MIN_SLOT_MIN;
+  const offsetMin = clampMins(snapMin(drag.offsetMin, slot));
 
   // Absolute path: keeps the grip and the exact duration, so a multi-day event
   // needs no branch of its own and durMin (computed mod 24h) never reaches the
@@ -76,7 +77,7 @@ function handleMoveComplete(
       drag.cursorMs,
       drag.grabOffsetMs,
       drag.originalEndMs - drag.originalStartMs,
-      MIN_SLOT_MIN * 60000,
+      slot * 60000,
     );
     onMoveOrResize({
       id: drag.id,

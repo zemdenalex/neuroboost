@@ -49,7 +49,7 @@ export function GhostPreview({ drag, dayUtc0, isMobile }: GhostPreviewProps) {
       drag.cursorMs,
       drag.grabOffsetMs,
       drag.originalEndMs - drag.originalStartMs,
-      MIN_SLOT_MIN * 60_000,
+      (drag.slotMin ?? MIN_SLOT_MIN) * 60_000,
     );
     const slice = ghostSliceForColumn(startMs, endMs, dayUtc0, DAY_MS);
     if (!slice) return null;
@@ -72,7 +72,7 @@ export function GhostPreview({ drag, dayUtc0, isMobile }: GhostPreviewProps) {
   // (the all-day row, and anything not yet migrated).
   if (drag.kind === 'move' && !drag.allDay && !drag.pending &&
       (drag.targetDayUtc0 === dayUtc0 || (!drag.targetDayUtc0 && drag.dayUtc0 === dayUtc0))) {
-    const offsetMin = Math.max(0, Math.min(1440 - MIN_SLOT_MIN, Math.round(drag.offsetMin / MIN_SLOT_MIN) * MIN_SLOT_MIN));
+    const offsetMin = Math.max(0, Math.min(1440 - MIN_SLOT_MIN, Math.round(drag.offsetMin / (drag.slotMin ?? MIN_SLOT_MIN)) * (drag.slotMin ?? MIN_SLOT_MIN)));
     const top = Math.max(0, minsToTop(offsetMin));
     const height = Math.max(minsToTop(MIN_SLOT_MIN), Math.min(minsToTop(drag.durMin), maxTop - top));
 

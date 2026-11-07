@@ -50,6 +50,21 @@ async function fingerDrag(
   await cdp.detach()
 }
 
+/** Hold for `holdMs`, then leave the slop in one move and carry on down `dy`. */
+async function holdThenDrag(page: Page, from: { x: number; y: number }, dy: number, holdMs: number) {
+  const cdp = await page.context().newCDPSession(page)
+  const touch = (type: 'touchStart' | 'touchMove' | 'touchEnd', p?: { x: number; y: number }) =>
+    cdp.send('Input.dispatchTouchEvent', { type, touchPoints: p ? [p] : [] })
+  await touch('touchStart', from)
+  await page.waitForTimeout(holdMs)
+  for (let i = 1; i <= 4; i++) {
+    await touch('touchMove', { x: from.x, y: from.y + (dy * i) / 4 })
+    await page.waitForTimeout(16)
+  }
+  await touch('touchEnd')
+  await cdp.detach()
+}
+
 test.describe('phone drag', () => {
   let createdId: string | undefined
 
@@ -523,6 +538,80 @@ test.describe('phone drag', () => {
         timeout: 8000, message: 'days moved',
       }).toBe(3)
     })
+  })
+
+  // Step 10: ⚙️ «Перетаскивание на телефоне». The settings never reach the real
+  // account (withSettings refuses every PATCH): the section is checked by what
+  // it SENDS, the calendar by what it does with what it is given.
+  test('the ⚙️ section sends every choice under its key and shows what the account holds', async ({ authedPage }) => {
+    test.skip(test.info().project.name !== 'mobile', 'a phone setting')
+    await withSettings(authedPage, {
+      phone_drag_start: 'both', phone_drag_delay_ms: 600, phone_drag_step_min: 5,
+      phone_drag_resize: 'off', phone_drag_edge_flip: false, phone_drag_vibrate: true,
+    })
+    const sent: Record<string, unknown>[] = []
+    await authedPage.route('**/api/auth/me', async (route) => {
+      if (route.request().method() !== 'PATCH') return route.fallback()
+      sent.push((route.request().postDataJSON() ?? {}).settings ?? {})
+      return route.abort()
+    })
+    await authedPage.goto('/settings')
+    const section = authedPage.getByTestId('phone-drag-section')
+    await section.scrollIntoViewIfNeeded()
+    // What the account holds is what is shown.
+    for (const id of ['start-both', 'delay-600', 'step-5', 'resize-off']) {
+      await expect(section.getByTestId(`phone-drag-${id}`), id).toHaveAttribute('aria-checked', 'true')
+    }
+    await expect(section.getByTestId('phone-drag-edge-flip')).toHaveAttribute('aria-checked', 'false')
+    await expect(section.getByTestId('phone-drag-vibrate')).toHaveAttribute('aria-checked', 'true')
+
+    // Every choice goes out under its own key.
+    await section.getByTestId('phone-drag-start-hold').click()
+    await section.getByTestId('phone-drag-delay-250').click()
+    await section.getByTestId('phone-drag-step-30').click()
+    await section.getByTestId('phone-drag-resize-always').click()
+    await section.getByTestId('phone-drag-edge-flip').click()
+    await section.getByTestId('phone-drag-vibrate').click()
+    await expect.poll(() => sent.at(-1) ?? {}, { timeout: 8000 }).toMatchObject({
+      phone_drag_start: 'hold', phone_drag_delay_ms: 250, phone_drag_step_min: 30,
+      phone_drag_resize: 'always', phone_drag_edge_flip: true, phone_drag_vibrate: false,
+    })
+  })
+
+  test('with a 30-minute step, an event dragged 50 minutes down lands an hour later', async ({ authedPage, session }) => {
+    test.skip(test.info().project.name !== 'mobile', 'touch drag is a phone gesture')
+    await withSettings(authedPage, { phone_drag_step_min: 30 })
+    const { box, startMs } = await seedEventOnScreen(authedPage, session.token)
+    const x = box.x + box.width / 2
+    const y = box.y + box.height / 2
+    // 06:30 + 50 min = 07:20: the 15-minute grid saves 07:15, the 30-minute one 07:30.
+    // (20 min in 1.2 px steps moved nothing at either step: too fine a gesture.)
+    await holdThenDrag(authedPage, { x, y }, (HOUR_PX * 50) / 60, 600)
+    await expect.poll(() => startOf(session.token, createdId!).then((ms) => (ms - startMs) / 60_000), {
+      timeout: 8000, message: 'minutes moved',
+    }).toBe(60)
+  })
+
+  test('the hold delay is the one set in ⚙️: 0.45 s lifts nothing at 600 ms and lifts the event at 250 ms', async ({ authedPage, session }) => {
+    test.skip(test.info().project.name !== 'mobile', 'touch drag is a phone gesture')
+    await withSettings(authedPage, { phone_drag_delay_ms: 600 })
+    const { block, box, startMs } = await seedEventOnScreen(authedPage, session.token)
+    await holdThenDrag(authedPage, { x: box.x + box.width / 2, y: box.y + box.height / 2 }, HOUR_PX, 450)
+    await authedPage.waitForTimeout(1200)
+    expect(await startOf(session.token, createdId!), 'a 0.45 s hold under a 600 ms delay is a scroll').toBe(startMs)
+
+    // Positive control on the same event: the same 0.45 s hold lifts it when the
+    // delay is shorter, so the miss above was the setting, not the gesture.
+    await authedPage.unrouteAll({ behavior: 'ignoreErrors' })
+    await withSettings(authedPage, { phone_drag_delay_ms: 250 })
+    await authedPage.reload()
+    await authedPage.waitForLoadState('networkidle')
+    await expect(block).toBeVisible({ timeout: 15_000 })
+    await block.evaluate((el) => el.scrollIntoView({ block: 'center', behavior: 'instant' }))
+    await authedPage.evaluate(() => new Promise((r) => requestAnimationFrame(() => r(null))))
+    const b2 = (await block.boundingBox())!
+    await holdThenDrag(authedPage, { x: b2.x + b2.width / 2, y: b2.y + b2.height / 2 }, HOUR_PX, 450)
+    await expect.poll(() => startOf(session.token, createdId!).then((ms) => ms - startMs), { timeout: 8000 }).toBe(HOUR)
   })
 
   // Step 8: the phone month («month and day», split). An event in the chosen

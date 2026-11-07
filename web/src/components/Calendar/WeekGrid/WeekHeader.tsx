@@ -4,6 +4,7 @@ import { getTimezoneOffsetMs } from './weekgrid.utils';
 import { DAY_MS } from './weekgrid.constants';
 import { dateLocale } from '../../../utils/date';
 import { takeCalendarHint } from '../../../lib/calendar/calendarChrome';
+import type { PhoneDragStart } from '../../../lib/calendar/phoneDrag';
 
 interface WeekHeaderProps {
   mondayUtc0: number;
@@ -22,6 +23,8 @@ interface WeekHeaderProps {
   onOpenMonth?: () => void;
   /** Extra controls for the right-hand button row (the calendar filter). */
   headerExtra?: ReactNode;
+  /** ⚙️ phone_drag_start: the phone tip names the way in that is on. */
+  dragStart?: PhoneDragStart;
 }
 
 export function WeekHeader({
@@ -36,6 +39,7 @@ export function WeekHeader({
   onQuickCreate,
   onOpenMonth,
   headerExtra,
+  dragStart = 'hold',
 }: WeekHeaderProps) {
   const { t, i18n } = useTranslation('calendar');
   // On a phone the tip shows on the first three opens, then lives under «?»
@@ -159,7 +163,9 @@ export function WeekHeader({
       
       {showHint && (
         <div data-testid="calendar-hint" className="text-xs text-zinc-400 truncate">
-          {isMobile ? t('helpMobile') : t('helpDesktop')}
+          {/* The phone tip names the way in that ⚙️ turned on: under «handle» a
+              held body does nothing, and «Hold: move an event» was a lie. */}
+          {isMobile ? t(dragStart === 'handle' ? 'helpMobileHandle' : dragStart === 'both' ? 'helpMobileBoth' : 'helpMobile') : t('helpDesktop')}
         </div>
       )}
     </div>

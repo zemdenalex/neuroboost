@@ -66,6 +66,8 @@
   "todayShort": "Today",
   "quickCreate": "Quick",
   "helpMobile": "Hold: create on empty · move an event",
+  "helpMobileHandle": "Grip ⋮⋮: move · bottom bar: stretch · hold empty: create",
+  "helpMobileBoth": "Hold an event or its grip ⋮⋮: move · hold empty: create",
   "helpDesktop": "Click: select • Double-click: edit • Drag: create/move • Esc: cancel",
   "recurringScope": {
     "title": {

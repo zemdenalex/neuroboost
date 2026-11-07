@@ -20,6 +20,7 @@ import { busyShare } from '../../../lib/calendar/busyShare';
 import { WeekStrip, type WeekStripDay } from '../WeekStrip';
 import { setOpenDay } from '../../../lib/calendar/openDay';
 import { fingersDown } from '../../../lib/calendar/fingersDown';
+import { DEFAULT_PHONE_DRAG } from '../../../lib/calendar/phoneDrag';
 
 export function WeekGrid({
   events,
@@ -37,7 +38,7 @@ export function WeekGrid({
   weekStrip = false,
   onOpenMonth,
   newEventMinutes = DEFAULT_NEW_EVENT_LENGTH,
-  dragStart = 'hold',
+  phoneDrag = DEFAULT_PHONE_DRAG,
   carry = null,
   onCarryEnd,
 }: WeekGridProps) {
@@ -212,7 +213,8 @@ export function WeekGrid({
     allDayHeightRef, newEventMinutes,
     // One day per flip, in the 3-day view too: the event steps to the next day
     // instead of jumping three.
-    onEdgeFlip: visibleDays < 7 ? (dir) => setMobileDayOffset(prev => prev + dir) : undefined,
+    onEdgeFlip: visibleDays < 7 && phoneDrag.edgeFlip ? (dir) => setMobileDayOffset(prev => prev + dir) : undefined,
+    touchSlotMin: phoneDrag.stepMin,
   });
 
   // The all-day bar: a thin strip on a phone while empty (Denis 25.09, variant A).
@@ -407,6 +409,7 @@ export function WeekGrid({
   return (
     <div className="h-full w-full flex flex-col font-mono bg-black text-zinc-100">
       <WeekHeader
+        dragStart={phoneDrag.start}
         mondayUtc0={adjustedStart}
         visibleDays={visibleDays}
         currentWeekOffset={currentWeekOffset}
@@ -493,7 +496,7 @@ export function WeekGrid({
               visibleDays={visibleDays}
               timezone={timezone}
               isMobile={isMobile}
-              dragStart={dragStart}
+              phoneDrag={phoneDrag}
               touchStart={touchStart}
               onSelect={onSelect}
               onSelectId={setSelectedId}

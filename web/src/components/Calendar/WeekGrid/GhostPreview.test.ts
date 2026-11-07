@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { GhostPreview } from './GhostPreview';
+import { handleDragComplete } from './dragHandlers';
 import { DAY_MS } from './weekgrid.constants';
 import type { DragResizeEnd } from './weekgrid.types';
 
@@ -150,5 +151,28 @@ describe('resize ghost across columns (the MD1 prerequisite)', () => {
     expect(box).not.toBeNull();
     expect(box!.startTime).toBe('03:00');
     expect(box!.endTime).toBe('03:15');
+  });
+});
+
+// Step 10 (⚙️ phone drag step): a finger's drag carries its own snap step, and
+// the ghost and the commit must snap with the SAME one — a preview on the
+// 15-minute grid over a save on the 30-minute grid is MD2 again, one level up.
+describe('a drag with its own step', () => {
+  it('is previewed where it is saved', () => {
+    const drag = {
+      kind: 'move' as const,
+      dayUtc0: MON, targetDayUtc0: MON, id: 'evt-step',
+      offsetMin: 6 * 60 + 30, durMin: 60, daySpan: 1,
+      originalStart: 6 * 60 + 30, originalEnd: 7 * 60 + 30,
+      originalStartMs: at(MON, 6, 30), originalEndMs: at(MON, 7, 30),
+      allDay: false, pending: false, grabOffsetMs: 0,
+      cursorMs: at(MON, 7, 20), // 07:20: 07:15 on the 15-minute grid, 07:30 on the 30-minute one
+      slotMin: 30,
+    };
+    const ghost = GhostPreview({ drag, dayUtc0: MON, isMobile: true }) as { props: GhostBoxProps } | null;
+    let saved = '';
+    handleDragComplete(drag, () => {}, (m) => { saved = m.startsAt; }, 30);
+    expect(ghost!.props.startTime).toBe('07:30');
+    expect(saved).toBe(new Date(at(MON, 7, 30)).toISOString());
   });
 });

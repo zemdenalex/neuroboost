@@ -1,4 +1,4 @@
-import type { PhoneDragStart } from '../../../lib/calendar/phoneDrag';
+import type { PhoneDragPrefs } from '../../../lib/calendar/phoneDrag';
 import type { ReactNode } from 'react';
 import type { Task } from '../../../types';
 
@@ -69,6 +69,8 @@ export type DragState = DragCreate | DragMove | DragResizeStart | DragResizeEnd 
 
 export interface DragCreate {
   kind: 'create';
+  /** Snap step of this drag in minutes; a finger's comes from ⚙️, absent = MIN_SLOT_MIN. */
+  slotMin?: number;
   startDayUtc0: number;
   endDayUtc0: number;
   startMin: number;
@@ -80,6 +82,8 @@ export interface DragCreate {
 
 export interface DragMove {
   kind: 'move';
+  /** Snap step of this drag in minutes; a finger's comes from ⚙️, absent = MIN_SLOT_MIN. */
+  slotMin?: number;
   dayUtc0: number;
   targetDayUtc0?: number;
   id: string;
@@ -132,6 +136,8 @@ interface ResizeAbsolute {
 
 export interface DragResizeStart extends ResizeAbsolute {
   kind: 'resize-start';
+  /** Snap step of this drag in minutes; a finger's comes from ⚙️, absent = MIN_SLOT_MIN. */
+  slotMin?: number;
   dayUtc0: number;
   id: string;
   otherEndMin: number;
@@ -140,6 +146,8 @@ export interface DragResizeStart extends ResizeAbsolute {
 
 export interface DragResizeEnd extends ResizeAbsolute {
   kind: 'resize-end';
+  /** Snap step of this drag in minutes; a finger's comes from ⚙️, absent = MIN_SLOT_MIN. */
+  slotMin?: number;
   dayUtc0: number;
   id: string;
   otherEndMin: number;
@@ -192,7 +200,7 @@ export interface WeekGridProps extends WeekGridCallbacks {
   /** Length of an event made by a click or a hold that never moved (⚙️). Default 30. */
   newEventMinutes?: number;
   /** How a finger starts a move on the phone: hold, grip or both (⚙️, phoneDrag.ts). */
-  dragStart?: PhoneDragStart;
+  phoneDrag?: PhoneDragPrefs;
   /**
    * Phone: a task lifted from the task panel by a held finger, at the finger's
    * position. While set, the grid follows the finger and drops the task where it

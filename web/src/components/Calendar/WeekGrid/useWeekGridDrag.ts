@@ -23,10 +23,12 @@ interface UseDragProps {
    * event at the left (-1) or right (+1) edge of the grid. Absent on desktop.
    */
   onEdgeFlip?: (dir: -1 | 1) => void;
+  /** Snap step of a FINGER's drag (⚙️ phone_drag_step_min). The mouse keeps MIN_SLOT_MIN. */
+  touchSlotMin?: number;
 }
 
 export function useWeekGridDrag({
-  mondayUtc0, visibleDays, timezone, scrollRef, containerRef, callbacks, allDayHeightRef, newEventMinutes, onEdgeFlip,
+  mondayUtc0, visibleDays, timezone, scrollRef, containerRef, callbacks, allDayHeightRef, newEventMinutes, onEdgeFlip, touchSlotMin = MIN_SLOT_MIN,
 }: UseDragProps) {
   const [drag, setDrag] = useState<DragState>(null);
   const dragMeta = useRef<DragMeta | null>(null);
@@ -103,23 +105,33 @@ export function useWeekGridDrag({
   // act: a stray touch must not steer a drag the mouse owns, or finish one a
   // long-press on an empty slot left waiting (DayColumn.handleTouchEnd → startCreate).
 
+  // A finger's drag carries its own snap step in the state, so the hook, the
+  // ghost and the commit all read the same number (a preview snapped to 5 and a
+  // commit snapped to 15 would be MD2 again).
+  const withTouchSlot = useCallback(() => {
+    setDrag(prev => prev ? { ...prev, slotMin: touchSlotMin } : prev);
+  }, [touchSlotMin]);
+
   const startTouchMove = useCallback((day: DayInfo, event: ProcessedEvent, grabMin?: number) => {
     touchOwned.current = true;
     startMove(day, event, grabMin);
-  }, [startMove]);
+    withTouchSlot();
+  }, [startMove, withTouchSlot]);
 
   // A finger held on an empty slot (DayColumn's track binder): the finger now
   // owns a create drag, and moving it before lifting sweeps the span.
   const startTouchCreate = useCallback((day: DayInfo, startMin: number) => {
     touchOwned.current = true;
     startCreate(day, startMin);
-  }, [startCreate]);
+    withTouchSlot();
+  }, [startCreate, withTouchSlot]);
 
   const startTouchResize = useCallback((day: DayInfo, event: ProcessedEvent, edge: 'start' | 'end') => {
     touchOwned.current = true;
     if (edge === 'start') startResizeStart(day, event);
     else startResizeEnd(day, event);
-  }, [startResizeStart, startResizeEnd]);
+    withTouchSlot();
+  }, [startResizeStart, startResizeEnd, withTouchSlot]);
 
   const cancelDrag = useCallback(() => {
     touchOwned.current = false;
@@ -185,7 +197,8 @@ export function useWeekGridDrag({
       const dayIndex = Math.max(0, Math.min(visibleDays - 1, Math.floor((ev.clientX - containerRect.left) / dayWidth)));
       const targetDayUtc0 = mondayUtc0 + dayIndex * DAY_MS;
       const yLocal = ev.clientY - dragMeta.current.colTop + (scrollRef.current.scrollTop - dragMeta.current.scrollStart);
-      const curMin = clampMins(snapMin(topToMins(yLocal)));
+      const slot = drag.slotMin ?? MIN_SLOT_MIN;
+      const curMin = clampMins(snapMin(topToMins(yLocal), slot));
       // Unsnapped, for the absolute move path: snapping the cursor AND the grab
       // offset quantises the same error twice. moveRangeMs snaps the result.
       const curMinRaw = topToMins(yLocal);
@@ -205,7 +218,7 @@ export function useWeekGridDrag({
               cursorMs,
               prev.grabOffsetMs,
               prev.originalEndMs - prev.originalStartMs,
-              MIN_SLOT_MIN * 60_000,
+              slot * 60_000,
             );
             // Report the column the event now STARTS in, so the ghost draws
             // where the event will actually land rather than under the cursor.

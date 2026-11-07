@@ -4,6 +4,7 @@ import type { ProcessedEvent, NbEvent } from './weekgrid.types';
 import { formatTimeFromUtc } from './weekgrid.utils';
 import { resolveColor } from '../../../lib/calendar/palette';
 import { TouchHoldBinder } from './TouchHoldBinder';
+import type { PhoneResize } from '../../../lib/calendar/phoneDrag';
 
 interface EventBlockProps {
   event: ProcessedEvent;
@@ -14,6 +15,12 @@ interface EventBlockProps {
   holdLifts?: boolean;
   /** Draw the grip and the bottom bar (⚙️ «handle» or «both», phone only). */
   grip?: boolean;
+  /** ⚙️ hold delay before the body lifts. Default TOUCH_HOLD_MS. */
+  holdMs?: number;
+  /** ⚙️ buzz on pick-up. Default on. */
+  vibrate?: boolean;
+  /** ⚙️ stretch circles: on the selected event (default), on every event, or none. */
+  resize?: PhoneResize;
   onSelect: (event: NbEvent) => void;
   onClick: () => void;
   onMouseDown: (e: React.MouseEvent) => void;
@@ -41,6 +48,9 @@ export const EventBlock = memo(function EventBlock({
   isMobile,
   holdLifts = true,
   grip = false,
+  holdMs,
+  vibrate = true,
+  resize = 'selected',
   onSelect,
   onClick,
   onMouseDown,
@@ -72,7 +82,8 @@ export const EventBlock = memo(function EventBlock({
   // multi-day segment does not own (a middle day) has no circle, as with the mouse.
   const ownsStart = !isMultiDaySegment || Boolean(isFirstSegment);
   const ownsEnd = !isMultiDaySegment || Boolean(isLastSegment);
-  const showCircles = selected && isMobile && Boolean(onTouchResize);
+  const showCircles = isMobile && Boolean(onTouchResize) &&
+    (resize === 'always' || (resize === 'selected' && selected));
   const circleStart = showCircles && ownsStart && event.height >= TWO_CIRCLES_MIN_PX;
   const circleEnd = showCircles && ownsEnd;
   // The grip (variant 4, step 5): not on a block shorter than 30 minutes (22px),
@@ -149,8 +160,8 @@ export const EventBlock = memo(function EventBlock({
         isMobile ? 'Tap to edit' : 'Click to select, double-click to edit'
       }`}
     >
-      {holdLifts && <TouchHoldBinder onLift={onTouchLift} />}
-      {showGrip && <Grip onTouchLift={onTouchLift} />}
+      {holdLifts && <TouchHoldBinder onLift={onTouchLift} holdMs={holdMs} vibrate={vibrate} />}
+      {showGrip && <Grip onTouchLift={onTouchLift} vibrate={vibrate} />}
       {showGripBar && <GripBar onTouchResize={onTouchResize!} />}
       {/* Resize handles */}
       {!isMultiDaySegment && (
@@ -321,7 +332,8 @@ function ResizeCircle({ edge, onTouchResize }: {
  * from scrolling off it; TouchHoldBinder skips `[data-grip]`, so under «both» a
  * finger resting on the grip is not lifted a second time by the hold.
  */
-function Grip({ onTouchLift }: {
+function Grip({ onTouchLift, vibrate }: {
+  vibrate: boolean;
   onTouchLift: (el: HTMLElement, clientX: number, clientY: number) => void;
 }) {
   return (
@@ -336,7 +348,7 @@ function Grip({ onTouchLift }: {
         const block = e.currentTarget.parentElement;
         const t = e.touches[0];
         if (!block || !t || e.touches.length !== 1) return;
-        try { navigator.vibrate?.(12); } catch { /* not allowed or unsupported */ }
+        if (vibrate) { try { navigator.vibrate?.(12); } catch { /* not allowed or unsupported */ } }
         onTouchLift(block, t.clientX, t.clientY);
       }}
     >

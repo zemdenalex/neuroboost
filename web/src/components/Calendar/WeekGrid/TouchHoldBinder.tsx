@@ -14,6 +14,10 @@ interface Props {
    * binders of their own. Circles (`[data-resize-handle]`) are always skipped.
    */
   skip?: string;
+  /** ⚙️ phone_drag_delay_ms. Default TOUCH_HOLD_MS. */
+  holdMs?: number;
+  /** ⚙️ phone_drag_vibrate. Default on. */
+  vibrate?: boolean;
 }
 
 /**
@@ -30,7 +34,7 @@ interface Props {
  * agrees to wait for it. Cost: a scroll that STARTS on an event waits for this
  * handler; a scroll that starts on an empty slot is unaffected.
  */
-export const TouchHoldBinder = memo(function TouchHoldBinder({ onLift, skip }: Props) {
+export const TouchHoldBinder = memo(function TouchHoldBinder({ onLift, skip, holdMs = TOUCH_HOLD_MS, vibrate = true }: Props) {
   const marker = useRef<HTMLSpanElement>(null);
   const liftRef = useRef(onLift);
   liftRef.current = onLift;
@@ -39,11 +43,11 @@ export const TouchHoldBinder = memo(function TouchHoldBinder({ onLift, skip }: P
     const el = marker.current?.parentElement;
     if (!el) return;
     const tracker = createHoldTracker({
-      holdMs: TOUCH_HOLD_MS,
+      holdMs,
       slopPx: TOUCH_SLOP_PX,
       onLift: (x, y) => {
         // A short buzz where the platform has one; the finger learns it was picked up.
-        try { navigator.vibrate?.(12); } catch { /* not allowed or unsupported */ }
+        if (vibrate) { try { navigator.vibrate?.(12); } catch { /* not allowed or unsupported */ } }
         liftRef.current(el, x, y);
       },
     });
@@ -79,7 +83,7 @@ export const TouchHoldBinder = memo(function TouchHoldBinder({ onLift, skip }: P
       el.removeEventListener('touchcancel', onEnd);
       el.removeEventListener('contextmenu', onContextMenu);
     };
-  }, [skip]);
+  }, [skip, holdMs, vibrate]);
 
   return <span ref={marker} hidden aria-hidden="true" />;
 });
