@@ -44,7 +44,8 @@ interface DayColumnProps {
     grabMin?: number
   ) => void;
   /** A finger held on an event until it was picked up: begin a touch move. */
-  onTouchMoveStart: (day: DayInfo, event: ProcessedEvent, grabMin: number) => void;
+  /** `at`: where the finger lifted the event — the drag threshold counts from there. */
+  onTouchMoveStart: (day: DayInfo, event: ProcessedEvent, grabMin: number, at: { x: number; y: number }) => void;
   /** A finger on a selected event's circle: begin stretching that edge. */
   onTouchResizeStart: (day: DayInfo, event: ProcessedEvent, edge: 'start' | 'end') => void;
   /** A finger held on an empty slot until it was picked up: begin a touch create. */
@@ -166,7 +167,7 @@ export const DayColumn = memo(function DayColumn({
 
   // The finger version of the body branch of handleEventMouseDown: same drag
   // meta, same grab point, so the maths downstream cannot tell which one it was.
-  const handleEventTouchLift = (el: HTMLElement, clientY: number, event: ProcessedEvent) => {
+  const handleEventTouchLift = (el: HTMLElement, clientX: number, clientY: number, event: ProcessedEvent) => {
     if (!event.id) return;
     onSelectId(event.id);
     const track = el.parentElement;
@@ -177,7 +178,7 @@ export const DayColumn = memo(function DayColumn({
       scrollStart: scrollContainer.current?.scrollTop ?? 0,
     };
     const grabYLocal = clientY - rect.top;
-    onTouchMoveStart(day, event, topToMins(grabYLocal));
+    onTouchMoveStart(day, event, topToMins(grabYLocal), { x: clientX, y: clientY });
   };
 
   // The finger version of the handle branches of handleEventMouseDown.
@@ -303,7 +304,7 @@ export const DayColumn = memo(function DayColumn({
             onSelect={onSelect}
             onClick={() => event.id && onSelectId(event.id)}
             onMouseDown={(e) => handleEventMouseDown(e, event)}
-            onTouchLift={(el, _x, y) => handleEventTouchLift(el, y, event)}
+            onTouchLift={(el, x, y) => handleEventTouchLift(el, x, y, event)}
             onTouchResize={(edge, el, y) => handleEventTouchResize(edge, el, y, event)}
           />
         ))}

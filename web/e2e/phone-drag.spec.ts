@@ -66,6 +66,12 @@ async function holdThenDrag(page: Page, from: { x: number; y: number }, dy: numb
 }
 
 test.describe('phone drag', () => {
+  // One after another, not in parallel: every test seeds its event into the same
+  // 06:30 band on the same real account, so parallel siblings squeezed each block
+  // to a third of the column after its box was measured, and the finger landed on
+  // a neighbour (07.11: three tests red in a full run, each green alone).
+  test.describe.configure({ mode: 'default' })
+
   let createdId: string | undefined
 
   test.afterEach(async ({ session }) => {
@@ -612,6 +618,22 @@ test.describe('phone drag', () => {
     const b2 = (await block.boundingBox())!
     await holdThenDrag(authedPage, { x: b2.x + b2.width / 2, y: b2.y + b2.height / 2 }, HOUR_PX, 450)
     await expect.poll(() => startOf(session.token, createdId!).then((ms) => ms - startMs), { timeout: 8000 }).toBe(HOUR)
+  })
+
+  // A short drag must count from where the finger LIFTED the event. Chrome sends
+  // no touchmove until the finger leaves its own ~15 px slop (probe 07.11: 14 px →
+  // 0 moves, 17 px → 2, 22 px → 4), and our 5 px threshold, measured from the first
+  // move that DID arrive, stacked on top: a 17 px drag moved nothing. 19 px is
+  // 26 minutes: 06:30 + 26 → 06:56 → 07:00 on the 15-minute grid.
+  test('a short drag after the hold moves the event (the threshold counts from the lift)', async ({ authedPage, session }) => {
+    test.skip(test.info().project.name !== 'mobile', 'touch drag is a phone gesture')
+    const { box, startMs } = await seedEventOnScreen(authedPage, session.token)
+    const x = box.x + box.width / 2
+    const y = box.y + box.height / 2
+    await fingerDrag(authedPage, { x, y }, { x, y: y + 19 }, 600)
+    await expect.poll(() => startOf(session.token, createdId!).then((ms) => (ms - startMs) / 60_000), {
+      timeout: 8000, message: 'minutes moved',
+    }).toBe(30)
   })
 
   // Step 8: the phone month («month and day», split). An event in the chosen

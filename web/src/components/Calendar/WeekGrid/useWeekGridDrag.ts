@@ -108,14 +108,23 @@ export function useWeekGridDrag({
   // A finger's drag carries its own snap step in the state, so the hook, the
   // ghost and the commit all read the same number (a preview snapped to 5 and a
   // commit snapped to 15 would be MD2 again).
-  const withTouchSlot = useCallback(() => {
-    setDrag(prev => prev ? { ...prev, slotMin: touchSlotMin } : prev);
+  //
+  // `at` is where the finger lifted the event. The drag threshold counts from
+  // there, not from the first touchmove: Chrome sends none until the finger has
+  // left its own ~15 px slop, so measuring from the first one that arrived added
+  // our 5 px on top and a 17 px drag moved nothing (probe 07.11).
+  const withTouchSlot = useCallback((at?: { x: number; y: number }) => {
+    setDrag(prev => {
+      if (!prev) return prev;
+      if (at && prev.kind !== 'create') return { ...prev, slotMin: touchSlotMin, startX: at.x, startY: at.y };
+      return { ...prev, slotMin: touchSlotMin };
+    });
   }, [touchSlotMin]);
 
-  const startTouchMove = useCallback((day: DayInfo, event: ProcessedEvent, grabMin?: number) => {
+  const startTouchMove = useCallback((day: DayInfo, event: ProcessedEvent, grabMin?: number, at?: { x: number; y: number }) => {
     touchOwned.current = true;
     startMove(day, event, grabMin);
-    withTouchSlot();
+    withTouchSlot(at);
   }, [startMove, withTouchSlot]);
 
   // A finger held on an empty slot (DayColumn's track binder): the finger now

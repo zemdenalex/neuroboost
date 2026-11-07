@@ -501,7 +501,7 @@ export function WeekGrid({
               onSelect={onSelect}
               onSelectId={setSelectedId}
               onDragStart={handleDragStart}
-              onTouchMoveStart={(d, ev, grabMin) => startTouchMove(d, ev, grabMin)}
+              onTouchMoveStart={(d, ev, grabMin, at) => startTouchMove(d, ev, grabMin, at)}
               onTouchResizeStart={(d, ev, edge) => startTouchResize(d, ev, edge)}
               onTouchCreateStart={startTouchCreate}
               onTouchStart={setTouchStart}
