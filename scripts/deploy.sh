@@ -43,7 +43,7 @@ git fetch -q origin "$BRANCH" || die "cannot reach GitHub to check what the host
 HEAD_SHA="$(git rev-parse HEAD)"
 [ "$HEAD_SHA" = "$(git rev-parse "origin/$BRANCH")" ] || die "HEAD is not what origin/$BRANCH has: push first (the host pulls from GitHub)"
 
-STAMPED="$(cut -d' ' -f1 .git/ci-local.ok 2>/dev/null || true)"
+STAMPED="$(cut -d' ' -f1 "$(git rev-parse --git-dir)/ci-local.ok" 2>/dev/null || true)"
 if [ "$STAMPED" != "$HEAD_SHA" ]; then
   # A commit after the stamp is fine if it only touched documentation.
   changed="$(git diff --name-only "${STAMPED:-$HEAD_SHA}" "$HEAD_SHA" 2>/dev/null || echo UNKNOWN)"

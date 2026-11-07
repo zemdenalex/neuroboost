@@ -23,7 +23,11 @@ set -uo pipefail
 
 cd "$(dirname "$0")/.."
 ROOT="$(pwd)"
-LOG_DIR="$ROOT/.git/ci-local"
+# git rev-parse, not "$ROOT/.git": in a worktree .git is a FILE pointing at
+# .git/worktrees/<name>, and mkdir under it failed every stage (07.11, hotfix).
+# The pre-push hook already reads the stamp this way.
+GIT_DIR_ABS="$(cd "$(git rev-parse --git-dir)" && pwd)"
+LOG_DIR="$GIT_DIR_ABS/ci-local"
 mkdir -p "$LOG_DIR"
 
 PG=nbci-pg
@@ -182,7 +186,7 @@ done
 
 echo
 echo "━━ result ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-for s in $STAGES; do printf "  %-9s %-5s %4ss   (log: .git/ci-local/%s.log)\n" "$s" "${RESULT[$s]:-?}" "${TIME[$s]:-0}" "$s"; done
+for s in $STAGES; do printf "  %-9s %-5s %4ss   (log: $LOG_DIR/%s.log)\n" "$s" "${RESULT[$s]:-?}" "${TIME[$s]:-0}" "$s"; done
 
 if [ "$FAILED" = 1 ]; then
   echo "RED — nothing stamped."
@@ -200,5 +204,5 @@ if ! git diff --quiet -- . ':(exclude)docs' ':(exclude)graph' || ! git diff --ca
   exit 0
 fi
 
-echo "$(git rev-parse HEAD) $(date -Iseconds)" > "$ROOT/.git/ci-local.ok"
+echo "$(git rev-parse HEAD) $(date -Iseconds)" > "$GIT_DIR_ABS/ci-local.ok"
 echo "GREEN — stamped $(git rev-parse --short HEAD). Push and deploy will accept this commit."
