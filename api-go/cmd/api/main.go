@@ -17,9 +17,9 @@ import (
 	"neuroboost/api-go/internal/daytasks"
 	"neuroboost/api-go/internal/inbox"
 	"neuroboost/api-go/internal/lineparse"
-	"neuroboost/api-go/internal/releasenotes"
 	"neuroboost/api-go/internal/logger"
 	"neuroboost/api-go/internal/middleware"
+	"neuroboost/api-go/internal/releasenotes"
 	"neuroboost/api-go/internal/status"
 
 	a "neuroboost/api-go/internal/auth"
@@ -30,6 +30,7 @@ import (
 	pl "neuroboost/api-go/internal/planning"
 	rfl "neuroboost/api-go/internal/reflections"
 	rem "neuroboost/api-go/internal/reminders"
+	"neuroboost/api-go/internal/remindrule"
 	t "neuroboost/api-go/internal/tasks"
 	"neuroboost/api-go/internal/usersettings"
 )
@@ -65,6 +66,7 @@ func main() {
 	rem.InitDB(db)
 	broadcast.InitDB(db)
 	daytasks.InitDB(db)
+	remindrule.InitDB(db)
 	lineparse.InitDB(db)
 	rem.InitService(log)
 
@@ -177,6 +179,9 @@ func main() {
 		r.Patch("/api/events/{id}/resize", e.ResizeHandler)
 		r.Post("/api/events/{id}/exceptions", e.AddExceptionHandler)
 		r.Post("/api/events/{id}/to-task", e.ToTaskHandler)
+		r.Get("/api/events/{id}/remind-rule", remindrule.Get(remindrule.EventKind))
+		r.Put("/api/events/{id}/remind-rule", remindrule.Put(remindrule.EventKind))
+		r.Delete("/api/events/{id}/remind-rule", remindrule.Delete(remindrule.EventKind))
 		r.Post("/api/events/{id}/reflection", rfl.CreateForEventHandler)
 
 		// «Задачи дня» (spec 2026-09-22). The fixed paths are listed before
@@ -208,6 +213,9 @@ func main() {
 		r.Post("/api/tasks/{id}/occurrences", t.MarkOccurrenceHandler)
 		// Turn a task into an event, or add one and keep both linked.
 		r.Post("/api/tasks/{id}/convert", t.ConvertHandler)
+		r.Get("/api/tasks/{id}/remind-rule", remindrule.Get(remindrule.TaskKind))
+		r.Put("/api/tasks/{id}/remind-rule", remindrule.Put(remindrule.TaskKind))
+		r.Delete("/api/tasks/{id}/remind-rule", remindrule.Delete(remindrule.TaskKind))
 
 		// needs, opportunities and patterns lived here as ten routes that answered
 		// 501 to an authenticated caller — a promise in a public API that nobody

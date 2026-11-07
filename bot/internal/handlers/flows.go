@@ -219,6 +219,7 @@ func (h *Handler) handleTaskCardSave(chatID int64, messageID int) {
 		req.Rrule = &rule
 	}
 
+	rule, _ := us.FlowData["remind_rule"].(*parse.RemindRule)
 	task, err := h.api.CreateTask(us.AuthToken, req)
 	h.store.ClearFlow(chatID)
 	if err != nil {
@@ -227,6 +228,7 @@ func (h *Handler) handleTaskCardSave(chatID int64, messageID int) {
 	}
 
 	h.editOrSend(chatID, messageID,
-		fmt.Sprintf(h.t(chatID, "✅ <b>Задача создана</b>\n%s", "✅ <b>Task created</b>\n%s"), format.Escape(task.Title)),
+		fmt.Sprintf(h.t(chatID, "✅ <b>Задача создана</b>\n%s", "✅ <b>Task created</b>\n%s"), format.Escape(task.Title))+
+			h.attachTaskRule(chatID, task.ID, rule, req.DueDate != nil),
 		h.home(chatID))
 }

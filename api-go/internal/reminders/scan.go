@@ -97,6 +97,13 @@ func Scan(ctx context.Context, from, to time.Time, log *slog.Logger) (int, error
 		}
 		inserted += n
 
+		n, err = scanRules(ctx, u, calIDs, st, loc, from, to)
+		if err != nil {
+			log.Error("reminder rule scan failed",
+				slog.String("user_id", u.id), slog.String("error", err.Error()))
+		}
+		inserted += n
+
 		if st.DigestEnabled {
 			if day, fireAt, ok := DigestDue(from, to, st.DigestAt, loc); ok {
 				n, err := insertDigest(ctx, u.id, calIDs, day, fireAt, loc, DigestLang(u.settings, u.locale))

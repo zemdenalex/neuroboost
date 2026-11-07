@@ -52,6 +52,8 @@ func draftFields(lang i18n.Lang) []struct{ Label, Data string } {
 		{i18n.T(lang, "Описание", "Description"), "dre_note"},
 		{i18n.T(lang, "Напоминания", "Reminders"), "dre_remind"},
 		{i18n.T(lang, "Весь день", "All day"), "dre_allday"},
+		// «⏰ До срока»: remind regularly until the event starts (07.11).
+		{i18n.T(lang, "⏰ До срока", "⏰ Until due"), "rrd_m"},
 	}
 }
 

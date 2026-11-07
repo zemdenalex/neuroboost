@@ -90,6 +90,7 @@ func taskCardTextFull(lang i18n.Lang, r parse.TaskResult, tz, calendar, descript
 	// honest word is «как обычно», not «нет».
 	b.WriteString(fieldLine("🔔", i18n.T(lang, "Напоминания:", "Reminders:"),
 		i18n.T(lang, "как обычно", "as usual")))
+	b.WriteString(ruleLine(lang, r.RemindRule, r.BadDate))
 	b.WriteString(fieldLine("📄", i18n.T(lang, "Описание:", "Description:"),
 		orNone(lang, format.Escape(shorten(description, descriptionOnCard)))))
 

@@ -837,6 +837,9 @@ func (h *Handler) createOne(chatID int64, st draftState) (string, error) {
 		}
 		return "", fmt.Errorf(h.t(chatID, "событие не создано: %w", "event not created: %w"), err)
 	}
+	if note := h.syncEventRule(chatID, ev.ID, st); note != "" {
+		h.sendText(chatID, strings.TrimSpace(note))
+	}
 	return ev.ID, nil
 }
 

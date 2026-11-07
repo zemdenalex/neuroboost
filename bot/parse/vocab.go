@@ -172,6 +172,12 @@ func recogniseKind(toks []Token, d *Draft) bool {
 		if t.Field != FieldNone {
 			continue
 		}
+		// «событие экзамен …» names the kind (Denis, 07.11). Only as the first
+		// word: «важное событие» in the middle is part of the title.
+		if i == 0 && t.Norm == "событие" {
+			toks[i].Field = FieldKind
+			continue
+		}
 		if taskWords[t.Norm] {
 			d.IsTask = true
 			toks[i].Field = FieldKind
